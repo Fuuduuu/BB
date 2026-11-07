@@ -60,7 +60,7 @@ flowchart LR
 
 | Kiht | Tohib importida | Ei tohi importida |
 |---|---|---|
-| `domain` | `zod` | kõike muud |
+| `domain` | `zod`, `nanoid` | kõike muud |
 | `contracts` | `domain` (tüübid) | `engine`, `client`, `ui`, React |
 | `engine` | `domain`, `contracts` | React, DOM, Tauri, `client`, `ui`, `features/*/ui` |
 | `features/X/contract` | `contracts`, `domain` | `engine`, `ui`, `client` |

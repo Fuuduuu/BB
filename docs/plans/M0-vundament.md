@@ -100,7 +100,7 @@ docs/plans/M0-uleandmine.md
 
 ## Osa A · Mootor ilma kasutajaliideseta
 
-Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm test --filter "./packages/*"`.
+Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm test packages`.
 
 ### Ülesanne 1: Monorepo ja kvaliteediväravad
 
@@ -199,7 +199,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
     expect(migrateDoc({ format_version: 0 }, 0, m)).toMatchObject({ format_version: 1, upgraded: true });
   });
   ```
-- [ ] **Samm 2:** `pnpm --filter @pcbk/domain test` → KUKUB.
+- [ ] **Samm 2:** `pnpm test packages/domain` → KUKUB.
 - [ ] **Samm 3:** kirjuta skeemid ja funktsioonid. `Component.board` ja `Component.schematic` on valikulised; `Measurement.at/ref` on `MeasuredPin`.
 - [ ] **Samm 4:** testid → LÄBIVAD.
 - [ ] **Samm 5:** commit `feat(domain): board document model and helpers`; üleandmine.
@@ -234,7 +234,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   (null as unknown as Snapshot).doc.components[0]!.pins.push({} as never);
   expectTypeOf<DocumentEngine['execute']>().returns.toEqualTypeOf<Result<CommandOk, EngineError>>();
   ```
-- [ ] **Samm 2:** `pnpm --filter @pcbk/contracts typecheck` → KUKUB.
+- [ ] **Samm 2:** `pnpm typecheck` → KUKUB.
 - [ ] **Samm 3:** kirjuta liidesed. Pakett ei sisalda olekut ega teostust, välja arvatud `ok()` ja `err()`.
 - [ ] **Samm 4:** typecheck → LÄBIB.
 - [ ] **Samm 5:** commit `feat(contracts): engine and project service contracts`; üleandmine.
@@ -294,7 +294,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   test('read-only session rejects commands with read_only', …);
   test('journal entry per command with requestId', …);
   ```
-- [ ] **Samm 2:** `pnpm --filter @pcbk/engine test` → KUKUB.
+- [ ] **Samm 2:** `pnpm test packages/engine` → KUKUB.
 - [ ] **Samm 3:** teosta mootor. Immeri `autoFreeze` peab olema sees. Ajalugu hoiab paiku (`patches`, `inversePatches`), mitte koopiaid.
 - [ ] **Samm 4:** testid → LÄBIVAD.
 - [ ] **Samm 5:** commit `feat(engine): synchronous document engine with ownership and invariants`; üleandmine.
@@ -394,7 +394,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   ```
 - [ ] **Samm 2:** testid → KUKUVAD.
 - [ ] **Samm 3:** teosta pordid, `storage-memory`, `ProjectService` ja `SaveCoordinator`.
-- [ ] **Samm 4:** testid → LÄBIVAD; kogu osa A: `pnpm test --filter "./packages/*"` → LÄBIB ilma DOM-ita.
+- [ ] **Samm 4:** testid → LÄBIVAD; kogu osa A: `pnpm test packages` → LÄBIB ilma DOM-ita.
 - [ ] **Samm 5:** commit `feat(engine): project service and save coordinator`; üleandmine. **Osa A on valmis.**
 
 ---
@@ -630,7 +630,7 @@ Osa lõpus ehitab CI `.msi` ja kõik [07 › M0](../07-teekaart.md#m0--vundament
 - Loo: `.github/workflows/ci.yml`.
 
 **Liidesed:**
-- **Push ja PR peale** (`windows-latest`): `corepack enable` → `pnpm install --frozen-lockfile` → `pnpm check` (sh Playwright `apps/web` peal) → `cargo test` kaustas `apps/desktop/src-tauri`.
+- **Push ja PR peale** (`windows-latest`): `corepack enable` → `pnpm install --frozen-lockfile` → `pnpm check` (sh Playwright `apps/web` peal) → `pnpm format:check` → `cargo test` kaustas `apps/desktop/src-tauri`.
 - **Push `main`-i ja silt `v*`:** lisaks `pnpm tauri build`, mis teeb `.msi` (WebView2 võrguühenduseta paigaldaja: `webviewInstallMode: offlineInstaller`). `.msi` laaditakse artefaktiks; sildi korral lisatakse see GitHubi Release'i.
 
 - [ ] **Samm 1:** kirjuta töövoog.

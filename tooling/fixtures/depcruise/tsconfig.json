@@ -1,0 +1,9 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@pcbk/engine": ["packages/engine/src/index.ts"] }
+  },
+  "include": ["packages/**/*.ts"],
+  "exclude": []
+}

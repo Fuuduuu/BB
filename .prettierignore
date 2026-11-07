@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.superpowers/
+.mcp.json
+.gemini/
+.claude/
+prototype/
+tools/
+docs/
+*.md
+pnpm-lock.yaml

@@ -103,3 +103,51 @@ Backendikatsed töötavad eraldi ajutistes projektides ning käivitavad päris `
 ### Ülesande 1 vastuvõtt ja commit'i luba
 
 2026-11-07 edastas kasutaja arhitekti otsuse **„ülesanne 1 sobib“** ning andis loa commit'iks `chore: set up monorepo and quality gates` harus `m0`, failide täpse loendiga ja kuue stardifailita. Push ja `main`-i ühendamine ootavad eraldi luba. Pärast seda võib alustada ülesannet 2; selle lõpus kehtib sama ülevaatuse piir.
+
+## Ülesanne 2 · Domeenimudel
+
+**2026-11-07 · Codex · teostus valmis arhitekti ülevaatuseks.** Alus ja HEAD on `12eeb631fb80af784f390a32c6fa2989fb48c6f7` (ülesande 1 vastuvõetud commit), haru `m0`, tööpuu `C:\Users\TRUMPIT\.codex\worktrees\bb-m0\BB`. Ülesande 2 commit'i, push'i ega `main`-i ühendamist pole tehtud. Ülesanne 3 on alustamata.
+
+### Teostatud liidesed ja failid
+
+- `BoardDocSchema`, kõik [04 tüübid](../04-andmemudel.md#tüübid) ja neile vastavad skeemid, sh valmiduse `ProgressSnapshot`. TypeScripti tüübid tuletatakse skeemidest, et neid ei peaks kahes kohas käsitsi muutma. Eksporditud on ka `DocKey = keyof BoardDoc`.
+- `newBoardDoc(name)` loob dokumendi kõigi plaani vaikeväärtustega. Uuel dokumendil on oma massiivid, rollide objektid ja seaded; ühe projekti muutmine ei muuda teist projekti ega järgmise projekti vaikeväärtusi.
+- `newId(prefix)` annab `<prefiks>_<nanoid(10)>`; `IdPrefix` sisaldab 04 entity-prefikseid ja jala eksemplari `pin`-prefiksit. Kutsuja annab prefiksi ilma alakriipsuta, näiteks `newId('cmp')`.
+- `refPrefix` ja `nextRef` järgivad kogu plaani tabelit, täidavad väikseima vaba positiivse numbri ning võrdlevad tähiseid tõstutundetult.
+- `defaultPinIds` järgib jalgade vaikejaotust, toetab määratud jalgade arvu ja keeldub vigasest arvust. `hole` jääb jalgadeta.
+- `migrateDoc`, `Migration` ja tühi `MIGRATIONS`. Puuduv või mitmetähenduslik migratsioon, vigane lähteversioon või järgmise versioonini jõudmata samm annab vea.
+
+| Failirühm | Muudatus |
+|---|---|
+| `packages/domain/src/model/` | `primitives.ts`, `component.ts`, `photo.ts`, `connection.ts`, `net.ts`, `measurement.ts`, `repair.ts`, `annotation.ts`, `progress.ts`, `board.ts`; sisemine kaardiabifunktsioon `record.ts` |
+| Tehas ja põhiabilised | `packages/domain/src/{constants,ids,doc}.ts`, `components/{refs,pins}.ts`, `migrations/index.ts`, uuendatud `src/index.ts` |
+| Testid | `src/doc.test.ts`, `src/ids.test.ts`, `src/components/helpers.test.ts`, `src/model/schema.test.ts`, `src/model/record.test.ts`, `src/migrations/migrations.test.ts` |
+| Sõltuvused | `packages/domain/package.json` ja `pnpm-lock.yaml`: täpselt `zod@4.6.7`, `nanoid@6.0.2` |
+| Üleandmine ja hetkeseis | see fail ning eraldi commit'imata põhikausta STATUS; kuus stardifaili jäid eraldi |
+
+### Tegelikud kontrollid
+
+| Käsk või katse | Tulemus |
+|---|---|
+| `pnpm.cmd test packages/domain` enne teostust | **43 testi kukkus**: API puudus; testid olid kogutud ja käivitati. |
+| `pnpm.cmd test packages/domain` pärast teostust | **43/43 testi läbis**, viis faili. |
+| `pnpm.cmd check` pärast ülevaatuse leiu parandust kell 22:42 | **72/72 testi läbis**, kümme faili (domeenis 48 testi kuues failis); mõlemad TypeScripti kontrollid, ESLint, sõltuvused ja failipikkus läbisid. Sõltuvuskontroll läbis 31 moodulit ja 64 sõltuvust. |
+| `pnpm.cmd format:check` | **Läbis**. |
+| `pnpm.cmd install --frozen-lockfile` | **Läbis**, 10 tööruumi projekti; lukufaili ümber ei lahendatud. |
+| Tegeliku backendiprogrammi lisakatse koos Zodi ja Nano ID deklaratsioonidega | Virtuaalne mootori fail, mis kasutab `document`-i, `process`-i ja `window`-it, sai kõigi kolme kohta tüübivea. Faili kettale ei loodud. |
+| Sõltumatu lugemisülevaatus ja sihitud regressioon | Leiti üks andmekao juhtum dünaamiliste kaartide parsimisel. Enne parandust kukkus neli regressioonitesti; pärast parandust läbivad kõik viis kaarditesti ja kogu 72 testi komplekt. Muid olulisi plaanirikkumisi ei leitud; Claude'i vastuvõttu see kontroll ei asenda. |
+| BB dokumentide kontrollfunktsioon | **Läbis**: `m0` tööpuus 26 ja põhikaustas 25 Markdown-faili, probleeme ei leitud. |
+| `git diff --check` ja Git-i lõppseis | **Läbis**. HEAD on `12eeb63`, ülesande 2 muudatused on commit'imata ning commit'iks lisatud sisu puudub. Kuus stardifaili on endiselt jälgimata. |
+
+Testid katavad muu hulgas täieliku näidisdokumendi JSON-ülekande andmeid kaotamata, kummagi vaate paigutuste puudumise, ajaloolise mõõtmise säilimise, mõlema sondi `uid`-id, ühenduse otsa ühesuse, kõigi nelja remondimõju kuju, dioodi „OL“-näidu, vigased tüübid/piirid ning tundmatu dokumendivälja tagasilükkamise.
+
+### Teostusvalikud ja piir
+
+- Objektiskeemid on ranged: tundmatut välja ei eemaldata vaikides, vaid valideerimine ebaõnnestub. `BoardPlacement.params`, `padMap`, `customPads` ja `SymbolPlacement.pinMap` jäävad 04 järgi dünaamiliste võtmetega kaartideks. Ühine `stringRecord` keeldub enne Zodi parsijat oma võtmest `__proto__`, mille teek muidu veata eemaldaks. Tavalised võtmed, ka `constructor`, säilivad. See on andmekadu vältiv valideerimisvalik, mitte kaardi vaikne muutmine.
+- ID-de genereerimine järgib prefiksit ja pikkust; skeem nõuab mittetühja ID-d. See lubab ka 04 fikseeritud vaikerollide ID-sid (`rol_gnd` jne). ID-de ja jalgade `uid`-de unikaalsuse ning viidete tervikluse kontroll kuulub plaani järgi mootori invariantidesse, mitte sellesse struktuuriskeemi ülesandesse.
+- Mõõtmise kontakt võib olla kustutatud: skeem ei nõua selle aktiivse jala olemasolu. Selle aktiivsust, hinnangut ja mõju võrgule arvutab hilisem mootor; siin need funktsioonid ei lisandunud.
+- `migrateDoc` töötleb `unknown`-andmeid ja tagastab `unknown`-andmed; täielik `BoardDocSchema` kontroll ning faili täisvarukoopia toimuvad hiljem projekti avamise voos. M0 vormingu 1 puhul testiti sammu 0 → 1; päris migratsioonide loend on plaani järgi tühi.
+- 04 `referenceImageId` säilis valikulise viitena. Uut `attachments` loendit ei lisatud, sest seda pole autoriteetses `BoardDoc`-is. Andmemudelit, ADR-e ega teostusplaani selle ülesande käigus ei muudetud.
+- Kasutajaliidest, salvestusadapterit, võrkude arvutust ega mõõtmise hinnangut ei teostatud. Ülesanne 2 ei ole kogu M0 vastuvõtt.
+
+**Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused. Ülesanne 3 ja ülesande 2 commit ootavad oma kokkulepitud luba.

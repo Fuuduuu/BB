@@ -7,7 +7,7 @@ Visuaalne keel tuleb prototüübist ([prototype/src/app.css](../prototype/src/ap
 | Ala | Mõõt | Sisu |
 |---|---|---|
 | Ülariba | 52 px | ☰, projekti nimi ja salvestuse olek, edenemine, **Plaat \| Skeem**, ↶ ↷, `Ctrl+K`, Ekspordi |
-| Navigaator (vasak) | 300 px, muudetav 240–420 | Teek · Plaadil · Võrgud · Mõõtmised · Logi |
+| Navigaator (vasak) | 300 px, muudetav 240–420 | Teek · Plaadil · Paigutamata (plaadile / skeemile) · Võrgud · Mõõtmised · Logi |
 | Lõuend (kesk) | ülejäänu | tööriistariba vasakus servas (40 px nupud), ankru- ja abisildid |
 | Kontekstipaneel (parem) | 340 px, muudetav 280–460, kokkupandav | valitud objekti sektsioonid või „Järgmine samm“ |
 | Mõõteriba (all) | 48 px | foto nähtavus (kohe foto all), kontrast, ⟳, ⇋, poole valik, kihid, „Näita kahtlaseid“, suum, mõõtkava, koordinaadid |
@@ -64,9 +64,12 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 | Rada, nähtud | pidev, tegelik laius millimeetrites (vähemalt 1,4 px), rolli värv või kihi värv |
 | Rada, mõõdetud | nagu üleval + väike ✓ märk raja keskel |
 | Juhe | pidev, kumer kaar (juhe on plaadist kõrgemal) |
-| Link, oletatud | 1,5 px katkendjoon `6 4` |
-| Link, mõõdetud | 1,5 px punktiirjoon `2 3` + ✓ |
-| Mõõtmine aegunud või kustutatud | joonistatakse algse taseme järgi (nähtud rada või oletatud link) ilma ✓-märgita; kontekstis „Mõõda uuesti“ |
+| Õhujoon, oletatud (ühendus ilma fotojoonistuseta) | 1,5 px katkendjoon `6 4`; kihina peidetav |
+| Õhujoon, mõõdetud | 1,5 px punktiirjoon `2 3` + ✓ |
+| Liitepunkt (haru) | täidetud täpp 2,5 × raja laius (vähemalt 5 px) nii plaadil kui ka skeemil; ristuvad jooned ilma täpita **ei ole** ühendatud |
+| Lahtine ots | tühi ring raja lõpus |
+| Mõõtmine aegunud või kustutatud | joonistatakse algse taseme järgi (nähtud rada või oletatud õhujoon) ilma ✓-märgita; kontekstis „Mõõda uuesti“ |
+| Raja silt | võrgu nimi raja kõrval; lohistatav nihe, vaikimisi peidetud kaugel suumil |
 | Alumine kiht | 70 % läbipaistvusega, kui vaadatakse pealmist poolt |
 | Rollikonflikt | punane 2 px halo ümber kogu võrgu |
 
@@ -85,7 +88,7 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 | `V` | Vali | `R` / `Shift+R` | pööra +90° / −90° |
 | `H`, tühik + lohista | liiguta vaadet | `Q` / `E` (+Shift) | pööra ∓1° (∓15°) |
 | `T` | Rada | `F` | teisele poolele |
-| `C` | ühenda valitud jalad (link) | `L` | raja kiht (joonistamisel) |
+| `C` | ühenda valitud jalad (õhujoon) | `L` | raja kiht (raja joonistamisel); võrgusilt (skeemil) |
 | `B` | Piiksumisrežiim | `Ctrl+D` | dubleeri |
 | `M` | Mõõda (fookus väärtusele) | `Del` | kustuta |
 | `J` | Lisa jalg | nooled (+Shift) | nihuta 1 px (10 px) |
@@ -96,8 +99,12 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 | `K` | Kalibreeri | `Esc` | katkesta → tagasi Vali tööriista → tühjenda valik |
 | `X` | Märgi kahjustatud ala | `?` | kiirklahvide abi |
 
-**Väärtuse väljas** (mõõtmine): `Enter` salvesta · `Tab`/`Shift+Tab` järgmine/eelmine jalg · `Alt+1…4` režiim · `Alt+P` toide · `Esc` välja.
-**Piiksu küsimuses:** `Enter`/`J` jah · `Esc`/`E` ei.
+**Skeemivaates** lisaks: `W` juhe · `L` võrgusilt · `R` pööra sümbolit. „Näita teises vaates“ on kontekstimenüüs ja käsupaletis.
+
+**Väärtuse väljas** (mõõtmine): `Enter` salvesta · `Alt+↓` / `Alt+↑` järgmine/eelmine jalg · `Tab` / `Shift+Tab` järgmine/eelmine vormiväli · `Alt+1…4` režiim · `Alt+P` toide · `Esc` tühjenda mustand ja välju. Sisestusväljas ei käivitu ükski lõuendi täheklahv.
+**Piiksumisrežiimi nuppudel:** `Enter` „Piiksub ja ühenda“ · `Shift+Enter` „Ainult mõõtmine“ · `N` „Ei piiksu“ · `Esc` katkesta (ei salvesta midagi). Klahvid on nuppude peal kirjas.
+
+Kontekstiklahvid (piiksu nupud, raja joonistamine, skeemivaade) kehtivad ainult selles olekus ja on registris kontekstiga seotud.
 
 Klahvid on registreeritud moodulite kaudu (`keymap`). Topeltregistreerimine on käivitusel viga.
 
@@ -129,7 +136,8 @@ Klahvid on registreeritud moodulite kaudu (`keymap`). Topeltregistreerimine on k
 | Plaadil (tühi) | „Plaadil pole veel midagi. Ava **Teek** ja lohista esimene komponent foto peale.“ |
 | Võrgud (tühi) | „Võrgud tekivad ühendustest. Kasuta tööriista **Rada** (T) või **Piiks** (B).“ |
 | Mõõtmised (tühi) | „Vali jalg ja sisesta väärtus. Esimene mõõtmine on tavaliselt toitesisend GND suhtes.“ |
-| Skeem (komponente pole) | „Skeem tekib plaadi kaardistusest. Paiguta komponendid ja ühenda jalad.“ |
+| Skeem (komponente pole) | „Lisa komponent teegist või lohista see loendist **Skeemile paigutamata**. Skeemil lisatud komponendi saad hiljem fotole paigutada.“ |
+| Plaadile paigutamata (tühi) | „Kõik komponendid on fotol.“ |
 | Otsing ei leidnud | „Sellist korpust ei leitud. Proovi **Kohandatud**: sellele saad ise jalad lisada.“ |
 
 ## Ligipääsetavus

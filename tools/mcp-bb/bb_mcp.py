@@ -35,6 +35,8 @@ HISTORICAL_GLOBS = ["docs/superpowers/*", "docs/adr/ADR-001-*", "docs/review/*"]
 DEFAULT_STALE_TERMS = [
     "evidenceId", "src/core", "src/modules", "AppModule", "beginTransaction", "TxHandle",
     "CONTRACT_VERSION", "HOST_API_VERSION", "journal_mode=WAL", "ProjectStore", "asset-protokoll",
+    # replaced by ADR-004 (pins on Component, optional placements, junctions)
+    "pinNames", "pinNc", "extraPins", "schematic.placements", "SchematicPlacement", "CustomPin",
 ]
 VERDICTS = ["JAH", "JAH, PÄRAST PARANDUSI", "EI"]
 

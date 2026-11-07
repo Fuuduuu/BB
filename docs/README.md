@@ -17,11 +17,11 @@ Need dokumendid on ehituse alus. Kui kood ja dokumendid lähevad lahku, otsustab
 | 07 | [Teekaart](07-teekaart.md) | Verstapostid M0–M6 ja iga verstaposti „valmis kui“ tingimused |
 | 08 | [BenchBeepi õppetunnid](08-benchbeepi-opetused.md) | Mis vanast projektist võetakse üle ja mida enam kunagi ei korrata |
 
-Otsused: [ADR-002 TypeScript + Tauri](adr/ADR-002-typescript-tauri.md) (kehtiv), [ADR-003 frontend ja backend eraldi](adr/ADR-003-frontend-backend.md) (ettepanek), [ADR-001 Flutter](adr/ADR-001-keel-ja-platvorm.md) (asendatud).
+Otsused: [ADR-002 TypeScript + Tauri](adr/ADR-002-typescript-tauri.md) (kehtiv), [ADR-003 frontend ja backend eraldi](adr/ADR-003-frontend-backend.md) (kehtiv), [ADR-004 Plaat ja Skeem ühel mudelil](adr/ADR-004-kaks-vaadet-ja-uhendused.md) (kehtiv), [ADR-001 Flutter](adr/ADR-001-keel-ja-platvorm.md) (asendatud).
 
 ## Lähtematerjal
 
-- Veebiprototüüp: [prototype/PCB-Kaardistaja.html](../prototype/PCB-Kaardistaja.html), lähtekood [prototype/src/](../prototype/src/). Sealt porditakse korpuste generaatorid (`prototype/src/js/01-footprints.js`), võrkude arvutus (`prototype/src/js/02-state.js` → `getNets`), joonistusloogika (`prototype/src/js/03-render.js`), eksport (`prototype/src/js/06-io.js`) ja visuaalne keel (`prototype/src/app.css` tokenid). Uue äpi `src/` kaust on prototüübist eraldi.
+- Veebiprototüüp: [prototype/PCB-Kaardistaja.html](../prototype/PCB-Kaardistaja.html), lähtekood [prototype/src/](../prototype/src/). Sealt porditakse korpuste generaatorid (`prototype/src/js/01-footprints.js`), joonistusloogika (`prototype/src/js/03-render.js`), eksport (`prototype/src/js/06-io.js`) ja visuaalne keel (`prototype/src/app.css` tokenid). Prototüübi läheduse põhjal võrke arvutavat `getNets`-i (`prototype/src/js/02-state.js`) uude äppi **ei porta**; seda kasutatakse ainult prototüübi impordi võrdluseks ([ADR-004](adr/ADR-004-kaks-vaadet-ja-uhendused.md)). Prototüüp on käitumise ja geomeetria allikas, mitte uue äpi tuum. Uue äpi kood (`apps/`, `packages/`) on prototüübist eraldi.
 - BenchBeep (`C:\dev\TraceBench`): ainult ideed ja õppetunnid, mitte lõplik tõde. Vt [08](08-benchbeepi-opetused.md).
 
 ## Kolm reeglit, mis kehtivad kõikjal

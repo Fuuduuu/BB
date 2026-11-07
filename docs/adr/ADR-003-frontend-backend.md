@@ -1,6 +1,6 @@
 # ADR-003: Frontend ja backend eraldi: kohalik mootor lepingu taga ja Rusti host
 
-**Staatus:** Ettepanek, versioon 2 (muudetud pärast GPT ja Gemini ülevaatust 2026-11-07; ootab kasutaja otsust)
+**Staatus:** Vastu võetud (kasutaja otsus 2026-11-07), versioon 2 (muudetud pärast GPT ja Gemini ülevaatust)
 **Kuupäev:** 2026-11-07
 **Otsustaja:** kasutaja
 **Täpsustab:** [ADR-002](ADR-002-typescript-tauri.md) (tehnoloogia jääb samaks: TypeScript, React, Tauri 2, SQLite)
@@ -231,6 +231,6 @@ Eesmärk on kasvada ilma ümberkirjutamiseta, aga see on **eesmärk, mitte lubad
 
 ## Tegevused
 
-1. [ ] Kasutaja otsus: ADR-003 v2 vastu võtta või muuta.
+1. [x] Kasutaja otsus: ADR-003 v2 võeti vastu 2026-11-07.
 2. [x] Dokumendid on selle ettepanekuga kooskõlla viidud: [03](../03-arhitektuur.md), [04](../04-andmemudel.md), [05](../05-moodulid.md), [07](../07-teekaart.md), lisaks 01, 02, 06 ja 08.
-3. [ ] M0 ehitab ainult vundamendi, projekti ja ühe näidismooduli (`notes`) kõigi kolme osaga. Ülejäänud moodulite registrid ja paneelid tulevad oma verstapostis.
+3. [ ] M0 ehitab ainult vundamendi, projekti ja ühe päris mooduli (`components`) kõigi kolme osaga ([ADR-004](ADR-004-kaks-vaadet-ja-uhendused.md) järgi; varem oli kavas näidismoodul). Ülejäänud moodulite registrid ja paneelid tulevad oma verstapostis.

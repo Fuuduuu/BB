@@ -52,14 +52,14 @@ Reeglid:
 - Projekt: loomine, avamine, viimased projektid, automaatsalvestus, üks fail `.pcbk`.
 - Foto: avamine, lohistamine, kleepimine; nähtavus, kontrast, hall; pööramine ja peegeldamine.
 - Mõõtkava: kahe punktiga kalibreerimine või teadaoleva korpuse joondamisest.
-- Komponendid: parameetriline teek (~40 korpust, prototüübist), paigutamine, liigutamine, pööramine, **suuruse muutmine**, **kahe jala joondus**, teisele poolele, dubleerimine, kohandatud komponent.
+- Komponendid: parameetriline teek (~40 korpust, prototüübist), paigutamine, liigutamine, pööramine, **suuruse muutmine**, **kahe jala joondus**, teisele poolele, dubleerimine, kohandatud ja tundmatu komponent; **korpuse märgistus eraldi väärtusest**, väärtus vaikimisi tühi.
 - Jalad: automaatselt korpusest, oma jalgade lisamine, nimed, **selgelt eristatavad olekud**.
-- Ühendused: rajatööriist vahepunktidega, kiirühendus, **piiksumisrežiim** (läbivuse mõõtmisega võrkude kaardistamine).
+- Ühendused: rajatööriist vahepunktidega, **nähtavad liitepunktid** harude jaoks, kiirühendus ja õhujooned, **piiksumisrežiim** (läbivuse mõõtmisega võrkude kaardistamine, „Piiksub ja ühenda“ või „Ainult mõõtmine“). Ühendus tekib ainult kasutaja teadliku tegevusega, mitte joonte läheduse põhjal.
 - Võrgud: automaatne tekkimine, nimed, **rollid koos värvidega** (GND, 3V3, 5V, 12V, signaal, oma rollid), rollikonflikti hoiatus.
 - Mõõtmised: pinge, takistus, diood, läbivus; toite olek; kiirsisestus; automaatne hinnang (OK / madal / kõrge / lühise kahtlus); mõõtmiste nimekiri.
 - Vigade otsing: kahtlaste jalgade vaade, märkused, kahjustatud alad fotol, remonditoimingud koos „enne remonti“ märkimisega.
 - Mõõtjooned ja plaadi kontuur millimeetrites.
-- Skeemivaade: automaatselt genereeritud loogiline skeem (sümbolid, võrgusildid, toite- ja maandussümbolid), mida saab ümber paigutada.
+- **Muudetav skeem**: sama projekti teine tööpind (komponentide lisamine ja paigutamine, juhtmed, võrgusildid, toite- ja maandussümbolid, märkused). Komponendi saab lisada kummaski vaates; automaatpaigutus on abiline.
 - Kaardistuse valmidus: edenemine ja kontrollnimekiri.
 - Eksport: SVG 1:1 mm, PNG, võrguloend CSV, BOM CSV, mõõtmised CSV, remondiraport (HTML/PDF), projekti JSON.
 - Prototüübi `.pcbmap.json` import.

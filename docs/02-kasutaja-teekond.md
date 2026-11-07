@@ -129,7 +129,11 @@ Juhend ei peata kasutajat kunagi. Rida „Jätan vahele“ (nt fotota töö) mä
 - klõpsab korpust (tööriist läheb paigutusrežiimi ja kursori all liigub poolläbipaistev eelvaade) või lohistab selle lõuendile;
 - klõpsab fotol sinna, kus komponent on. Paigutusrežiim jääb aktiivseks järgmise sama korpuse jaoks; `R` pöörab eelvaadet 90°, `Esc` lõpetab.
 
-**Äpp:** annab tähise automaatselt (R1, R2 …, prefiks tuleb korpusest) ja vaikeväärtuse (nt „10k“). Uus komponent jääb valituks ja kontekstipaneel näitab selle andmeid.
+**Äpp:** annab tähise automaatselt (R1, R2 …, prefiks tuleb korpusest). **Väärtus ja märgistus jäävad tühjaks.** Teegi soovitus („10k“) võib olla väljas hall vihje, aga seda ei salvestata faktina. Uus komponent jääb valituks ja kontekstipaneel näitab selle andmeid.
+
+**Kui komponent on teadmata:** tööriist *Tundmatu komponent* lubab märkida fotol ala. Tekib `X1` tüübiga „Muu“; jalgu saab lisada käsitsi. Hilisem korpuse või tüübi määramine muudab sama objekti.
+
+**Komponendi saab lisada ka skeemil** (osa 13). Siis pole tal fotol asukohta ja ta on loendis „Plaadile paigutamata“. „Paiguta plaadile“ võtab sama komponendi kursori alla.
 
 ### 6.2 Õige asend ja suurus
 
@@ -146,13 +150,18 @@ Kahe jala joondus arvutab korraga asukoha, pöörde ja ühtlase mõõtkava. Kui 
 ### 6.3 Identiteet
 
 Kontekstipaneelis on komponendi kohta:
-- **Tähis** (R1), **Väärtus** (10k, ATtiny85), **Tüüp** (takisti, kondensaator … mikroskeem; määrab sümboli skeemil), **Korpus**;
+- **Tähis** (R1);
+- **Korpuse märgistus**: täpselt see tekst, mida detaililt loed (`103`, `A7W`, `AMS1117`);
+- **Väärtus või mudel**: sinu tuvastatud tähendus (`10 kΩ`, `AMS1117-3.3`);
+- **Tüüp** (takisti, kondensaator … mikroskeem; määrab sümboli skeemil) ja **Korpus**;
 - **Olek:** *Tuvastatud* või *Tuvastamata* (vaikimisi tuvastamata, kui väärtus on tühi);
 - **Pool:** pealmine või alumine (`F`; alumise poole komponendid on katkendjoonega);
 - **Paigaldamata (DNP):** tühi koht plaadil; jalad on olemas, kuid skeemil kuvatakse see hallina;
 - **Märkused** ja **võrdluspilt** (nt andmelehe jalgade joonis, mis kuvatakse paneelis).
 
 Tundmatu komponent: korpus „Kohandatud“ (vabalt valitud mõõdud, jalad lisatakse ise), tüüp „Muu“, olek „Tuvastamata“.
+
+Fotol on vaikimisi näha ainult tähis; väärtuse ja märgistuse saab kihina sisse lülitada. Sildi lohistamine muudab sildi nihet, mitte komponendi asukohta.
 
 ## 7. Jalad
 
@@ -170,34 +179,50 @@ Tundmatu komponent: korpus „Kohandatud“ (vabalt valitud mõõdud, jalad lisa
 
 ## 8. Ühendused
 
-Ühenduse loomiseks on kolm viisi, sest remondis selgub ühendus eri moel.
+Ühenduse loomiseks on mitu viisi, sest remondis selgub ühendus eri moel. **Ühendus on alati sinu teadlik otsus:** kaks lähestikku joont, ristumine, mõõtkava või sama võrgunimi ei ühenda midagi iseenesest ([04 › Võrkude arvutus](04-andmemudel.md#võrkude-arvutus-resolvenets)).
+
+Ühendusel on kaks eraldi osa: **elektriline side** (need kaks jalga on ühendatud) ja **joonistus** fotol või skeemil. Ilma fotojoonistuseta ühendus on õhuke katkendlik **õhujoon**, mille saab kihina peita. Väljamõeldud vaskrajana seda ei joonistata.
 
 ### 8.1 Rada (nähtud)
-Tööriist **Rada** (`T`). Klõpsa jalal → klõpsa käänupunktid mööda fotol nähtavat rada → lõpeta jalal, teisel rajal (T-hargnemine) või topeltklõpsuga.
-- `Shift` = 45° nurgad, `Backspace` = samm tagasi, `Esc` = katkesta, `L` = kiht (pealmine/alumine/juhe).
+Tööriist **Rada** (`T`). Klõpsa jalal → klõpsa käänupunktid mööda fotol nähtavat rada → lõpeta jalal, teisel rajal või topeltklõpsuga.
+- **Haakumine:** jala või olemasoleva liitepunkti külge haakumine on enne klõpsu esile tõstetud.
+- **Haru:** teise raja peal lõpetamine loob seal nähtava **liitepunkti** (täpp) ja jagab selle raja kaheks, kõik ühe käsuga.
+- **Lahtine ots:** tühjal kohal lõpetamine jätab raja lõppu lahtise otsa (liitepunkti), mitte varjatud ühenduse lähima rajaga.
+- **Klahvid:** `Shift` = 45° nurgad, `Backspace` = samm tagasi, `Esc` = katkesta, `L` = kiht (pealmine/alumine/juhe). Kihi vahetamine ei ühenda pealmist ja alumist rada; neid ühendab ainult läbiv jalg või via.
 - Lõpetamata lõigu kohal on pikkus millimeetrites.
-- Rada ei jookse linnulennult: see on joonistatud mööda tegelikku teed. Linnulennul ühendus on *kiirühendus* (8.2).
+- Rada ei jookse linnulennult: see on joonistatud mööda tegelikku teed.
+- Kui rada algab ja lõpeb jalal, loob üks käsk nii ühenduse kui ka selle joonistuse; skeem näitab ühendust kohe. Kui ühendus on juba olemas (nt piiksust), lisatakse sellele ainult joonistus.
+
+**Olemasoleva ühenduse joonistamine:** vali õhujoon ja vajuta „Joonista rada fotol“.
+
+**Kaks eri kustutamist:**
+- **„Eemalda joonistus“** jätab elektrilise ühenduse ja skeemi alles; fotol jääb õhujoon;
+- **„Kustuta ühendus“** eemaldab elektrilise sideme mõlemast vaatest.
+
+Mõõtmised jäävad alles ja mõlemad toimingud on tagasivõetavad.
+
+**Rajal** saab näidata võrgu nime (silti saab lohistada), mõlema otsa tähist, märget „nähtud / oletatud“ ja viimast läbivuse tulemust.
 
 ### 8.2 Kiirühendus (oletatud)
-Vali kaks või enam jalga (klõps ja Shift+klõps) ning vajuta `C`. Tekib õhuke katkendjoon, olekuga *oletatud*. See sobib siis, kui on teada, et jalad on ühenduses, aga rada pole nähtav (näiteks plaadi all).
+Vali kaks või enam jalga (klõps ja Shift+klõps) ning vajuta `C`. Tekib ühendus olekuga *oletatud*, mis on fotol õhujoon. See sobib siis, kui on teada, et jalad on ühenduses, aga rada pole nähtav (näiteks plaadi all). Sama saab teha skeemil juhtme joonistamisega (osa 13).
 
 ### 8.3 Piiksumisrežiim (mõõdetud), kõige kiirem kaardistus
 Tööriist **Piiks** (`B`):
 1. Klõpsa jalal, mille juures hoiad musta sondi. See muutub **ankruks** (sinine rõngas ja silt „Must sond: U1.4“).
-2. Klõpsa järgmisel jalal, mida punase sondiga puudutad. Kursori juurde ilmub küsimus **„Piiksub?“**: `Enter` / `J` = jah, `Esc` / `E` = ei.
-3. **Jah** salvestab läbivuse mõõtmise ja ühendab jalad samasse võrku, kõik ühe tagasivõetava sammuna:
-   - olemasolev ühendus samade jalgade vahel saab ✓-märgi;
-   - kui jalad on juba samas võrgus, lisatakse ainult mõõtmine;
-   - muidu tekib uus *mõõdetud* link.
+2. Klõpsa järgmisel jalal, mida punase sondiga puudutad. Kursori juurde ilmuvad kolm nuppu, mille peal on ka nende klahvid:
+   - **„Piiksub ja ühenda“** (`Enter`) salvestab läbivuse mõõtmise ja ühendab jalad ühe tagasivõetava sammuna. Kui jalad on juba samas võrgus, lisatakse ainult mõõtmine. Muidu tekib *mõõdetud* ühendus (fotol õhujoon, mille saab hiljem rajaks joonistada).
+   - **„Ainult mõõtmine“** (`Shift+Enter`) salvestab piiksu, aga ei ühenda midagi.
+   - **„Ei piiksu“** (`N`) salvestab negatiivse tulemuse. Kui need jalad hiljem ühendatakse, hoiatab äpp: „Läbivustest ütles, et ühendust pole.“
 
-   **Piiks tähendab väikest takistust, mitte tingimata sama vaskrada:** ka 10 Ω takisti otsad piiksuvad. Seepärast ei ühenda äpp automaatselt kahel juhul: kui jalad on sama passiivkomponendi otsad (takisti, pool, kaitse, kondensaator, diood …) või kui ühendamine liidaks kaks eri rolliga võrku. Siis salvestatakse ainult mõõtmine ja lõuendil küsitakse: „Piiksub läbi komponendi R5. Ühendan ikkagi?“ ([04 › Piiks](04-andmemudel.md#piiks-ei-tõenda-sama-vaskrada)).
+   `Esc` katkestab ega salvesta midagi, ka mitte vastust „ei“.
+3. **Piiks tähendab väikest takistust, mitte tingimata sama vaskrada:** ka 10 Ω takisti otsad või paralleelne tee läbi teiste komponentide võivad piiksuda.
+   - „Piiksub ja ühenda“ ei ühenda automaatselt, kui jalad on sama passiivkomponendi otsad (takisti, pool, kaitse, kondensaator, diood …) või kui ühendamine liidaks kaks eri rolliga võrku. Siis salvestatakse ainult mõõtmine ja lõuendil küsitakse: „Piiksub läbi komponendi R5. Ühendan ikkagi?“ ([04 › Piiks](04-andmemudel.md#piiks-ei-tõenda-sama-vaskrada)).
+   - Need kaitsed on abilised, mitte garantii. Otsus jääb sinule.
 
-   ✓ kehtib seni, kuni samade jalgade vahel on kehtiv piiksuv mõõtmine. Kustutamise või remondi järel kaob ✓ ja ühenduse juures on „Mõõda uuesti“. Sama jalapaari tavaline läbivusmõõtmine taastab ✓.
+   ✓ kehtib seni, kuni samade jalgade vahel on kehtiv piiksuv mõõtmine. Kustutamise või remondi järel kaob ✓ ja ühenduse juures on „Mõõda uuesti“. Sama jalapaari tavaline läbivusmõõtmine taastab ✓. Tavaline läbivusmõõtmine Mõõda-plokis ei ühenda kunagi.
+4. Jätka järgmiste jalgadega samast ankrust. `Shift`+klõps teeb uue ankru, `Esc` (kui nuppe pole avatud) lõpetab režiimi.
 
-   **Ei** salvestab negatiivse tulemuse. Kui need jalad hiljem ühendatakse, hoiatab äpp: „Läbivustest ütles, et ühendust pole.“
-4. Jätka järgmiste jalgadega samast ankrust. `Shift`+klõps teeb uue ankru, `Esc` lõpetab režiimi.
-
-Nii saab näiteks kogu GND-võrgu kaardistada minutiga: ankur GND-l, siis klõps igal kahtlustatud jalal.
+Nii saab näiteks kogu GND-võrgu kaardistada kiiresti: ankur GND-l, siis klõps ja `Enter` igal kahtlustatud jalal. Eesmärk „50 jalga alla 2 minuti“ tõendatakse kasutuskatses.
 
 ## 9. Võrgud ja rollid
 
@@ -207,6 +232,8 @@ Nii saab näiteks kogu GND-võrgu kaardistada minutiga: ankur GND-l, siis klõps
 - *Võrgud* vahekaardil või jala/raja kontekstipaneelis valib **rolli** kiipidest: **GND · 3V3 · 5V · 12V · Signaal · Teadmata · + Uus roll**;
 - annab võrgule nime (nt `VBUS`, `SDA`);
 - uus roll: nimi, tüüp (maandus/toide/signaal), nimipinge (nt 24) ja värv.
+
+**Nimi ei ühenda.** Kaks eraldi võrku võivad mõlemad olla GND; remondis võib just see olla leid. Kui need on päriselt ühendatud, kasuta „Ühenda võrguga…“, mis loob selge ühenduse.
 
 **Rollide vaikevärvid** (muudetavad seadetes): GND **must/tumehall**, 5V **punane**, 12V **sinine**, 3V3 **oranž**, Signaal **lilla**, Teadmata **hall**. Rajad ja ühendatud jalad joonistatakse rolli värviga, nii et toiteliinid paistavad plaadil kohe välja.
 
@@ -219,22 +246,24 @@ Nii saab näiteks kogu GND-võrgu kaardistada minutiga: ankur GND-l, siis klõps
 Põhiteekond on **Koht → Väärtus → Ühik → Salvesta**, kus ühik tuleb režiimist ise.
 
 **Kasutaja teeb:**
-1. Klõpsab jalal (koht). Kontekstipaneeli ülaosas on alati **„Mõõda“** plokk:
-   - **Koht:** `U1.8` (kiip) · **Vastaspunkt:** `GND` (vaikimisi esimene GND-rolliga jalg, „muuda“);
+1. Klõpsab jalal plaadil või skeemil (koht). Kontekstipaneeli ülaosas on alati **„Mõõda“** plokk:
+   - **Punane sond (Koht):** `U1.8`;
+   - **Must sond (Vastaspunkt):** sina valid selle jala, näiteks `J1.2 · GND`. Äpp pakub GND-jalga ühe klõpsuga soovitusena, aga ei vali seda sinu eest. Valitud must sond jääb mõõtmisjada ajaks lukku (lukk on näha ja lahti võetav);
    - **Režiim:** `V` · `Ω` · `Diood` · `Piiks` (`Alt+1`…`Alt+4`, sest väärtuse väli on fookuses);
    - **Väärtus:** väli on kohe fookuses. Lubatud on koma ja sufiksid (`4,98`, `4k7`, `1,2M`, `680m`); takistusel ja dioodil ka `OL` (avatud ahel);
-   - **Toide:** *Toitega* / *Toiteta* (`Alt+P`, jääb meelde järgmiseks mõõtmiseks).
-2. Vajutab `Enter`.
+   - **Toide:** *Teadmata* / *Toitega* / *Toiteta* (`Alt+P`). Algolek on *Teadmata*, sinu valik jääb meelde järgmiseks mõõtmiseks.
+2. Vajutab `Enter` või „Salvesta mõõtmine“.
 
 **Äpp:**
 - salvestab mõõtmise ja näitab selle kohe ploki all reana `4,98 V · toitega · OK ✓ · 14:32`;
 - arvutab **hinnangu** mõlema sondi võrgu rolli põhjal ([04 › Hindamisreeglid](04-andmemudel.md#mõõtmiste-hindamine)): **OK** (roheline), **madal** või **kõrge** (punane), **lühise kahtlus** (punane), **—** (pole millega võrrelda, neutraalne);
 - värvib jala rõnga hinnangu järgi ja kuvab väärtuse väikese sildina jala kõrval;
-- jätab fookuse väärtuse väljale. `Tab` viib sama komponendi järgmisele jalale, `Shift+Tab` eelmisele. Teisel jalal klõpsamine vahetab koha.
+- jätab fookuse väärtuse väljale. Järgmisele või eelmisele jalale viivad `Alt+↓` / `Alt+↑` ja nähtavad nupud „Järgmine jalg“ / „Eelmine jalg“. Teisel jalal klõpsamine vahetab koha. `Tab` liigub tavapäraselt vormiväljade vahel ega muuda kohta. Väärtuse väljas ei käivita täheklahvid (`R`, `T`, `V` …) lõuendi tööriistu.
 
 **Reeglid:**
-- **Koht ei vahetu kunagi iseenesest.** Tööriista või filtri vahetus ega tühjale alale klõpsamine ei muuda mõõdetavat jalga (BenchBeepi viga BB-01).
-- **Sisestatud väärtus kuulub sellele jalale, millele see kirjutati.** Kui vahetad Kohta enne `Enter`-it (`Tab`, klõps teisel jalal), ei liigu väärtus kaasa: uus jalg avaneb oma mustandiga või tühja väljaga ja tagasi tulles on eelmise jala sisestus alles. `Esc` tühjendab mustandi. Salvestamata mustand projekti faili ei lähe.
+- **Koht ei vahetu kunagi iseenesest.** Tööriista, filtri, paneeli või Plaat/Skeem vahetus ega tühjale alale klõpsamine ei muuda mõõdetavat jalga (BenchBeepi viga BB-01). Kui sihtmärk on vaates peidetud, jääb Koha kiip nähtavaks koos nupuga „Näita“.
+- **Sisestatud väärtus kuulub sellele sondipaarile (punane + must), millele see kirjutati.** Kui vahetad Kohta või musta sondi enne `Enter`-it, ei liigu väärtus kaasa: uus jalg avaneb oma mustandiga või tühja väljaga ja tagasi tulles on eelmise jala sisestus alles. `Esc` tühjendab mustandi. Kui jalg kustutatakse, jääb mustand alles koos selgitusega, aga seda ei saa salvestada enne, kui valid uue koha. Salvestamata mustand projekti faili ei lähe.
+- **Kustutatud kontakt:** kui mõõdetud jalg või komponent hiljem kustutatakse, jääb mõõtmine ajalukku märkega „kontakt kustutatud“, aga ei mõjuta enam hinnanguid ega jalgade värve.
 - **Pinge hinnang arvestab mõlemat sondi:** oodatav väärtus on Koha nimipinge miinus vastaspunkti nimipinge. Kui vastaspunkt pole GND, näitab plokk oodatavat väärtust (punane 5V, must 12V → „oodatav −7,0 V“).
 - Kui vastaspunkti pole (GND-rolliga võrku pole veel), on vastaspunkt „määramata“ ja pinge salvestatakse ikkagi, aga hinnang on „—“. Äpp ei oleta tagantjärele, kus must sond oli: vastaspunkti saab hiljem mõõtmise real määrata ja siis arvutatakse hinnang.
 - **OK tähendab, et näit vastab rolli järgi oodatule,** mitte seda, et komponent on korras. Pinge tolerants on projekti seadetes (vaikimisi 10 %, vähemalt 0,1 V). V1 hindab alalispinget; vahelduvpinge salvestatakse märkusena ilma hinnanguta.
@@ -248,8 +277,9 @@ Põhiteekond on **Koht → Väärtus → Ühik → Salvesta**, kus ühik tuleb r
 
 **Kahjustatud ala:** tööriist *Märgi ala* (`X`). Lohista ristkülik või ring fotol (põlenud koht, korrosioon, katkine rada) ja lisa lühike kirjeldus. Alad on oranžid ja kuvatakse raportis.
 
-**Remonditoiming:** komponendi kontekstipaneelis nupp „Remont…“. Valikud: vahetatud / eemaldatud / joodetud üle / rada parandatud / muu, lisaks kirjeldus ja kuupäev (vaikimisi praegu).
-- Pärast toimingut märgitakse **selle komponendi jalgade ja nende võrkude varasemad mõõtmised olekuga „enne remonti“**. Need jäävad ajalukku halli kirjana, aga ei mõjuta enam jalgade värve.
+**Remonditoiming:** nupp „Remont…“ komponendi, võrgu või raja kontekstipaneelis ja ülaribal. Valikud: vahetatud / eemaldatud / joodetud üle / rada parandatud / puhastatud / muu, lisaks kirjeldus ja kuupäev (vaikimisi praegu).
+- **Mida remont mõjutab, valid sina:** see komponent (vaikimisi komponendi juurest), valitud võrgud (vaikimisi raja juurest, nt „rada parandatud“), kogu plaat või „ei mõjuta mõõtmisi“. Komponendita remondi puhul tuleb valik teha. Äpp ei jäta muljet, et varasemad tulemused on kindlasti endiselt kehtivad.
+- Pärast toimingut märgitakse **mõjutatud jalgade ja võrkude varasemad mõõtmised olekuga „enne remonti“**. Need jäävad ajalukku halli kirjana, aga ei mõjuta enam jalgade värve.
 - Äpp pakub: **„Mõõda uuesti: 4 jalga“**. Klõps avab mõõtmise esimesel neist.
 
 **Logi** vahekaart näitab ajajoont: remonditoimingud, olulised mõõtmised ja märkused. Muudatuste ajalugu (paigutused jne) on seal kokkuvõtlikult ja peidetav.
@@ -261,16 +291,23 @@ Põhiteekond on **Koht → Väärtus → Ühik → Salvesta**, kus ühik tuleb r
 
 ## 13. Skeem ja kaardistuse valmimine
 
-### 13.1 Skeemivaade
-Ülariba lüliti **Plaat | Skeem** (`Ctrl+Tab`).
+### 13.1 Skeem (muudetav)
+Ülariba lüliti **Plaat | Skeem** (`Ctrl+Tab`). Skeem on sama projekti **teine tööpind**, mitte ainult tuletatud pilt. Selle saab avada kohe: puuduv foto, korpus, mõõtkava ega ühendus ei keela skeemil töötamist ([ADR-004](adr/ADR-004-kaks-vaadet-ja-uhendused.md)).
 
-**Äpp:** genereerib kaardistusest loogilise skeemi:
-- iga komponent on sümbol vastavalt tüübile (takisti, kondensaator, elektrolüüt, induktiivsus, diood, LED, NPN/PNP, N/P-MOSFET; IC, regulaator ja konnektor on kastina, mille jalad on nime ja numbriga);
-- võrgud on **võrgusiltidega**. Toiterollidega võrkudel on toitesümbol (nool ja silt „5V“) ja GND-l maandussümbol. Kahejalgsed lokaalsed võrgud joonistatakse lühikese juhtmena, kui sümbolid on kõrvuti;
-- esmane paigutus on automaatne: konnektorid servades, toiteosa vasakul, IC-d keskel, passiivkomponendid nende jalgade juures, millega nad ühenduses on;
-- kasutaja saab sümboleid lohistada, pöörata (`R`) ja peegeldada. Paigutus salvestub;
-- **valik on ühine:** U1 valimine skeemil valib U1 ka plaadil ja vastupidi. Topeltklõps sümbolil viib plaadivaatesse sama komponendi juurde;
-- tuvastamata komponendid on küsimärgiga, DNP hallina, oletatud ühendused katkendjoonega võrgusildina.
+**Kasutaja teeb skeemil:**
+- **komponendid:** lisab (sama teek, tüüp määrab sümboli), liigutab, pöörab (`R`), peegeldab ja nimetab. Skeemil lisatud komponent ilmub loendisse „Plaadile paigutamata“ ja saab fotole paigutada „Paiguta plaadile“ tegevusega: sama objekt, samad jalad, ühendused ja mõõtmised;
+- **paigutamine skeemile:** fotol lisatud komponendid on loendis „Skeemile paigutamata“ ja need saab skeemile lohistada;
+- **juhtmed** (`W`): joonistab ühendusi jala ja jala või liitepunkti vahele (täisnurga all käänudega). See on sama ühendus nagu plaadil; fotol on see õhujoon, kuni joonistad raja;
+- **sildid ja märkused:** lisab võrgusilte (`L`), toite- ja maandussümboleid (rolli järgi) ning tekstimärkusi;
+- **mõõtmine:** valib jalgu ja mõõdab otse skeemilt;
+- **teine vaade:** „Näita plaadil“ viib sama komponendi juurde plaadil.
+
+**Reeglid:**
+- **Sümbolid:** iga komponent on sümbol vastavalt tüübile (takisti, kondensaator, elektrolüüt, induktiivsus, diood, LED, NPN/PNP, N/P-MOSFET; IC, regulaator ja konnektor on kastina, mille jalad on nime ja numbriga).
+- **Tundmatu korpus:** tundmatu korpusega komponent on nummerdatud kast, kuni jalgade funktsioon on määratud. Korpuse numbrid `1, 2, 3` ei tähenda iseenesest `B, C, E`.
+- **Valik on ühine:** U1 valimine skeemil valib U1 ka plaadil ja vastupidi. Tavaline valik ei suumi ega liiguta vaadet, selleks on „Näita teises vaates“. Vahetamisel säilib kummagi vaate suum ja asukoht.
+- **Tähistus:** tuvastamata komponendid on küsimärgiga, DNP hallina ja oletatud ühendused katkendjoonega.
+- **Automaatpaigutus tuleb hiljem (M4) abilisena.** „Paiguta lisamata komponendid“ paigutab ainult skeemile veel paigutamata sümbolid ja ei liiguta sinu senist tööd. „Paiguta valik uuesti“ on eraldi tagasivõetav tegevus.
 
 ### 13.2 Valmidus
 Ülariba edenemisriba ja paneel **„Kaardistuse seis“**:
@@ -280,7 +317,9 @@ Põhiteekond on **Koht → Väärtus → Ühik → Salvesta**, kus ühik tuleb r
 | Komponendid tuvastatud | tuvastatud / kõik (DNP ei loe) |
 | Jalad kaardistatud | võrgus või NC / kõik jalad |
 | Toide ja maandus | GND-roll olemas ja iga toiterolliga võrk vähemalt kahe jalaga |
+| Paigutamata | komponendid, millel puudub plaadi- või skeemipaigutus |
 | Oletatud ühendusi | arv; soovitus „Kinnita piiksumisrežiimiga“ |
+| Kontrollimata ühenduskohti | prototüübi impordist kinnitamata liited (kui on) |
 | Rollikonflikte | arv; peab olema 0 |
 | Kahtlasi mõõtmisi | kehtivad, hinnanguga madal/kõrge/lühis |
 
@@ -308,9 +347,14 @@ CSV formaat: eraldaja `;`, kümnendkoma, UTF-8 BOM (avaneb eestikeelses Excelis 
 - Salvestamine toimub automaatselt: muudatus läheb kettale 1,5 s pärast viimast muudatust, pideva töö ajal vähemalt iga 10 s järel. Ka vaate muutus (suum, kihid) salvestub. Ülaribal on olek „Salvestatud · 14:32“ või „Salvestan…“. Kui kirjutamine ebaõnnestub, tuleb punane riba „Salvestamine ebaõnnestus: <põhjus>. [Proovi uuesti] [Salvesta mujale…]“. Töö jätkub ja iga järgmine muudatus proovib uuesti. „Salvesta mujale…“ teeb tervikliku koopia koos fotodega ja töö jätkub uues failis.
 - Akna sulgemisel salvestatakse lõpuni ja kui see õnnestub, suletakse ilma küsimata. Kui viimane salvestus ebaõnnestub, akent ei suleta: dialoog pakub **Proovi uuesti**, **Salvesta mujale…** või **Sulge salvestamata**, ja viimane ütleb selgelt, et muudatused kaovad. Sama kehtib avalehele minekul ja teise projekti avamisel ([03 § 9](03-arhitektuur.md#salvestuse-vastutaja-savecoordinator-moodul-project)).
 - Uuesti avamisel on töölaud samas seisus: vaade, kihid, aktiivne tööriist ja vahekaart.
-- Kokkujooksmise järel on alles viimane automaatsalvestus. Projekti fail on SQLite ja kirjutatakse tehingutena, nii et pooleli jäänud kirjutus faili ei riku. Faili võib kopeerida ka siis, kui äpp on lahti.
-- Sama faili teist korda avades tuuakse ette juba avatud aken. Kui fail on avatud teises programmis või arvutis, avaneb see kirjutuskaitstuna ja äpp ütleb seda.
-- Enne faili uuendamist uuemale vormingule ja iga päeva esimesel avamisel tehakse automaatne varukoopia (alles hoitakse 5 viimast). Avalehel saab projekti kaardilt valida „Taasta varukoopiast…“.
+- Kokkujooksmise järel on alles viimane automaatsalvestus. Projekti fail on SQLite ja kirjutatakse tehingutena, nii et pooleli jäänud kirjutus faili ei riku. Viimased 1,5–10 sekundit tööd, mis polnud veel kettal, võivad ootamatu katkestuse korral kaduda; seda näitab olek „Salvestan…“.
+- **Koopia tee äpi kaudu** („Salvesta mujale…“, „Tee koopia“). Lahti oleva faili kopeerimine Exploreris ei ole ohutu varundus.
+- Sama faili teist korda avades tuuakse ette juba avatud aken. Kui fail on avatud teises programmis või arvutis, ütleb äpp ausalt „Fail on avatud mujal“ ja pakub kas uut katset või viimase varukoopia avamist uue failina.
+- **Varukoopiad:**
+  - enne faili uuendamist uuemale vormingule ja iga päeva esimesel avamisel tehakse automaatne täiskoopia koos fotodega;
+  - pideva töö ajal tehakse kord poole tunni jooksul väike dokumendikoopia.
+
+  Alles hoitakse 5 viimast mõlemast. Avalehel saab projekti kaardilt valida „Taasta varukoopiast…“; taastamine teeb alati uue faili ja originaali ei puuduta.
 - Tagasivõtmise ajalugu kehtib seansi jooksul (200 sammu); projekti avamisel algab see uuesti. Logi vahekaardil on kogu ajalugu ka hiljem nähtav.
 
 ---
@@ -322,15 +366,16 @@ V1 on valmis siis, kui see stsenaarium läheb päris äpis läbi ilma terminali,
 1. Ava äpp, lohista foto avalehele → töölaud avaneb, fotoga.
 2. Kalibreeri plaadi laiusega 76 mm → kiip näitab ±0,5 % täpsusega õiget px/mm väärtust.
 3. Paiguta SOIC-8, joonda kahe jalaga, muuda suurust käepidemega, pööra `Q`/`E`-ga.
-4. Paiguta 2× 0805, USB-C ja pinnirida 1×4; anna U1-le väärtus „ATtiny85“ ja jalale 8 nimi „VCC“.
-5. Lisa U1-le oma jalg 9.
-6. Joonista rada J1 VBUS → C1.1 → U2.3 kahe käänupunktiga.
-7. Piiksumisrežiimis: ankur C1.2, jah U1.4, jah J2.4, ei U1.8.
-8. Määra võrkudele rollid GND ja 5V; ühenda need kiirühendusega → näed konflikti hoiatust → `Ctrl+Z`.
-9. Mõõda U1.8 toitega 4,98 V → OK (roheline); mõõda U2.3 toitega 4,2 V → madal (punane).
-10. Märgi C1-le remonditoiming „vahetatud“ → C1 võrgu mõõtmised on „enne remonti“ ja pakutakse uut mõõtmist.
-11. Lisa mõõtjoon ja kontuur; kontuur näitab 76 × 50 mm.
-12. Ava skeemivaade: sümbolid on olemas, GND-l on maandussümbol, U1 valik on ühine mõlemas vaates.
-13. „Märgi kaardistus valmis“.
-14. Ekspordi raport, SVG ja kolm CSV-d → failid on olemas ja CSV päised on nagu osas 14.
-15. Sulge äpp, ava uuesti viimastest projektidest → kõik ülaltoodu on alles, vaade on sama.
+4. Paiguta kaks 0805 kondensaatorit (C1, C2), SOT-23 regulaator (U2), USB-C (J1) ja pinnirida 1×4 (J2) → uue 0805 väärtus ja märgistus on tühjad. Anna U1-le märgistus „ATTINY85“, väärtus „ATtiny85“ ja jalale 8 nimi „VCC“.
+5. Lisa U1-le oma jalg.
+6. Joonista rada J1 VBUS → C1.1 → U2.3 kahe käänupunktiga; lõpeta teine rada esimese peal → tekib liitepunkt. Kaks ristuvat rada ei ühendu.
+7. Ava skeem: lisa skeemil takisti R5, ühenda see juhtmega U1.2 ja C1.1 vahele. R5 on loendis „Plaadile paigutamata“; paiguta see fotole → sama komponent, ühendused on alles ja fotol õhujoontena näha.
+8. Piiksumisrežiimis: ankur C1.2; U1.4 „Piiksub ja ühenda“; J2.4 „Piiksub ja ühenda“; R5.1 „Ainult mõõtmine“ (võrk ei muutu); U1.8 „Ei piiksu“; `Esc` ei salvesta midagi.
+9. Määra võrkudele rollid GND ja 5V; ühenda need kiirühendusega → näed konflikti hoiatust → `Ctrl+Z`.
+10. Vali must sond J2.4 (GND) ja mõõda U1.8 toitega 4,98 V → OK (roheline); vali `Alt+↓` järgmine jalg, sisesta U2.3 4,2 V → madal (punane).
+11. Märgi C1-le remonditoiming „vahetatud“ → C1 võrgu mõõtmised on „enne remonti“ ja pakutakse uut mõõtmist. Märgi VBUS võrgule „rada parandatud“ → selle võrgu mõõtmised aeguvad.
+12. Lisa mõõtjoon ja kontuur; kontuur näitab 76 × 50 mm.
+13. Skeemivaates: GND-l on maandussümbol, U1 valik on ühine mõlemas vaates; „Paiguta lisamata komponendid“ ei liiguta R5 ega teisi käsitsi paigutatud sümboleid.
+14. „Märgi kaardistus valmis“.
+15. Ekspordi raport, SVG ja kolm CSV-d → failid on olemas ja CSV päised on nagu osas 14.
+16. Sulge äpp, ava uuesti viimastest projektidest → kõik ülaltoodu on alles, mõlema vaate paigutus ja vaade on samad.

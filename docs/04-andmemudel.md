@@ -1,26 +1,40 @@
 # 04 · Andmemudel
 
-Kõik tüübid on failides `packages/domain/src/model/*.ts` koos zod-skeemidega. Siin on autoriteetne loend. Kui kood erineb, parandatakse koodi või muudetakse see dokument teadlikult koos `format_version` tõstmisega.
+Kõik tüübid on failides `packages/domain/src/model/*.ts` koos zod-skeemidega. Siin on autoriteetne loend. Kui kood erineb, parandatakse koodi või muudetakse see dokument teadlikult koos `format_version` tõstmisega. Mudeli põhjendus on [ADR-004](adr/ADR-004-kaks-vaadet-ja-uhendused.md)-s.
 
 ## Põhimõtted
 
-- **Muutumatu dokument.** `BoardDoc` muudetakse ainult käskudega (Immeri mustand mootoris). Frontend näeb seda külmutatud hetktõmmisena ([03 § 5](03-arhitektuur.md#5-olek-kolm-eraldi-hoidlat)).
-- **Id-d** on stabiilsed stringid kujul `<prefiks>_<nanoid(10)>`: `cmp_`, `con_`, `lbl_`, `rol_`, `msr_`, `rep_`, `pho_`, `dim_`, `are_`, `att_`. Uue objekti id loob käsu kutsuja.
-- **Jala viide** on `PinRef = { c: componentId, p: pinId }`, kus jala id on korpuse jala number või nimi (`"4"`, `"A4B9"`, `"EP"`) ja oma jalal `CustomPin.id`. Jala id on püsiv: sama numbriga jalg jääb seotuks ka siis, kui korpuse parameetrid muudavad selle asukohta. Jala ümbernimetamine (`pinNames`) id-d ei muuda.
+- **Muutumatu dokument.** `BoardDoc` muudetakse ainult käskudega (Immeri mustand mootoris). Frontend näeb seda sügavalt külmutatud hetktõmmisena ([03 § 5](03-arhitektuur.md#5-olek-kolm-eraldi-hoidlat)).
+- **Üks elektriline tõde, kaks esitust.** Komponent, selle jalad, ühendused ja mõõtmised on ühised. Plaat (foto) ja Skeem on ainult nende paigutused ja joonistused, mis võivad kumbki puududa.
+- **Id-d** on stabiilsed stringid kujul `<prefiks>_<nanoid(10)>`: `cmp_`, `jun_`, `con_`, `lbl_`, `rol_`, `msr_`, `rep_`, `pho_`, `dim_`, `are_`, `att_`, `txt_`. Uue objekti id loob käsu kutsuja.
+- **Jalad:**
+  - Jalg (`Pin`) kuulub komponendile ja selle id on püsiv. Korpusest tulnud jalal on id korpuse jala number või nimi (`"4"`, `"A4B9"`, `"EP"`), käsitsi lisatud jalal `"x1"`, `"x2"` …
+  - Lisaks on igal jalal **eksemplari tunnus `uid`** (`pin_<nanoid(10)>`), mida ei taaskasutata. Kui jalg kustutatakse ja hiljem tekib sama numbriga uus jalg (nt SOIC-14 → SOIC-8 → SOIC-14), on uuel jalal uus `uid`. Tagasivõtmine taastab sama jala koos sama `uid`-ga.
+  - Jala viide on `PinRef = { c: componentId, p: pinId }`.
+  - Korpuse padjand ja sümboli kontakt viitavad samale jalale.
+  - Tähise, jala nime või asukoha muutmine viiteid ei muuda.
+- **Ühendatus on ainult ühendustes.** Võrk arvutatakse ainult `Connection`-itest. Kaugus, ristumine, mõõtkava, suum ega nimi ei liida võrke ([Võrkude arvutus](#võrkude-arvutus-resolvenets)).
+- **Teadmata jääb teadmata.** Väärtus, märgistus ja jala nimi on vaikimisi tühjad. Äpp ei pane nendesse oletusi.
 - **Projekti identiteet** (`project_id`, `copied_from_project_id`) on faili `meta` tabelis, mitte dokumendis, sest see ei ole tagasivõetav andmetükk ([03 § 9](03-arhitektuur.md#9-salvestus-ja-projekti-fail)).
-- **Ühikud:** asukohad on foto pikslites, korpuse geomeetria millimeetrites, nurgad kraadides (päripäeva, y alla), pinge voltides, takistus oomides, aeg ISO 8601 UTC kujul.
-- **Tähis ≠ id.** Kasutaja saab tähist (`R1`) vabalt muuta; viited kasutavad alati id-d.
+- **Ühikud ja koordinaadid:**
+  - plaadi asukohad on **plaadi tööpinna** pikslites; v1-s on need esimese foto originaalpikslid;
+  - korpuse geomeetria on millimeetrites;
+  - skeemi asukohad on skeemi ruudustiku ühikutes;
+  - nurgad on kraadides (päripäeva, y alla), pinge voltides, takistus oomides ja aeg ISO 8601 UTC kujul.
 
 ## Tüübid
 
 ```ts
 type Vec2 = { x: number; y: number };
-type PinRef = { c: string; p: string };
+type PinRef = { c: string; p: string };                // komponendi id + jala id
+type EndRef = { pin: PinRef } | { junction: string };  // ühenduse ots ja sildi ankur
+type MeasuredPin = PinRef & { uid: string };           // mõõtmise kontakt koos jala eksemplariga
 type Side = 'top' | 'bottom';
+type Layer = 'top' | 'bottom';
 
 interface BoardDoc {
   format_version: 1;
-  rev: number;                         // kasvab iga käsuga
+  rev: number;                         // kasvab iga käsuga, ka tagasivõtmisel
   name: string;
   device?: string;                     // seade / mudel
   problem?: string;                    // „Mis on viga?“
@@ -30,6 +44,7 @@ interface BoardDoc {
   photos: PhotoRef[];                  // v1: üks pealmise poole foto; alumise poole oma tuleb M5-s
   activePhotoId?: string;
   components: Component[];
+  junctions: Junction[];
   connections: Connection[];
   netLabels: NetLabel[];
   roles: NetRole[];                    // vaikimisi DEFAULT_ROLES, kasutaja saab lisada
@@ -39,72 +54,109 @@ interface BoardDoc {
   areas: DamageArea[];
   dimensions: Dimension[];
   outline?: BoardOutline;
-  schematic: { placements: Record<string, SchematicPlacement> };
+  textNotes: TextNote[];
+  importChecks: ImportCheck[];         // prototüübi impordist kinnitamata ühenduskohad
   guide: { skipped: string[] };        // vahele jäetud juhendi sammud
 }
 
 interface PhotoRef {
   id: string; side: Side; name: string;
-  widthPx: number; heightPx: number;   // originaalfoto mõõdud; kõik kaardistuse koordinaadid on nendes pikslites
+  widthPx: number; heightPx: number;   // originaalfoto mõõdud
+  toBoard?: [number, number, number, number, number, number];
+                                       // afiinne teisendus foto pikslitest plaadi tööpinnale; puudub = ühikteisendus
+                                       // (esimene foto). Teine või asendatud foto saab selle joondusest (M5).
   transform: 'none' | 'rot90' | 'rot180' | 'rot270' | 'mirror' | 'mirror_rot90' | 'mirror_rot180' | 'mirror_rot270';
-                                       // algväärtus tuleb EXIF-orientatsioonist; rakendub kogu stseenile (03 § 7.1)
+                                       // vaate orientatsioon (algväärtus EXIF-ist); rakendub kogu stseenile (03 § 7.1)
 }
 
 interface Component {
-  id: string; ref: string; value: string;
-  kind: ComponentKind;                 // määrab skeemi sümboli
-  footprint: string;                   // generaatori võti, nt 'soic'
+  id: string;
+  ref: string;                         // tähis 'R12'; automaatne, muudetav, projektis unikaalne
+  kind: ComponentKind;                 // määrab vaikimisi sümboli
+  marking: string;                     // korpuselt loetud kood ('103', 'A7W'); '' = lugemata
+  value: string;                       // tuvastatud väärtus või mudel ('10 kΩ', 'AMS1117-3.3'); vaikimisi ''
+  identified: boolean;                 // Tuvastatud / Tuvastamata
+  dnp: boolean;                        // paigaldamata
+  note: string;
+  referenceImageId?: string;           // attachments.id (andmelehe joonis)
+  pins: Pin[];                         // komponendi jalad; kõik viited kasutavad neid
+  board?: BoardPlacement;              // puudub → loendis „Plaadile paigutamata“
+  schematic?: SymbolPlacement;         // puudub → loendis „Skeemile paigutamata“
+}
+interface Pin {
+  id: string;                          // püsiv number või nimi (vt Põhimõtted); ühenduste, siltide ja kaartide võti
+  uid: string;                         // jala eksemplari tunnus 'pin_…', ei taaskasutata
+  name?: string;                       // 'VCC', 'OUT'
+  nc: boolean;                         // märgitud ühendamata (NC)
+}
+interface BoardPlacement {
+  footprint: string;                   // generaatori võti, nt 'soic'; 'custom' = vabad mõõdud
   params: Record<string, string | number>;
   center: Vec2; rotationDeg: number; side: Side;
   scaleX: number; scaleY: number;      // 1 = korpuse nominaalsuurus; piirid 0.2–5
-  identified: boolean;                 // Tuvastatud / Tuvastamata
-  dnp: boolean;                        // paigaldamata
-  pinNames: Record<string, string>;    // { '8': 'VCC' }
-  pinNc: string[];                     // jalad, mis on märgitud ühendamata (NC)
-  extraPins: CustomPin[];
-  note: string;
-  referenceImageId?: string;           // attachments.id (andmelehe joonis)
+  padMap?: Record<string, string>;     // korpuse padjand → Pin.id; puudub = sama number
+  customPads: Record<string, { local: Vec2 /* mm */; sizeMm: number; shape: 'circle' | 'rect'; through: boolean }>;
+                                       // käsitsi lisatud jalgade padjandid (Pin.id → geomeetria)
+  labelOffset?: Vec2;                  // tähise nihe fotol; sildi lohistamine ei liiguta komponenti
+}
+interface SymbolPlacement {
+  symbol: string;                      // 'resistor', 'npn', 'box' …; vaikimisi kind'i järgi
+  at: Vec2; rot: 0 | 90 | 180 | 270; mirror: boolean;
+  pinMap?: Record<string, string>;     // sümboli kontakt ('B', 'C', 'E') → Pin.id; puudub → nummerdatud kast
+  labelOffset?: Vec2;
 }
 type ComponentKind = 'resistor' | 'capacitor' | 'capacitor_polarized' | 'inductor' | 'diode' | 'led' | 'zener'
   | 'npn' | 'pnp' | 'nmos' | 'pmos' | 'regulator' | 'ic' | 'connector' | 'crystal' | 'switch' | 'fuse'
   | 'testpoint' | 'via' | 'pad' | 'wire_point' | 'hole' | 'other';
-interface CustomPin { id: string; local: Vec2 /* mm */; sizeMm: number; shape: 'circle' | 'rect' }
 
-interface Connection {
+interface Junction {                   // nähtav liitepunkt: raja haru või lahtine ots
   id: string;
-  kind: 'trace' | 'wire' | 'link';     // rada (marsruudiga) | juhe | link (otseside, katkendjoon)
-  a: Endpoint; b: Endpoint;
-  waypoints: Vec2[];                   // ainult 'trace' ja 'wire'
-  layer: 'top' | 'bottom';             // 'trace' puhul
-  widthMm: number;                     // 'trace' vaikimisi 0.4
-  basis: 'assumed' | 'visual';         // kuidas ühendus tekkis: kiirühendus ja piiksu link = oletatud, joonistatud rada/juhe = nähtud
+  board?: { at: Vec2; layer: Layer };
+  schematic?: { at: Vec2 };
+}
+
+interface Connection {                 // kasutaja otsus: need kaks otsa on elektriliselt ühendatud
+  id: string;
+  a: EndRef; b: EndRef;
+  basis: 'assumed' | 'visual';         // oletatud (kiirühendus, piiks, skeemil joonistatud) või nähtud (rada fotol)
+  board?: { kind: 'trace' | 'wire'; layer: Layer; waypoints: Vec2[]; widthMm: number; labelOffset?: Vec2 };
+                                       // fotojoonistus; puudub → õhujoon (peidetav kiht)
+  schematic?: { waypoints: Vec2[] };   // skeemijoonistus; puudub → otsejoon
 }                                      // tase „mõõdetud“ arvutatakse mõõtmistest (vt „Ühenduse tase“)
-type Endpoint = { pin: PinRef } | { point: Vec2 };
 
 interface NetRole { id: string; label: string; kind: 'ground' | 'power' | 'signal' | 'unknown'; nominalV?: number; color: string /* #rrggbb */ }
-interface NetLabel { id: string; anchor: string /* PinRef võti 'cmp_x:4' või 'con:<id>' */; name?: string; roleId?: string }
+interface NetLabel { id: string; anchor: EndRef; name?: string; roleId?: string; source: 'user' | 'import' }
 
 interface Measurement {
   id: string;
   mode: 'voltage' | 'resistance' | 'diode' | 'continuity';
-  at: PinRef;                          // Koht (punane sond, dioodirežiimis +)
-  ref?: PinRef;                        // Vastaspunkt (must sond, dioodirežiimis −); ilma selleta pinget ei hinnata
+  at: MeasuredPin;                     // Koht (punane sond, dioodirežiimis +)
+  ref?: MeasuredPin;                   // Vastaspunkt (must sond, dioodirežiimis −); ilma selleta pinget ei hinnata
   value?: number;                      // SI ühikutes: V või Ω; puudub, kui overload = true
   overload?: boolean;                  // „OL“: takistus või diood üle mõõtepiirkonna (avatud ahel)
   beep?: boolean;                      // läbivus
-  power: 'on' | 'off' | 'unknown';
+  power: 'on' | 'off' | 'unknown';     // algolek 'unknown'; kasutaja valik jääb meelde
   takenAt: string;
   note?: string;
-  atLabel: string; refLabel?: string;  // salvestamise hetke tähised ('U1.8'), et kustutamise järel jääks loetav
+  atLabel: string; refLabel?: string;  // salvestamise hetke tähised ('U1.8'); jäävad loetavaks ka pärast kustutamist
   staleByRepairId?: string;            // ≠ undefined → „enne remonti“
   source: 'manual' | 'beep_mode';
 }
 
-interface RepairAction { id: string; componentId?: string; action: 'replaced' | 'removed' | 'reflowed' | 'trace_fixed' | 'other'; text: string; at: string }
+interface RepairAction {
+  id: string; action: 'replaced' | 'removed' | 'reflowed' | 'trace_fixed' | 'cleaned' | 'other'; text: string; at: string;
+  affects: { component: string } | { nets: EndRef[] } | { wholeBoard: true } | { nothing: true };
+                                       // võrgud on antud ankrutega, sest võrgu võti pole püsiv
+}
 interface DamageArea { id: string; shape: 'rect' | 'ellipse'; x: number; y: number; w: number; h: number; text: string }
-interface Dimension { id: string; a: Endpoint; b: Endpoint; offsetPx: number }
+interface Dimension { id: string; a: DimEnd; b: DimEnd; offsetPx: number }
+type DimEnd = { pin: PinRef } | { point: Vec2 };   // ainult geomeetria, mitte elektriline ots
 interface BoardOutline { x: number; y: number; w: number; h: number; showDims: boolean }
-interface SchematicPlacement { x: number; y: number; rot: 0 | 90 | 180 | 270; mirror: boolean }
+interface TextNote {
+  id: string; view: 'board' | 'schematic'; at: Vec2; text: string;
+  anchor?: { component: string } | { connection: string } | { junction: string };  // tekst ei muuda ühendatust
+}
+interface ImportCheck { id: string; at: Vec2; layer: Layer; junctions: string[]; note: string }
 ```
 
 ## Vaikimisi rollid
@@ -122,11 +174,24 @@ Tumedas teemas joonistatakse GND heledama halliga (`#9aa5a0`), et see paistaks t
 
 ## Võrkude arvutus (`resolveNets`)
 
-- **Union-find** üle jalgade (`PinRef` võti) ja ühenduste. Iga ühendus liidab oma `a` ja `b` otsa. Kui `waypoints` puudub, on ühendus link.
-- **Vaba ots** (punkt) liitub teise ühendusega, kui see asub ≤ `0.25 mm · pxPerMm + teise laius / 2` kaugusel selle polüjoonest, või jalaga, kui ots asub selle padjandi sees.
-- **Kihid:** raja (`trace`) vaba ots liitub ainult **sama kihi** rajaga. Pealmine ja alumine kiht ühinevad ainult jala kaudu (läbiv jalg, `via` või testpunkt). Juhtme ja lingi vaba ots liitub mõlema kihi rajaga, sest kasutaja on selle teadlikult sinna pannud.
-- **Võrgu võti** on selle väikseima ühenduse id.
-- **Nimi ja roll** tulevad siltidest, mille `anchor` kuulub võrku. Kui kahel sildil on eri `roleId`, siis `roleConflict = true`, `role = undefined` ja `conflictingRoles` loetleb need. Nimeks saab esimene mitte-tühi `name` (ankrute tähestikulises järjekorras); kui seda pole, siis `N1`, `N2` … (võrgu võtme järjekorras).
+- **Union-find** üle jalgade (`PinRef` võti `cmp_x:4`) ja liitepunktide. Iga ühendus liidab oma otsad `a` ja `b`. **Midagi muud võrke ei liida:** kaugus, ristumine, mõõtkava, joone paksus, suum ega sama nimi.
+- **Üksik jalg** ilma ühendusteta on oma võrk ja võib kanda silti.
+- **Liitepunkt** on olemas ainult koos vähemalt ühe ühendusega. Käsk, mis jätab liitepunkti ilma ühenduseta, eemaldab ka liitepunkti **ja käsitleb sama käsu sees sellele ankurdatud sildid**:
+  - kui liitepunkt asendub jalaga (`junctions.attachToPin`) või ühendatakse teise liitepunktiga, tõstetakse sildid sinna;
+  - muidu tõstetakse silt mõnele allesjäänud liikmele samas võrgus, kus liitepunkt enne käsku oli, kui see võrk on pärast käsku veel olemas (eelistatult jalale, tähestikulises järjekorras);
+  - kui sellist liiget pole, silt kustutatakse ja teade ütleb seda („Võrgusilt VBUS eemaldati · Ctrl+Z toob tagasi“).
+
+  Sildi ankur ei jää kunagi puuduvale liitepunktile.
+- **Haru:** raja lõpetamine olemasoleva raja peal loob seal liitepunkti ja jagab selle raja kaheks ühenduseks ühe käsuga. Mõlemas vaates on liitepunkt nähtav täpina.
+- **Kihid:**
+  - pealmise kihi rada saab lõppeda pealmise kihi liitepunktis, pealmise poole pinnajalas või läbivas jalas (läbiv padjand, `via`, testpunkt); alumise kihi rada vastavalt;
+  - muul juhul tekib rajale uus liitepunkt sama kihi peal;
+  - kihi vahetamine ise ega kahe kihi raja kattumine ei ühenda midagi;
+  - juhe (`wire`) võib lõppeda mõlema kihi punktis.
+
+  Seda reeglit järgivad joonistustööriist ja import.
+- **Võrgu võti** on väikseima liikme võti (jala võti või liitepunkti id). See on ainult esituse jaoks; püsivad viited (sildid, remont) kasutavad ankruid.
+- **Nimi ja roll** tulevad siltidest, mille `anchor` kuulub võrku. Kui kahel sildil on eri `roleId`, siis `roleConflict = true`, `role = undefined` ja `conflictingRoles` loetleb need. Nimeks saab esimene mitte-tühi `name` (ankrute tähestikulises järjekorras); kui seda pole, siis `N1`, `N2` … (võrgu võtme järjekorras). Võrgu nimetamine ei liida võrke; „Ühenda võrguga…“ on eraldi käsk, mis loob ühenduse.
 - **Negatiivne läbivus:** kui kahe jala vahel on mõõtmine `beep = false` ja need jalad satuvad samasse võrku, siis `beepContradiction = true` (hoiatus „Läbivustest ütles, et ühendust pole“).
 - **Lühistatud kahejalgne komponent:**
   - Kui kahejalgse komponendi (`resistor`, `capacitor`, `capacitor_polarized`, `inductor`, `diode`, `led`, `zener`, `fuse`, `crystal`) mõlemad jalad on samas võrgus, siis `shortedComponents` sisaldab seda komponenti ja tuleb hoiatus „R5 mõlemad jalad on samas võrgus. Kas ühendus on õige?“.
@@ -138,28 +203,40 @@ Tumedas teemas joonistatakse GND heledama halliga (`#9aa5a0`), et see paistaks t
 
 Ühenduse usaldusväärsuse tase ([01](01-pohimotted.md#info-usaldusväärsus-kolm-taset)) arvutatakse mootoris mõõtmistest, mitte ei salvestata ühenduse külge:
 
-- Ühendus, mille mõlemad otsad on jalad `a` ja `b`, on **mõõdetud**, kui nende jalgade vahel (kummaski suunas) on kehtiv, mitte aegunud läbivusmõõtmine ja viimane selline on `beep = true`. Pole vahet, kas see tehti piiksumisrežiimis või tavalise mõõtmisena. Muidu on tase `basis`.
-- Kui viimane kehtiv läbivus samade jalgade vahel on `beep = false`, on tase `basis` ja ühendusel on hoiatus „Läbivustest ütles, et ühendust pole“.
-- Mõõtmise kustutamine, remondist tulenev aegumine või otsa lahtiühendamine (ots muutub punktiks) viib ühenduse kohe tagasi *nähtud* või *oletatud* tasemele. Uus kehtiv piiks taastab ✓. Ühenduse andmeid selleks ei muudeta.
-- Mõõdetud tase kinnitab **jalapaari elektrilist sidet**, mitte fotole joonistatud konkreetset rada. Kui samade jalgade vahel on kaks ühendust (nt rada ja hiljem lisatud parandusjuhe), on mõlemad mõõdetud.
+- **Jalapaari tõend:** jalapaar `(A, B)` on mõõdetud, kui nende jalgade vahel (kummaski suunas) on kehtiv, mitte aegunud ja aktiivsete kontaktidega läbivusmõõtmine ning viimane selline on `beep = true`. Pole vahet, kas see tehti piiksumisrežiimis või tavalise mõõtmisena.
+- **Ühenduse tase:** ühendus on **mõõdetud**, kui see asub mõõdetud jalapaari `(A, B)` vahelisel teel, mis läbib **ainult liitepunkte** (mitte teisi jalgu). Kui selliseid teid on mitu, kasutatakse lühimat; võrdse pikkusega teede korral valitakse ühenduste id järjekorras. Nii jääb A–B ✓ alles ka siis, kui ühendus on haruks jagatud (A–J ja J–B saavad ✓, haru J–C mitte). Muidu on tase `basis`.
+- Kui viimane kehtiv läbivus jalapaari vahel on `beep = false`, saavad selle paari vahelise tee ühendused taseme `basis` ja hoiatuse „Läbivustest ütles, et ühendust pole“.
+- Mõõtmise kustutamine, remondist tulenev aegumine või otsa lahtiühendamine viib ühenduse kohe tagasi *nähtud* või *oletatud* tasemele. Uus kehtiv piiks taastab ✓. Ühenduse andmeid selleks ei muudeta.
+- Mõõdetud tase kinnitab **jalapaari elektrilist sidet**, mitte fotole joonistatud konkreetset vaskrada. A → B ja B → C piiks ei tekita A → C mõõtmist ning „mõõdetud“ märki ei laiendata tervele võrgule.
 - Käsitsi mõõdetuks märkimist ei ole.
 
 ### Piiks ei tõenda sama vaskrada
 
-Mõõteriist piiksub alla oma läve, mis võib olla kümneid oome. 10 Ω takisti otsad piiksuvad, kuigi need on skeemis eri sõlmed. Seepärast eristatakse kahte asja:
+Mõõteriist piiksub alla oma läve, mis võib olla kümneid oome. Piiks võib tulla ka läbi väikese takisti või paralleelse tee. Seepärast eristatakse kahte asja:
 - **mõõtetulemus** „läbivus olemas“ (`Measurement`, `beep = true`) salvestatakse alati;
-- **tehniku otsus** „need jalad on samas võrgus“ (`Connection`) tehakse ainult siis, kui see on ilmne või kasutaja selle kinnitab.
+- **tehniku otsus** „need jalad on samas võrgus“ (`Connection`) tehakse ainult nähtava tegevusega.
 
 Käsk `beep.record({ anchor, pin, beep, connect })` teeb kõik **ühe tagasivõetava sammuna**:
 1. Lisab läbivuse mõõtmise (`source = 'beep_mode'`).
 2. Kui `beep = true` ja `connect = true`:
    - kui jalad on juba samas võrgus, rohkem midagi ei lisata;
-   - muidu tekib link (`basis = 'assumed'`), mille tase on mõõtmise tõttu kohe „mõõdetud“.
-3. Vastus „Ei“ lisab ainult mõõtmise `beep = false`.
+   - muidu tekib ühendus (`basis = 'assumed'`, ilma fotojoonistuseta), mille tase on mõõtmise tõttu kohe „mõõdetud“.
+3. „Ei piiksu“ lisab ainult mõõtmise `beep = false`.
 
-Piiksumisrežiimis saadab „Jah“ vaikimisi `connect = true` (kiire kaardistus). **Automaatselt ei ühendata** kahel juhul; siis salvestatakse ainult mõõtmine ja küsitakse otse lõuendil „Piiksub läbi komponendi R5. Ühendan ikkagi?“ ([02 § 8.3](02-kasutaja-teekond.md#83-piiksumisrežiim-mõõdetud-kõige-kiirem-kaardistus)):
+Piiksumisrežiimis on nupud **„Piiksub ja ühenda“** (`Enter`, `connect = true`), **„Ainult mõõtmine“** (`Shift+Enter`, `connect = false`) ja **„Ei piiksu“** (`N`). `Esc` katkestab ega salvesta midagi ([02 § 8.3](02-kasutaja-teekond.md#83-piiksumisrežiim-mõõdetud-kõige-kiirem-kaardistus)). Tavaline läbivusmõõtmine Mõõda-plokis ei ühenda kunagi.
+
+„Piiksub ja ühenda“ ei ühenda automaatselt kahel juhul. Siis salvestatakse ainult mõõtmine ja lõuendil küsitakse „Piiksub läbi komponendi R5. Ühendan ikkagi?“:
 - kui jalad on sama kahejalgse passiivkomponendi otsad (`resistor`, `inductor`, `fuse`, `capacitor`, `capacitor_polarized`, `diode`, `led`, `zener`, `crystal`, `switch`);
 - kui ühendamine liidaks kaks eri rolliga võrku.
+
+Need kaitsed on abilised, mitte garantii.
+
+## Mõõtmise kontaktid ja ajalugu
+
+- Mõõtmisel säilivad mõlema sondi viited koos jala eksemplariga (`at`, `ref`: komponent, jala id ja `uid`) ning salvestamise hetke sildid (`atLabel`, `refLabel`).
+- Kontakt on **aktiivne**, kui komponent on olemas, sellel on sama id-ga jalg ja selle jala `uid` on sama. Muidu on mõõtmine **ajalooline**. See kuvatakse ajaloos ja nimekirjas märkega **„kontakt kustutatud“**, aga ei mõjuta võrke, hinnanguid, jala rõngaid ega ühenduse taset.
+- **Sama numbriga uus jalg ei aktiveeri vana mõõtmist.** Näiteks SOIC-14 → SOIC-8 → SOIC-14 jätab jalgade 9–14 vanad mõõtmised ajaloolisteks, sest uutel jalgadel on uus `uid`. `Ctrl+Z` taastab aga sama jala koos sama `uid`-ga, nii et mõõtmine on jälle aktiivne.
+- Puuduva viite erand kehtib ainult ajaloolisele mõõtmisele. Ühenduse otsad ja sildi ankrud peavad alati viitama olemasolevale jalale või liitepunktile.
 
 ## Mõõtmiste hindamine
 
@@ -167,12 +244,12 @@ Piiksumisrežiimis saadab „Jah“ vaikimisi `connect = true` (kiire kaardistus
 
 | Juhtum | Tingimus | Tulemus |
 |---|---|---|
-| Aegunud | `m.staleByRepairId` on määratud | `none` (ei värvi jalga) |
+| Aegunud või ajalooline | `m.staleByRepairId` on määratud või mõni kontakt on kustutatud | `none` (ei värvi jalga) |
 | Pinge toitega (DC) | `mode = voltage`, `power = on`, `ref` on määratud ning nii Koha kui ka vastaspunkti võrgul on kehtiv roll koos `nominalV`-ga. Oodatav pinge `exp = nominalV(at) − nominalV(ref)`, tolerants `tol = max(voltageToleranceMinV, voltageTolerancePct/100 · |exp|)` | järjekorras: `|v − exp| ≤ tol` → `ok`; `exp ≠ 0`, `v` märk on vastupidine ja `|v| > tol` → `high` (vihje „Sondid võivad olla vahetuses“); `|v| < |exp|` → `low`; muidu `high` |
 | Takistus toite ja maa vahel | `mode = resistance`, üks ots power- ja teine ground-võrgus, `overload` puudub | `value < 1.0 Ω` → `short` (kahtlus), muidu `none` |
 | Diood toite ja maa vahel | `mode = diode`, üks ots power- ja teine ground-võrgus, `overload` puudub | `value < 0.05 V` → `short` (kahtlus), muidu `none` |
 | Läbivus eri rollide vahel | `mode = continuity`, `beep = true`, otste võrkudel on eri roll ja kumbki pole `signal`/`unknown` | `short` |
-| Kõik muu | sh rollita võrk, vastaspunktita pinge, vastaspunkt signaal- või rollita võrgus, toiteta pinge, „OL“, muu dioodimõõtmine, vahelduvpinge | `none` |
+| Kõik muu | sh rollita võrk, vastaspunktita pinge, vastaspunkt signaal- või rollita võrgus, toiteta või teadmata toitega pinge, „OL“, muu dioodimõõtmine, vahelduvpinge | `none` |
 
 - **Pinge hinnang arvestab alati mõlemat sondi.** Vastaspunktita pinget ei hinnata, sest äpp ei oleta, kus must sond oli. Vastaspunkti saab hiljem mõõtmise real määrata (`measurements.update`) ja siis hinnang arvutatakse.
 - **Mis tähendab OK:** „OK“ tähendab, et näit vastab rolli järgi oodatule. See ei tähenda, et komponent või plaat on korras.
@@ -187,33 +264,39 @@ Kontrollväärtused (`packages/domain/src/measure/evaluate.test.ts`, vaikeseaded
   - 3V3 võrgus: 2,9 → low;
   - GND võrgus: 0,05 → ok; 0,07 → ok koos infovihjega; 0,2 → high.
 - **Must sond mujal:** punane 5V ja must 12V: −7,0 → ok; −5,0 → low; +7,0 → high (sondid vahetuses). Punane 12V ja must 5V: 7,0 → ok.
-- **Ilma hinnanguta:** vastaspunktita pinge → none; vastaspunkt Signaal-võrgus → none; toiteta pinge → none.
+- **Ilma hinnanguta:** vastaspunktita pinge → none; vastaspunkt Signaal-võrgus → none; toiteta või teadmata toitega pinge → none; kustutatud kontaktiga mõõtmine → none.
 - **Takistus 5V ↔ GND:** 0,6 Ω → short; 1,0 Ω → none; OL → none.
 - **Diood 5V ↔ GND:** 0,02 V → short; 0,45 V → none; OL → none.
 - **Läbivus:** 12V ↔ 5V → short; Signaal ↔ 5V → none.
 
-**Jala hinnang** (`latestVerdicts`): iga jala jaoks loetakse viimane kehtiv (mitte aegunud) mõõtmine, kus jalg on `at` või (takistuse, dioodi ja läbivuse puhul) `ref`.
+**Jala hinnang** (`latestVerdicts`): iga jala jaoks loetakse viimane kehtiv (mitte aegunud ega ajalooline) mõõtmine, kus jalg on `at` või (takistuse, dioodi ja läbivuse puhul) `ref`.
 
-**Väärtuse lugemine** (`parseReading(text, mode)`): koma ja punkt on võrdsed, tühikud eemaldatakse, sufiksid `m` (10⁻³), `k`, `M`. Ka kuju `4k7` = 4700. Ühik võib olla lõpus (`4,98V`, `10 kΩ`). Takistuse ja dioodi puhul tähendab `OL` (suur- või väiketähtedega) `overload = true`. Vigane sisend annab `null`.
+**Väärtuse lugemine** (`parseReading(text, mode)`): koma ja punkt on võrdsed, tühikud eemaldatakse, sufiksid `m` (10⁻³), `k`, `M`. Ka kuju `4k7` = 4700. Ühik võib olla lõpus (`4,98V`, `10 kΩ`). Takistuse ja dioodi puhul tähendab `OL` (suur- või väiketähtedega) `overload = true`. Vigane sisend annab `null`. Sama parserit kasutavad Mõõda-plokk ja import.
 
 ## Remont ja aegumine
 
-Käsk `repair.add({componentId, action, text})`:
+Käsk `repair.add({ affects, action, text })`:
 1. lisab `RepairAction` kirje;
-2. märgib aegunuks (`staleByRepairId = rep.id`) kõik kehtivad mõõtmised, mille `at` või `ref` on selle komponendi jalg **või asub samas võrgus mõne selle komponendi jalaga**;
-3. avaldab sündmuse `repair.added` koos nende jalgade loendiga (remondimoodul pakub „Mõõda uuesti“).
+2. märgib aegunuks (`staleByRepairId = rep.id`) kehtivad mõõtmised vastavalt sellele, mida remont mõjutab:
+   - `component`: mõõtmised, mille `at` või `ref` on selle komponendi jalg **või asub samas võrgus mõne selle komponendi jalaga**;
+   - `nets`: mõõtmised, mille `at` või `ref` asub mõnes valitud võrgus (nt „rada parandatud“, „oksiid puhastatud“);
+   - `wholeBoard`: kõik kehtivad mõõtmised;
+   - `nothing`: mitte ühtegi. Kasutaja valib selle teadlikult, nt märkuse jaoks;
+3. avaldab sündmuse `repair.added` koos mõjutatud jalgade loendiga (remondimoodul pakub „Mõõda uuesti“).
 
-Komponendita remont (nt rada parandatud) ei aegu ühtegi mõõtmist automaatselt.
+Remondi aknas valib kasutaja mõju alati ise. Komponendiga remondi puhul on vaikimisi valitud see komponent, rajaparanduse puhul palub äpp valida võrgud. Komponendita remont ei jäta muljet, et varasemad tulemused on kindlasti endiselt kehtivad.
 
 ## Valmidus (`computeProgress`)
 
 ```ts
 interface ProgressSnapshot {
   componentsIdentified: [done: number, total: number]; // total ilma DNP-ta
-  pinsMapped: [number, number];                        // võrgus või pinNc
+  pinsMapped: [number, number];                        // ühendatud või NC
+  unplaced: { board: number; schematic: number };      // komponendid, millel paigutus puudub
   powerDefined: boolean;                               // GND-roll olemas ja iga power-rolliga võrk ≥ 2 jalaga
   assumedConnections: number;                          // ühendused, mille arvutatud tase on „oletatud“
   roleConflicts: number;
+  openImportChecks: number;                            // kinnitamata impordi ühenduskohad
   suspectMeasurements: number;                         // kehtivad low/high/short
 }
 ```
@@ -221,23 +304,44 @@ Edenemisriba = keskmine kolmest osakaalust: komponendid tuvastatud, jalad kaardi
 
 ## Kustutamise reeglid
 
-- Komponendi kustutamine teeb järgmist: selle jalgadele viitavad ühenduste otsad muutuvad vabadeks punktideks, mõõtmised jäävad alles (loetav `atLabel` säilib), sildid, mille ankur oli selle jalg, kustutatakse ja skeemi paigutus eemaldatakse. Kõik see on üks tagasivõetav käsk.
-- Oma jala kustutamisel kehtivad samad reeglid selle ühe jala kohta.
-- **Korpuse vahetus** (`components.update` muudab `footprint`-i või jalgade arvu mõjutavaid `params`-e):
-  - Sama id-ga jalad jäävad seotuks, ka kui nende asukoht muutub.
-  - Kui mõni kaduv jalg on ühenduse ots, sildi ankur, mõõtmise koht või vastaspunkt või kui sellel on nimi või NC-märge, küsib äpp enne kinnitust ja loetleb mõju („Kaovad jalad 9–14: 3 ühendust, 2 mõõtmist, 1 silt“).
-  - Kinnitamisel on kõik üks tagasivõetav käsk: ühenduste otsad muutuvad vabadeks punktideks jala endises kohas, nende jalgade sildid kustutatakse, `pinNames` ja `pinNc` kirjed eemaldatakse ning mõõtmised jäävad alles (loetav `atLabel`).
-- Mõõtmise kustutamine ei muuda ühendusi. Ühenduse arvutatud tase langeb tagasi *nähtud* või *oletatud* tasemele, kui samade jalgade vahel pole enam kehtivat piiksu ([Ühenduse tase](#ühenduse-tase-connectionlevels)). Tagasivõtmine taastab mõlemad.
-- Rolli kustutamine on lubatud ainult siis, kui ükski silt seda ei kasuta. Vaikerolle ei saa kustutada, ainult ümber nimetada või värvi muuta.
+- **Komponendi kustutamine** on üks tagasivõetav käsk:
+  - selle jalgadele viitavate ühenduste otsad muutuvad liitepunktideks jala endises kohas (plaadil ja/või skeemil), nii et joonistused jäävad alles ja need saab teisele jalale ümber tõsta;
+  - sildid, mille ankur oli selle jalg, kustutatakse;
+  - mõõtmised jäävad ajaloolistena alles.
+
+  Komponent kaob mõlemast vaatest.
+- **Jala kustutamisel** kehtivad samad reeglid selle ühe jala kohta.
+- **„Eemalda paigutus plaadilt“ või „… skeemilt“** eemaldab ainult vastava esituse. Komponent, jalad, ühendused ja mõõtmised jäävad alles ning komponent ilmub loendisse „Plaadile paigutamata“ või „Skeemile paigutamata“.
+- **„Eemalda joonistus“** eemaldab ühenduse joonistuse plaadilt või skeemilt, aga elektriline ühendus jääb alles (plaadil õhujoonena).
+- **„Kustuta ühendus“** eemaldab elektrilise sideme koos mõlema joonistusega. Liitepunktid, mis jäävad ilma ühendusteta, kaovad samuti. Mõõtmised jäävad.
+- **Liitepunkti kustutamine** kustutab kõik selle ühendused. Äpp ütleb enne, mitu ühendust see on. Sellele ankurdatud sildid käsitletakse sama käsu sees ([Võrkude arvutus](#võrkude-arvutus-resolvenets)).
+- **Korpuse vahetus** (`components.update` muudab `board.footprint`-i või jalgade arvu mõjutavaid `params`-e):
+  - Sama id-ga jalad jäävad seotuks ja säilitavad oma `uid`-i, ka kui nende asukoht muutub. Uued jalad saavad uue `uid`-i.
+  - Kui vastavus pole üheselt selge, pakub äpp jalgade vastavuse tabelit ega tõsta midagi vaikselt ümber.
+  - Kui mõni kaduv jalg on ühenduse ots, sildi ankur või mõõtmise kontakt või kui sellel on nimi või NC-märge, küsib äpp enne kinnitust ja loetleb mõju („Kaovad jalad 9–14: 3 ühendust, 2 mõõtmist, 1 silt“).
+  - Kinnitamisel on kõik üks tagasivõetav käsk ja kaduvaid jalgu puudutavad samad reeglid nagu jala kustutamisel.
+- **Mõõtmise kustutamine** ei muuda ühendusi. Ühenduse arvutatud tase langeb tagasi *nähtud* või *oletatud* tasemele, kui samade jalgade vahel pole enam kehtivat piiksu ([Ühenduse tase](#ühenduse-tase-connectionlevels)). Tagasivõtmine taastab mõlemad.
+- **Rolli kustutamine** on lubatud ainult siis, kui ükski silt seda ei kasuta. Vaikerolle ei saa kustutada, ainult ümber nimetada või värvi muuta.
 
 ## JSON eksport ja import
 
-- **Eksport** (`project.json`): `{ app: 'pcb-kaardistaja', format_version: 1, project_id, exported_at, doc: BoardDoc, photos: [{ id, mime, width, height, data_base64 }] }` (originaalfotod).
+- **Eksport** (`project.json`): `{ app: 'pcb-kaardistaja', format_version: 1, project_id, exported_at, doc: BoardDoc, photos: [{ id, mime, width, height, data_base64 }] }` (originaalfotod). Oma eksport läbib alati impordi, ka pärast kustutamisi.
 - **Impordi vastuvõtureeglid** kehtivad kõigile importidele (`project.json`, `.pcbmap.json`):
   - **Suurusepiirid:** fail kuni 500 MB, üks foto kuni 100 MB, kuni 5000 komponenti.
   - **Täielik kontroll:** zod-skeemi täielik kontroll pärast migratsiooni; id-d peavad olema unikaalsed.
-  - **Viidete terviklus:** iga `PinRef` viitab olemasolevale komponendile ja jalale, iga `roleId` olemasolevale rollile ning iga `staleByRepairId` olemasolevale remondile.
+  - **Viidete terviklus:**
+    - iga ühenduse ots ja sildi ankur viitab olemasolevale jalale või liitepunktile;
+    - iga `roleId` viitab olemasolevale rollile ja iga `staleByRepairId` olemasolevale remondile;
+    - mõõtmise kontakt võib viidata kustutatud jalale või jala varasemale eksemplarile (ajalooline mõõtmine), kui `uid`, `atLabel` ja vajadusel `refLabel` on olemas;
+    - jala `uid`-id on projektis unikaalsed.
   - **Import loob alati uue projekti** (uus `project_id`; `copied_from_project_id` = ekspordi `project_id`, kui see on olemas). Avatud projekti see ei puuduta.
   - **Vea korral** projekti ei looda ja kasutaja näeb esimesi vigu loetava loendina.
-- **Prototüübi import** (`.pcbmap.json`, `app: 'pcb-kaardistaja'`, `v: 1`): `doc.comps → components` (`type → footprint`, `x,y → center`, `rot`, `side`, `params`, `pn → pinNames`, `extra[{id,x,y,d}] → extraPins`, `kind` tuletatakse korpusest ja prefiksist, `identified = value !== ''`); `doc.traces → connections` (`a/b` koos `c,p` → `{pin}`, muidu `{point}`; `pts → waypoints`; `w → widthMm`; `layer: 'wire'` → `kind: 'wire'`; `basis: 'visual'`); mitte-tühi `trace.net` → `NetLabel { anchor: esimene jala-ots, name }`; `doc.dims → dimensions`; `doc.outlines[0] → outline`; `doc.ppm`, `doc.calibrated`, `doc.calib`, `doc.name`; `img.src` (andme-URI) → foto.
-- **Migratsioonid:** `packages/domain/src/migrations/NNNN_<kirjeldus>.ts` ekspordib `up(doc: unknown): unknown` (mooduli oma migratsioonid on selle `engine/` osas). Enne migratsiooni teeb Rust faili varukoopia ([03 § 9](03-arhitektuur.md#salvestuse-vastutaja-savecoordinator-moodul-project)). Avamisel käivitatakse kõik vajalikud migratsioonid järjest ja tulemus valideeritakse `BoardDocSchema` vastu. Igal migratsioonil on test, mis kontrollib eelmise versiooni näidisfaili teisendamist.
+- **Prototüübi import** (`.pcbmap.json`, `app: 'pcb-kaardistaja'`, `v: 1`) on eelvaatega:
+  - **Komponendid:** `doc.comps` → komponendid koos plaadipaigutusega: `type → board.footprint`, `x,y → board.center`, `rot`, `side`, `params`, jalad korpusest, `pn` → `pins[].name`, `extra[{id,x,y,d}]` → lisatud jalad koos `customPads`-iga. `kind` tuletatakse korpusest ja prefiksist, `identified = value !== ''`. Imporditud väärtus on alles, kuid kuvatakse kinnitamata imporditud infona.
+  - **Rajad:** `doc.traces` → ühendused koos fotojoonistusega (`pts → board.waypoints`, `w → widthMm`, `layer: 'wire' → board.kind = 'wire'`, `basis: 'visual'`). Otsene jalaviide (`a/b` koos `c,p`) jääb jalaviiteks. Vaba ots saab lahtiseks liitepunktiks samal kihil.
+  - **Läheduse põhjal arvatud liited:** prototüübi `getNets()` liitis vabad otsad läheduse põhjal. Uues mudelis neid **ei looda**, vaid need lähevad loendisse `importChecks` („Kontrolli neid ühenduskohti“). Eelvaade näitab nende asukohta fotol ning vana ja uue võrguloendi erinevust. Kasutaja valib „Kinnita liide“ (tekib selge liitepunkt, mis ei ole mõõdetud) või „Jäta lahti“. Kõiki kohti ei pea kohe lahendama: kinnitamata kohad jäävad projektis nähtavaks kontrollnimekirjaks.
+  - **Eri kihid:** eri kihtide juhuslikust kattumisest läbiviiku ei tehta. Sellist liidet saab kinnitada ainult tegeliku läbiviigu või läbiva jala kaudu.
+  - **Võrgunimed:** mitte-tühi `trace.net` → `NetLabel { anchor: esimene ots, name, source: 'import' }`. Sama nimega tekstid ise võrke ei ühenda.
+  - **Muu:** `doc.dims → dimensions`, `doc.outlines[0] → outline`, `doc.ppm`, `doc.calibrated`, `doc.calib`, `doc.name`, `img.src` (andme-URI) → foto.
+  - **Kokkuvõte:** enne lõpetamist ütleb import näiteks: „6 ühenduskohta vajavad kontrolli, neid pole veel võrku liidetud.“
+- **Migratsioonid:** `packages/domain/src/migrations/NNNN_<kirjeldus>.ts` ekspordib `up(doc: unknown): unknown` (mooduli oma migratsioonid on selle `engine/` osas). Enne migratsiooni teeb Rust faili täisvarukoopia ([03 § 9](03-arhitektuur.md#salvestuse-vastutaja-savecoordinator-moodul-project)). Avamisel käivitatakse kõik vajalikud migratsioonid järjest ja tulemus valideeritakse `BoardDocSchema` vastu. Igal migratsioonil on test, mis kontrollib eelmise versiooni näidisfaili teisendamist.

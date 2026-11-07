@@ -1,6 +1,6 @@
 # 03 · Arhitektuur
 
-Otsused: [ADR-002](adr/ADR-002-typescript-tauri.md) (tehnoloogia) ja [ADR-003](adr/ADR-003-frontend-backend.md) (frontend ja backend eraldi). See dokument kirjeldab, kuidas äpp on üles ehitatud nii, et iga võimalus on eraldi moodul, kasutajaliides ei saa andmeid otse muuta ja ükski fail ei kasva hiiglaslikuks.
+Otsused: [ADR-002](adr/ADR-002-typescript-tauri.md) (tehnoloogia), [ADR-003](adr/ADR-003-frontend-backend.md) (frontend ja backend eraldi) ja [ADR-004](adr/ADR-004-kaks-vaadet-ja-uhendused.md) (Plaat ja Skeem ühel mudelil, teadlikud ühendused). See dokument kirjeldab, kuidas äpp on üles ehitatud nii, et iga võimalus on eraldi moodul, kasutajaliides ei saa andmeid otse muuta ja ükski fail ei kasva hiiglaslikuks.
 
 ## 1. Tehnoloogiad
 
@@ -101,10 +101,14 @@ pcb-kaardistaja/
       canvas/                # BoardCanvas, ViewTransform, LayerHost, ToolMachine, HitIndex, valik ja raamvalik
       shell/                 # AppShell, StartScreen, UiRegistry, SessionStore, ViewStore, keymap, i18n/et.ts, ErrorBoundary
     adapters/                # storage-tauri · storage-memory · storage-web
-    features/                # 11 moodulit, igaühel contract.ts · engine/ · ui/ (vt 05)
+    features/                # 11 moodulit, igaühel contract.ts · engine/ · ui/ (vt 05); kaust luuakse siis,
+                             # kui moodulit ehitatakse (M0: project, components; M1: photo, measurements;
+                             # M2: connections, nets, schematic; M3: repair; M4: dimensions, guide, export)
       project/ photo/ components/ connections/ nets/ measurements/
       repair/ dimensions/ schematic/ guide/ export/
-  tests/e2e/                 # Playwright (apps/web) + Tauri suitsutestid
+  tests/
+    fixtures/                # sünteetilised plaadid, prototüübi failid, vanad failivormingud
+    e2e/                     # Playwright (apps/web) + Tauri suitsutestid
   tooling/                   # dependency-cruiser, eslint, tsconfig.base
   docs/
 ```
@@ -189,17 +193,27 @@ Uue mooduli mall ja moodulite kirjeldused on failis [05-moodulid.md](05-moodulid
 | **SessionStore** | frontend | valik, hover, aktiivne tööriist, **eelvaade** (lohistamine, suurus, pööre, pooleli rada, raamvalik), mõõtmise mustandid jala kaupa, piiksu ankur | ei | ei |
 | **ViewStore** | frontend | suum ja nihe (eraldi plaadi- ja skeemivaatele), kihid, foto nähtavus, kontrast, aktiivne vahekaart, paneelid | ei | `view` tabel (`ProjectService.saveView`) |
 
-**Hetktõmmis.** Frontend loeb dokumenti ainult hetktõmmisest `Snapshot { sessionId, rev, doc, derived }`, mille mootor avaldab pärast iga käsku. Samas lõimes on see sama sügavalt külmutatud viide, mis mootoris; koopiaid ega paiku ei saadeta. Klient eirab hetktõmmist ja sündmust, mille `sessionId` pole aktiivne, ning sama või väiksema `rev`-iga hetktõmmist.
+**Hetktõmmis.** Frontend loeb dokumenti ainult hetktõmmisest `Snapshot { sessionId, rev, doc, derived }`, mille mootor avaldab pärast iga käsku.
+- Samas lõimes on see sama viide, mis mootoris; koopiaid ega paiku ei saadeta.
+- Kaitse on kahekordne: tüüp on sügavalt kirjutuskaitstud (`DeepReadonly`, mitte ainult pealmine `Readonly`) ja objektid on käitusajal külmutatud (Immeri automaatne külmutamine kogu sügavuses).
+- React tellib hetktõmmist `useSyncExternalStore` kaudu ning viide muutub ainult käsu järel.
+- Klient eirab hetktõmmist ja sündmust, mille `sessionId` pole aktiivne, ning sama või väiksema `rev`-iga hetktõmmist.
 
 **Valik** on ainult `SessionStore`'is. Tööriista, vahekaardi või filtri vahetus ei muuda valikut; valikut muudab ainult kasutaja klõps (põhimõte 5 failis [01](01-pohimotted.md)).
 
-**Eelvaade ei ole dokument.** Lohistamise, suuruse muutmise, pööramise ja raja joonistamise ajal hoiab tööriist ajutist teisendust `SessionStore`'is. Lõuendi kihid joonistavad valitud objektid koos sellega, ka nende külge kinnitatud rajad. Hiire vabastamisel läheb mootorisse üks käsk (nt `items.translate`) ja see on üks samm ajaloos. `Esc` või tööriista vahetus kustutab eelvaate ja dokument jääb muutmata. Salvestus ja logi eelvaadet ei näe. Võrgud lohistamise ajal ei muutu, sest ühenduste otsad on jalgade küljes.
+**Eelvaade ei ole dokument.** Lohistamise, suuruse muutmise, pööramise ja raja joonistamise ajal hoiab tööriist ajutist teisendust `SessionStore`'is. See kehtib plaadil ja skeemil ühtemoodi.
+- Lõuendi kihid joonistavad valitud objektid koos teisendusega, ka nende külge kinnitatud joonistused.
+- Hiire vabastamisel läheb mootorisse üks käsk (nt `items.translate`) ja see on üks samm ajaloos.
+- `Esc`, `pointercancel`, tööriista vahetus ja projekti vahetus kustutavad eelvaate; dokument jääb muutmata.
+- Salvestus ja logi eelvaadet ei näe.
+- Võrgud lohistamise ajal ei muutu, sest topoloogia on ühendustes, mitte geomeetrias.
 
-**Mõõtmise mustand kuulub jalale.** Salvestamata mõõtmised on kujul `measureDrafts: Map<PinKey, { mode, text, ref?, power }>`. Mõõda-plokk loeb ja kirjutab alati selle jala mustandit, mis on Koha real.
-- Koha vahetus (`Tab`, `Shift+Tab`, `N`, klõps teisel jalal) ei vii väärtust kaasa: uus jalg saab oma mustandi, mille režiim ja toide tulevad viimati kasutatust.
-- Tööriista, filtri või vahekaardi vahetus ei muuda ei Kohta ega mustandit.
-- `measurements.add` saab Koha ja väärtuse samast mustandist.
-- Mustand kustub salvestamisel, `Esc`-iga ja siis, kui selle jalg kustutatakse; projekti faili see ei lähe.
+**Mõõtmise mustand kuulub sondipaarile.** Salvestamata mõõtmised on kujul `measureDrafts: Map<PairKey, { mode, text, power }>`, kus võti on **punase ja musta sondi paar** (`"<punase jala uid>|<musta jala uid või ->"`). Mõõda-plokk loeb ja kirjutab alati selle paari mustandit, mis on ploki Koha ja Vastaspunkti real. Kumma sondi muutmine tahes avab teise paari mustandi ega kanna vana väärtust kaasa.
+- Koha vahetus (`Alt+↓` / `Alt+↑`, nupud „Eelmine/Järgmine jalg“, klõps teisel jalal) ei vii väärtust kaasa. Uus jalg saab oma mustandi; selle režiim ja toide tulevad viimati kasutatust ning musta sondi valik jääb mõõtmisjada ajaks lukku.
+- `Tab` liigub vormiväljade vahel ega muuda Kohta.
+- Tööriista, filtri, vahekaardi ega Plaat/Skeem vahetus ei muuda ei Kohta ega mustandit.
+- `measurements.add` saab mõlemad sondid, režiimi, toite ja väärtuse samast mustandist.
+- Mustand kustub salvestamisel ja `Esc`-iga. Kui selle jalg kustutatakse, jääb mustand alles koos selgitusega, aga seda ei saa salvestada enne, kui kasutaja valib uue Koha. Projekti faili mustand ei lähe.
 
 ## 6. Käsud, tagasivõtmine ja logi
 
@@ -228,12 +242,15 @@ export interface DocumentEngine {     // @pcbk/contracts, sünkroonne
 1. kontrollib parameetrid zod-skeemiga (viga `validation`) ja kirjutuskaitse (viga `read_only`);
 2. käivitab `produceWithPatches` külmutatud dokumendi peal;
 3. kontrollib paikade järgi omandi (§ 4). Rikkumisel ei muutu midagi ja tagastatakse viga `ownership`;
-4. avaldab uue dokumendi;
-5. lisab ajalukku `{patches, inversePatches, label}`;
-6. paneb logirea (aeg, käsu id, `requestId`, allikas, kokkuvõte) salvestusjärjekorda;
-7. suurendab `rev`-i;
-8. teavitab tellijaid uue hetktõmmisega, mille arvutatud andmed on § 7.4 järgi värsked;
-9. avaldab sündmused.
+4. kontrollib tulemuse invariante: ühenduste otsad ja sildi ankrud viitavad olemasolevale jalale või liitepunktile, ühenduseta liitepunkte ei jää ja tähised on unikaalsed. Rikkumisel ei avaldata midagi ja tagastatakse viga `validation`;
+5. avaldab uue dokumendi;
+6. lisab ajalukku `{patches, inversePatches, label}`;
+7. paneb logirea (aeg, käsu id, `requestId`, allikas, kokkuvõte) salvestusjärjekorda;
+8. suurendab `rev`-i;
+9. teavitab tellijaid uue hetktõmmisega, mille arvutatud andmed on § 7.4 järgi värsked;
+10. avaldab sündmused.
+
+`undo` ja `redo` taastavad sisu pöördpaikadega, aga **`rev` kasvab ka nende puhul**. `rev` on dokumendi versioon salvestuse jaoks, mitte ajaloo kursor.
 
 Reeglid:
 - Käsk on **puhas ja sünkroonne**. Failid, dialoogid ja võrk käivad `ProjectService`'i ja portide kaudu, tulemus antakse käsule parameetrina.
@@ -245,10 +262,16 @@ Reeglid:
 ## 7. Lõuend
 
 ### 7.1 Koordinaadid
-- **Foto pikslid** (`Vec2`) on **originaalfoto pikslites**: komponentide keskpunktid, rajad, mõõtjooned ja alad. Kui fotot pole, on virtuaalne lõuend 2000×1400 px ja mõõtkava 10 px/mm.
+- **Plaadi tööpind** (`Vec2`): komponentide keskpunktid, rajad, liitepunktid, mõõtjooned ja alad. V1-s on see esimese foto originaalpikslites.
+  - Igal fotol on teisendus tööpinnale (`PhotoRef.toBoard`); esimesel on see ühikteisendus.
+  - Teise foto lisamine või foto asendamine teise kadreeringuga nõuab joondust ega kirjuta kaardistuse koordinaate ümber.
+  - Kui fotot pole, on virtuaalne tööpind 2000×1400 px ja mõõtkava 10 px/mm. Hilisem foto ei skaleeri olemasolevaid komponente vaikimisi.
 - **Foto pööramine ja peegeldamine** (sh EXIF-orientatsioon) on `PhotoRef.transform`. Lõuend rakendab selle **kogu stseenile** (foto koos kaardistusega). Kaardistuse koordinaate ümber ei arvutata, nii et jalad ei saa foto suhtes valeks minna.
-- **Komponendi millimeetrid**: korpuse geomeetria ja oma jalad. Teisendus: `(x·scaleX, y·scaleY)` → peegeldus, kui pool on alumine → pööre → `·pxPerMm` → `+center`.
+- **Komponendi millimeetrid**: korpuse geomeetria ja padjandid. Teisendus: `(x·scaleX, y·scaleY)` → peegeldus, kui pool on alumine → pööre → `·pxPerMm` → `+center`.
+- **Skeemi ruudustik**: sümbolite, liitepunktide ja skeemijoonte asukohad on skeemi ruudustiku ühikutes. Need on eri tüübid ja teisendatakse ainult selgete funktsioonidega.
 - **Ekraan**: `ViewTransform { zoom, pan }` rakendatakse ühele `<g transform>`-ile imperatiivselt (ref), mitte Reacti renderdusega.
+- **Ekraanipunkti teisendamiseks maailma** kasutatakse stseeni maatriksi pöördteisendust (`getScreenCTM().inverse()`), mitte lihtsalt `x / zoom`. Lohistamise ajal hoitakse osutit `setPointerCapture`-iga ja `pointercancel` katkestab eelvaate.
+- **Haakumise läved** on ekraani pikslites. Haakumine aitab valida olemasolevat jalga või liitepunkti, aga elektriline topoloogia ei sõltu suumist, mõõtkavast ega joone paksusest.
 
 ### 7.2 Tööriistad
 Iga tööriist on väike olekumasin, mis saab normaliseeritud sündmused ja hoiab eelvaadet `SessionStore`'is (§ 5):
@@ -280,14 +303,28 @@ Pan (keskmine nupp, tühik + lohistamine), suum (rullik kursori ümber), kahe s�
   Kui eelarve ei pea, viiakse jalgade kiht Canvas-elemendile (otsus M1.4 lõpus).
 
 ### 7.4 Arvutatud andmed
-Arvutatud andmed arvutab **mootor**: võrgud (`resolveNets`), hinnangud (`latestVerdicts`), ühenduse tasemed (`connectionLevels`), läbivuse vastuolud, lühistatud kahejalgsed komponendid, valmidus (`computeProgress`) ja skeemi automaatne paigutus.
+Arvutatud andmed arvutab **mootor**:
+- võrgud (`resolveNets`) ja hinnangud (`latestVerdicts`);
+- ühenduse tasemed (`connectionLevels`) ja läbivuse vastuolud;
+- lühistatud kahejalgsed komponendid ja ajaloolised mõõtmised;
+- „Plaadile paigutamata“ ja „Skeemile paigutamata“ loendid;
+- valmidus (`computeProgress`).
+
+Skeemi automaatne paigutus (M4) on eraldi abiline, mis pakub paigutust ainult paigutamata või valitud sümbolitele.
 - Need on `@pcbk/domain` puhtad funktsioonid. Mootor jätab tulemuse meelde dokumendi viite järgi ja annab selle hetktõmmises (`derived`) koos sama `rev`-iga. Mootori enda käsud kasutavad sama tulemust (nt `repair.add` vajab võrke).
 - Frontend arvutab ainult joonistusgeomeetriat (jala asukoht ekraanil, eelvaade) ja vormindab tekste.
-- Kui kasutajale nähtav viivitus (käsk → uus pilt) ületab 100 ms või lohistamine langeb alla 45 fps, viiakse rasked arvutused Web Workerisse. Dokumendimootor jääb siis sünkroonseks.
+- Kui kasutajale nähtav viivitus (käsk → uus pilt) ületab 100 ms või lohistamine langeb alla 45 fps, viiakse rasked **puhtad** arvutused Web Workerisse. Tulemust kontrollitakse `sessionId` ja `baseRev` vastu. Dokumendimootor jääb sünkroonseks; kogu mootori teise lõime viimine muudaks lepingut ja vajaks uut otsust.
 
 ## 8. Skeemivaade
 
-Skeemivaade on teine lõuend: sama `BoardCanvas`, aga eraldi `ViewTransform` ja `schematicLayers`. Sümbolid ja automaatne paigutus on `@pcbk/domain`-is. Paigutus salvestub dokumenti (`schematic.placements[componentId] = {x, y, rot, mirror}`). Kui kasutaja sümbolit pole liigutanud, arvutatakse asukoht automaatselt. Valik on mõlema vaate vahel ühine (`SessionStore`).
+Skeem on sama projekti **teine tööpind**, mitte tuletatud pilt ([ADR-004](adr/ADR-004-kaks-vaadet-ja-uhendused.md)). See on teine lõuend: lõuendi sisestus (tööriistad, tabamus, valik, eelvaade) on ühine, kuid plaadi ja skeemi kihid on eraldi (`layers` ja `schematicLayers`) ning kummalgi on oma `ViewTransform`.
+
+- **Skeemil saab** lisada, liigutada, pöörata ja nimetada komponente, joonistada ühendusi jala ja jala või liitepunkti vahele, lisada võrgusilte ja tekstimärkusi ning valida jalgu mõõtmiseks. Need on samad käsud ja samad objektid kui plaadil.
+- **Skeemil lisatud komponent** saab ainult skeemipaigutuse (`Component.schematic`) ja ilmub loendisse „Plaadile paigutamata“. „Paiguta plaadile“ võtab sama komponendi kursori alla; id, jalad, ühendused ja mõõtmised säilivad. Vastupidi toimib loend „Skeemile paigutamata“.
+- **Sümbol:** vaikimisi `kind`-i järgi. Tundmatu korpusega komponent on nummerdatud kast, kuni kasutaja määrab jalgade funktsiooni (`pinMap`).
+- **Toite- ja maandussümbolid** joonistatakse võrgu rolli järgi; need on esitus, mitte eraldi andmed.
+- **Valik on ühine** (`SessionStore`). „Näita teises vaates“ viib sama objekti juurde. Tavaline valik ei tee automaatset suumi ega hüpet.
+- **Automaatpaigutus** (M4, kandidaat ELK/elkjs Workeris) on abiline. „Paiguta lisamata komponendid“ ei liiguta kasutaja paigutatud sümboleid. „Paiguta valik uuesti“ on eraldi tagasivõetav käsk. ELK arvutab ainult paigutust; ühendused ja tähendus jäävad BB omaks.
 
 ## 9. Salvestus ja projekti fail
 
@@ -307,18 +344,21 @@ CREATE TABLE thumbnail (id INTEGER PRIMARY KEY CHECK (id = 1), png BLOB NOT NULL
 ```
 
 - **Režiim:**
-  - `journal_mode=DELETE` ja `synchronous=FULL`: pärast iga tehingut on fail kettal iseseisvalt terviklik, ilma `-wal` failita, ja seda saab ohutult kopeerida;
-  - `locking_mode=EXCLUSIVE` kogu seansi ajaks: teine protsess ega teine arvuti ei saa faili samal ajal muuta.
+  - `journal_mode=DELETE` ja `synchronous=FULL`: pärast iga kinnitatud tehingut on fail kettal iseseisvalt terviklik, ilma `-wal` failita;
+  - `locking_mode=EXCLUSIVE` kogu seansi ajaks: teine protsess ega teine arvuti ei saa faili samal ajal muuta ega sageli ka lugeda.
+  - Lahti oleva faili tavalist failikoopiat (Exploreris) **ei esitata** ohutu varundusena, sest aktiivse kirjutuse ajal võib see olla ebajärjekindel. Koopia ja varundus käivad ainult äpi kaudu (`VACUUM INTO` või SQLite Backup API koos kontrolliga).
 - **Üks kirjutav seanss:** `tauri-plugin-single-instance` suunab teise käivituse ja `.pcbk` topeltklõpsu juba töötavasse äppi.
   - Kui sama fail on juba avatud, tuuakse aken ette.
   - Kui avatakse teine fail, toimub tavaline projekti vahetus (`flush()`).
-  - Kui lukku ei saa (fail on avatud teises programmis või arvutis), avaneb fail kirjutuskaitstuna teatega „Fail on avatud mujal, avasin kirjutuskaitstuna“.
+  - Kui lukku ei saa (fail on avatud teises programmis või arvutis), ütleb äpp ausalt „Fail on avatud mujal“ ja pakub kaht võimalust: proovi uuesti või ava viimane varukoopia uue failina. Kirjutuskaitstud avamist ei lubata, sest lukustatud faili ei pruugi saada isegi lugeda.
+  - V1 toetab kohalikku faili. Võrguketta või sünkroonkausta samaaegse kasutamise töökindlust ei lubata ilma eraldi kontrollita.
 - **Dokumendi JSON** valideeritakse zod-skeemiga `BoardDocSchema`.
-  - Avamisel käivitatakse vajadusel järjestikused migratsioonid. Enne migratsiooni tehakse varukoopia (vt allpool).
-  - Fail, mis on uuem kui äpp, avatakse kirjutuskaitstuna koos teatega.
-  - Viitamata fotod kustutatakse failist projekti avamisel, sest tagasivõtmise ajalugu algab siis uuesti.
+  - Avamisel käivitatakse vajadusel järjestikused migratsioonid. Enne migratsiooni tehakse täisvarukoopia (vt allpool).
+  - Fail, mis on uuem kui äpp, ei avane muutmiseks. Äpp näitab versiooniviga ning pakub ainult tõendatult toetatud vaatamist ja eksporti; vana skeemi sisse midagi ei kirjutata.
+  - Viitamata fotod kustutatakse failist projekti avamisel, sest tagasivõtmise ajalugu algab siis uuesti. Kirjutuskaitstud failis ei tehta avamisel ühtegi kõrvalmuudatust (koristus, migratsioon).
 - **Fotod:**
   - Rust impordib foto otse failist (dialoogist või lohistamisel saadud tee) või toorbaitidena (kleepimine, Tauri toor-IPC). Fotobaite ei saadeta kunagi JSON-ina.
+  - **Import on terviklik:** kõigepealt loetakse ja kontrollitakse fail ning valmistatakse kuvamisvariant, siis kirjutatakse foto ja alles seejärel avaldatakse dokumendis viide. Viga ei jäta dokumenti viidet puuduvale fotole.
   - Originaal salvestatakse muutmata (`variant = 'original'`). EXIF-orientatsioon loetakse algseks `PhotoRef.transform`-iks ja WebView ise pilti ei pööra (`image-orientation: none`).
   - Kui originaal on üle 12 MP, teeb Rust kuvamiseks väiksema variandi (`display`, ≤ 12 MP). Lõuend joonistab selle originaali mõõtudes, nii et koordinaadid jäävad originaali pikslitesse.
   - Fotosid serveeritakse WebView-le oma protokolliga `pcbk://photo/<id>?v=display`. Fotobaidid ei ole kunagi hetktõmmises.
@@ -353,10 +393,13 @@ Projekti faili kirjutab ainult `SaveCoordinator`, mis on mootoris `ProjectServic
   - „Salvesta oma koopiana“ (näidisprojekt) ja „Tee koopia“ (`identity: 'new'`) annavad uue `project_id` ja salvestavad `copied_from_project_id`.
   - Pärast õnnestumist jätkab äpp uues failis ja see lisatakse viimaste projektide hulka.
   - Kui algne fail pole loetav (nt mälupulk eemaldati), luuakse uus fail mälus olevast dokumendist, vaatest ja logist ning äpp ütleb selgelt, et fotod jäid algsesse faili.
-- **Varukoopiad:**
-  - Rust teeb automaatse koopia kausta `%APPDATA%\PCB Kaardistaja\backups\<project_id>\` (`<kuupäev>-v<format_version>.pcbk`, sama ajutise faili ja ümbernimetamise võttega) **enne iga migratsiooni** ja **iga päeva esimesel avamisel**.
-  - Alles hoitakse 5 viimast koopiat projekti kohta.
-  - Avalehel on projekti kaardil „Taasta varukoopiast…“, mis salvestab valitud koopia kasutaja valitud kohta. Taastatud fail kannab sama `project_id`-d.
+- **Varukoopiad** (kaust `%APPDATA%\PCB Kaardistaja\backups\<project_id>\`, sama ajutise faili ja ümbernimetamise võttega):
+  - **Täiskoopia** koos fotode ja manustega (`<kuupäev>-v<format_version>.pcbk`) tehakse **enne iga migratsiooni** ja **iga päeva esimesel avamisel**. Alles hoitakse 5 viimast päevakoopiat.
+  - **Dokumendikoopia** ilma fotodeta (`<aeg>.doc.json`) tehakse pideva töö ajal kõige rohkem kord 30 minuti jooksul. Alles hoitakse 5 viimast. See viitab täpselt oma täiskoopiale.
+  - Kui pärast viimast täiskoopiat on lisandunud foto või manus, tehakse järgmine taastepunkt täiskoopiana.
+  - Täiskoopiat ei kustutata enne, kui sellest sõltuvaid dokumendikoopiaid enam pole.
+  - **Taastamine** käib alati uude faili: ajutine koopia valideeritakse ja saab siis lõpliku nime. Originaali ei kirjutata üle. Avalehel on projekti kaardil „Taasta varukoopiast…“. Taastatud fail kannab sama `project_id`-d.
+  - Kasutaja näeb varukoopiate asukohta ja nende kettakulu seadetes.
 
 ## 10. Pordid ja adapterid
 
@@ -407,11 +450,43 @@ export interface IdGen { newId(prefix: string): string }
 | Mootor | Vitest (Node, `storage-memory`) | käsud, ajalugu, omandi tagasilükkamine, hetktõmmis ja `sessionId`, arvutatud andmed, `SaveCoordinator` (ajastus ja maksimaalne ooteaeg, järjekord, viga, `flush`, vaade eraldi) | kõik rohelised, ilma DOM-ita |
 | Moodulid | Vitest + Testing Library | mootori pool ühiktestidega; UI pool võltsmootoriga (`FakeDocumentEngine`) | iga mooduli põhitegevus |
 | Töövoog | Playwright (`apps/web`) | [02 § 16](02-kasutaja-teekond.md#16-vastuvõtustsenaarium-e2e-test-plaat-algusest-lõpuni); klaviatuur, fookus ja dialoogid; jõudlustest | kõik rohelised |
-| Töölaud | Tauri suitsutestid | lukk ja teine avamine, sulgemise voog, foto import, varukoopia taastamine | kõik rohelised |
+| Töölaud | Tauri suitsutestid | lukk ja teine avamine (kaks päris protsessi), sulgemise voog, foto import, varukoopia taastamine | kõik rohelised |
 | Rust | `cargo test` | `project_db`: loomine, salvestus, `base_rev` võrdlus, lukk, migratsioon koos varukoopiaga, katkenud kirjutus, koopia ajutise faili kaudu, taastamine, EXIF ja kuvamisvariant | kõik rohelised |
 | Staatika | `tsc --noEmit`, ESLint, dependency-cruiser, failipikkuse kontroll | sh reegel „`features/*/ui` ei impordi `engine`-it“ | 0 viga |
 
 CI (GitHub Actions, `windows-latest`) jooksutab kõik tasemed iga push'i peale. Väljalaske silt `v*` ehitab `.msi` paigaldaja ja lisab selle GitHubi Release'i.
+
+### Kohustuslikud invariandid
+
+Need regressioonitestid kaitsevad andmete õigsust. Katvuse protsent ja failipikkus on abimõõdikud ega asenda neid.
+
+| Kontroll | Mida tõendab |
+|---|---|
+| komponent lisatakse skeemil, paigutatakse fotole, nimetatakse ümber | üks objekt, samad jalad, ühendused ja mõõtmised |
+| komponent, sümbol, silt või raja käänupunkt liigub | muutub ainult paigutus, ühendatus ei muutu |
+| kaks joont ristuvad; raja ots jääb 1 px kaugusele | ühendust pole ilma liitepunktita |
+| pealmise poole pinnajalg vs läbiv jalg või via | kihid liituvad ainult läbiva jala kaudu |
+| kaks eraldi võrku nimetatakse GND-ks | nimi ei liida võrke |
+| „Ainult mõõtmine“ vs „Piiksub ja ühenda“ | esimesel muutub ainult mõõtmine, teisel mõõtmine ja ühendus ühe sammuna |
+| filter, tööriist, vaade ja paneel muutuvad pooleli näiduga | mustand ja mõlemad sondid säilivad; teine jalg ei saa vana näitu |
+| must sond valimata või teadlikult mujal kui GND | GND-d ei oletata; pinge hinnang kasutab mõlemat otsa |
+| kustutus, korpuse vahetus, eksport ja taasimport | ajaloolised mõõtmised on loetavad, oma eksport läbib impordi |
+| prototüübi otsene viide, läheduse seos ja eri kihtide kattumine | otsene viide säilib, läheduse seos vajab kinnitust, läbiviiku ei oletata |
+| tagasivõtmine ja uuesti tegemine mitut objekti muutva käsu järel | sisu taastub tervikuna ja `rev` ei lähe tagasi |
+| ketas täis, kirjutuskaitse, katkestatud kirjutus, vana `base_rev` | vana terviklik fail säilib ja edu ei näidata enne kinnitust |
+| projekti vahetus ajal, kui foto, salvestuse või paigutuse vastus on hilinenud | vana seanss ei muuda uut projekti |
+| SOIC-14 → SOIC-8 → SOIC-14 | jalgade 9–14 vanad mõõtmised jäävad ajaloolisteks (uus `uid`); `Ctrl+Z` taastab sama jala ja mõõtmise |
+| mõõdetud A–B ühendus jagatakse haruks (A–J, J–B, J–C) | A–J ja J–B on mõõdetud, J–C mitte |
+| liitepunkt, millele on ankurdatud võrgusilt, jääb ilma ühenduseta | silt tõstetakse allesjäänud liikmele või kustutatakse sama käsuga; katkist ankrut ei teki |
+| musta sondi vahetus pooleli näiduga | uus paar avab oma mustandi, vana väärtust kaasa ei võeta |
+
+**Kasutuskatse** iga verstaposti lõpus: tehnik teeb väikese sünteetilise plaadi (5 V sisend, 3,3 V regulaator) selle verstaposti teekonna läbi. Katse sisu kasvab verstapostide kaupa:
+- **M0:** komponendi lisamine, nimetamine, tagasivõtmine, sulgemine ja taasavamine;
+- **M1:** lisaks foto ja esimene mõõtmine;
+- **M2:** lisaks ühendused, skeem ja piiksumisrežiim;
+- **M3 ja edasi:** terve teekond, sh 20 mõõtmise sisestus.
+
+Mõõdetakse aega esimese komponendini, valesid klõpse ning M3-st alates 20 mõõtmise sisestusaega ja valesse kohta sattunud kirjeid. **Valesse kohta salvestatud mõõtmisi ja tahtmatuid võrguühendusi peab olema null.** Kiirus tuleb pärast õigsust.
 
 ## 13. AI liides (hilisem)
 

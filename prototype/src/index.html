@@ -1,0 +1,93 @@
+<title>PCB Kaardistaja</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Martian+Mono:wght@400;500;600&display=swap">
+<style>
+/*@CSS*/
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <button class="icon-btn only-narrow" id="btnPanel" aria-label="Ava külgpaneel"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div class="brand">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><rect x="2" y="2" width="24" height="24" rx="6" fill="var(--mask)"/><path d="M8 19h4.5l5-5H21" stroke="var(--pad)" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="8" cy="19" r="2.6" fill="var(--pad)"/><circle cx="8" cy="19" r="1" fill="var(--mask)"/><circle cx="20.5" cy="14" r="2.6" fill="var(--pad)"/><circle cx="20.5" cy="14" r="1" fill="var(--mask)"/><rect x="7" y="7" width="5" height="4" rx=".8" fill="var(--pad)" opacity=".85"/></svg>
+      <span class="brand-name">PCB <span>Kaardistaja</span></span>
+      <input class="proj-name" id="projName" aria-label="Projekti nimi" autocomplete="off">
+    </div>
+    <nav class="steps" id="steps" aria-label="Töövoo sammud"></nav>
+    <div class="top-actions">
+      <button class="icon-btn" id="btnUndo" title="Võta tagasi (Ctrl+Z)" aria-label="Võta tagasi"><svg class="ic" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button>
+      <button class="icon-btn" id="btnRedo" title="Tee uuesti (Ctrl+Y)" aria-label="Tee uuesti"><svg class="ic" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button>
+      <span class="sep"></span>
+      <button class="btn" id="btnNew" title="Uus projekt"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="bt">Uus</span></button>
+      <button class="btn" id="btnOpen" title="Ava projekt või foto (Ctrl+O)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span class="bt">Ava</span></button>
+      <button class="btn" id="btnSave" title="Salvesta projekt (Ctrl+S)"><svg class="ic" viewBox="0 0 24 24"><path d="M5 4h11l3 3v12a1 1 0 01-1 1H6a1 1 0 01-1-1z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span class="bt">Salvesta</span></button>
+      <button class="btn primary" id="btnExport" title="Ekspordi joonis ja loendid"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span class="bt">Ekspordi</span></button>
+      <button class="icon-btn" id="btnHelp" title="Kiirklahvid (?)" aria-label="Kiirklahvid"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.6 2.6 0 015 .8c0 1.7-2.5 2.2-2.5 3.7M12 17.2v.1"/></svg></button>
+    </div>
+  </header>
+
+  <aside class="side" id="side" aria-label="Komponendid ja võrgud">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="tab-body" id="tabBody"></div>
+  </aside>
+
+  <main class="stage">
+    <div class="optbar" id="optbar"></div>
+    <div class="canvas-wrap" id="wrap">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg" aria-label="Trükiplaadi joonis">
+        <g id="vp"><g id="gImg"></g><g id="gScene"></g><g id="gOver"></g></g>
+      </svg>
+      <div class="rail" id="rail" role="toolbar" aria-label="Tööriistad"></div>
+      <div class="dropzone" id="drop" hidden>
+        <div class="dz-card">
+          <svg class="big" viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="10" width="52" height="40" rx="6" fill="var(--mask)"/><path d="M14 40h10l8-8h10M42 32V22h8" stroke="var(--pad)" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="14" cy="40" r="3.5" fill="var(--pad)"/><circle cx="50" cy="22" r="3.5" fill="var(--pad)"/><rect x="26" y="16" width="10" height="8" rx="1.5" fill="var(--body)" opacity=".8"/><path d="M32 48v12M26 54l6 6 6-6" stroke="var(--accent)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h2>Lohista trükiplaadi foto siia</h2>
+          <p>Foto jääb taustaks, mille peale paigutad komponendid, jalad ja rajad. Kleepimiseks vajuta <kbd>Ctrl</kbd>+<kbd>V</kbd>.</p>
+          <button class="btn primary" id="dzPick">Vali foto arvutist</button>
+          <p class="hint-s">JPG, PNG või WebP · parim on otse ülevalt tehtud terav foto</p>
+        </div>
+      </div>
+      <div class="banner" id="banner" hidden></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <footer class="bottom" id="bottom">
+      <div class="op">
+        <label for="opRange">Foto nähtavus</label>
+        <input type="range" class="rng" id="opRange" min="0" max="100" step="1" value="85">
+        <output id="opVal" for="opRange">85%</output>
+      </div>
+      <div class="imgtools">
+        <button class="icon-btn" id="btnGray" title="Hall foto (paremini näha värvilisi radu)" aria-label="Hall foto"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/></svg></button>
+        <span class="mini-l">Kontrast</span>
+        <input type="range" class="rng small" id="ctRange" min="60" max="200" step="5" value="100" aria-label="Foto kontrast">
+        <button class="icon-btn" id="btnRot" title="Pööra fotot 90° päripäeva" aria-label="Pööra fotot"><svg class="ic" viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2.4 5.7"/><path d="M20 4v7h-7"/></svg></button>
+        <button class="icon-btn" id="btnFlip" title="Peegelda fotot (alumise poole foto jaoks)" aria-label="Peegelda fotot"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M8 7l-5 5 5 5z"/><path d="M16 7l5 5-5 5z"/></svg></button>
+      </div>
+      <div class="btm-group rel">
+        <button class="btn sm" id="btnLayers" aria-expanded="false"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>Kihid</button>
+        <div class="pop" id="layersPop" hidden></div>
+      </div>
+      <div class="btm-right">
+        <div class="zoom">
+          <button class="icon-btn" id="zOut" title="Vähenda (−)" aria-label="Vähenda"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+          <output id="zVal">100%</output>
+          <button class="icon-btn" id="zIn" title="Suurenda (+)" aria-label="Suurenda"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button class="icon-btn" id="zFit" title="Sobita vaade (0)" aria-label="Sobita vaade"><svg class="ic" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        </div>
+        <button class="scale-chip" id="scaleChip" title="Mõõtkava — klõpsa kalibreerimiseks"></button>
+        <span class="coords" id="coords">X —  Y —</span>
+      </div>
+    </footer>
+  </main>
+
+  <div class="modal" id="modal" hidden></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <input type="file" id="fileImg" accept="image/*" hidden>
+  <input type="file" id="fileProj" accept=".json,application/json,image/*" hidden>
+</div>
+
+<script>
+/*@JS*/
+</script>

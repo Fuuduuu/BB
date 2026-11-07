@@ -1,0 +1,2559 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>PCB Kaardistaja</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Martian+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  /* Layout: copper pad-and-trace stepper in the top bar · parts sidebar on the left · full-bleed board canvas · instrument strip under the photo */
+  --bg:#e8ede9; --panel:#f6f8f6; --well:#e0e6e2; --line:#d0d9d3; --line-2:#b9c6bd;
+  --ink:#16201c; --ink-2:#4a5852; --ink-3:#77847d;
+  --accent:#b35c22; --accent-hi:#c66a2c; --accent-ink:#fff8f2; --accent-soft:#f1dfcf;
+  --mask:#1e5a40; --canvas:#d3dbd5; --grid:rgba(30,60,45,.14);
+  --top:#d9432b; --bottom:#2f6fd6; --wire:#c38410; --pad:#d0a630; --pad-edge:#6a510b; --pad-ink:#241a03; --drill:#1e221f;
+  --body:#14201b; --halo:rgba(255,255,255,.85); --body-fill:rgba(255,255,255,.12);
+  --dim:#a8329f; --sel:#0a97a3; --sel-fill:rgba(10,151,163,.12);
+  --ok:#2c8150; --warn:#a86f00; --danger:#bf3a2b;
+  --shadow:0 1px 2px rgba(16,28,22,.08),0 10px 30px rgba(16,28,22,.14);
+  --f-ui:"Archivo","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-mono:"Martian Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --side-w:320px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1412; --panel:#141c19; --well:#1b2521; --line:#25312c; --line-2:#34433c;
+    --ink:#e3eae6; --ink-2:#a2b0a9; --ink-3:#6b7972;
+    --accent:#e38a4c; --accent-hi:#f19b5e; --accent-ink:#1d0f05; --accent-soft:#3a2617;
+    --mask:#2f8a62; --canvas:#0a0f0d; --grid:rgba(160,200,180,.07);
+    --top:#ff6449; --bottom:#5f97ff; --wire:#f2b632; --pad:#e2bb4b; --pad-edge:#3a2c05; --pad-ink:#1f1602; --drill:#050706;
+    --body:#eef3ef; --halo:rgba(0,0,0,.72); --body-fill:rgba(0,0,0,.16);
+    --dim:#e273e2; --sel:#2fe0cf; --sel-fill:rgba(47,224,207,.12);
+    --ok:#4cbf7f; --warn:#e3a72f; --danger:#ff6b5b;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.45);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1412; --panel:#141c19; --well:#1b2521; --line:#25312c; --line-2:#34433c;
+  --ink:#e3eae6; --ink-2:#a2b0a9; --ink-3:#6b7972;
+  --accent:#e38a4c; --accent-hi:#f19b5e; --accent-ink:#1d0f05; --accent-soft:#3a2617;
+  --mask:#2f8a62; --canvas:#0a0f0d; --grid:rgba(160,200,180,.07);
+  --top:#ff6449; --bottom:#5f97ff; --wire:#f2b632; --pad:#e2bb4b; --pad-edge:#3a2c05; --pad-ink:#1f1602; --drill:#050706;
+  --body:#eef3ef; --halo:rgba(0,0,0,.72); --body-fill:rgba(0,0,0,.16);
+  --dim:#e273e2; --sel:#2fe0cf; --sel-fill:rgba(47,224,207,.12);
+  --ok:#4cbf7f; --warn:#e3a72f; --danger:#ff6b5b;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.45);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 var(--f-ui);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+kbd{font:500 10.5px var(--f-mono);padding:1px 5px;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:4px;background:var(--panel);color:var(--ink-2);white-space:nowrap}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- app frame ---------- */
+.app{height:100%;display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+.top{grid-column:1/-1;display:flex;align-items:center;gap:14px;min-width:0;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--panel);border-bottom:1px solid var(--line);position:relative;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;flex:none}
+.brand svg{width:28px;height:28px;flex:none}
+.brand-name{font-weight:780;font-stretch:118%;letter-spacing:-.01em;font-size:15px;white-space:nowrap}
+.brand-name span{color:var(--accent)}
+.proj-name{width:150px;min-width:0;border:1px solid transparent;background:transparent;border-radius:6px;padding:4px 8px;font-size:13px;color:var(--ink-2)}
+.proj-name:hover{border-color:var(--line)}
+.proj-name:focus{border-color:var(--line-2);background:var(--panel);color:var(--ink);outline:none}
+
+.steps{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:2px 4px}
+.steps>:first-child{margin-left:auto}
+.steps>:last-child{margin-right:auto}
+.steps::-webkit-scrollbar{display:none}
+.step{display:flex;align-items:center;gap:8px;border:0;background:none;padding:5px 6px;border-radius:8px;color:var(--ink-3);cursor:pointer;white-space:nowrap;font-size:13px;font-weight:550}
+.step:hover{color:var(--ink);background:var(--well)}
+.spad{position:relative;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line-2);background:var(--panel);font:600 10px var(--f-mono);color:var(--ink-3);flex:none}
+.step.done .spad{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.step.done .spad svg{width:12px;height:12px;stroke:currentColor;stroke-width:3;fill:none}
+.step.cur{color:var(--ink)}
+.step.cur .spad{border-color:var(--accent);color:var(--accent);background:var(--panel);box-shadow:0 0 0 4px var(--accent-soft)}
+.trace-seg{flex:0 1 26px;min-width:10px;height:2px;border-radius:2px;background:var(--line-2)}
+.trace-seg.done{background:var(--accent)}
+
+.top-actions{display:flex;align-items:center;gap:6px;flex:none}
+.sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.btn{height:32px;padding:0 12px;border-radius:7px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink);display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:550;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:var(--accent-hi);border-color:var(--accent-hi)}
+.btn.danger{color:var(--danger)}
+.btn.danger:hover{border-color:var(--danger)}
+.btn.sm{height:28px;padding:0 10px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:default}
+.icon-btn{width:32px;height:32px;display:grid;place-items:center;border-radius:7px;border:1px solid transparent;background:transparent;color:var(--ink-2);cursor:pointer;flex:none}
+.icon-btn:hover{background:var(--well);color:var(--ink)}
+.icon-btn:disabled{opacity:.35;cursor:default;background:transparent}
+.icon-btn.on{background:var(--accent-soft);color:var(--accent)}
+.only-narrow{display:none}
+
+/* ---------- sidebar ---------- */
+.side{grid-row:2;display:flex;flex-direction:column;min-height:0;background:var(--panel);border-right:1px solid var(--line)}
+.tabs{display:flex;align-items:flex-end;gap:2px;padding:8px 12px 0;padding-left:max(12px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.tab{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:none;padding:9px 4px 10px;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--ink-3);font-weight:600;font-size:13px;cursor:pointer}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.count{font:500 10px var(--f-mono);background:var(--well);color:var(--ink-2);padding:2px 6px;border-radius:10px}
+.tab-body{flex:1;min-height:0;overflow:auto;padding:14px 14px 28px;padding-left:max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.side-close{display:none}
+
+.search{position:relative}
+.search input{width:100%;height:34px;border:1px solid var(--line-2);border-radius:8px;background:var(--well);padding:0 10px 0 32px;font-size:13px}
+.search input:focus{outline:none;border-color:var(--accent);background:var(--panel)}
+.search svg{position:absolute;left:10px;top:8px;width:17px;height:17px;color:var(--ink-3)}
+.hint-s{margin:0;font-size:12px;color:var(--ink-3);line-height:1.5}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 8px;font-size:11px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.sec-h .count{letter-spacing:0;text-transform:none}
+
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 4px 7px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:grab;font-size:11px;font-weight:550;color:var(--ink-2);text-align:center;line-height:1.2;min-width:0}
+.tile span{overflow-wrap:anywhere}
+.tile:hover{border-color:var(--accent);color:var(--ink)}
+.tile.active{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.tile:active{cursor:grabbing}
+.thumb{width:100%;height:36px;overflow:visible}
+
+.summary{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-2);background:var(--well);border-radius:20px;padding:3px 9px;white-space:nowrap}
+.chip b{font:600 11px var(--f-mono);color:var(--ink)}
+
+.group{display:flex;flex-direction:column;gap:2px}
+.row{border-radius:8px;border:1px solid transparent}
+.row.open{border-color:var(--line-2);background:var(--panel);box-shadow:var(--shadow)}
+.row-head{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;border:0;background:none;padding:7px 8px;border-radius:7px;text-align:left;cursor:pointer}
+.row-head:hover{background:var(--well)}
+.row.open .row-head{background:transparent}
+.ref{font:600 12px var(--f-mono);color:var(--ink);min-width:34px}
+.meta{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta i{font-style:normal;color:var(--ink-3)}
+.badges{display:flex;gap:4px;font:500 10.5px var(--f-mono);color:var(--ink-3)}
+.badge{padding:1px 6px;border-radius:9px;background:var(--well)}
+.badge.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.swatch{width:10px;height:10px;border-radius:3px;flex:none}
+.empty{font-size:12.5px;color:var(--ink-3);padding:10px;border:1px dashed var(--line-2);border-radius:8px;line-height:1.5}
+
+/* inspector */
+.insp{display:flex;flex-direction:column;gap:12px;padding:4px 10px 12px}
+.f{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:600;color:var(--ink-3);letter-spacing:.02em;min-width:0}
+.f input,.f select,.f textarea,.inp{width:100%;min-width:0;height:30px;border:1px solid var(--line-2);border-radius:6px;background:var(--well);padding:0 8px;font-size:13px;font-weight:450;color:var(--ink);letter-spacing:0}
+.f textarea{height:auto;min-height:54px;padding:6px 8px;resize:vertical;line-height:1.4}
+.f input:focus,.f select:focus,.f textarea:focus,.inp:focus{outline:none;border-color:var(--accent);background:var(--panel)}
+.f .mono,.inp.mono{font-size:12px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fp-name{font-size:12px;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.fp-name b{font-weight:650;color:var(--ink)}
+.seg{display:inline-flex;padding:2px;border-radius:8px;background:var(--well);border:1px solid var(--line);gap:2px}
+.seg button{border:0;background:none;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;color:var(--ink-2);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.seg button:hover{color:var(--ink)}
+.seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.seg .dotc{width:8px;height:8px;border-radius:50%}
+.lblrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;font-weight:600;color:var(--ink-3)}
+.pins-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pins-h h4{margin:0;font-size:11px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);display:flex;gap:6px;align-items:center}
+.pins{display:flex;flex-direction:column;gap:2px;max-height:300px;overflow:auto;margin:0 -4px;padding:0 4px}
+.pin{display:grid;grid-template-columns:30px minmax(0,1fr) auto auto;gap:6px;align-items:center;padding:3px 4px;border-radius:6px}
+.pin:hover{background:var(--well)}
+.pin.on{background:var(--sel-fill);box-shadow:inset 0 0 0 1px var(--sel)}
+.pid{font:600 11px var(--f-mono);color:var(--ink-2);text-align:center;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.pin input{height:26px;font-size:12px}
+.pin .conn{grid-column:2/-1;font:500 10.5px var(--f-mono);color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:-2px}
+.net-chip{display:inline-flex;align-items:center;gap:5px;max-width:84px;font:600 10.5px var(--f-mono);padding:2px 7px 2px 5px;border-radius:10px;background:var(--well);color:var(--ink);cursor:pointer;border:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.net-chip::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--nc,var(--ink-3));flex:none}
+.net-chip.none{color:var(--ink-3);background:none;cursor:default}
+.net-chip.none::before{background:none;border:1px solid var(--ink-3)}
+.pact{display:flex;gap:2px}
+.mini{width:24px;height:24px;display:grid;place-items:center;border:0;border-radius:5px;background:none;color:var(--ink-3);cursor:pointer}
+.mini:hover{background:var(--panel);color:var(--accent)}
+.mini svg{width:15px;height:15px}
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--ink-3)}
+.kv b{font:600 12px var(--f-mono);color:var(--ink);text-align:right;overflow-wrap:anywhere}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);cursor:pointer}
+.chk input{accent-color:var(--accent);width:15px;height:15px}
+
+/* nets */
+.net{display:flex;flex-direction:column;gap:6px;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel)}
+.net:hover,.net.on{border-color:var(--sel)}
+.net.on{box-shadow:inset 0 0 0 1px var(--sel)}
+.net-top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px}
+.net-top .swatch{width:12px;height:12px;border-radius:50%}
+.net-name{height:26px;border:1px solid transparent;border-radius:6px;background:transparent;padding:0 6px;font:600 12.5px var(--f-mono);min-width:0;width:100%}
+.net-name:hover{border-color:var(--line)}
+.net-name:focus{outline:none;border-color:var(--accent);background:var(--well)}
+.nstat{font:500 10.5px var(--f-mono);color:var(--ink-3);white-space:nowrap}
+.members{display:flex;flex-wrap:wrap;gap:4px}
+.mem{border:0;background:var(--well);border-radius:5px;padding:2px 6px;font:500 10.5px var(--f-mono);color:var(--ink-2);cursor:pointer}
+.mem:hover{color:var(--ink);background:var(--accent-soft)}
+.mem i{font-style:normal;color:var(--ink-3)}
+
+/* ---------- stage ---------- */
+.stage{grid-row:2;display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-width:0;min-height:0}
+.optbar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;min-height:46px;padding:7px 16px;padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--panel);border-bottom:1px solid var(--line);font-size:12.5px}
+.ob-tool{display:flex;align-items:center;gap:8px;font-weight:650;color:var(--ink);white-space:nowrap}
+.ob-tool .ico{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.ob-tool .ico svg{width:16px;height:16px}
+.ob-hint{color:var(--ink-3);display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0;flex:1 1 280px;line-height:1.5}
+.ob-hint span{white-space:nowrap}
+.ob-field{display:flex;align-items:center;gap:6px;color:var(--ink-2);white-space:nowrap}
+.ob-field .inp{width:72px;height:28px;font:500 12px var(--f-mono)}
+
+.canvas-wrap{position:relative;overflow:hidden;min-height:0;background-color:var(--canvas);background-image:radial-gradient(var(--grid) 1.1px,transparent 1.3px);background-size:18px 18px;touch-action:none}
+#svg{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none}
+.canvas-wrap.t-pan #svg,.canvas-wrap.panning #svg{cursor:grab}
+.canvas-wrap.dragging #svg{cursor:grabbing}
+.canvas-wrap.t-trace #svg,.canvas-wrap.t-measure #svg,.canvas-wrap.t-calib #svg,.canvas-wrap.t-point #svg,.canvas-wrap.t-pin #svg,.canvas-wrap.t-outline #svg,.canvas-wrap.t-place #svg{cursor:crosshair}
+
+.rail{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:2px;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);z-index:3}
+.rail button{position:relative;width:36px;height:36px;border:0;border-radius:8px;background:none;color:var(--ink-2);display:grid;place-items:center;cursor:pointer}
+.rail button:hover{background:var(--well);color:var(--ink)}
+.rail button.on{background:var(--accent);color:var(--accent-ink)}
+.rail button svg{width:19px;height:19px}
+.rail .rsep{height:1px;background:var(--line);margin:3px 4px}
+.rail button[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:44px;top:50%;transform:translateY(-50%);background:var(--ink);color:var(--panel);font-size:12px;font-weight:550;padding:4px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:9}
+
+.banner{position:absolute;right:14px;top:14px;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:10px;z-index:3}
+.banner h3{margin:0;font-size:14px;font-weight:700;font-stretch:108%;display:flex;align-items:center;gap:8px}
+.banner p{margin:0;font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.tag{font:600 10px var(--f-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:2px 7px;border-radius:10px}
+.banner .x{position:absolute;right:6px;top:6px}
+
+.dropzone{position:absolute;inset:0;display:grid;place-items:center;padding:24px;z-index:2;pointer-events:none}
+.dz-card{pointer-events:auto;width:min(460px,100%);text-align:center;padding:34px 28px;border:2px dashed var(--line-2);border-radius:16px;background:var(--panel);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:12px}
+.dz-card svg.big{width:64px;height:64px}
+.dz-card h2{margin:0;font-size:19px;font-weight:750;font-stretch:110%;text-wrap:balance}
+.dz-card p{margin:0;font-size:13px;color:var(--ink-2);line-height:1.55}
+.drag-over .dz-card,.dropzone.hot .dz-card{border-color:var(--accent);background:var(--accent-soft)}
+.dropzone.overlay{background:color-mix(in srgb,var(--canvas) 70%,transparent)}
+
+.tip{position:absolute;pointer-events:none;z-index:6;background:var(--ink);color:var(--panel);font:500 11.5px var(--f-mono);padding:6px 9px;border-radius:7px;line-height:1.5;max-width:280px;box-shadow:var(--shadow)}
+.tip b{font-weight:700}
+.tip i{font-style:normal;opacity:.7}
+
+/* bottom instrument strip */
+.bottom{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding-block:8px calc(8px + env(safe-area-inset-bottom,0px));padding-left:16px;padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--panel);border-top:1px solid var(--line);position:relative;z-index:4}
+.op{display:flex;align-items:center;gap:12px;flex:1 1 300px;min-width:0;max-width:460px}
+.op label,.mini-l{font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.op output{font:600 12px var(--f-mono);color:var(--ink);min-width:40px;text-align:right}
+.rng{-webkit-appearance:none;appearance:none;flex:1;min-width:80px;height:22px;background:transparent;cursor:pointer;--p:50%}
+.rng::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--accent) var(--p),var(--line-2) var(--p))}
+.rng::-moz-range-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--accent) var(--p),var(--line-2) var(--p))}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-7px;border-radius:50%;background:var(--panel);border:5px solid var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.rng::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--panel);border:5px solid var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.rng.small{flex:none;width:90px}
+.imgtools{display:flex;align-items:center;gap:6px}
+.btm-group{display:flex;align-items:center;gap:6px}
+.btm-right{margin-left:auto;display:flex;align-items:center;gap:6px 14px;flex-wrap:wrap}
+.zoom{display:flex;align-items:center;gap:2px}
+.zoom output{font:600 11.5px var(--f-mono);min-width:50px;text-align:center;color:var(--ink-2)}
+.scale-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);border-radius:20px;padding:4px 10px;font:600 11.5px var(--f-mono);color:var(--ink);cursor:pointer;white-space:nowrap}
+.scale-chip::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.scale-chip.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent)}
+.scale-chip.warn::before{background:var(--warn)}
+.coords{font:500 11.5px var(--f-mono);color:var(--ink-3);min-width:170px;white-space:nowrap}
+.pop{position:absolute;bottom:calc(100% + 8px);background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:240px;z-index:8}
+.pop h4{margin:0 0 2px;font-size:11px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.pop .chk .sw{width:14px;height:4px;border-radius:2px}
+.rel{position:relative}
+
+/* modal, toast */
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(8,14,11,.45);backdrop-filter:blur(2px)}
+.dlg{width:min(440px,100%);max-height:calc(100% - 20px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.dlg.wide{width:min(640px,100%)}
+.dlg h2{margin:0;font-size:18px;font-weight:750;font-stretch:108%;text-wrap:balance}
+.dlg p{margin:0;font-size:13px;color:var(--ink-2);line-height:1.55}
+.dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.big-inp{display:flex;align-items:center;gap:8px}
+.big-inp input{flex:1;height:44px;font:600 20px var(--f-mono);border:1px solid var(--line-2);border-radius:9px;background:var(--well);padding:0 12px;min-width:0}
+.big-inp input:focus{outline:none;border-color:var(--accent);background:var(--panel)}
+.big-inp span{font:600 15px var(--f-mono);color:var(--ink-2)}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.presets button{border:1px solid var(--line-2);background:var(--panel);border-radius:16px;padding:4px 10px;font:500 11.5px var(--f-mono);cursor:pointer;color:var(--ink-2)}
+.presets button:hover{border-color:var(--accent);color:var(--ink)}
+.ex-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ex-grid button{display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;cursor:pointer}
+.ex-grid button:hover{border-color:var(--accent);background:var(--accent-soft)}
+.ex-grid b{font-size:13.5px;font-weight:650}
+.ex-grid span{font-size:12px;color:var(--ink-3);line-height:1.45}
+.keys{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 18px;font-size:12.5px}
+.keys div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid var(--line);color:var(--ink-2)}
+.toasts{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:60;pointer-events:none;width:max-content;max-width:calc(100% - 32px)}
+.toast{background:var(--ink);color:var(--panel);font-size:13px;font-weight:550;padding:8px 14px;border-radius:9px;box-shadow:var(--shadow);animation:tin .18s ease-out}
+.toast.warn{background:var(--warn);color:#fff}
+@keyframes tin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- drawing ---------- */
+.fp-halo>*{fill:none;stroke:var(--halo);stroke-width:3.6;vector-effect:non-scaling-stroke}
+.fp-body>*{fill:var(--body-fill);stroke:var(--body);stroke-width:1.4;vector-effect:non-scaling-stroke}
+.fp-marks>*{fill:none;stroke:var(--body);stroke-width:1.3;vector-effect:non-scaling-stroke}
+.fp-marks>.dot{fill:var(--body);stroke:none}
+.thumb .fp-body>*{fill:var(--well);stroke:var(--ink-2);stroke-width:1.1}
+.thumb .fp-marks>*{stroke:var(--ink-2);stroke-width:1}
+.thumb .fp-marks>.dot{fill:var(--ink-2)}
+.pad{fill:var(--pad);fill-opacity:.82;stroke:var(--pad-edge);stroke-width:.9;vector-effect:non-scaling-stroke}
+.pad.extra{fill:var(--accent);fill-opacity:.9}
+.pad.linked{fill-opacity:.95}
+.pad.net-hl{stroke:var(--sel);stroke-width:2.6;fill-opacity:1}
+.pad.pin-sel{stroke:var(--sel);stroke-width:3.2;fill-opacity:1}
+.drill{fill:var(--drill);pointer-events:none}
+.thumb .pad{fill-opacity:1;stroke-width:.7}
+.hit{fill:transparent;stroke:none}
+.comp.sel .fp-body>*{stroke:var(--sel);stroke-width:2;fill:var(--sel-fill)}
+.comp.sel .fp-marks>*{stroke:var(--sel)}
+.comp.bside .fp-body>*{stroke-dasharray:5 3}
+.comp.ghost{opacity:.6;pointer-events:none}
+.lbl{font-family:var(--f-mono);font-weight:600;fill:var(--ink);paint-order:stroke;stroke:var(--halo);stroke-linejoin:round;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.lbl.val{font-weight:450;fill:var(--ink-2)}
+.lbl.sel{fill:var(--sel)}
+.pinl{font-family:var(--f-mono);font-weight:600;fill:var(--pad-ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.pinn{font-family:var(--f-mono);font-weight:500;fill:var(--ink);paint-order:stroke;stroke:var(--halo);stroke-linejoin:round;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.t-hit{fill:none;stroke:transparent;pointer-events:stroke;stroke-linecap:round;stroke-linejoin:round}
+.t-line{fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.9;pointer-events:none}
+.t-glow{fill:none;stroke:var(--sel);stroke-linecap:round;stroke-linejoin:round;opacity:.5;pointer-events:none}
+.trace.dimmed,.dimmed{opacity:.16}
+.dimg line,.dimg path{stroke:var(--dim);stroke-width:1.2;vector-effect:non-scaling-stroke;fill:none}
+.dimg polygon{fill:var(--dim)}
+.dimg text{font-family:var(--f-mono);font-weight:600;fill:var(--dim);paint-order:stroke;stroke:var(--halo);stroke-linejoin:round;text-anchor:middle;dominant-baseline:central}
+.dimg .d-hit{stroke:transparent;stroke-width:12;pointer-events:stroke}
+.dimg.sel line,.dimg.sel path{stroke:var(--sel)}
+.dimg.sel text{fill:var(--sel)}
+.dimg.sel polygon{fill:var(--sel)}
+.o-line{fill:none;stroke:var(--dim);stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-dasharray:8 4}
+.o-hit{fill:none;stroke:transparent;pointer-events:stroke}
+.outline.sel .o-line{stroke:var(--sel);stroke-width:2.2}
+.selbox{fill:none;stroke:var(--sel);stroke-width:1.2;vector-effect:non-scaling-stroke;stroke-dasharray:4 3;pointer-events:none}
+.hnd{fill:var(--panel);stroke:var(--sel);stroke-width:1.6;vector-effect:non-scaling-stroke;cursor:move}
+.hnd.end{fill:var(--sel)}
+.snap{fill:none;stroke:var(--sel);stroke-width:2.2;vector-effect:non-scaling-stroke;pointer-events:none}
+.snapdot{fill:var(--sel);pointer-events:none}
+.draft{fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.75;pointer-events:none}
+.draft-v{fill:var(--panel);stroke:var(--ink);stroke-width:1.2;vector-effect:non-scaling-stroke;pointer-events:none}
+.marq{fill:var(--sel-fill);stroke:var(--sel);stroke-width:1;vector-effect:non-scaling-stroke;stroke-dasharray:4 3;pointer-events:none}
+.calib line{stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke}
+.calib circle{fill:var(--accent)}
+.calib text{font-family:var(--f-mono);font-weight:600;fill:var(--accent);paint-order:stroke;stroke:var(--halo);stroke-linejoin:round;text-anchor:middle;dominant-baseline:central}
+.pin-ghost{fill:var(--accent);fill-opacity:.7;stroke:var(--panel);stroke-width:1.2;vector-effect:non-scaling-stroke;pointer-events:none}
+.ptarget{fill:var(--sel-fill);stroke:var(--sel);stroke-width:1.4;vector-effect:non-scaling-stroke;stroke-dasharray:3 3;pointer-events:none}
+
+/* ---------- responsive ---------- */
+@media (max-width:1600px){
+  .step-label{display:none}
+  .step.cur .step-label{display:inline}
+}
+@media (max-width:1400px){
+  .proj-name{display:none}
+  .trace-seg{flex-basis:16px}
+}
+@media (max-width:1180px){
+  .top-actions .btn .bt{display:none}
+  .top-actions .btn{padding:0 9px}
+}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .only-narrow{display:grid}
+  .side{position:fixed;left:0;top:0;bottom:0;width:min(350px,90vw);z-index:40;transform:translateX(-104%);transition:transform .22s ease;box-shadow:var(--shadow);padding-top:env(safe-area-inset-top,0px)}
+  .app.side-open .side{transform:none}
+  .side-close{display:grid}
+  .stage{grid-column:1}
+  .brand-name{display:none}
+  .coords{display:none}
+  .optbar{padding-left:max(16px,env(safe-area-inset-left,0px))}
+  .rail{left:max(10px,env(safe-area-inset-left,0px))}
+  .banner{left:62px;right:12px;max-width:none}
+}
+@media (max-width:560px){
+  .steps{justify-content:flex-start}
+  .step.cur .step-label{display:none}
+  .top{gap:8px}
+  .top-actions .sep,#btnHelp{display:none}
+  .op{flex-basis:100%;max-width:none}
+  .ex-grid,.keys{grid-template-columns:minmax(0,1fr)}
+  .rng.small{width:70px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <button class="icon-btn only-narrow" id="btnPanel" aria-label="Ava külgpaneel"><svg class="ic" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div class="brand">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><rect x="2" y="2" width="24" height="24" rx="6" fill="var(--mask)"/><path d="M8 19h4.5l5-5H21" stroke="var(--pad)" stroke-width="2.2" fill="none" stroke-linecap="round"/><circle cx="8" cy="19" r="2.6" fill="var(--pad)"/><circle cx="8" cy="19" r="1" fill="var(--mask)"/><circle cx="20.5" cy="14" r="2.6" fill="var(--pad)"/><circle cx="20.5" cy="14" r="1" fill="var(--mask)"/><rect x="7" y="7" width="5" height="4" rx=".8" fill="var(--pad)" opacity=".85"/></svg>
+      <span class="brand-name">PCB <span>Kaardistaja</span></span>
+      <input class="proj-name" id="projName" aria-label="Projekti nimi" autocomplete="off">
+    </div>
+    <nav class="steps" id="steps" aria-label="Töövoo sammud"></nav>
+    <div class="top-actions">
+      <button class="icon-btn" id="btnUndo" title="Võta tagasi (Ctrl+Z)" aria-label="Võta tagasi"><svg class="ic" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button>
+      <button class="icon-btn" id="btnRedo" title="Tee uuesti (Ctrl+Y)" aria-label="Tee uuesti"><svg class="ic" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button>
+      <span class="sep"></span>
+      <button class="btn" id="btnNew" title="Uus projekt"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="bt">Uus</span></button>
+      <button class="btn" id="btnOpen" title="Ava projekt või foto (Ctrl+O)"><svg class="ic" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span class="bt">Ava</span></button>
+      <button class="btn" id="btnSave" title="Salvesta projekt (Ctrl+S)"><svg class="ic" viewBox="0 0 24 24"><path d="M5 4h11l3 3v12a1 1 0 01-1 1H6a1 1 0 01-1-1z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg><span class="bt">Salvesta</span></button>
+      <button class="btn primary" id="btnExport" title="Ekspordi joonis ja loendid"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span class="bt">Ekspordi</span></button>
+      <button class="icon-btn" id="btnHelp" title="Kiirklahvid (?)" aria-label="Kiirklahvid"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.6 2.6 0 015 .8c0 1.7-2.5 2.2-2.5 3.7M12 17.2v.1"/></svg></button>
+    </div>
+  </header>
+
+  <aside class="side" id="side" aria-label="Komponendid ja võrgud">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="tab-body" id="tabBody"></div>
+  </aside>
+
+  <main class="stage">
+    <div class="optbar" id="optbar"></div>
+    <div class="canvas-wrap" id="wrap">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg" aria-label="Trükiplaadi joonis">
+        <g id="vp"><g id="gImg"></g><g id="gScene"></g><g id="gOver"></g></g>
+      </svg>
+      <div class="rail" id="rail" role="toolbar" aria-label="Tööriistad"></div>
+      <div class="dropzone" id="drop" hidden>
+        <div class="dz-card">
+          <svg class="big" viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="10" width="52" height="40" rx="6" fill="var(--mask)"/><path d="M14 40h10l8-8h10M42 32V22h8" stroke="var(--pad)" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="14" cy="40" r="3.5" fill="var(--pad)"/><circle cx="50" cy="22" r="3.5" fill="var(--pad)"/><rect x="26" y="16" width="10" height="8" rx="1.5" fill="var(--body)" opacity=".8"/><path d="M32 48v12M26 54l6 6 6-6" stroke="var(--accent)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h2>Lohista trükiplaadi foto siia</h2>
+          <p>Foto jääb taustaks, mille peale paigutad komponendid, jalad ja rajad. Kleepimiseks vajuta <kbd>Ctrl</kbd>+<kbd>V</kbd>.</p>
+          <button class="btn primary" id="dzPick">Vali foto arvutist</button>
+          <p class="hint-s">JPG, PNG või WebP · parim on otse ülevalt tehtud terav foto</p>
+        </div>
+      </div>
+      <div class="banner" id="banner" hidden></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <footer class="bottom" id="bottom">
+      <div class="op">
+        <label for="opRange">Foto nähtavus</label>
+        <input type="range" class="rng" id="opRange" min="0" max="100" step="1" value="85">
+        <output id="opVal" for="opRange">85%</output>
+      </div>
+      <div class="imgtools">
+        <button class="icon-btn" id="btnGray" title="Hall foto (paremini näha värvilisi radu)" aria-label="Hall foto"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 000 16z" fill="currentColor"/></svg></button>
+        <span class="mini-l">Kontrast</span>
+        <input type="range" class="rng small" id="ctRange" min="60" max="200" step="5" value="100" aria-label="Foto kontrast">
+        <button class="icon-btn" id="btnRot" title="Pööra fotot 90° päripäeva" aria-label="Pööra fotot"><svg class="ic" viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2.4 5.7"/><path d="M20 4v7h-7"/></svg></button>
+        <button class="icon-btn" id="btnFlip" title="Peegelda fotot (alumise poole foto jaoks)" aria-label="Peegelda fotot"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M8 7l-5 5 5 5z"/><path d="M16 7l5 5-5 5z"/></svg></button>
+      </div>
+      <div class="btm-group rel">
+        <button class="btn sm" id="btnLayers" aria-expanded="false"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>Kihid</button>
+        <div class="pop" id="layersPop" hidden></div>
+      </div>
+      <div class="btm-right">
+        <div class="zoom">
+          <button class="icon-btn" id="zOut" title="Vähenda (−)" aria-label="Vähenda"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+          <output id="zVal">100%</output>
+          <button class="icon-btn" id="zIn" title="Suurenda (+)" aria-label="Suurenda"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button class="icon-btn" id="zFit" title="Sobita vaade (0)" aria-label="Sobita vaade"><svg class="ic" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        </div>
+        <button class="scale-chip" id="scaleChip" title="Mõõtkava — klõpsa kalibreerimiseks"></button>
+        <span class="coords" id="coords">X —  Y —</span>
+      </div>
+    </footer>
+  </main>
+
+  <div class="modal" id="modal" hidden></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <input type="file" id="fileImg" accept="image/*" hidden>
+  <input type="file" id="fileProj" accept=".json,application/json,image/*" hidden>
+</div>
+
+<script>
+(() => {
+'use strict';
+/* ================= utils ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+const f2 = v => Math.round(v * 1000) / 1000;
+const fmtN = (v, d = 2) => (Number.isFinite(v) ? v : 0).toFixed(d).replace('.', ',');
+const fmtMM = v => fmtN(v) + ' mm';
+const parseNum = s => { const v = parseFloat(String(s).replace(',', '.')); return Number.isFinite(v) ? v : NaN; };
+const byId = (a, b) => ((parseFloat(a.id) || 0) - (parseFloat(b.id) || 0)) || String(a.id).localeCompare(String(b.id));
+const DEG = Math.PI / 180;
+function distToSeg(p, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+  const t = L2 ? clamp(((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2, 0, 1) : 0;
+  const q = [a[0] + t * dx, a[1] + t * dy];
+  return { d: dist(p, q), q, t };
+}
+function nearestOnPoly(p, pts) {
+  let best = { d: Infinity, q: p, i: -1 };
+  for (let i = 0; i < pts.length - 1; i++) { const r = distToSeg(p, pts[i], pts[i + 1]); if (r.d < best.d) best = { ...r, i }; }
+  return best;
+}
+const polyLen = pts => { let L = 0; for (let i = 1; i < pts.length; i++) L += dist(pts[i - 1], pts[i]); return L; };
+const polyD = pts => 'M' + pts.map(p => f2(p[0]) + ' ' + f2(p[1])).join('L');
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* ================= footprints (mm, origin = centre) ================= */
+const P = (id, x, y, w, h, shape, drill, name) => ({ id: String(id), x: f2(x), y: f2(y), w: f2(w), h: f2(h ?? w), shape: shape || 'rect', drill: f2(drill || 0), name: name || '' });
+const Rc = (x, y, w, h, r = 0) => ({ t: 'rect', x: f2(x), y: f2(y), w: f2(w), h: f2(h), r: f2(r) });
+const Ci = (x, y, r) => ({ t: 'circle', x: f2(x), y: f2(y), r: f2(r) });
+const Pa = (d, bb) => ({ t: 'path', d, bb });
+const Dt = (x, y, r = .25) => ({ t: 'dot', x: f2(x), y: f2(y), r });
+const plus = (x, y, s = .5) => Pa(`M${f2(x - s)} ${f2(y)}H${f2(x + s)}M${f2(x)} ${f2(y - s)}V${f2(y + s)}`);
+
+const CHIP = {
+  '0402': { c: .5, pw: .6, ph: .6, bl: 1, bw: .5 }, '0603': { c: .8, pw: .8, ph: .95, bl: 1.6, bw: .8 },
+  '0805': { c: 1, pw: 1, ph: 1.35, bl: 2, bw: 1.25 }, '1206': { c: 1.5, pw: 1.15, ph: 1.8, bl: 3.2, bw: 1.6 },
+  '1210': { c: 1.5, pw: 1.15, ph: 2.7, bl: 3.2, bw: 2.5 }, '2010': { c: 2.4, pw: 1.3, ph: 2.6, bl: 5, bw: 2.5 },
+  '2512': { c: 2.95, pw: 1.5, ph: 3.4, bl: 6.3, bw: 3.2 }
+};
+const TANT = { A: { c: 1.4, pw: 1.4, ph: 1.4, bl: 3.2, bw: 1.6 }, B: { c: 1.55, pw: 1.5, ph: 2.3, bl: 3.5, bw: 2.8 }, C: { c: 2.6, pw: 2.2, ph: 2.4, bl: 6, bw: 3.2 }, D: { c: 3.2, pw: 2.5, ph: 2.6, bl: 7.3, bw: 4.3 } };
+const DIO = { 'SOD-323': { c: 1.15, pw: .6, ph: .5, bl: 1.7, bw: 1.25 }, 'SOD-123': { c: 1.65, pw: .9, ph: 1.2, bl: 2.7, bw: 1.6 }, SMA: { c: 2, pw: 1.6, ph: 1.6, bl: 4.3, bw: 2.6 }, SMB: { c: 2.15, pw: 2.1, ph: 2.3, bl: 4.6, bw: 3.6 }, SMC: { c: 3.4, pw: 2.5, ph: 3.3, bl: 6.9, bw: 5.9 } };
+
+function gChip(tbl, key, o = {}) {
+  const s = tbl[key] || Object.values(tbl)[0];
+  const f = { body: [Rc(-s.bl / 2, -s.bw / 2, s.bl, s.bw, .06)], marks: [], pins: [P(1, -s.c, 0, s.pw, s.ph, 'rect', 0, o.n1), P(2, s.c, 0, s.pw, s.ph, 'rect', 0, o.n2)] };
+  if (o.polar) f.marks.push(Pa(`M${f2(-s.c - s.pw / 2 - .3)} ${f2(-s.ph / 2)}V${f2(s.ph / 2)}`));
+  return f;
+}
+function gAxial(pitch, bl, bd, o = {}) {
+  const h = pitch / 2, pd = o.pd || 1.6, dr = o.dr || .8;
+  const f = { body: [Rc(-bl / 2, -bd / 2, bl, bd, bd * .3)], marks: [Pa(`M${f2(-h + pd / 2)} 0H${f2(-bl / 2)}M${f2(bl / 2)} 0H${f2(h - pd / 2)}`)],
+    pins: [P(1, -h, 0, pd, pd, o.sq ? 'rect' : 'circle', dr, o.n1), P(2, h, 0, pd, pd, 'circle', dr, o.n2)] };
+  if (o.band) f.marks.push(Pa(`M${f2(-bl / 2 + bl * .2)} ${f2(-bd / 2)}V${f2(bd / 2)}`));
+  return f;
+}
+const gDisc = pitch => { const h = pitch / 2; return { body: [Rc(-h - 1.1, -1.3, pitch + 2.2, 2.6, 1.1)], marks: [], pins: [P(1, -h, 0, 1.6, 1.6, 'circle', .8), P(2, h, 0, 1.6, 1.6, 'circle', .8)] }; };
+function gRadial(D, pitch) {
+  const r = D / 2, h = pitch / 2, pd = Math.min(1.8, pitch * .72), dr = pd * .5;
+  return { body: [Ci(0, 0, r)],
+    marks: [plus(-r * .55, -r * .5, Math.min(.6, r * .18)), Pa(`M${f2(r * .55)} ${f2(-r * .835)}A${f2(r)} ${f2(r)} 0 0 1 ${f2(r * .55)} ${f2(r * .835)}`)],
+    pins: [P(1, -h, 0, pd, pd, 'rect', dr, '+'), P(2, h, 0, pd, pd, 'circle', dr, '−')] };
+}
+function gElSmd(D) {
+  const h = D / 2 + .15, c = D * .22, pc = D * .42, pw = Math.max(1.4, D * .45), ph = Math.max(1, D * .26);
+  return { body: [Pa(`M${f2(-h + c)} ${f2(-h)}H${f2(h)}V${f2(h)}H${f2(-h + c)}L${f2(-h)} ${f2(h - c)}V${f2(-h + c)}Z`, [-h, -h, h, h])],
+    marks: [Ci(0, 0, D / 2 - .25), plus(-h * .55, -h * .62, .45)],
+    pins: [P(1, -pc, 0, pw, ph, 'rect', 0, '+'), P(2, pc, 0, pw, ph, 'rect', 0, '−')] };
+}
+function gLedTht(D) {
+  const r = D / 2 + .4, f = r * .86, cc = Math.sqrt(r * r - f * f);
+  return { body: [Pa(`M${f2(-f)} ${f2(-cc)}A${f2(r)} ${f2(r)} 0 1 1 ${f2(-f)} ${f2(cc)}Z`, [-f, -r, r, r])], marks: [],
+    pins: [P(1, -1.27, 0, 1.8, 1.8, 'rect', .9, 'K'), P(2, 1.27, 0, 1.8, 1.8, 'circle', .9, 'A')] };
+}
+function gSot23(n) {
+  const pins = [], pw = .6, ph = .8;
+  if (n === 3) pins.push(P(1, -.95, 1, pw, ph), P(2, .95, 1, pw, ph), P(3, 0, -1, pw, ph));
+  else if (n === 5) pins.push(P(1, -.95, 1.1, pw, ph), P(2, 0, 1.1, pw, ph), P(3, .95, 1.1, pw, ph), P(4, .95, -1.1, pw, ph), P(5, -.95, -1.1, pw, ph));
+  else { [-.95, 0, .95].forEach((x, i) => pins.push(P(i + 1, x, 1.1, pw, ph))); [.95, 0, -.95].forEach((x, i) => pins.push(P(i + 4, x, -1.1, pw, ph))); }
+  const bh = n === 3 ? 1.3 : 1.6;
+  return { body: [Rc(-1.45, -bh / 2, 2.9, bh, .05)], marks: [Dt(-1.05, bh / 2 - .35, .15)], pins };
+}
+const gSot223 = () => ({ body: [Rc(-3.25, -1.75, 6.5, 3.5, .1)], marks: [Dt(-2.6, 1.1, .25)], pins: [P(1, -2.3, 3.15, .95, 2), P(2, 0, 3.15, .95, 2), P(3, 2.3, 3.15, .95, 2), P(4, 0, -3.15, 3.25, 2)] });
+const gDpak = () => ({ body: [Rc(-3.3, -3.8, 6.6, 6.1, .1)], marks: [], pins: [P(1, -2.28, 4.1, 1.1, 1.8), P(2, 0, -1.6, 5.8, 6.2), P(3, 2.28, 4.1, 1.1, 1.8)] });
+const gTo92 = () => ({ body: [Pa('M-1.79 1.6A2.4 2.4 0 1 1 1.79 1.6Z', [-2.4, -2.4, 2.4, 1.6])], marks: [], pins: [P(1, -1.27, 0, 1.05, 1.5, 'rect', .6), P(2, 0, 0, 1.05, 1.5, 'oval', .6), P(3, 1.27, 0, 1.05, 1.5, 'oval', .6)] });
+const gTo220 = () => ({ body: [Rc(-5.1, -3.4, 10.2, 4.6, .1)], marks: [Pa('M-5.1 -2.1H5.1')], pins: [P(1, -2.54, 0, 1.9, 2.6, 'rect', 1.1), P(2, 0, 0, 1.9, 2.6, 'oval', 1.1), P(3, 2.54, 0, 1.9, 2.6, 'oval', 1.1)] });
+function gDip(N, W) {
+  const n = N / 2, pins = [], y0 = -(n - 1) / 2 * 2.54;
+  for (let i = 0; i < n; i++) { pins.push(P(i + 1, -W / 2, y0 + i * 2.54, 1.6, 1.6, i ? 'circle' : 'rect', .8)); pins.push(P(N - i, W / 2, y0 + i * 2.54, 1.6, 1.6, 'circle', .8)); }
+  pins.sort(byId);
+  const bw = W - 1.27, bh = n * 2.54 + .3;
+  return { body: [Rc(-bw / 2, -bh / 2, bw, bh, .2)], marks: [Pa(`M-.9 ${f2(-bh / 2)}A.9 .9 0 0 0 .9 ${f2(-bh / 2)}`)], pins };
+}
+function gSop(N, bw, pitch, pl, pwid) {
+  const n = N / 2, pc = bw / 2 + pl / 2 + .05, pins = [], y0 = -(n - 1) / 2 * pitch;
+  for (let i = 0; i < n; i++) { pins.push(P(i + 1, -pc, y0 + i * pitch, pl, pwid)); pins.push(P(N - i, pc, y0 + i * pitch, pl, pwid)); }
+  pins.sort(byId);
+  const bh = n * pitch - .2 + (pitch < 1 ? .6 : 0);
+  return { body: [Rc(-bw / 2, -bh / 2, bw, bh, .1)], marks: [Dt(-bw / 2 + .6, -bh / 2 + .6, .28)], pins };
+}
+function gQuad(N, pitch, kind, ep, bodyO) {
+  const n = Math.max(1, Math.round(N / 4));
+  const B = bodyO > 0 ? bodyO : (kind === 'qfn' ? n * pitch + 1 : n * pitch + 1.2);
+  const pl = kind === 'qfn' ? .8 : 1.5, pw = pitch * .55, pc = kind === 'qfn' ? B / 2 - .25 : B / 2 + .75;
+  const off = k => (k - (n - 1) / 2) * pitch, pins = [];
+  for (let k = 0; k < n; k++) {
+    pins.push(P(1 + k, -pc, off(k), pl, pw));
+    pins.push(P(1 + n + k, off(k), pc, pw, pl));
+    pins.push(P(1 + 2 * n + k, pc, -off(k), pl, pw));
+    pins.push(P(1 + 3 * n + k, -off(k), -pc, pw, pl));
+  }
+  pins.sort(byId);
+  if (kind === 'qfn' && ep === 'jah') pins.push(P(4 * n + 1, 0, 0, B * .55, B * .55, 'rect', 0, 'EP'));
+  return { body: [Rc(-B / 2, -B / 2, B, B, .15)], marks: [Dt(-B / 2 + .8, -B / 2 + .8, .35)], pins };
+}
+function gHdr1(N, pitch) {
+  const pd = pitch * .68, dr = pitch * .4, pins = [];
+  for (let i = 0; i < N; i++) pins.push(P(i + 1, (i - (N - 1) / 2) * pitch, 0, pd, pd, i ? 'circle' : 'rect', dr));
+  return { body: [Rc(-N * pitch / 2, -pitch / 2, N * pitch, pitch)], marks: [], pins };
+}
+function gHdr2(n, pitch) {
+  const pd = pitch * .68, dr = pitch * .4, pins = [];
+  for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) * pitch; pins.push(P(2 * i + 1, x, pitch / 2, pd, pd, i ? 'circle' : 'rect', dr)); pins.push(P(2 * i + 2, x, -pitch / 2, pd, pd, 'circle', dr)); }
+  pins.sort(byId);
+  return { body: [Rc(-n * pitch / 2, -pitch, n * pitch, 2 * pitch)], marks: [], pins };
+}
+const JST = { 'XH 2.5': { p: 2.5, pd: 1.7, dr: 1, ex: 4.9, h: 5.75, y0: -3.4 }, 'PH 2.0': { p: 2, pd: 1.2, dr: .7, ex: 3.9, h: 4.5, y0: -2.7 }, 'SH 1.0': { p: 1, smd: 1 } };
+function gJst(series, N) {
+  const s = JST[series] || JST['XH 2.5'], pins = [];
+  if (s.smd) {
+    for (let i = 0; i < N; i++) pins.push(P(i + 1, (i - (N - 1) / 2) * s.p, -1.6, .6, 1.55));
+    const mx = (N - 1) / 2 * s.p + 1.35;
+    pins.push(P('MP1', -mx, 1.2, 1.2, 1.8, 'rect', 0, 'MP'), P('MP2', mx, 1.2, 1.2, 1.8, 'rect', 0, 'MP'));
+    const w = (N - 1) * s.p + 3.6;
+    return { body: [Rc(-w / 2, -.9, w, 3.2, .2)], marks: [], pins };
+  }
+  for (let i = 0; i < N; i++) pins.push(P(i + 1, (i - (N - 1) / 2) * s.p, 0, s.pd, s.pd, i ? 'circle' : 'rect', s.dr));
+  const w = (N - 1) * s.p + s.ex;
+  return { body: [Rc(-w / 2, s.y0, w, s.h, .2)], marks: [], pins };
+}
+function gTerm(N, pitch) {
+  const pd = pitch * .52, dr = pitch * .26, pins = [], marks = [];
+  for (let i = 0; i < N; i++) { const x = (i - (N - 1) / 2) * pitch; pins.push(P(i + 1, x, 0, pd, pd, i ? 'circle' : 'rect', dr)); marks.push(Ci(x, -pitch * .62, pitch * .28)); }
+  return { body: [Rc(-N * pitch / 2, -pitch * 1.05, N * pitch, pitch * 1.6, .2)], marks, pins };
+}
+function gUsbC() {
+  const L = [['A1B12', 'GND', -3.2, .6], ['A4B9', 'VBUS', -2.4, .6], ['B8', 'SBU2', -1.75, .3], ['A5', 'CC1', -1.25, .3], ['B7', 'D−', -.75, .3], ['A6', 'D+', -.25, .3], ['A7', 'D−', .25, .3], ['B6', 'D+', .75, .3], ['A8', 'SBU1', 1.25, .3], ['B5', 'CC2', 1.75, .3], ['B4A9', 'VBUS', 2.4, .6], ['B1A12', 'GND', 3.2, .6]];
+  const pins = L.map(([id, n, x, w]) => P(id, x, -3.85, w, 1.15, 'rect', 0, n));
+  pins.push(P('S1', -4.32, -2.9, .9, 2, 'oval', .6, 'SHIELD'), P('S2', 4.32, -2.9, .9, 2, 'oval', .6, 'SHIELD'), P('S3', -4.32, 1.1, .9, 1.7, 'oval', .6, 'SHIELD'), P('S4', 4.32, 1.1, .9, 1.7, 'oval', .6, 'SHIELD'));
+  return { body: [Rc(-4.47, -3.15, 8.94, 7.3, .6)], marks: [Pa('M-3.6 3.5H3.6')], pins };
+}
+function gMicroUsb() {
+  const pins = ['VBUS', 'D−', 'D+', 'ID', 'GND'].map((n, i) => P(i + 1, (i - 2) * .65, -2.7, .4, 1.35, 'rect', 0, n));
+  pins.push(P('S1', -3.1, -2.45, 1.6, 1.4, 'rect', 0, 'SHIELD'), P('S2', 3.1, -2.45, 1.6, 1.4, 'rect', 0, 'SHIELD'), P('S3', -1.2, 0, 1.9, 1.9, 'rect', 0, 'SHIELD'), P('S4', 1.2, 0, 1.9, 1.9, 'rect', 0, 'SHIELD'));
+  return { body: [Rc(-3.75, -2.2, 7.5, 5, .3)], marks: [Pa('M-3.75 2.1H3.75')], pins };
+}
+const gDcJack = () => ({ body: [Rc(-4.5, -6.6, 9, 14.4, .5)], marks: [Ci(0, 4.2, 2.3)], pins: [P(1, 0, -5.2, 3.2, 1.6, 'oval', 1, '+'), P(2, 0, .8, 3.2, 1.6, 'oval', 1, '−'), P(3, 4.5, -2.2, 1.6, 3.2, 'oval', 1, 'SW')] });
+const gXtal = () => ({ body: [Rc(-5.5, -2.33, 11, 4.65, 2.3)], marks: [], pins: [P(1, -2.44, 0, 1.5, 1.5, 'circle', .8), P(2, 2.44, 0, 1.5, 1.5, 'circle', .8)] });
+const gXtalSmd = () => ({ body: [Rc(-1.6, -1.25, 3.2, 2.5, .1)], marks: [Dt(-1.9, 1.5, .18)], pins: [P(1, -1.1, .85, 1.4, 1.15), P(2, 1.1, .85, 1.4, 1.15), P(3, 1.1, -.85, 1.4, 1.15), P(4, -1.1, -.85, 1.4, 1.15)] });
+const gBtn = () => ({ body: [Rc(-3, -3, 6, 6, .4)], marks: [Ci(0, 0, 1.75)], pins: [P(1, -3.25, -2.25, 2, 2, 'circle', 1), P(2, 3.25, -2.25, 2, 2, 'circle', 1), P(3, -3.25, 2.25, 2, 2, 'circle', 1), P(4, 3.25, 2.25, 2, 2, 'circle', 1)] });
+const gPot = () => ({ body: [Rc(-3.3, -3.6, 6.6, 7, .4)], marks: [Ci(0, -.8, 2.3), Pa('M-1.2 -.8H1.2')], pins: [P(1, -2.54, 2.3, 1.6, 1.6, 'rect', .8), P(2, 0, 2.3, 1.6, 1.6, 'circle', .8, 'W'), P(3, 2.54, 2.3, 1.6, 1.6, 'circle', .8)] });
+function gCustom(layout, N, pitch, w, h) {
+  N = Math.max(0, Math.round(N)); const pins = [], pd = Math.min(pitch * .6, 1.6);
+  if (layout === '1 rida') for (let i = 0; i < N; i++) pins.push(P(i + 1, (i - (N - 1) / 2) * pitch, 0, pd, pd, i ? 'circle' : 'rect'));
+  else if (layout === '2 rida') {
+    const n = Math.ceil(N / 2), y0 = -(n - 1) / 2 * pitch;
+    for (let i = 0; i < n; i++) pins.push(P(i + 1, -w / 2, y0 + i * pitch, pd, pd, i ? 'circle' : 'rect'));
+    for (let i = 0; i < N - n; i++) pins.push(P(n + i + 1, w / 2, y0 + (n - 1 - i) * pitch, pd, pd, 'circle'));
+  } else if (layout === '4 külge') {
+    const n = Math.max(1, Math.ceil(N / 4)), off = k => (k - (n - 1) / 2) * pitch;
+    const pos = [k => [-w / 2, off(k)], k => [off(k), h / 2], k => [w / 2, -off(k)], k => [-off(k), -h / 2]];
+    for (let i = 0; i < N; i++) { const [x, y] = pos[Math.floor(i / n) % 4](i % n); pins.push(P(i + 1, x, y, pd, pd, i ? 'circle' : 'rect')); }
+  }
+  return { body: [Rc(-w / 2, -h / 2, w, h, .3)], marks: N ? [Dt(-w / 2 + .9, -h / 2 + .9, .3)] : [], pins };
+}
+
+/* ---- library ---- */
+const SZ = ['0402', '0603', '0805', '1206', '1210', '2010', '2512'];
+const pSel = (k, l, o, d) => ({ k, l, o, d });
+const pNum = (k, l, min, max, step, d) => ({ k, l, n: [min, max, step], d });
+const LIB = [
+  { key: 'r_smd', cat: 'pass', name: 'Takisti SMD', prefix: 'R', value: '10k', kw: 'resistor chip', params: [pSel('size', 'Korpus', SZ, '0805')], gen: p => gChip(CHIP, p.size) },
+  { key: 'c_smd', cat: 'pass', name: 'Kondensaator SMD', prefix: 'C', value: '100n', kw: 'capacitor mlcc', params: [pSel('size', 'Korpus', SZ, '0805')], gen: p => gChip(CHIP, p.size) },
+  { key: 'l_smd', cat: 'pass', name: 'Induktiivsus SMD', prefix: 'L', value: '10µH', kw: 'inductor drossel', params: [pSel('size', 'Korpus', SZ, '1210')], gen: p => gChip(CHIP, p.size) },
+  { key: 'f_smd', cat: 'pass', name: 'Kaitse SMD', prefix: 'F', value: '1A', kw: 'fuse sulavkaitse', params: [pSel('size', 'Korpus', SZ, '1206')], gen: p => gChip(CHIP, p.size) },
+  { key: 'c_tant', cat: 'pass', name: 'Tantaal SMD', prefix: 'C', value: '10µ', kw: 'tantalum', params: [pSel('case', 'Korpus', ['A', 'B', 'C', 'D'], 'B')], gen: p => gChip(TANT, p.case, { polar: true, n1: '+', n2: '−' }) },
+  { key: 'c_elsmd', cat: 'pass', name: 'Elektrolüüt SMD', prefix: 'C', value: '100µ', kw: 'electrolytic', params: [pSel('D', 'Läbimõõt', ['4', '5', '6.3', '8', '10'], '6.3')], gen: p => gElSmd(+p.D) },
+  { key: 'r_tht', cat: 'pass', name: 'Takisti THT', prefix: 'R', value: '10k', kw: 'resistor axial', params: [pSel('pitch', 'Samm', ['7.62', '10.16', '12.7'], '10.16')], gen: p => gAxial(+p.pitch, 6.3, 2.5) },
+  { key: 'c_disc', cat: 'pass', name: 'Kondensaator THT', prefix: 'C', value: '100n', kw: 'ceramic disc', params: [pSel('pitch', 'Samm', ['2.54', '5.08'], '5.08')], gen: p => gDisc(+p.pitch) },
+  { key: 'c_el', cat: 'pass', name: 'Elektrolüüt THT', prefix: 'C', value: '100µ', kw: 'electrolytic radial', params: [pSel('D', 'Läbimõõt', ['5', '6.3', '8', '10', '13'], '6.3'), pSel('pitch', 'Samm', ['2', '2.5', '3.5', '5'], '2.5')], gen: p => gRadial(+p.D, +p.pitch) },
+  { key: 'd_smd', cat: 'semi', name: 'Diood SMD', prefix: 'D', value: '', kw: 'diode schottky', params: [pSel('case', 'Korpus', Object.keys(DIO), 'SOD-123')], gen: p => gChip(DIO, p.case, { polar: true, n1: 'K', n2: 'A' }) },
+  { key: 'd_tht', cat: 'semi', name: 'Diood THT', prefix: 'D', value: '1N4007', kw: 'diode do-41', params: [], gen: () => gAxial(10.16, 5.2, 2.7, { band: true, sq: true, n1: 'K', n2: 'A', pd: 2, dr: 1 }) },
+  { key: 'led_smd', cat: 'semi', name: 'LED SMD', prefix: 'D', value: '', kw: 'led', params: [pSel('size', 'Korpus', ['0603', '0805', '1206'], '0805')], gen: p => gChip(CHIP, p.size, { polar: true, n1: 'K', n2: 'A' }) },
+  { key: 'led_tht', cat: 'semi', name: 'LED THT', prefix: 'D', value: '', kw: 'led', params: [pSel('D', 'Läbimõõt', ['3', '5'], '5')], gen: p => gLedTht(+p.D) },
+  { key: 'sot23', cat: 'semi', name: 'SOT-23', prefix: 'Q', value: '', kw: 'transistor mosfet', params: [pSel('pins', 'Jalgu', ['3', '5', '6'], '3')], gen: p => gSot23(+p.pins) },
+  { key: 'sot223', cat: 'semi', name: 'SOT-223', prefix: 'U', value: '', kw: 'regulator', params: [], gen: gSot223 },
+  { key: 'dpak', cat: 'semi', name: 'DPAK', prefix: 'Q', value: '', kw: 'to-252 mosfet', params: [], gen: gDpak },
+  { key: 'to92', cat: 'semi', name: 'TO-92', prefix: 'Q', value: '', kw: 'transistor', params: [], gen: gTo92 },
+  { key: 'to220', cat: 'semi', name: 'TO-220', prefix: 'U', value: '', kw: 'regulator mosfet', params: [], gen: gTo220 },
+  { key: 'soic', cat: 'ic', name: 'SOIC', prefix: 'U', value: '', kw: 'so ic', params: [pSel('pins', 'Jalgu', ['8', '14', '16', '20', '24', '28'], '8'), pSel('body', 'Kere laius', ['3.9', '7.5'], '3.9')], gen: p => gSop(+p.pins, +p.body, 1.27, 1.55, .6) },
+  { key: 'tssop', cat: 'ic', name: 'TSSOP / MSOP', prefix: 'U', value: '', kw: 'ic', params: [pSel('pins', 'Jalgu', ['8', '10', '14', '16', '20', '24', '28'], '14'), pSel('pitch', 'Samm', ['0.65', '0.5'], '0.65')], gen: p => gSop(+p.pins, +p.pitch < .6 ? 3 : 4.4, +p.pitch, 1.4, +p.pitch * .6) },
+  { key: 'dip', cat: 'ic', name: 'DIP', prefix: 'U', value: '', kw: 'ic tht', params: [pSel('pins', 'Jalgu', ['4', '6', '8', '14', '16', '18', '20', '24', '28', '40'], '8'), pSel('row', 'Ridade vahe', ['7.62', '15.24'], '7.62')], gen: p => gDip(+p.pins, +p.row) },
+  { key: 'qfp', cat: 'ic', name: 'QFP', prefix: 'U', value: '', kw: 'lqfp tqfp mcu', params: [pSel('pins', 'Jalgu', ['32', '44', '48', '64', '80', '100'], '44'), pSel('pitch', 'Samm', ['0.8', '0.65', '0.5'], '0.8'), pNum('body', 'Kere (mm, 0 = auto)', 0, 40, .1, 0)], gen: p => gQuad(+p.pins, +p.pitch, 'qfp', '', +p.body) },
+  { key: 'qfn', cat: 'ic', name: 'QFN', prefix: 'U', value: '', kw: 'dfn mlf', params: [pSel('pins', 'Jalgu', ['16', '20', '24', '28', '32', '48', '64'], '32'), pSel('pitch', 'Samm', ['0.65', '0.5', '0.4'], '0.5'), pSel('ep', 'Keskpadi', ['jah', 'ei'], 'jah'), pNum('body', 'Kere (mm, 0 = auto)', 0, 20, .1, 0)], gen: p => gQuad(+p.pins, +p.pitch, 'qfn', p.ep, +p.body) },
+  { key: 'hdr1', cat: 'conn', name: 'Pinnirida 1×N', prefix: 'J', value: '', kw: 'header pin', params: [pNum('pins', 'Jalgu', 1, 40, 1, 4), pSel('pitch', 'Samm', ['2.54', '2.0', '1.27'], '2.54')], gen: p => gHdr1(Math.round(+p.pins), +p.pitch) },
+  { key: 'hdr2', cat: 'conn', name: 'Pinnirida 2×N', prefix: 'J', value: '', kw: 'header idc', params: [pNum('pins', 'Paare', 1, 40, 1, 5), pSel('pitch', 'Samm', ['2.54', '2.0', '1.27'], '2.54')], gen: p => gHdr2(Math.round(+p.pins), +p.pitch) },
+  { key: 'jst', cat: 'conn', name: 'JST pistik', prefix: 'J', value: '', kw: 'xh ph sh connector', params: [pSel('series', 'Seeria', Object.keys(JST), 'XH 2.5'), pNum('pins', 'Jalgu', 1, 16, 1, 3)], gen: p => gJst(p.series, Math.round(+p.pins)) },
+  { key: 'term', cat: 'conn', name: 'Kruviklemm', prefix: 'J', value: '', kw: 'terminal block', params: [pNum('pins', 'Jalgu', 1, 12, 1, 2), pSel('pitch', 'Samm', ['5.0', '5.08', '3.5'], '5.0')], gen: p => gTerm(Math.round(+p.pins), +p.pitch) },
+  { key: 'usbc', cat: 'conn', name: 'USB-C', prefix: 'J', value: 'USB-C', kw: 'type-c usb', params: [], gen: gUsbC },
+  { key: 'musb', cat: 'conn', name: 'Micro-USB', prefix: 'J', value: 'micro-USB', kw: 'usb', params: [], gen: gMicroUsb },
+  { key: 'dcjack', cat: 'conn', name: 'Toitepesa DC', prefix: 'J', value: '', kw: 'barrel jack power', params: [], gen: gDcJack },
+  { key: 'xtal', cat: 'misc', name: 'Kvarts HC-49', prefix: 'Y', value: '16MHz', kw: 'crystal', params: [], gen: gXtal },
+  { key: 'xtal_smd', cat: 'misc', name: 'Kvarts SMD', prefix: 'Y', value: '16MHz', kw: 'crystal 3225', params: [], gen: gXtalSmd },
+  { key: 'btn', cat: 'misc', name: 'Nupp 6×6', prefix: 'SW', value: '', kw: 'button switch tact', params: [], gen: gBtn },
+  { key: 'pot', cat: 'misc', name: 'Trimmer', prefix: 'RV', value: '10k', kw: 'potentiometer', params: [], gen: gPot },
+  { key: 'custom', cat: 'misc', name: 'Kohandatud', prefix: 'U', value: '', kw: 'generic custom moodul', params: [pSel('layout', 'Jalgade paigutus', ['2 rida', '1 rida', '4 külge', 'tühi'], '2 rida'), pNum('pins', 'Jalgu', 0, 200, 1, 8), pNum('pitch', 'Samm (mm)', .3, 10, .01, 2.54), pNum('w', 'Laius (mm)', 1, 200, .1, 8), pNum('h', 'Kõrgus (mm)', 1, 200, .1, 10)], gen: p => gCustom(p.layout, +p.pins, +p.pitch, +p.w, +p.h) },
+  { key: 'tp', cat: 'point', name: 'Testpunkt', prefix: 'TP', value: '', kw: 'test point', params: [], gen: () => ({ body: [], marks: [Ci(0, 0, 1.15)], pins: [P(1, 0, 0, 1.5, 1.5, 'circle')] }) },
+  { key: 'via', cat: 'point', name: 'Via', prefix: 'V', value: '', kw: 'via läbiviik', params: [], gen: () => ({ body: [], marks: [], pins: [P(1, 0, 0, .7, .7, 'circle', .35)] }) },
+  { key: 'pad', cat: 'point', name: 'Kontaktpadi', prefix: 'P', value: '', kw: 'pad', params: [pSel('shape', 'Kuju', ['ümar', 'nelinurk'], 'ümar'), pNum('size', 'Suurus (mm)', .2, 20, .1, 1.6)], gen: p => ({ body: [], marks: [], pins: [P(1, 0, 0, +p.size, +p.size, p.shape === 'nelinurk' ? 'rect' : 'circle')] }) },
+  { key: 'wire', cat: 'point', name: 'Juhtme jootekoht', prefix: 'W', value: '', kw: 'wire juhe', params: [], gen: () => ({ body: [], marks: [], pins: [P(1, 0, 0, 2, 2, 'circle', 1)] }) },
+  { key: 'hole', cat: 'point', name: 'Kinnitusava', prefix: 'H', value: '', kw: 'mounting hole', params: [pSel('D', 'Ava', ['2.2', '3.2', '4.3'], '3.2')], gen: p => ({ body: [], marks: [], pins: [P(1, 0, 0, +p.D * 1.8, +p.D * 1.8, 'circle', +p.D)] }) },
+];
+const DEF = Object.fromEntries(LIB.map(d => [d.key, d]));
+const CATS = [['pass', 'Passiivsed'], ['semi', 'Pooljuhid'], ['ic', 'Mikroskeemid'], ['conn', 'Konnektorid'], ['misc', 'Muud'], ['point', 'Punktid plaadil']];
+const POINT_TYPES = [['tp', 'Testpunkt'], ['via', 'Via'], ['pad', 'Padi'], ['wire', 'Juhe'], ['hole', 'Ava']];
+
+const defaultParams = def => Object.fromEntries((def.params || []).map(p => [p.k, p.d]));
+function bboxOf(f) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (a, b, c, d) => { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, c); y1 = Math.max(y1, d); };
+  for (const s of [...f.body, ...f.marks]) {
+    if (s.t === 'rect') add(s.x, s.y, s.x + s.w, s.y + s.h);
+    else if (s.t === 'circle') add(s.x - s.r, s.y - s.r, s.x + s.r, s.y + s.r);
+    else if (s.t === 'path' && s.bb) add(...s.bb);
+  }
+  for (const p of f.pins) add(p.x - p.w / 2, p.y - p.h / 2, p.x + p.w / 2, p.y + p.h / 2);
+  if (!isFinite(x0)) { x0 = y0 = -1; x1 = y1 = 1; }
+  return { x0, y0, x1, y1 };
+}
+const fpCache = new Map();
+function baseFP(type, params) {
+  const key = type + '|' + JSON.stringify(params || {});
+  let f = fpCache.get(key);
+  if (!f) {
+    const def = DEF[type] || DEF.custom;
+    f = def.gen({ ...defaultParams(def), ...(params || {}) });
+    f.bbox = bboxOf(f);
+    f.svg = fpShapes(f);
+    fpCache.set(key, f);
+  }
+  return f;
+}
+function shapeSVG(s, cls) {
+  const c = cls ? ` class="${cls}"` : '';
+  if (s.t === 'rect') return `<rect${c} x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" rx="${s.r || 0}"/>`;
+  if (s.t === 'circle') return `<circle${c} cx="${s.x}" cy="${s.y}" r="${s.r}"/>`;
+  if (s.t === 'dot') return `<circle class="dot" cx="${s.x}" cy="${s.y}" r="${s.r}"/>`;
+  return `<path${c} d="${s.d}"/>`;
+}
+function fpShapes(f) {
+  const body = f.body.map(s => shapeSVG(s)).join('');
+  const marks = f.marks.map(s => shapeSVG(s)).join('');
+  const haloMarks = f.marks.filter(s => s.t !== 'dot').map(s => shapeSVG(s)).join('');
+  return { halo: `<g class="fp-halo">${body}${haloMarks}</g>`, body: `<g class="fp-body">${body}</g><g class="fp-marks">${marks}</g>` };
+}
+function padSVG(p, cls, attrs = '') {
+  if (p.shape === 'circle') return `<circle class="${cls}" cx="${p.x}" cy="${p.y}" r="${f2(p.w / 2)}"${attrs}/>`;
+  if (p.shape === 'oval' && Math.abs(p.w - p.h) < 1e-6) return `<circle class="${cls}" cx="${p.x}" cy="${p.y}" r="${f2(p.w / 2)}"${attrs}/>`;
+  const rx = p.shape === 'oval' ? Math.min(p.w, p.h) / 2 : Math.min(p.w, p.h) * .14;
+  return `<rect class="${cls}" x="${f2(p.x - p.w / 2)}" y="${f2(p.y - p.h / 2)}" width="${p.w}" height="${p.h}" rx="${f2(rx)}"${attrs}/>`;
+}
+const thumbCache = {};
+function thumb(def) {
+  if (thumbCache[def.key]) return thumbCache[def.key];
+  const f = baseFP(def.key, defaultParams(def)), b = f.bbox;
+  const m = Math.max(b.x1 - b.x0, b.y1 - b.y0) * .1 + .25;
+  const vb = `${f2(b.x0 - m)} ${f2(b.y0 - m)} ${f2(b.x1 - b.x0 + 2 * m)} ${f2(b.y1 - b.y0 + 2 * m)}`;
+  const pads = f.pins.map(p => padSVG(p, 'pad') + (p.drill ? `<circle class="drill" cx="${p.x}" cy="${p.y}" r="${f2(p.drill / 2)}"/>` : '')).join('');
+  return (thumbCache[def.key] = `<svg class="thumb" viewBox="${vb}" aria-hidden="true">${f.svg.body}${pads}</svg>`);
+}
+function fpLabel(c) {
+  const def = DEF[c.type]; if (!def) return c.type;
+  const p = { ...defaultParams(def), ...(c.params || {}) };
+  switch (c.type) {
+    case 'soic': case 'tssop': case 'dip': case 'qfp': case 'qfn': return `${def.name.split(' ')[0]}-${p.pins}`;
+    case 'sot23': return p.pins === '3' ? 'SOT-23' : `SOT-23-${p.pins}`;
+    case 'hdr1': return `${p.pins}×1 · ${p.pitch}`;
+    case 'hdr2': return `${p.pins}×2 · ${p.pitch}`;
+    case 'jst': return `JST ${p.series.split(' ')[0]} ${p.pins}p`;
+    case 'term': return `Klemm ${p.pins}p · ${p.pitch}`;
+    case 'custom': return `Kohandatud ${p.w}×${p.h}`;
+    default: {
+      const v = p.size || p.case || (p.D ? 'Ø' + p.D : '') || p.pitch;
+      return v ? `${def.name} ${v}` : def.name;
+    }
+  }
+}
+
+/* ================= document & UI state ================= */
+const newDoc = () => ({ name: 'Uus plaat', ppm: 10, calibrated: false, calib: null, comps: [], traces: [], dims: [], outlines: [], nextId: 1, sample: false });
+let doc = newDoc();
+let img = null; // {src, w, h, name}
+const DEFAULT_LAYERS = { img: true, body: true, pads: true, top: true, bottom: true, wire: true, dims: true, labels: true, pinl: true };
+const ui = { opacity: .85, gray: false, contrast: 1, layers: { ...DEFAULT_LAYERS }, netColors: false, bannerOff: false };
+const view = { x: 0, y: 0, z: 1 };
+const S = {
+  tool: 'select', step: 'place', tab: 'lib', placeType: null, placeRot: 0, pointType: 'via',
+  traceLayer: 'top', traceW: .4, pinSize: 0,
+  sel: new Set(), selPin: null, hover: null, snap: null, hlNet: null, hlPinned: null,
+  draft: null, drag: null, mouse: [0, 0], shift: false, spaceDown: false,
+  libQ: '', boardQ: '', exported: false, exPhoto: false
+};
+const uid = p => p + (doc.nextId++);
+const kindOf = id => ({ c: 'comp', t: 'trace', d: 'dim', o: 'outline' })[String(id)[0]];
+const isPoint = c => DEF[c.type]?.cat === 'point';
+const isConn = c => DEF[c.type]?.cat === 'conn';
+
+/* ---- geometry caches ---- */
+let geoV = 1;
+const touch = () => { geoV++; };
+const fpMemo = new WeakMap();
+function compFP(c) {
+  const m = fpMemo.get(c);
+  if (m && m.v === geoV) return m.fp;
+  const b = baseFP(c.type, c.params);
+  const pins = b.pins.map(p => (c.pn && c.pn[p.id] != null) ? { ...p, name: c.pn[p.id] } : p);
+  for (const e of (c.extra || [])) pins.push({ id: e.id, x: e.x, y: e.y, w: e.d, h: e.d, shape: e.shape || 'circle', drill: e.drill || 0, name: (c.pn && c.pn[e.id]) || '', extra: true });
+  let bbox = b.bbox;
+  if (c.extra && c.extra.length) {
+    bbox = { ...bbox };
+    for (const p of pins) { bbox.x0 = Math.min(bbox.x0, p.x - p.w / 2); bbox.y0 = Math.min(bbox.y0, p.y - p.h / 2); bbox.x1 = Math.max(bbox.x1, p.x + p.w / 2); bbox.y1 = Math.max(bbox.y1, p.y + p.h / 2); }
+  }
+  const fp = { body: b.body, marks: b.marks, svg: b.svg, pins, bbox, pinMap: new Map(pins.map(p => [p.id, p])) };
+  fpMemo.set(c, { v: geoV, fp });
+  return fp;
+}
+let cmapV = 0, cmap = new Map();
+function compById(id) { if (cmapV !== geoV) { cmap = new Map(doc.comps.map(c => [c.id, c])); cmapV = geoV; } return cmap.get(id); }
+function anyById(id) {
+  const k = kindOf(id);
+  if (k === 'comp') return compById(id);
+  if (k === 'trace') return doc.traces.find(t => t.id === id);
+  if (k === 'dim') return doc.dims.find(d => d.id === id);
+  if (k === 'outline') return doc.outlines.find(o => o.id === id);
+}
+function l2w(c, lx, ly) {
+  const x = c.side === 'bottom' ? -lx : lx, a = c.rot * DEG, co = Math.cos(a), si = Math.sin(a), k = doc.ppm;
+  return [c.x + (x * co - ly * si) * k, c.y + (x * si + ly * co) * k];
+}
+function w2l(c, wx, wy) {
+  const dx = (wx - c.x) / doc.ppm, dy = (wy - c.y) / doc.ppm, a = -c.rot * DEG, co = Math.cos(a), si = Math.sin(a);
+  let x = dx * co - dy * si; const y = dx * si + dy * co;
+  if (c.side === 'bottom') x = -x;
+  return [x, y];
+}
+const compTransform = c => `translate(${f2(c.x)} ${f2(c.y)}) rotate(${f2(c.rot)}) scale(${f2((c.side === 'bottom' ? -1 : 1) * doc.ppm)} ${f2(doc.ppm)})`;
+let pidxV = 0, pidx = [];
+function pinIndex() {
+  if (pidxV !== geoV) {
+    pidx = [];
+    for (const c of doc.comps) { const f = compFP(c); for (const p of f.pins) { const [x, y] = l2w(c, p.x, p.y); pidx.push({ c, p, x, y, r: Math.max(p.w, p.h) / 2 * doc.ppm }); } }
+    pidxV = geoV;
+  }
+  return pidx;
+}
+function pinWorld(cid, pid) { const c = compById(cid); if (!c) return null; const p = compFP(c).pinMap.get(pid); return p ? l2w(c, p.x, p.y) : null; }
+function epPos(ep) { if (ep.c) { const q = pinWorld(ep.c, ep.p); if (q) return q; } return [ep.x, ep.y]; }
+const tracePts = t => [epPos(t.a), ...t.pts, epPos(t.b)];
+function refreshEndpoints() {
+  const fix = ep => { const q = epPos(ep); ep.x = f2(q[0]); ep.y = f2(q[1]); if (ep.c && !pinWorld(ep.c, ep.p)) { delete ep.c; delete ep.p; } };
+  for (const t of doc.traces) { fix(t.a); fix(t.b); }
+  for (const d of doc.dims) { fix(d.a); fix(d.b); }
+}
+const origin = () => doc.outlines[0] ? [doc.outlines[0].x, doc.outlines[0].y] : [0, 0];
+const toMM = ([x, y]) => { const [ox, oy] = origin(); return [(x - ox) / doc.ppm, (y - oy) / doc.ppm]; };
+const pinLabel = (cid, pid) => { const c = compById(cid); return (c ? c.ref : '?') + '.' + pid; };
+
+/* ---- nets ---- */
+const NET_PAL = ['#e0532f', '#2f74e0', '#1f9e6e', '#c0399b', '#d99a12', '#7a55d6', '#0f9fb5', '#a8562a', '#5f8f1f', '#d1446d', '#3c63a8', '#8c7a2a'];
+let netsV = 0, netsCache = null;
+function getNets() {
+  if (netsV === geoV && netsCache) return netsCache;
+  const parent = new Map();
+  const add = k => { if (!parent.has(k)) parent.set(k, k); };
+  const find = k => { let r = k; while (parent.get(r) !== r) r = parent.get(r); while (parent.get(k) !== r) { const n = parent.get(k); parent.set(k, r); k = n; } return r; };
+  const uni = (a, b) => { add(a); add(b); const ra = find(a), rb = find(b); if (ra !== rb) parent.set(rb, ra); };
+  const polys = doc.traces.map(t => ({ t, pts: tracePts(t) }));
+  for (const { t } of polys) {
+    add('t:' + t.id);
+    if (t.a.c) uni('t:' + t.id, 'p:' + t.a.c + ':' + t.a.p);
+    if (t.b.c) uni('t:' + t.id, 'p:' + t.b.c + ':' + t.b.p);
+  }
+  const tol = Math.max(1.5, .25 * doc.ppm), pins = pinIndex();
+  for (const A of polys) for (const end of ['a', 'b']) {
+    if (A.t[end].c) continue;
+    const q = end === 'a' ? A.pts[0] : A.pts[A.pts.length - 1];
+    for (const B of polys) if (B !== A && nearestOnPoly(q, B.pts).d <= tol + B.t.w * doc.ppm / 2) uni('t:' + A.t.id, 't:' + B.t.id);
+    for (const pi of pins) if (dist(q, [pi.x, pi.y]) <= Math.max(pi.r, tol)) uni('t:' + A.t.id, 'p:' + pi.c.id + ':' + pi.p.id);
+  }
+  const groups = new Map();
+  for (const k of parent.keys()) {
+    const r = find(k);
+    if (!groups.has(r)) groups.set(r, { traces: [], pins: [] });
+    const g = groups.get(r);
+    if (k[0] === 't') g.traces.push(k.slice(2));
+    else { const i = k.indexOf(':', 2); g.pins.push({ c: k.slice(2, i), p: k.slice(i + 1) }); }
+  }
+  const tnum = id => parseInt(id.slice(1), 10) || 0;
+  const list = [];
+  for (const g of groups.values()) {
+    if (!g.traces.length) continue;
+    g.traces.sort((a, b) => tnum(a) - tnum(b));
+    const ts = g.traces.map(id => doc.traces.find(t => t.id === id));
+    const named = ts.find(t => t.net);
+    const len = polys.filter(P => g.traces.includes(P.t.id)).reduce((s, P) => s + polyLen(P.pts), 0) / doc.ppm;
+    const pinsSorted = g.pins.filter(p => compById(p.c)).sort((a, b) => pinLabel(a.c, a.p).localeCompare(pinLabel(b.c, b.p), 'et', { numeric: true }));
+    list.push({ key: g.traces[0], name: named ? named.net : '', named: !!named, traces: g.traces, pins: pinsSorted, len });
+  }
+  list.sort((a, b) => tnum(a.key) - tnum(b.key));
+  let auto = 0;
+  for (const n of list) {
+    if (!n.named) n.name = 'N' + (++auto);
+    const u = n.name.toUpperCase();
+    n.color = /^(GND|VSS|0V|AGND|DGND|PGND)/.test(u) ? '#7b8a84' : NET_PAL[(tnum(n.key) * 7) % NET_PAL.length];
+  }
+  const byTrace = new Map(), byPin = new Map(), byKey = new Map();
+  for (const n of list) { byKey.set(n.key, n); n.traces.forEach(t => byTrace.set(t, n)); n.pins.forEach(p => byPin.set(p.c + ':' + p.p, n)); }
+  netsCache = { list, byTrace, byPin, byKey };
+  netsV = geoV;
+  return netsCache;
+}
+
+/* ---- history ---- */
+const hist = { past: [], future: [] };
+const snap = () => JSON.stringify(doc);
+function resetHistory() { hist.past = [snap()]; hist.future = []; }
+function commit(opts = {}) {
+  refreshEndpoints(); touch();
+  const s = snap();
+  if (hist.past[hist.past.length - 1] !== s) { hist.past.push(s); if (hist.past.length > 200) hist.past.shift(); hist.future.length = 0; }
+  if (opts.light) { schedule('scene'); renderSide(); renderSteps(); renderStatus(); } else renderAll();
+  queueSave();
+}
+function revert() { doc = JSON.parse(hist.past[hist.past.length - 1]); touch(); }
+function afterSwap() {
+  for (const id of [...S.sel]) if (!anyById(id)) S.sel.delete(id);
+  if (S.selPin && !pinWorld(S.selPin.c, S.selPin.p)) S.selPin = null;
+  touch(); renderAll(); queueSave();
+}
+function undo() {
+  if (S.draft) { S.draft = null; schedule('over'); renderOptbar(); return; }
+  if (hist.past.length < 2) { toast('Pole midagi tagasi võtta'); return; }
+  hist.future.push(hist.past.pop()); doc = JSON.parse(hist.past[hist.past.length - 1]); afterSwap();
+}
+function redo() {
+  const s = hist.future.pop(); if (!s) return;
+  hist.past.push(s); doc = JSON.parse(s); afterSwap();
+}
+
+/* ---- persistence (IndexedDB, best effort) ---- */
+const IDB = {
+  db: null,
+  open() {
+    if (this.db) return Promise.resolve(this.db);
+    return new Promise((res, rej) => {
+      try {
+        const r = indexedDB.open('pcb-kaardistaja', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('kv');
+        r.onsuccess = () => { this.db = r.result; res(r.result); };
+        r.onerror = () => rej(r.error);
+      } catch (e) { rej(e); }
+    });
+  },
+  async get(k) { const db = await this.open(); return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
+  async set(k, v) { const db = await this.open(); return new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(v, k); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); }); }
+};
+let saveTimer = 0;
+function queueSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { IDB.set('auto', { doc, ui, view: { ...view }, t: Date.now() }).catch(() => {}); }, 600);
+}
+const saveImage = () => IDB.set('img', img).catch(() => {});
+
+/* ---- object helpers ---- */
+function nextRef(prefix) {
+  let m = 0; const re = new RegExp('^' + prefix + '(\\d+)$');
+  for (const c of doc.comps) { const r = re.exec(c.ref); if (r) m = Math.max(m, +r[1]); }
+  return prefix + (m + 1);
+}
+function addComp(type, x, y, o = {}) {
+  const def = DEF[type];
+  const c = { id: uid('c'), type, ref: nextRef(def.prefix), value: def.value || '', x: f2(x), y: f2(y), rot: 0, side: 'top', params: defaultParams(def), pn: {}, extra: [], note: '', ...o };
+  doc.comps.push(c); touch();
+  return c;
+}
+function nextPinId(c) {
+  let m = 0; for (const p of compFP(c).pins) { const v = parseInt(p.id, 10); if (String(v) === p.id) m = Math.max(m, v); }
+  return String(m + 1);
+}
+function freezeRefsTo(pred) {
+  for (const t of doc.traces) for (const ep of [t.a, t.b]) if (ep.c && pred(ep)) { const q = epPos(ep); ep.x = f2(q[0]); ep.y = f2(q[1]); delete ep.c; delete ep.p; }
+  for (const d of doc.dims) for (const ep of [d.a, d.b]) if (ep.c && pred(ep)) { const q = epPos(ep); ep.x = f2(q[0]); ep.y = f2(q[1]); delete ep.c; delete ep.p; }
+}
+function deleteSelection() {
+  if (!S.sel.size) return;
+  const ids = new Set(S.sel), n = ids.size;
+  freezeRefsTo(ep => ids.has(ep.c));
+  doc.comps = doc.comps.filter(c => !ids.has(c.id));
+  doc.traces = doc.traces.filter(t => !ids.has(t.id));
+  doc.dims = doc.dims.filter(d => !ids.has(d.id));
+  doc.outlines = doc.outlines.filter(o => !ids.has(o.id));
+  S.sel.clear(); S.selPin = null;
+  commit();
+  toast(n === 1 ? 'Kustutatud · Ctrl+Z toob tagasi' : `Kustutatud ${n} objekti · Ctrl+Z toob tagasi`);
+}
+function deletePin(c, pid) {
+  freezeRefsTo(ep => ep.c === c.id && ep.p === pid);
+  c.extra = (c.extra || []).filter(e => e.id !== pid);
+  if (c.pn) delete c.pn[pid];
+  if (S.selPin && S.selPin.c === c.id && S.selPin.p === pid) S.selPin = null;
+  commit();
+}
+function duplicateSelection() {
+  const comps = [...S.sel].map(compById).filter(Boolean);
+  if (!comps.length) return;
+  const off = 2 * doc.ppm; S.sel.clear();
+  for (const c of comps) {
+    const n = JSON.parse(JSON.stringify(c));
+    n.id = uid('c'); n.ref = nextRef(DEF[c.type].prefix); n.x = f2(c.x + off); n.y = f2(c.y + off);
+    doc.comps.push(n); touch(); S.sel.add(n.id);
+  }
+  commit();
+}
+function rotateSel(d) {
+  let any = false;
+  for (const id of S.sel) { const c = compById(id); if (c) { c.rot = f2(((c.rot + d) % 360 + 360) % 360); any = true; } }
+  if (any) commit({ light: true });
+}
+function flipSel() {
+  let any = false;
+  for (const id of S.sel) { const c = compById(id); if (c) { c.side = c.side === 'bottom' ? 'top' : 'bottom'; any = true; } }
+  if (any) commit();
+}
+
+/* ================= canvas rendering ================= */
+const svg = $('#svg'), vp = $('#vp'), gImg = $('#gImg'), gScene = $('#gScene'), gOver = $('#gOver'), wrap = $('#wrap');
+const layerVar = l => l === 'bottom' ? 'var(--bottom)' : l === 'wire' ? 'var(--wire)' : 'var(--top)';
+let rafId = 0; const dirty = { scene: false, over: false };
+function schedule(what) { if (what === 'scene') dirty.scene = true; dirty.over = true; if (!rafId) rafId = requestAnimationFrame(flush); }
+function flush() { rafId = 0; if (dirty.scene) renderScene(); if (dirty.over) renderOverlay(); dirty.scene = dirty.over = false; }
+
+function applyView() {
+  vp.setAttribute('transform', `translate(${f2(view.x)} ${f2(view.y)}) scale(${view.z})`);
+  wrap.style.backgroundPosition = `${f2(view.x)}px ${f2(view.y)}px`;
+  const zv = $('#zVal'); if (zv) zv.textContent = Math.round(view.z * 100) + '%';
+}
+function zoomAt(sx, sy, factor) {
+  const nz = clamp(view.z * factor, .02, 80), k = nz / view.z;
+  view.x = sx - (sx - view.x) * k; view.y = sy - (sy - view.y) * k; view.z = nz;
+  applyView(); schedule('scene'); queueSave();
+}
+function contentBounds() {
+  if (img) return [0, 0, img.w, img.h];
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+  for (const p of pinIndex()) add(p.x, p.y);
+  for (const t of doc.traces) tracePts(t).forEach(q => add(...q));
+  for (const o of doc.outlines) { add(o.x, o.y); add(o.x + o.w, o.y + o.h); }
+  if (!isFinite(x0)) return [0, 0, 1000, 700];
+  const m = 10 * doc.ppm; return [x0 - m, y0 - m, x1 + m, y1 + m];
+}
+function fitView() {
+  const r = svg.getBoundingClientRect(); if (!r.width) return;
+  const [x0, y0, x1, y1] = contentBounds(), pad = 40, padL = r.width > 700 ? 70 : 54;
+  const z = Math.min((r.width - pad - padL) / (x1 - x0), (r.height - pad * 2) / (y1 - y0));
+  view.z = clamp(z, .02, 80);
+  view.x = padL + ((r.width - pad - padL) - (x1 - x0) * view.z) / 2 - x0 * view.z;
+  view.y = (r.height - (y1 - y0) * view.z) / 2 - y0 * view.z;
+  applyView(); schedule('scene');
+}
+function toWorld(e) { const r = svg.getBoundingClientRect(); return [(e.clientX - r.left - view.x) / view.z, (e.clientY - r.top - view.y) / view.z]; }
+
+/* ---- photo ---- */
+function imgFilter() { return `${ui.gray ? 'grayscale(1) ' : ''}contrast(${ui.contrast})`; }
+function renderImage() {
+  gImg.innerHTML = img ? `<image id="photo" href="${img.src}" x="0" y="0" width="${img.w}" height="${img.h}" preserveAspectRatio="none"/>` : '';
+  updateImageStyle();
+  $('#drop').hidden = !!img;
+}
+function updateImageStyle() {
+  const el = $('#photo');
+  if (el) { el.setAttribute('opacity', ui.layers.img ? ui.opacity : 0); el.style.filter = imgFilter(); }
+  const r = $('#opRange'); r.value = Math.round(ui.opacity * 100); r.style.setProperty('--p', r.value + '%');
+  $('#opVal').textContent = r.value + '%';
+  const c = $('#ctRange'); c.value = Math.round(ui.contrast * 100); c.style.setProperty('--p', ((c.value - 60) / 140 * 100) + '%');
+  $('#btnGray').classList.toggle('on', ui.gray);
+}
+
+/* ---- dimension geometry ---- */
+function dimMarkup(a, b, off, z, o = {}) {
+  const L = dist(a, b); if (L < 1e-6) return '';
+  const ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L, nx = -uy, ny = ux, sg = off < 0 ? -1 : 1;
+  const A = [a[0] + nx * off, a[1] + ny * off], B = [b[0] + nx * off, b[1] + ny * off];
+  const gap = 3 / z, over = 5 / z, ah = 9 / z, aw = 3.2 / z;
+  let s = '';
+  if (Math.abs(off) > gap) {
+    s += `<line x1="${f2(a[0] + nx * gap * sg)}" y1="${f2(a[1] + ny * gap * sg)}" x2="${f2(A[0] + nx * over * sg)}" y2="${f2(A[1] + ny * over * sg)}"/>`;
+    s += `<line x1="${f2(b[0] + nx * gap * sg)}" y1="${f2(b[1] + ny * gap * sg)}" x2="${f2(B[0] + nx * over * sg)}" y2="${f2(B[1] + ny * over * sg)}"/>`;
+  }
+  s += `<line x1="${f2(A[0])}" y1="${f2(A[1])}" x2="${f2(B[0])}" y2="${f2(B[1])}"/>`;
+  const tri = (p, d) => `<polygon points="${f2(p[0])},${f2(p[1])} ${f2(p[0] + d * ux * ah + nx * aw)},${f2(p[1] + d * uy * ah + ny * aw)} ${f2(p[0] + d * ux * ah - nx * aw)},${f2(p[1] + d * uy * ah - ny * aw)}"/>`;
+  s += tri(A, 1) + tri(B, -1);
+  let ang = Math.atan2(uy, ux) / DEG; if (ang > 90.01 || ang < -89.99) ang += 180;
+  const tx = (A[0] + B[0]) / 2 + nx * sg * 9 / z, ty = (A[1] + B[1]) / 2 + ny * sg * 9 / z;
+  const label = o.label ?? fmtMM(L / doc.ppm);
+  s += `<text x="${f2(tx)}" y="${f2(ty)}" font-size="${f2(11.5 / z)}" stroke-width="${f2(3.2 / z)}" transform="rotate(${f2(ang)} ${f2(tx)} ${f2(ty)})">${esc(label)}</text>`;
+  if (o.id) s += `<line class="d-hit" x1="${f2(A[0])}" y1="${f2(A[1])}" x2="${f2(B[0])}" y2="${f2(B[1])}" stroke-width="${f2(12 / z)}"/>`;
+  return `<g class="dimg${o.sel ? ' sel' : ''}"${o.id ? ` data-id="${o.id}"` : ''}>${s}</g>`;
+}
+
+/* ---- scene ---- */
+function sceneMarkup(opt = {}) {
+  const z = opt.z ?? view.z, L = ui.layers, nets = getNets(), ppm = doc.ppm;
+  const exp = !!opt.export, hl = exp ? null : (S.hlNet || S.hlPinned);
+  const out = { outl: '', bot: '', body: '', top: '', pads: '', wire: '', lbl: '', dims: '' };
+  for (const o of doc.outlines) {
+    const sel = !exp && S.sel.has(o.id);
+    out.outl += `<g class="outline${sel ? ' sel' : ''}" data-id="${o.id}"><rect class="o-hit" x="${f2(o.x)}" y="${f2(o.y)}" width="${f2(o.w)}" height="${f2(o.h)}" stroke-width="${f2(10 / z)}"/><rect class="o-line" x="${f2(o.x)}" y="${f2(o.y)}" width="${f2(o.w)}" height="${f2(o.h)}"/></g>`;
+    if (o.dims !== false) {
+      out.dims += dimMarkup([o.x, o.y], [o.x + o.w, o.y], -22 / z, z) + dimMarkup([o.x, o.y + o.h], [o.x, o.y], -22 / z, z);
+    }
+  }
+  for (const t of doc.traces) {
+    const n = nets.byTrace.get(t.id), pts = tracePts(t), d = polyD(pts);
+    const w = Math.max(t.w * ppm, 1.4 / z), sel = !exp && S.sel.has(t.id);
+    const col = (ui.netColors && n) ? n.color : (exp ? opt.pal[t.layer] : layerVar(t.layer));
+    const dim = hl && (!n || n.key !== hl) ? ' dimmed' : '';
+    const dash = t.layer === 'wire' ? ` stroke-dasharray="${f2(Math.max(w * 1.6, 6 / z))} ${f2(Math.max(w * 1.6, 5 / z))}"` : '';
+    const s = `<g class="trace${dim}" data-id="${t.id}">${exp ? '' : `<path class="t-hit" d="${d}" stroke-width="${f2(Math.max(w, 12 / z))}"/>`}${sel ? `<path class="t-glow" d="${d}" stroke-width="${f2(w + 7 / z)}"/>` : ''}<path class="t-line" d="${d}" stroke="${col}" stroke-width="${f2(w)}"${dash}/></g>`;
+    if (t.layer === 'bottom') out.bot += s; else if (t.layer === 'wire') out.wire += s; else out.top += s;
+  }
+  const fs = 11 / z, sw = 3 / z;
+  for (const c of doc.comps) {
+    const f = compFP(c), tr = compTransform(c), sel = !exp && S.sel.has(c.id), b = f.bbox, pt = isPoint(c);
+    out.body += `<g class="comp${sel ? ' sel' : ''}${c.side === 'bottom' ? ' bside' : ''}" data-id="${c.id}" transform="${tr}">${exp ? '' : `<rect class="hit" x="${f2(b.x0)}" y="${f2(b.y0)}" width="${f2(b.x1 - b.x0)}" height="${f2(b.y1 - b.y0)}"/>`}${f.svg.halo}${f.svg.body}</g>`;
+    let pads = '';
+    for (const p of f.pins) {
+      const n = nets.byPin.get(c.id + ':' + p.id);
+      let cls = 'pad' + (p.extra ? ' extra' : '') + (n ? ' linked' : '');
+      if (hl && n && n.key === hl) cls += ' net-hl';
+      if (!exp && S.selPin && S.selPin.c === c.id && S.selPin.p === p.id) cls += ' pin-sel';
+      pads += padSVG(p, cls, ` data-p="${esc(p.id)}"`) + (p.drill ? `<circle class="drill" cx="${p.x}" cy="${p.y}" r="${f2(p.drill / 2)}"/>` : '');
+    }
+    out.pads += `<g class="pads" data-id="${c.id}" transform="${tr}">${pads}</g>`;
+    if (L.labels) {
+      let lx = c.x, ly = c.y, anchor = '';
+      if (pt) { const r = Math.max(b.x1 - b.x0, b.y1 - b.y0) / 2 * ppm; lx = c.x + r + 3 / z; anchor = ' text-anchor="start"'; }
+      const hpx = Math.min(b.x1 - b.x0, b.y1 - b.y0) * ppm * z;
+      const showVal = c.value && !pt && hpx > 44;
+      out.lbl += `<text class="lbl${sel ? ' sel' : ''}" x="${f2(lx)}" y="${f2(ly - (showVal ? fs * .6 : 0))}" font-size="${f2(fs)}" stroke-width="${f2(sw)}"${anchor}>${esc(c.ref)}</text>`;
+      if (showVal) out.lbl += `<text class="lbl val" x="${f2(lx)}" y="${f2(ly + fs * .75)}" font-size="${f2(fs * .9)}" stroke-width="${f2(sw)}">${esc(c.value)}</text>`;
+    }
+    if (L.pinl && !pt) {
+      for (const p of f.pins) {
+        const m = Math.min(p.w, p.h) * ppm * z; if (m < 13) continue;
+        const [x, y] = l2w(c, p.x, p.y), size = Math.min(m * .5, 11) / z;
+        const name = p.name && m >= 30 ? p.name : '';
+        out.lbl += `<text class="pinl" x="${f2(x)}" y="${f2(y - (name ? size * .45 : 0))}" font-size="${f2(size)}">${esc(p.id)}</text>`;
+        if (name) out.lbl += `<text class="pinn" x="${f2(x)}" y="${f2(y + size * .75)}" font-size="${f2(size * .8)}" stroke-width="${f2(2.4 / z)}">${esc(name)}</text>`;
+      }
+    }
+  }
+  for (const d of doc.dims) out.dims += dimMarkup(epPos(d.a), epPos(d.b), d.off, z, { id: d.id, sel: !exp && S.sel.has(d.id) });
+  return (L.dims ? out.outl : '') + (L.bottom ? out.bot : '') + (L.body ? out.body : '') + (L.top ? out.top : '') + (L.pads ? out.pads : '') + (L.wire ? out.wire : '') + (L.labels || L.pinl ? out.lbl : '') + (L.dims ? out.dims : '');
+}
+function renderScene() { gScene.innerHTML = sceneMarkup(); }
+
+/* ---- overlay: selection, handles, drafts, snapping ---- */
+function handle(x, y, h, z, cls = '') { const s = 8 / z; return `<rect class="hnd ${cls}" data-h="${h}" x="${f2(x - s / 2)}" y="${f2(y - s / 2)}" width="${f2(s)}" height="${f2(s)}"/>`; }
+function renderOverlay() {
+  const z = view.z; let s = '';
+  for (const id of S.sel) {
+    const k = kindOf(id), o = anyById(id); if (!o) continue;
+    if (k === 'comp') {
+      const b = compFP(o).bbox, m = .4;
+      s += `<g transform="${compTransform(o)}"><rect class="selbox" x="${f2(b.x0 - m)}" y="${f2(b.y0 - m)}" width="${f2(b.x1 - b.x0 + 2 * m)}" height="${f2(b.y1 - b.y0 + 2 * m)}"/></g>`;
+    } else if (k === 'trace' && S.sel.size === 1) {
+      const pts = tracePts(o);
+      pts.forEach((p, i) => { const idx = i === 0 ? 'a' : i === pts.length - 1 ? 'b' : String(i - 1); s += handle(p[0], p[1], `tv:${id}:${idx}`, z, idx === 'a' || idx === 'b' ? 'end' : ''); });
+    } else if (k === 'dim' && S.sel.size === 1) {
+      const a = epPos(o.a), b = epPos(o.b), L = dist(a, b) || 1, nx = -(b[1] - a[1]) / L, ny = (b[0] - a[0]) / L;
+      s += handle(a[0], a[1], `da:${id}:a`, z, 'end') + handle(b[0], b[1], `da:${id}:b`, z, 'end');
+      s += handle((a[0] + b[0]) / 2 + nx * o.off, (a[1] + b[1]) / 2 + ny * o.off, `do:${id}:0`, z);
+    } else if (k === 'outline' && S.sel.size === 1) {
+      [[o.x, o.y], [o.x + o.w, o.y], [o.x + o.w, o.y + o.h], [o.x, o.y + o.h]].forEach((p, i) => { s += handle(p[0], p[1], `oc:${id}:${i}`, z, 'end'); });
+    }
+  }
+  const sn = S.snap;
+  if (sn && (sn.pin || sn.vertex || sn.trace)) {
+    if (sn.pin) { const pi = pinIndex().find(q => q.c.id === sn.pin.c && q.p.id === sn.pin.p); const r = Math.max(pi ? pi.r : 0, 5 / z) + 3 / z; s += `<circle class="snap" cx="${f2(sn.x)}" cy="${f2(sn.y)}" r="${f2(r)}"/>`; }
+    else s += `<circle class="snapdot" cx="${f2(sn.x)}" cy="${f2(sn.y)}" r="${f2(3.5 / z)}"/>`;
+  }
+  const d = S.draft, cur = draftCursor();
+  if (d && d.kind === 'trace') {
+    const pts = [epPos(d.a), ...d.pts, cur], w = Math.max(d.w * doc.ppm, 1.4 / z);
+    s += `<path class="draft" d="${polyD(pts)}" stroke="${layerVar(d.layer)}" stroke-width="${f2(w)}"${d.layer === 'wire' ? ` stroke-dasharray="${f2(6 / z)} ${f2(5 / z)}"` : ''}/>`;
+    pts.slice(0, -1).forEach(p => { s += `<circle class="draft-v" cx="${f2(p[0])}" cy="${f2(p[1])}" r="${f2(3 / z)}"/>`; });
+    const segL = dist(pts[pts.length - 2], cur) / doc.ppm;
+    if (segL > 0) s += `<text class="lbl" x="${f2(cur[0] + 12 / z)}" y="${f2(cur[1] - 12 / z)}" font-size="${f2(10.5 / z)}" stroke-width="${f2(3 / z)}" text-anchor="start">${fmtMM(segL)}</text>`;
+  }
+  if (d && d.kind === 'dim') {
+    const a = epPos(d.a);
+    if (!d.b) s += dimMarkup(a, cur, 0, z);
+    else { const b = epPos(d.b); s += dimMarkup(a, b, dimOffsetFor(a, b, S.mouse), z); }
+  }
+  if (d && d.kind === 'calib') {
+    const b = d.b || cur, Lp = dist(d.a, b);
+    s += `<g class="calib"><line x1="${f2(d.a[0])}" y1="${f2(d.a[1])}" x2="${f2(b[0])}" y2="${f2(b[1])}"/><circle cx="${f2(d.a[0])}" cy="${f2(d.a[1])}" r="${f2(4 / z)}"/><circle cx="${f2(b[0])}" cy="${f2(b[1])}" r="${f2(4 / z)}"/><text x="${f2((d.a[0] + b[0]) / 2)}" y="${f2((d.a[1] + b[1]) / 2 - 12 / z)}" font-size="${f2(11 / z)}" stroke-width="${f2(3 / z)}">${fmtN(Lp, 1)} px</text></g>`;
+  }
+  if (S.tool === 'calib' && !d && doc.calib) {
+    const { a, b, mm } = doc.calib;
+    s += `<g class="calib" opacity=".75"><line x1="${f2(a[0])}" y1="${f2(a[1])}" x2="${f2(b[0])}" y2="${f2(b[1])}"/><circle cx="${f2(a[0])}" cy="${f2(a[1])}" r="${f2(3.5 / z)}"/><circle cx="${f2(b[0])}" cy="${f2(b[1])}" r="${f2(3.5 / z)}"/><text x="${f2((a[0] + b[0]) / 2)}" y="${f2((a[1] + b[1]) / 2 - 12 / z)}" font-size="${f2(11 / z)}" stroke-width="${f2(3 / z)}">${fmtMM(mm)}</text></g>`;
+  }
+  const dr = S.drag;
+  if (dr && dr.kind === 'marquee') { const [x0, y0, x1, y1] = rectOf(dr.a, dr.b); s += `<rect class="marq" x="${f2(x0)}" y="${f2(y0)}" width="${f2(x1 - x0)}" height="${f2(y1 - y0)}"/>`; }
+  if (dr && dr.kind === 'outline') { const [x0, y0, x1, y1] = rectOf(dr.a, dr.b); s += `<rect class="o-line" x="${f2(x0)}" y="${f2(y0)}" width="${f2(x1 - x0)}" height="${f2(y1 - y0)}"/>` + dimMarkup([x0, y0], [x1, y0], -22 / z, z) + dimMarkup([x0, y1], [x0, y0], -22 / z, z); }
+  if (S.tool === 'place' && S.placeType && S.mouseIn) {
+    const g = { id: '_g', type: S.placeType, x: S.mouse[0], y: S.mouse[1], rot: S.placeRot, side: 'top', params: defaultParams(DEF[S.placeType]), pn: {}, extra: [] };
+    const f = compFP(g); s += `<g class="comp ghost" transform="${compTransform(g)}">${f.svg.halo}${f.svg.body}${f.pins.map(p => padSVG(p, 'pad')).join('')}</g>`;
+  }
+  if (S.tool === 'pin' && S.mouseIn) {
+    const c = pinTarget(S.mouse);
+    if (c) {
+      const b = compFP(c).bbox;
+      s += `<g transform="${compTransform(c)}"><rect class="ptarget" x="${f2(b.x0 - .3)}" y="${f2(b.y0 - .3)}" width="${f2(b.x1 - b.x0 + .6)}" height="${f2(b.y1 - b.y0 + .6)}"/></g>`;
+      s += `<circle class="pin-ghost" cx="${f2(S.mouse[0])}" cy="${f2(S.mouse[1])}" r="${f2(pinSizeFor(c) / 2 * doc.ppm)}"/>`;
+    }
+  }
+  if (S.tool === 'point' && S.mouseIn && !d) {
+    const f = baseFP(S.pointType, defaultParams(DEF[S.pointType])), p = f.pins[0], q = S.snap && S.snap.trace ? [S.snap.x, S.snap.y] : S.mouse;
+    s += `<circle class="pin-ghost" cx="${f2(q[0])}" cy="${f2(q[1])}" r="${f2(Math.max(p.w / 2 * doc.ppm, 3 / z))}"/>`;
+  }
+  gOver.innerHTML = s;
+}
+const rectOf = (a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])];
+function dimOffsetFor(a, b, m) { const L = dist(a, b) || 1, nx = -(b[1] - a[1]) / L, ny = (b[0] - a[0]) / L; return (m[0] - a[0]) * nx + (m[1] - a[1]) * ny; }
+function constrain45(from, to) {
+  const dx = to[0] - from[0], dy = to[1] - from[1], a = Math.atan2(dy, dx), s = Math.round(a / (Math.PI / 4)) * (Math.PI / 4);
+  const L = Math.hypot(dx, dy) * Math.cos(a - s);
+  return [from[0] + Math.cos(s) * L, from[1] + Math.sin(s) * L];
+}
+function draftCursor() {
+  const d = S.draft, sn = S.snap;
+  if (sn && (sn.pin || sn.vertex || sn.trace)) return [sn.x, sn.y];
+  if (!d || !S.shift) return S.mouse;
+  if (d.kind === 'trace') { const last = d.pts.length ? d.pts[d.pts.length - 1] : epPos(d.a); return constrain45(last, S.mouse); }
+  if (d.kind === 'dim' && !d.b) { const a = epPos(d.a); return Math.abs(S.mouse[0] - a[0]) > Math.abs(S.mouse[1] - a[1]) ? [S.mouse[0], a[1]] : [a[0], S.mouse[1]]; }
+  if (d.kind === 'calib' && !d.b) { const a = d.a; return Math.abs(S.mouse[0] - a[0]) > Math.abs(S.mouse[1] - a[1]) ? [S.mouse[0], a[1]] : [a[0], S.mouse[1]]; }
+  return S.mouse;
+}
+
+/* ---- snapping ---- */
+function snapAt(w, o = {}) {
+  const z = view.z, R = 10 / z;
+  let best = null, bd = Infinity;
+  if (o.pins !== false) for (const pi of pinIndex()) {
+    if (o.skipComp && pi.c.id === o.skipComp) continue;
+    const d = dist(w, [pi.x, pi.y]);
+    if (d <= Math.max(pi.r, R) && d < bd) { bd = d; best = { x: pi.x, y: pi.y, pin: { c: pi.c.id, p: pi.p.id } }; }
+  }
+  if (best) return best;
+  if (o.vertices || o.traces) for (const t of doc.traces) {
+    if (o.skipTrace === t.id) continue;
+    const pts = tracePts(t);
+    if (o.vertices) for (const p of pts) { const d = dist(w, p); if (d <= R && d < bd) { bd = d; best = { x: p[0], y: p[1], vertex: true }; } }
+  }
+  if (best) return best;
+  if (o.traces) for (const t of doc.traces) {
+    if (o.skipTrace === t.id) continue;
+    const r = nearestOnPoly(w, tracePts(t)), lim = Math.max(R * .8, t.w * doc.ppm / 2);
+    if (r.d <= lim && r.d < bd) { bd = r.d; best = { x: r.q[0], y: r.q[1], trace: t.id }; }
+  }
+  return best || { x: w[0], y: w[1] };
+}
+function pinTarget(w) {
+  const pad = 1.5;
+  const inside = (c, m) => { const [lx, ly] = w2l(c, w[0], w[1]), b = compFP(c).bbox; return lx >= b.x0 - m && lx <= b.x1 + m && ly >= b.y0 - m && ly <= b.y1 + m; };
+  for (const id of S.sel) { const c = compById(id); if (c && !isPoint(c) && inside(c, 4)) return c; }
+  for (let i = doc.comps.length - 1; i >= 0; i--) { const c = doc.comps[i]; if (!isPoint(c) && inside(c, pad)) return c; }
+  return null;
+}
+function pinSizeFor(c) {
+  if (S.pinSize > 0) return S.pinSize;
+  const ps = compFP(c).pins.map(p => Math.min(p.w, p.h)).sort((a, b) => a - b);
+  return ps.length ? ps[Math.floor(ps.length / 2)] : 1.2;
+}
+
+/* ================= panels: steps, rail, options bar, sidebar ================= */
+const ICON = {
+  select: '<path d="M5 3l13 7.5-5.6 1.4L9.8 18z"/>',
+  pan: '<path d="M12 3v18M3 12h18M12 3l-2.5 2.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/>',
+  trace: '<path d="M4.5 18H9l6-6V6.5h4.5"/><circle cx="4" cy="18" r="2"/><circle cx="20" cy="6" r="2"/>',
+  point: '<circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2.2"/>',
+  pin: '<rect x="6" y="5" width="9" height="14" rx="1.2"/><path d="M3 9h3M3 15h3M15 9h2.5M19.5 13v7M16 16.5h7"/>',
+  measure: '<path d="M4 7v10M20 7v10M4 12h16M7.5 9.5L4 12l3.5 2.5M16.5 9.5L20 12l-3.5 2.5"/>',
+  outline: '<rect x="4" y="5" width="16" height="14" rx="1.5" stroke-dasharray="3.2 2.4"/>',
+  calib: '<path d="M3 15.5L15.5 3 21 8.5 8.5 21z"/><path d="M7 11.5l2 2M10 8.5l2 2M13 5.5l2 2"/>',
+  place: '<rect x="5" y="7" width="14" height="10" rx="1.5"/><path d="M8 4v3M12 4v3M16 4v3M8 17v3M12 17v3M16 17v3"/>',
+  photo: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  route: '<path d="M5 19h4l6-6V7h4"/><path d="M16 4l3 3-3 3"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>'
+};
+const ic = (n, cls = 'ic') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
+const TOOLS = [
+  ['select', 'Vali ja liiguta', 'V'], ['pan', 'Liiguta vaadet', 'H'], null,
+  ['trace', 'Rada', 'T'], ['pin', 'Lisa jalg', 'J'], ['point', 'Punkt plaadil', 'P'], null,
+  ['measure', 'Mõõt', 'M'], ['outline', 'Plaadi kontuur', 'O'], ['calib', 'Kalibreeri mõõtkava', 'K']
+];
+const STEPS = [
+  { id: 'photo', n: 1, label: 'Foto', done: () => !!img && !doc.sample },
+  { id: 'scale', n: 2, label: 'Mõõtkava', done: () => doc.calibrated },
+  { id: 'place', n: 3, label: 'Komponendid', done: () => doc.comps.some(c => !isPoint(c)) },
+  { id: 'pins', n: 4, label: 'Jalad ja punktid', done: () => doc.comps.some(c => (c.extra && c.extra.length) || isPoint(c)) },
+  { id: 'traces', n: 5, label: 'Rajad', done: () => doc.traces.length > 0 },
+  { id: 'dims', n: 6, label: 'Mõõdud', done: () => doc.dims.length > 0 || doc.outlines.length > 0 },
+  { id: 'export', n: 7, label: 'Eksport', done: () => S.exported }
+];
+const TOOL_STEP = { trace: 'traces', pin: 'pins', point: 'pins', measure: 'dims', outline: 'dims', calib: 'scale', place: 'place' };
+
+function renderSteps() {
+  $('#steps').innerHTML = STEPS.map((s, i) => {
+    const done = s.done(), cur = S.step === s.id;
+    const seg = i ? `<span class="trace-seg${STEPS[i - 1].done() ? ' done' : ''}"></span>` : '';
+    return `${seg}<button class="step${done ? ' done' : ''}${cur ? ' cur' : ''}" data-step="${s.id}" title="${s.n}. ${s.label}"><span class="spad">${done && !cur ? `<svg viewBox="0 0 24 24">${ICON.check}</svg>` : s.n}</span><span class="step-label">${s.label}</span></button>`;
+  }).join('');
+  $('#btnUndo').disabled = hist.past.length < 2;
+  $('#btnRedo').disabled = !hist.future.length;
+  const pn = $('#projName'); if (document.activeElement !== pn) pn.value = doc.name;
+}
+function renderRail() {
+  $('#rail').innerHTML = TOOLS.map(t => t ? `<button class="${S.tool === t[0] ? 'on' : ''}" data-tool="${t[0]}" data-tip="${t[1]} · ${t[2]}" aria-label="${t[1]} (${t[2]})">${ic(t[0])}</button>` : '<span class="rsep"></span>').join('');
+  wrap.className = 'canvas-wrap t-' + S.tool;
+}
+function setTool(t, opts = {}) {
+  if (S.draft) S.draft = null;
+  S.tool = t; S.snap = null;
+  if (t !== 'place') S.placeType = null;
+  if (TOOL_STEP[t]) S.step = TOOL_STEP[t];
+  else if (!opts.keepStep && !['photo', 'place'].includes(S.step)) S.step = 'place';
+  renderRail(); renderOptbar(); renderSteps(); schedule('over');
+  if (S.tab === 'lib') renderSide();
+}
+function goStep(id) {
+  S.step = id;
+  if (id === 'photo') { setTool('select', { keepStep: true }); if (!img || doc.sample) $('#fileImg').click(); }
+  else if (id === 'scale') setTool('calib');
+  else if (id === 'place') { setTool('select', { keepStep: true }); setTab('lib'); }
+  else if (id === 'pins') { setTool('pin'); setTab('board'); }
+  else if (id === 'traces') { setTool('trace'); setTab('nets'); }
+  else if (id === 'dims') { setTool('measure'); setTab('board'); }
+  else if (id === 'export') { openExport(); }
+  renderSteps(); renderOptbar();
+  closeSideNarrow();
+}
+
+function seg(opt, cur, items) { return `<div class="seg" role="group">${items.map(([v, l, dot]) => `<button class="${cur === v ? 'on' : ''}" data-opt="${opt}" data-v="${v}">${dot ? `<span class="dotc" style="background:${dot}"></span>` : ''}${l}</button>`).join('')}</div>`; }
+function renderOptbar() {
+  const t = S.tool; let tool = '', body = '';
+  const hint = arr => `<div class="ob-hint">${arr.map(x => `<span>${x}</span>`).join('')}</div>`;
+  const head = (icon, name) => `<div class="ob-tool"><span class="ico">${ic(icon)}</span>${name}</div>`;
+  if (t === 'select' && S.step === 'photo') {
+    tool = head('photo', 'Foto');
+    body = img ? `<span class="ob-field mono">${esc(img.name || 'foto')} · ${img.w}×${img.h} px</span><button class="btn sm" data-opt="pickimg">Vaheta foto</button><button class="btn sm" data-opt="rot">Pööra 90°</button><button class="btn sm" data-opt="flip">Peegelda</button>` + hint(['Nähtavust muudad all olevast liugurist', 'Järgmine samm: mõõtkava'])
+      : `<button class="btn sm primary" data-opt="pickimg">Vali foto</button>` + hint(['Lohista foto aknasse või kleebi <kbd>Ctrl</kbd>+<kbd>V</kbd>']);
+  } else if (t === 'select') {
+    tool = head('select', 'Vali');
+    body = hint(['Klõpsa valimiseks, lohista liigutamiseks', '<kbd>Shift</kbd> lisab valikusse', '<kbd>R</kbd> 90°', '<kbd>Q</kbd>/<kbd>E</kbd> peenpööre', '<kbd>F</kbd> teisele poolele', '<kbd>Del</kbd> kustutab']);
+  } else if (t === 'pan') {
+    tool = head('pan', 'Liiguta vaadet'); body = hint(['Lohista vaate nihutamiseks', 'rullik suumib', 'tühik + lohistamine töötab igas tööriistas']);
+  } else if (t === 'place') {
+    const def = DEF[S.placeType];
+    tool = head('place', 'Paiguta: ' + esc(def ? def.name : ''));
+    body = hint(['Klõpsa plaadil, kuhu komponent käib', '<kbd>R</kbd> pöörab 90° (praegu ' + S.placeRot + '°)', '<kbd>Esc</kbd> lõpetab']);
+  } else if (t === 'trace') {
+    tool = head('trace', 'Rada');
+    body = seg('layer', S.traceLayer, [['top', 'Pealmine', 'var(--top)'], ['bottom', 'Alumine', 'var(--bottom)'], ['wire', 'Juhe', 'var(--wire)']]) +
+      `<label class="ob-field">Laius <input class="inp" id="obW" inputmode="decimal" value="${fmtN(S.traceW, 2)}"> mm</label>` +
+      hint(S.draft ? ['Klõpsa käänupunkte', 'lõpeta jalal, rajal või topeltklõpsuga', '<kbd>Shift</kbd> 45°', '<kbd>Backspace</kbd> samm tagasi', '<kbd>Esc</kbd> katkestab'] : ['Alusta jalast, punktist või rajalt', '<kbd>L</kbd> vahetab kihti']);
+  } else if (t === 'point') {
+    tool = head('point', 'Punkt plaadil');
+    body = seg('ptype', S.pointType, POINT_TYPES) + hint(['Klõpsa plaadil', 'rajale klõpsates kinnitub punkt rajale']);
+  } else if (t === 'pin') {
+    const c = [...S.sel].map(compById).find(Boolean);
+    tool = head('pin', 'Lisa jalg');
+    body = `<span class="ob-field">${c ? 'Komponent <b class="mono">' + esc(c.ref) + '</b>' : 'Vali komponent või klõpsa selle peale'}</span>` +
+      `<label class="ob-field">Suurus <input class="inp" id="obPin" inputmode="decimal" placeholder="auto" value="${S.pinSize > 0 ? fmtN(S.pinSize, 2) : ''}"> mm</label>` +
+      hint(['Klõpsa komponendil kohta, kus jalg on', 'jalg saab järgmise numbri', 'nime annad vasakul paneelil']);
+  } else if (t === 'measure') {
+    tool = head('measure', 'Mõõt');
+    body = hint(S.draft && S.draft.b ? ['Vii hiir küljele ja klõpsa, et mõõtjoon paika panna'] : ['Klõpsa alguspunkt ja lõpp-punkt', 'haakub jalgade ja rajapunktidega', '<kbd>Shift</kbd> horisontaalne/vertikaalne']);
+  } else if (t === 'outline') {
+    tool = head('outline', 'Plaadi kontuur'); body = hint(['Lohista ristkülik ümber plaadi serva', 'kontuuri vasak ülanurk on koordinaatide nullpunkt']);
+  } else if (t === 'calib') {
+    tool = head('calib', 'Mõõtkava');
+    body = `<label class="ob-field">px/mm <input class="inp" id="obPpm" inputmode="decimal" value="${fmtN(doc.ppm, 3)}"></label>` +
+      hint(['Klõpsa kaks punkti, mille vahekaugust tead', 'nt pinnirea 4 sammu = 10,16 mm või plaadi laius']);
+  }
+  $('#optbar').innerHTML = tool + body;
+}
+
+/* ---- sidebar ---- */
+const tabBody = $('#tabBody');
+function setTab(t) { S.tab = t; renderSide(); }
+function renderTabs() {
+  const N = getNets();
+  const tabs = [['lib', 'Teek', ''], ['board', 'Plaadil', doc.comps.length + doc.traces.length], ['nets', 'Võrgud', N.list.length]];
+  $('#tabs').innerHTML = tabs.map(([k, l, n]) => `<button class="tab" role="tab" aria-selected="${S.tab === k}" data-tab="${k}">${l}${n !== '' ? `<span class="count">${n}</span>` : ''}</button>`).join('') +
+    `<button class="icon-btn side-close" id="sideClose" aria-label="Sulge paneel">${ic('x')}</button>`;
+}
+function renderSide() {
+  const a = document.activeElement, keep = a && tabBody.contains(a) && a.id ? { id: a.id, s: a.selectionStart, e: a.selectionEnd } : null;
+  const top = tabBody.scrollTop;
+  renderTabs();
+  tabBody.innerHTML = S.tab === 'lib' ? renderLib() : S.tab === 'board' ? renderBoard() : renderNets();
+  tabBody.scrollTop = top;
+  if (keep) { const el = document.getElementById(keep.id); if (el) { el.focus(); try { if (keep.s != null) el.setSelectionRange(keep.s, keep.e); } catch (e) { } } }
+}
+function renderLib() {
+  const q = S.libQ.trim().toLowerCase();
+  let h = `<div class="search">${ic('search')}<input id="libQ" type="search" placeholder="Otsi: SOIC, LED, USB…" value="${esc(S.libQ)}" autocomplete="off" aria-label="Otsi komponenti"></div>`;
+  h += `<p class="hint-s">Lohista komponent plaadile või klõpsa ja paiguta. Mõõdud on millimeetrites, nii et pärast kalibreerimist on korpus õige suurusega.</p>`;
+  let any = false;
+  for (const [cat, label] of CATS) {
+    const items = LIB.filter(d => d.cat === cat && (!q || (d.name + ' ' + d.kw + ' ' + d.prefix).toLowerCase().includes(q)));
+    if (!items.length) continue; any = true;
+    h += `<section><h3 class="sec-h">${label}<span class="count">${items.length}</span></h3><div class="tiles">` +
+      items.map(d => `<button class="tile${S.tool === 'place' && S.placeType === d.key ? ' active' : ''}" draggable="true" data-type="${d.key}" title="${esc(d.name)} — tähis ${d.prefix}">${thumb(d)}<span>${esc(d.name)}</span></button>`).join('') + `</div></section>`;
+  }
+  if (!any) h += `<div class="empty">Sellist komponenti ei leitud. Proovi „Kohandatud“ — sellele saad ise jalad lisada.</div>`;
+  return h;
+}
+function connSummary(c) {
+  const N = getNets(), f = compFP(c); let linked = 0;
+  for (const p of f.pins) if (N.byPin.has(c.id + ':' + p.id)) linked++;
+  return { pins: f.pins.length, linked };
+}
+function rowHead(id, ref, meta, badges, sw) {
+  return `<button class="row-head" data-act="pick" data-id="${id}">${sw ? `<span class="swatch" style="background:${sw}"></span>` : `<span class="ref">${esc(ref)}</span>`}<span class="meta">${sw ? `<b class="ref">${esc(ref)}</b> ` : ''}${meta}</span><span class="badges">${badges}</span></button>`;
+}
+function renderBoard() {
+  const q = S.boardQ.trim().toLowerCase(), N = getNets();
+  const match = s => !q || s.toLowerCase().includes(q);
+  const open = S.sel.size === 1 ? [...S.sel][0] : null;
+  const comps = doc.comps.filter(c => match(c.ref + ' ' + c.value + ' ' + fpLabel(c)));
+  const groups = [['Komponendid', comps.filter(c => !isPoint(c) && !isConn(c))], ['Konnektorid', comps.filter(isConn)], ['Punktid plaadil', comps.filter(isPoint)]];
+  let h = `<div class="search">${ic('search')}<input id="boardQ" type="search" placeholder="Otsi tähise või väärtuse järgi" value="${esc(S.boardQ)}" autocomplete="off" aria-label="Otsi plaadilt"></div>`;
+  h += `<div class="summary"><span class="chip"><b>${doc.comps.filter(c => !isPoint(c)).length}</b> komponenti</span><span class="chip"><b>${doc.comps.filter(isPoint).length}</b> punkti</span><span class="chip"><b>${doc.traces.length}</b> rada</span><span class="chip"><b>${N.list.length}</b> võrku</span></div>`;
+  if (!doc.comps.length && !doc.traces.length) h += `<div class="empty">Plaadil pole veel midagi. Ava <b>Teek</b> ja lohista esimene komponent foto peale.</div>`;
+  for (const [label, list] of groups) {
+    if (!list.length) continue;
+    h += `<section><h3 class="sec-h">${label}<span class="count">${list.length}</span></h3><div class="group">`;
+    for (const c of list) {
+      const cs = connSummary(c);
+      const badges = `<span class="badge${cs.linked ? ' ok' : ''}" title="ühendatud / kõik jalad">${cs.linked}/${cs.pins}</span>`;
+      h += `<div class="row${open === c.id ? ' open' : ''}">${rowHead(c.id, c.ref, `${esc(c.value || '')} <i>${esc(fpLabel(c))}</i>`, badges)}${open === c.id ? inspComp(c) : ''}</div>`;
+    }
+    h += `</div></section>`;
+  }
+  const traces = doc.traces.filter(t => { const n = N.byTrace.get(t.id); return match((n ? n.name : '') + ' ' + epText(t.a) + ' ' + epText(t.b)); });
+  if (traces.length) {
+    h += `<section><h3 class="sec-h">Rajad<span class="count">${traces.length}</span></h3><div class="group">`;
+    for (const t of traces) {
+      const n = N.byTrace.get(t.id), len = polyLen(tracePts(t)) / doc.ppm;
+      h += `<div class="row${open === t.id ? ' open' : ''}">${rowHead(t.id, n ? n.name : '—', `${esc(epText(t.a))} → ${esc(epText(t.b))}`, `<span>${fmtN(len, 1)}</span>`, ui.netColors && n ? n.color : layerVar(t.layer))}${open === t.id ? inspTrace(t, n, len) : ''}</div>`;
+    }
+    h += `</div></section>`;
+  }
+  const mech = [...doc.outlines.map(o => ['o', o]), ...doc.dims.map(d => ['d', d])];
+  if (mech.length) {
+    h += `<section><h3 class="sec-h">Mõõdud ja kontuur<span class="count">${mech.length}</span></h3><div class="group">`;
+    for (const [k, o] of mech) {
+      const txt = k === 'o' ? `Kontuur <i>${fmtN(o.w / doc.ppm)} × ${fmtN(o.h / doc.ppm)} mm</i>` : `Mõõt <i>${fmtMM(dist(epPos(o.a), epPos(o.b)) / doc.ppm)}</i>`;
+      h += `<div class="row${open === o.id ? ' open' : ''}">${rowHead(o.id, '', txt, '', 'var(--dim)')}${open === o.id ? (k === 'o' ? inspOutline(o) : inspDim(o)) : ''}</div>`;
+    }
+    h += `</div></section>`;
+  }
+  return h;
+}
+const epText = ep => ep.c ? pinLabel(ep.c, ep.p) : 'vaba punkt';
+function paramField(def, c, p) {
+  const v = (c.params && c.params[p.k] != null) ? c.params[p.k] : p.d, id = 'pp-' + p.k;
+  if (p.o) return `<label class="f">${p.l}<select id="${id}" data-param="${p.k}">${p.o.map(o => `<option${String(o) === String(v) ? ' selected' : ''}>${o}</option>`).join('')}</select></label>`;
+  return `<label class="f">${p.l}<input id="${id}" class="mono" data-param="${p.k}" data-num="1" inputmode="decimal" value="${esc(String(v).replace('.', ','))}"></label>`;
+}
+function inspComp(c) {
+  const def = DEF[c.type], f = compFP(c), N = getNets(), [mx, my] = toMM([c.x, c.y]);
+  let h = `<div class="insp" data-cid="${c.id}">`;
+  h += `<div class="g2"><label class="f">Tähis<input id="i-ref" class="mono" data-f="ref" value="${esc(c.ref)}"></label><label class="f">Väärtus / tüüp<input id="i-val" data-f="value" value="${esc(c.value)}" placeholder="nt 10k, ATmega328"></label></div>`;
+  h += `<div class="fp-name">Korpus <b>${esc(def.name)}</b></div>`;
+  if (def.params.length) h += `<div class="g2">${def.params.map(p => paramField(def, c, p)).join('')}</div>`;
+  h += `<div class="g3"><label class="f">X (mm)<input id="i-x" class="mono" data-f="x" inputmode="decimal" value="${fmtN(mx)}"></label><label class="f">Y (mm)<input id="i-y" class="mono" data-f="y" inputmode="decimal" value="${fmtN(my)}"></label><label class="f">Pööre (°)<input id="i-rot" class="mono" data-f="rot" inputmode="decimal" value="${fmtN(c.rot, 1)}"></label></div>`;
+  h += `<div class="lblrow">Pool ${seg('side', c.side, [['top', 'Pealmine'], ['bottom', 'Alumine']])}</div>`;
+  h += `<div class="pins-h"><h4>Jalad <span class="count">${f.pins.length}</span></h4><button class="btn sm" data-act="addpin">+ Lisa jalg</button></div><div class="pins">`;
+  f.pins.forEach((p, i) => {
+    const n = N.byPin.get(c.id + ':' + p.id), on = S.selPin && S.selPin.c === c.id && S.selPin.p === p.id;
+    const others = n ? n.pins.filter(q => !(q.c === c.id && q.p === p.id)).map(q => pinLabel(q.c, q.p)) : [];
+    h += `<div class="pin${on ? ' on' : ''}" data-pin="${esc(p.id)}"><span class="pid" data-act="selpin" title="Näita joonisel">${esc(p.id)}</span><input id="pn-${i}" data-pn="${esc(p.id)}" value="${esc(p.name)}" placeholder="nimi" aria-label="Jala ${esc(p.id)} nimi">` +
+      (n ? `<button class="net-chip" style="--nc:${n.color}" data-act="hlnet" data-net="${n.key}" title="Võrk ${esc(n.name)}">${esc(n.name)}</button>` : `<span class="net-chip none">—</span>`) +
+      `<span class="pact"><button class="mini" data-act="tracefrom" title="Alusta rada sellest jalast">${ic('route')}</button>${p.extra ? `<button class="mini" data-act="delpin" title="Kustuta jalg">${ic('x')}</button>` : ''}</span>` +
+      (others.length ? `<span class="conn">→ ${esc(others.join(' · '))}</span>` : '') + `</div>`;
+  });
+  h += `</div>`;
+  h += `<label class="f">Märkused<textarea id="i-note" data-f="note" placeholder="nt märgistus kiibil, kahtlused…">${esc(c.note || '')}</textarea></label>`;
+  h += `<div class="actions"><button class="btn sm" data-act="dup">Dubleeri</button><button class="btn sm" data-act="rot90">Pööra 90°</button><button class="btn sm danger" data-act="del">${ic('trash')}Kustuta</button></div></div>`;
+  return h;
+}
+function inspTrace(t, n, len) {
+  return `<div class="insp" data-tid="${t.id}">` +
+    `<div class="lblrow">Kiht ${seg('tlayer', t.layer, [['top', 'Pealm.', 'var(--top)'], ['bottom', 'Alum.', 'var(--bottom)'], ['wire', 'Juhe', 'var(--wire)']])}</div>` +
+    `<div class="g2"><label class="f">Laius (mm)<input id="t-w" class="mono" data-tf="w" inputmode="decimal" value="${fmtN(t.w)}"></label><label class="f">Võrgu nimi<input id="t-net" class="mono" data-tf="net" value="${esc(n && n.named ? n.name : '')}" placeholder="${esc(n ? n.name : '')}"></label></div>` +
+    `<div class="kv">Pikkus <b>${fmtMM(len)}</b></div><div class="kv">Ühendab <b>${esc(epText(t.a))} → ${esc(epText(t.b))}</b></div><div class="kv">Käänupunkte <b>${t.pts.length}</b></div>` +
+    `<p class="hint-s">Lohista otspunkte ja käänupunkte joonisel. Topeltklõps rajal lisab käänupunkti, <kbd>Alt</kbd>+klõps eemaldab.</p>` +
+    `<div class="actions"><button class="btn sm danger" data-act="del">${ic('trash')}Kustuta rada</button></div></div>`;
+}
+function inspDim(d) {
+  return `<div class="insp"><div class="kv">Kaugus <b>${fmtMM(dist(epPos(d.a), epPos(d.b)) / doc.ppm)}</b></div><div class="kv">Algus <b>${esc(epText(d.a))}</b></div><div class="kv">Lõpp <b>${esc(epText(d.b))}</b></div><div class="actions"><button class="btn sm danger" data-act="del">${ic('trash')}Kustuta</button></div></div>`;
+}
+function inspOutline(o) {
+  return `<div class="insp" data-oid="${o.id}"><div class="g2"><label class="f">Laius (mm)<input id="o-w" class="mono" data-of="w" inputmode="decimal" value="${fmtN(o.w / doc.ppm)}"></label><label class="f">Kõrgus (mm)<input id="o-h" class="mono" data-of="h" inputmode="decimal" value="${fmtN(o.h / doc.ppm)}"></label></div>` +
+    `<label class="chk"><input type="checkbox" id="o-dims" data-of="dims"${o.dims !== false ? ' checked' : ''}> Näita mõõte joonisel</label>` +
+    `<p class="hint-s">Kontuuri vasak ülanurk on koordinaatide nullpunkt (X paremale, Y alla).</p><div class="actions"><button class="btn sm danger" data-act="del">${ic('trash')}Kustuta</button></div></div>`;
+}
+function renderNets() {
+  const N = getNets();
+  let h = `<div class="summary"><span class="chip"><b>${N.list.length}</b> võrku</span><span class="chip"><b>${N.list.reduce((s, n) => s + n.pins.length, 0)}</b> ühendatud jalga</span></div>`;
+  h += `<div class="actions"><label class="chk"><input type="checkbox" id="netColors"${ui.netColors ? ' checked' : ''}> Värvi rajad võrgu järgi</label></div>`;
+  if (!N.list.length) return h + `<div class="empty">Võrgud tekivad radadest. Vali tööriist <b>Rada</b> (<kbd>T</kbd>), klõpsa ühel jalal ja siis teisel — need jalad on nüüd samas võrgus. Anna võrgule nimi, nt GND või 3V3.</div>`;
+  const hl = S.hlNet || S.hlPinned;
+  for (const n of N.list) {
+    h += `<div class="net${hl === n.key ? ' on' : ''}" data-net="${n.key}"><div class="net-top"><span class="swatch" style="background:${n.color}"></span><input class="net-name" id="nn-${n.key}" data-netname="${n.key}" value="${esc(n.named ? n.name : '')}" placeholder="${esc(n.name)}" aria-label="Võrgu nimi"><span class="nstat">${n.pins.length} jalga · ${fmtN(n.len, 1)} mm</span></div>`;
+    h += `<div class="members">${n.pins.map(p => { const c = compById(p.c), pn = c ? compFP(c).pinMap.get(p.p) : null; return `<button class="mem" data-act="pingo" data-c="${p.c}" data-p="${esc(p.p)}">${esc(pinLabel(p.c, p.p))}${pn && pn.name ? ` <i>${esc(pn.name)}</i>` : ''}</button>`; }).join('') || '<span class="hint-s">Ühtki jalga pole veel ühendatud</span>'}</div></div>`;
+  }
+  return h;
+}
+
+/* ---- bottom strip ---- */
+function renderStatus() {
+  const ch = $('#scaleChip');
+  ch.textContent = doc.calibrated ? fmtN(doc.ppm, 2) + ' px/mm' : 'Kalibreerimata';
+  ch.classList.toggle('warn', !doc.calibrated);
+  applyView();
+}
+function renderLayersPop() {
+  const L = ui.layers;
+  const row = (k, l, sw) => `<label class="chk"><input type="checkbox" data-layer="${k}"${L[k] ? ' checked' : ''}>${sw ? `<span class="sw" style="background:${sw}"></span>` : ''}${l}</label>`;
+  $('#layersPop').innerHTML = `<h4>Nähtavad kihid</h4>` + row('img', 'Foto') + row('body', 'Komponentide kered') + row('pads', 'Jalad ja padid', 'var(--pad)') + row('top', 'Rajad – pealmine', 'var(--top)') + row('bottom', 'Rajad – alumine', 'var(--bottom)') + row('wire', 'Juhtmed', 'var(--wire)') + row('dims', 'Mõõdud ja kontuur', 'var(--dim)') + row('labels', 'Tähised') + row('pinl', 'Jalgade numbrid');
+}
+
+/* ---- banner (sample project) ---- */
+function renderBanner() {
+  const b = $('#banner');
+  b.hidden = !(doc.sample && !ui.bannerOff);
+  if (b.hidden) return;
+  b.innerHTML = `<button class="icon-btn x" data-ban="close" aria-label="Peida">${ic('x')}</button><h3>Näidisplaat <span class="tag">näide</span></h3><p>Osa komponente ja radu on juba paigas, ülejäänud (R2, Q1, J2, C3 ja punktid) ootavad sind. Proovi lohistada, märkida radu ja mõõta — või alusta oma fotoga.</p><div class="actions"><button class="btn sm primary" data-ban="photo">Lae oma foto</button><button class="btn sm" data-ban="empty">Tühi projekt</button></div>`;
+}
+
+/* ---- toasts & modals ---- */
+function toast(msg, kind = '') {
+  const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = msg;
+  const box = $('#toasts'); box.appendChild(t);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => t.remove(), 2600);
+}
+const modal = $('#modal');
+function openModal(html, wide = false) {
+  modal.onclick = null;
+  modal.innerHTML = `<div class="dlg${wide ? ' wide' : ''}" role="dialog" aria-modal="true">${html}</div>`;
+  modal.hidden = false;
+  const f = modal.querySelector('[autofocus]') || modal.querySelector('input,button.primary,button');
+  if (f) setTimeout(() => { f.focus(); if (f.select) f.select(); }, 10);
+}
+function closeModal() {
+  modal.hidden = true; modal.innerHTML = ''; modal.onclick = null;
+  if (S.draft && S.draft.kind === 'calib' && S.draft.b) { S.draft = null; schedule('over'); }
+}
+function confirmDlg(title, text, ok = 'Jätka', danger = false) {
+  return new Promise(res => {
+    openModal(`<h2>${title}</h2><p>${text}</p><div class="dlg-foot"><button class="btn" data-r="0">Tühista</button><button class="btn ${danger ? 'danger' : 'primary'}" data-r="1" autofocus>${ok}</button></div>`);
+    modal.onclick = e => { const b = e.target.closest('[data-r]'); if (b || e.target === modal) { modal.onclick = null; closeModal(); res(!!(b && b.dataset.r === '1')); } };
+  });
+}
+function openHelp() {
+  const K = [['V', 'Vali'], ['H / tühik', 'Liiguta vaadet'], ['T', 'Rada'], ['J', 'Lisa jalg'], ['P', 'Punkt'], ['M', 'Mõõt'], ['O', 'Kontuur'], ['K', 'Kalibreeri'], ['R / Shift+R', 'Pööra ±90°'], ['Q / E', 'Pööra ±1° (Shift ±15°)'], ['F', 'Teisele poolele'], ['L', 'Raja kiht'], ['Ctrl+D', 'Dubleeri'], ['Del', 'Kustuta'], ['Nooled', 'Nihuta'], ['Ctrl+Z / Ctrl+Y', 'Tagasi / uuesti'], ['Ctrl+S', 'Salvesta projekt'], ['0 / + / −', 'Sobita / suumi'], ['Enter', 'Lõpeta rada'], ['Esc', 'Katkesta']];
+  openModal(`<h2>Kiirklahvid</h2><div class="keys">${K.map(([k, l]) => `<div><span>${l}</span><kbd>${k}</kbd></div>`).join('')}</div><p>Hiire rullik suumib kursori ümber, keskmise nupuga lohistamine liigutab vaadet. Puutetundlikul ekraanil suumi kahe sõrmega.</p><div class="dlg-foot"><button class="btn primary" data-close>Selge</button></div>`, true);
+}
+function closeSideNarrow() { $('#app').classList.remove('side-open'); }
+
+/* ================= canvas interaction ================= */
+const pointers = new Map();
+let pinch = null, lastClick = { t: 0, x: 0, y: 0 };
+const tip = $('#tip');
+
+function hitTarget(el) {
+  if (!(el instanceof Element)) return null;
+  const h = el.closest('[data-h]');
+  if (h) { const [k, id, idx] = h.dataset.h.split(':'); return { kind: 'handle', h: k, id, idx }; }
+  const pad = el.closest('[data-p]');
+  if (pad) { const g = pad.closest('[data-id]'); return g ? { kind: 'pin', id: g.dataset.id, pin: pad.dataset.p } : null; }
+  const g = el.closest('[data-id]');
+  return g ? { kind: kindOf(g.dataset.id), id: g.dataset.id } : null;
+}
+function epFromSnap(sn) { return sn.pin ? { c: sn.pin.c, p: sn.pin.p, x: f2(sn.x), y: f2(sn.y) } : { x: f2(sn.x), y: f2(sn.y) }; }
+function selectOnly(id) { S.sel.clear(); if (id) S.sel.add(id); }
+function afterSelect(toBoard) {
+  if (S.sel.size && S.tool !== 'place' && (S.tab === 'lib' || toBoard)) S.tab = 'board';
+  renderSide(); schedule('scene'); renderOptbar();
+}
+function scrollRowIntoView() { requestAnimationFrame(() => { const r = tabBody.querySelector('.row.open'); if (r) r.scrollIntoView({ block: 'nearest' }); }); }
+
+svg.addEventListener('contextmenu', e => e.preventDefault());
+svg.addEventListener('pointerdown', e => {
+  try { svg.setPointerCapture(e.pointerId); } catch (_) { }
+  pointers.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pointers.size === 2) {
+    if (S.drag && S.drag.moved) revert();
+    S.drag = null;
+    const [p1, p2] = [...pointers.values()];
+    pinch = { d: dist(p1, p2), m: [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2], v: { ...view } };
+    return;
+  }
+  const w = toWorld(e); S.mouse = w; S.shift = e.shiftKey; S.mouseIn = true;
+  if (e.button === 1 || (e.button === 0 && (S.spaceDown || S.tool === 'pan'))) {
+    S.drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y }; wrap.classList.add('dragging'); e.preventDefault(); return;
+  }
+  if (e.button === 2) { onRightClick(); return; }
+  if (e.button !== 0) return;
+  const now = performance.now();
+  const dbl = now - lastClick.t < 380 && Math.hypot(e.clientX - lastClick.x, e.clientY - lastClick.y) < 7;
+  lastClick = { t: dbl ? 0 : now, x: e.clientX, y: e.clientY };
+  const T = S.tool;
+  if (T === 'select') return downSelect(e, w, dbl);
+  if (T === 'place') {
+    if (!S.placeType) return;
+    const c = addComp(S.placeType, w[0], w[1], { rot: S.placeRot });
+    selectOnly(c.id); commit({ light: true }); renderOptbar();
+    toast(`${c.ref} paigutatud · klõpsa uuesti järgmise jaoks`);
+    return;
+  }
+  if (T === 'point') {
+    const sn = snapAt(w, { pins: false, traces: true });
+    const c = addComp(S.pointType, sn.x, sn.y);
+    selectOnly(c.id); commit({ light: true });
+    toast(`${c.ref} lisatud`);
+    return;
+  }
+  if (T === 'pin') {
+    const c = pinTarget(w);
+    if (!c) { toast('Klõpsa komponendi peale (või vali see enne)', 'warn'); return; }
+    const [lx, ly] = w2l(c, w[0], w[1]), id = nextPinId(c);
+    c.extra = c.extra || []; c.extra.push({ id, x: f2(lx), y: f2(ly), d: f2(pinSizeFor(c)), shape: 'circle' });
+    selectOnly(c.id); S.selPin = { c: c.id, p: id }; S.tab = 'board';
+    commit(); scrollRowIntoView();
+    toast(`Lisatud jalg ${c.ref}.${id}`);
+    return;
+  }
+  if (T === 'trace') return downTrace(w, dbl);
+  if (T === 'measure') {
+    const sn = snapAt(w, { vertices: true });
+    if (!S.draft) S.draft = { kind: 'dim', a: epFromSnap(sn) };
+    else if (!S.draft.b) {
+      const cur = draftCursor(), ep = sn.pin || sn.vertex ? epFromSnap(sn) : { x: f2(cur[0]), y: f2(cur[1]) };
+      if (dist(epPos(S.draft.a), epPos(ep)) < 2 / view.z) return;
+      S.draft.b = ep;
+    } else {
+      const a = epPos(S.draft.a), b = epPos(S.draft.b);
+      doc.dims.push({ id: uid('d'), a: S.draft.a, b: S.draft.b, off: f2(dimOffsetFor(a, b, w)) });
+      S.draft = null; commit({ light: true });
+    }
+    renderOptbar(); schedule('over'); return;
+  }
+  if (T === 'outline') { S.drag = { kind: 'outline', a: w, b: w }; return; }
+  if (T === 'calib') {
+    const cur = draftCursor();
+    if (!S.draft) { S.draft = { kind: 'calib', a: w }; schedule('over'); return; }
+    S.draft.b = cur; schedule('over');
+    const px = dist(S.draft.a, S.draft.b);
+    if (px < 3) { S.draft = null; return; }
+    openCalib(px);
+  }
+});
+function downSelect(e, w, dbl) {
+  const hit = hitTarget(e.target);
+  if (hit && hit.kind === 'handle') {
+    if (hit.h === 'tv' && e.altKey && !['a', 'b'].includes(hit.idx)) {
+      const t = anyById(hit.id); t.pts.splice(+hit.idx, 1); commit({ light: true }); return;
+    }
+    S.drag = { kind: hit.h, id: hit.id, idx: hit.idx, moved: false, sx: e.clientX, sy: e.clientY };
+    return;
+  }
+  if (hit && (hit.kind === 'comp' || hit.kind === 'pin')) {
+    const id = hit.id;
+    if (e.shiftKey) { S.sel.has(id) ? S.sel.delete(id) : S.sel.add(id); }
+    else if (!S.sel.has(id)) selectOnly(id);
+    if (hit.kind === 'pin') {
+      S.selPin = { c: id, p: hit.pin };
+      const n = getNets().byPin.get(id + ':' + hit.pin); S.hlPinned = n ? n.key : null;
+      if (dbl) { startTraceFrom(id, hit.pin); return; }
+    } else if (S.selPin && S.selPin.c !== id) S.selPin = null;
+    afterSelect(true); scrollRowIntoView();
+    startMove(e, w, id);
+    return;
+  }
+  if (hit && hit.kind === 'trace') {
+    const t = anyById(hit.id);
+    if (dbl && t) {
+      const pts = tracePts(t), r = nearestOnPoly(w, pts);
+      if (r.i >= 0) { t.pts.splice(r.i, 0, [f2(r.q[0]), f2(r.q[1])]); selectOnly(t.id); commit({ light: true }); return; }
+    }
+    if (e.shiftKey) { S.sel.has(hit.id) ? S.sel.delete(hit.id) : S.sel.add(hit.id); } else if (!S.sel.has(hit.id)) selectOnly(hit.id);
+    const n = getNets().byTrace.get(hit.id); S.hlPinned = n ? n.key : null;
+    afterSelect(); scrollRowIntoView();
+    if (S.sel.size > 1) startMove(e, w, hit.id);
+    return;
+  }
+  if (hit && (hit.kind === 'dim' || hit.kind === 'outline')) {
+    if (e.shiftKey) { S.sel.has(hit.id) ? S.sel.delete(hit.id) : S.sel.add(hit.id); } else if (!S.sel.has(hit.id)) selectOnly(hit.id);
+    afterSelect(); scrollRowIntoView();
+    if (hit.kind === 'dim' && S.sel.size === 1) S.drag = { kind: 'do', id: hit.id, moved: false, sx: e.clientX, sy: e.clientY };
+    else startMove(e, w, hit.id);
+    return;
+  }
+  if (!e.shiftKey) { if (S.sel.size || S.hlPinned || S.selPin) { S.sel.clear(); S.selPin = null; S.hlPinned = null; afterSelect(); } }
+  S.drag = { kind: 'marquee', a: w, b: w, add: e.shiftKey, moved: false, sx: e.clientX, sy: e.clientY };
+}
+function startMove(e, w, clickedId) {
+  const orig = {};
+  for (const id of S.sel) {
+    const o = anyById(id), k = kindOf(id); if (!o) continue;
+    if (k === 'comp' || k === 'outline') orig[id] = [o.x, o.y];
+    else if (k === 'trace') orig[id] = { a: [o.a.x, o.a.y], b: [o.b.x, o.b.y], pts: o.pts.map(p => [...p]) };
+    else if (k === 'dim') orig[id] = { a: [o.a.x, o.a.y], b: [o.b.x, o.b.y] };
+  }
+  S.drag = { kind: 'move', start: w, orig, moved: false, sx: e.clientX, sy: e.clientY, clickedId, shift: e.shiftKey };
+}
+function startTraceFrom(cid, pid) {
+  const q = pinWorld(cid, pid); if (!q) return;
+  setTool('trace');
+  S.draft = { kind: 'trace', a: { c: cid, p: pid, x: f2(q[0]), y: f2(q[1]) }, pts: [], layer: S.traceLayer, w: S.traceW };
+  renderOptbar(); schedule('over');
+  toast(`Rada algab: ${pinLabel(cid, pid)} — klõpsa sihtjalal`);
+}
+function downTrace(w, dbl) {
+  const sn = snapAt(w, { traces: true, vertices: true });
+  if (!S.draft) {
+    S.draft = { kind: 'trace', a: epFromSnap(sn), pts: [], layer: S.traceLayer, w: S.traceW };
+    renderOptbar(); schedule('over'); return;
+  }
+  const d = S.draft;
+  if (dbl) {
+    const last = d.pts.pop();
+    if (last) finishTrace({ x: last[0], y: last[1] }); else cancelDraft();
+    return;
+  }
+  if (sn.pin) { finishTrace(epFromSnap(sn)); return; }
+  if (sn.trace || sn.vertex) {
+    const start = epPos(d.a);
+    if (d.pts.length || dist(start, [sn.x, sn.y]) > 6 / view.z) { finishTrace({ x: f2(sn.x), y: f2(sn.y) }); return; }
+  }
+  const cur = draftCursor();
+  d.pts.push([f2(cur[0]), f2(cur[1])]);
+  schedule('over');
+}
+function finishTrace(b) {
+  const d = S.draft; S.draft = null;
+  const a = epPos(d.a), bp = epPos(b);
+  if (dist(a, bp) < 1e-3 && !d.pts.length) { renderOptbar(); schedule('over'); return; }
+  if (d.a.c && b.c && d.a.c === b.c && d.a.p === b.p) { renderOptbar(); schedule('over'); return; }
+  const t = { id: uid('t'), a: d.a, b, pts: d.pts, w: d.w, layer: d.layer, net: '' };
+  doc.traces.push(t);
+  commit({ light: true }); renderOptbar();
+  const n = getNets().byTrace.get(t.id);
+  toast(`Rada ${epText(t.a)} → ${epText(t.b)}${n ? ' · võrk ' + n.name : ''}`);
+}
+function cancelDraft() { S.draft = null; renderOptbar(); schedule('over'); }
+function onRightClick() {
+  const d = S.draft;
+  if (d && d.kind === 'trace' && d.pts.length) { const last = d.pts.pop(); finishTrace({ x: last[0], y: last[1] }); return; }
+  if (d) { cancelDraft(); return; }
+  if (S.tool !== 'select') setTool('select');
+}
+
+svg.addEventListener('pointermove', e => {
+  if (pointers.has(e.pointerId)) pointers.set(e.pointerId, [e.clientX, e.clientY]);
+  if (pinch && pointers.size === 2) {
+    const [p1, p2] = [...pointers.values()], r = svg.getBoundingClientRect();
+    const d = dist(p1, p2), m = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
+    const z = clamp(pinch.v.z * d / pinch.d, .02, 80), k = z / pinch.v.z;
+    view.z = z; view.x = (m[0] - r.left) - ((pinch.m[0] - r.left) - pinch.v.x) * k; view.y = (m[1] - r.top) - ((pinch.m[1] - r.top) - pinch.v.y) * k;
+    applyView(); schedule('scene'); return;
+  }
+  const w = toWorld(e); S.mouse = w; S.shift = e.shiftKey; S.mouseIn = true;
+  updateCoords(w);
+  const dr = S.drag;
+  if (dr) { onDrag(e, w, dr); return; }
+  const T = S.tool;
+  if (T === 'trace') S.snap = snapAt(w, { traces: true, vertices: true });
+  else if (T === 'measure') S.snap = snapAt(w, { vertices: true });
+  else if (T === 'point') S.snap = snapAt(w, { pins: false, traces: true });
+  else S.snap = null;
+  showTip(e, T === 'select' || T === 'pin' || T === 'pan' ? hitTarget(e.target) : (S.snap && S.snap.pin ? { kind: 'pin', id: S.snap.pin.c, pin: S.snap.pin.p } : null));
+  schedule('over');
+});
+svg.addEventListener('pointerleave', () => { S.mouseIn = false; tip.hidden = true; if (!S.drag) { S.snap = null; schedule('over'); } });
+function onDrag(e, w, dr) {
+  if (!dr.moved && dr.sx != null && Math.hypot(e.clientX - dr.sx, e.clientY - dr.sy) < 3) return;
+  dr.moved = true; tip.hidden = true;
+  if (dr.kind === 'pan') { view.x = dr.vx + e.clientX - dr.sx; view.y = dr.vy + e.clientY - dr.sy; applyView(); return; }
+  if (dr.kind === 'marquee' || dr.kind === 'outline') { dr.b = w; schedule('over'); return; }
+  if (dr.kind === 'move') {
+    const dx = w[0] - dr.start[0], dy = w[1] - dr.start[1];
+    for (const id in dr.orig) {
+      const o = anyById(id), k = kindOf(id), v = dr.orig[id]; if (!o) continue;
+      if (k === 'comp' || k === 'outline') { o.x = f2(v[0] + dx); o.y = f2(v[1] + dy); }
+      else if (k === 'trace') { if (!o.a.c) { o.a.x = f2(v.a[0] + dx); o.a.y = f2(v.a[1] + dy); } if (!o.b.c) { o.b.x = f2(v.b[0] + dx); o.b.y = f2(v.b[1] + dy); } o.pts = v.pts.map(p => [f2(p[0] + dx), f2(p[1] + dy)]); }
+      else if (k === 'dim') { if (!o.a.c) { o.a.x = f2(v.a[0] + dx); o.a.y = f2(v.a[1] + dy); } if (!o.b.c) { o.b.x = f2(v.b[0] + dx); o.b.y = f2(v.b[1] + dy); } }
+    }
+    touch(); schedule('scene'); return;
+  }
+  if (dr.kind === 'tv') {
+    const t = anyById(dr.id); if (!t) return;
+    if (dr.idx === 'a' || dr.idx === 'b') {
+      const sn = snapAt(w, {}); S.snap = sn;
+      const ep = t[dr.idx]; delete ep.c; delete ep.p; ep.x = f2(sn.x); ep.y = f2(sn.y); dr.pin = sn.pin || null;
+    } else {
+      let p = w; if (e.shiftKey) { const pts = tracePts(t), i = +dr.idx + 1; p = constrain45(pts[i - 1], w); }
+      t.pts[+dr.idx] = [f2(p[0]), f2(p[1])];
+    }
+    touch(); schedule('scene'); return;
+  }
+  if (dr.kind === 'da') {
+    const d = anyById(dr.id); if (!d) return;
+    const sn = snapAt(w, { vertices: true }); S.snap = sn;
+    const ep = d[dr.idx]; delete ep.c; delete ep.p; ep.x = f2(sn.x); ep.y = f2(sn.y); dr.pin = sn.pin || null;
+    touch(); schedule('scene'); return;
+  }
+  if (dr.kind === 'do') { const d = anyById(dr.id); if (!d) return; d.off = f2(dimOffsetFor(epPos(d.a), epPos(d.b), w)); schedule('scene'); return; }
+  if (dr.kind === 'oc') {
+    const o = anyById(dr.id); if (!o) return;
+    const c = [[o.x, o.y], [o.x + o.w, o.y], [o.x + o.w, o.y + o.h], [o.x, o.y + o.h]], opp = c[(+dr.idx + 2) % 4];
+    const [x0, y0, x1, y1] = rectOf(opp, w); o.x = f2(x0); o.y = f2(y0); o.w = f2(x1 - x0); o.h = f2(y1 - y0);
+    const right = w[0] >= opp[0], below = w[1] >= opp[1];
+    dr.idx = String(below ? (right ? 2 : 3) : (right ? 1 : 0));
+    touch(); schedule('scene');
+  }
+}
+function endPointer(e) {
+  pointers.delete(e.pointerId);
+  if (pinch) { if (pointers.size < 2) { pinch = null; queueSave(); } return; }
+  const dr = S.drag; S.drag = null; wrap.classList.remove('dragging');
+  if (!dr) return;
+  if (dr.kind === 'pan') { queueSave(); return; }
+  if (dr.kind === 'marquee') {
+    if (dr.moved) {
+      const [x0, y0, x1, y1] = rectOf(dr.a, dr.b), inR = p => p[0] >= x0 && p[0] <= x1 && p[1] >= y0 && p[1] <= y1;
+      if (!dr.add) S.sel.clear();
+      for (const c of doc.comps) if (inR([c.x, c.y])) S.sel.add(c.id);
+      for (const t of doc.traces) if (tracePts(t).every(inR)) S.sel.add(t.id);
+      for (const d of doc.dims) if (inR(epPos(d.a)) && inR(epPos(d.b))) S.sel.add(d.id);
+      afterSelect();
+    }
+    schedule('over'); return;
+  }
+  if (dr.kind === 'outline') {
+    const [x0, y0, x1, y1] = rectOf(dr.a, dr.b);
+    if (x1 - x0 > 4 && y1 - y0 > 4) {
+      const o = { id: uid('o'), x: f2(x0), y: f2(y0), w: f2(x1 - x0), h: f2(y1 - y0), dims: true };
+      doc.outlines.push(o); selectOnly(o.id); S.tab = 'board'; commit();
+      toast(`Kontuur ${fmtN(o.w / doc.ppm)} × ${fmtN(o.h / doc.ppm)} mm`);
+    } else schedule('over');
+    return;
+  }
+  if (dr.kind === 'move') {
+    if (dr.moved) commit({ light: true });
+    else if (!dr.shift && S.sel.size > 1 && dr.clickedId) { selectOnly(dr.clickedId); afterSelect(); }
+    return;
+  }
+  if (dr.kind === 'tv' || dr.kind === 'da') {
+    if (dr.moved) {
+      const o = anyById(dr.id);
+      if (o && dr.pin) Object.assign(o[dr.idx], { c: dr.pin.c, p: dr.pin.p });
+      S.snap = null; commit({ light: true });
+    }
+    return;
+  }
+  if (dr.moved) commit({ light: true });
+}
+svg.addEventListener('pointerup', endPointer);
+svg.addEventListener('pointercancel', endPointer);
+svg.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = svg.getBoundingClientRect();
+  const k = Math.exp(-(e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY) * (e.ctrlKey ? .01 : .0018));
+  zoomAt(e.clientX - r.left, e.clientY - r.top, k);
+}, { passive: false });
+
+function updateCoords(w) {
+  const [x, y] = toMM(w);
+  $('#coords').textContent = `X ${fmtN(x)}   Y ${fmtN(y)} mm`;
+}
+function showTip(e, hit) {
+  let h = '';
+  if (hit && hit.kind === 'pin') {
+    const c = compById(hit.id), p = c && compFP(c).pinMap.get(hit.pin);
+    if (p) {
+      const n = getNets().byPin.get(c.id + ':' + p.id);
+      h = `<b>${esc(c.ref)}.${esc(p.id)}</b>${p.name ? ' ' + esc(p.name) : ''}<br><i>${n ? 'võrk ' + esc(n.name) + ' · ' + (n.pins.length - 1) + ' ühendust' : 'ühendamata'}</i>`;
+    }
+  } else if (hit && hit.kind === 'comp') {
+    const c = compById(hit.id); if (c) h = `<b>${esc(c.ref)}</b> ${esc(c.value || '')}<br><i>${esc(fpLabel(c))}${c.side === 'bottom' ? ' · alumine pool' : ''}</i>`;
+  } else if (hit && hit.kind === 'trace') {
+    const t = anyById(hit.id), n = getNets().byTrace.get(hit.id);
+    if (t) h = `<b>${esc(n ? n.name : 'rada')}</b> · ${fmtN(t.w)} mm<br><i>${fmtMM(polyLen(tracePts(t)) / doc.ppm)} · ${t.layer === 'bottom' ? 'alumine' : t.layer === 'wire' ? 'juhe' : 'pealmine'}</i>`;
+  }
+  if (!h) { tip.hidden = true; return; }
+  tip.innerHTML = h; tip.hidden = false;
+  const r = wrap.getBoundingClientRect();
+  let x = e.clientX - r.left + 16, y = e.clientY - r.top + 18;
+  if (x + tip.offsetWidth > r.width - 8) x = e.clientX - r.left - tip.offsetWidth - 12;
+  if (y + tip.offsetHeight > r.height - 8) y = e.clientY - r.top - tip.offsetHeight - 12;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+
+/* ================= keyboard ================= */
+const typing = el => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+document.addEventListener('keydown', e => {
+  if (!modal.hidden) { if (e.key === 'Escape') closeModal(); return; }
+  const k = e.key, ctrl = e.ctrlKey || e.metaKey;
+  if (typing(document.activeElement)) { if (k === 'Escape') document.activeElement.blur(); return; }
+  if (ctrl) {
+    const kl = k.toLowerCase();
+    if (kl === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    else if ((kl === 'z' && e.shiftKey) || kl === 'y') { e.preventDefault(); redo(); }
+    else if (kl === 's') { e.preventDefault(); saveProject(); }
+    else if (kl === 'o') { e.preventDefault(); $('#fileProj').click(); }
+    else if (kl === 'd') { e.preventDefault(); duplicateSelection(); }
+    else if (kl === 'a') { e.preventDefault(); S.sel = new Set([...doc.comps.map(c => c.id), ...doc.traces.map(t => t.id)]); afterSelect(); }
+    return;
+  }
+  if (k === ' ') { if (!S.spaceDown) { S.spaceDown = true; wrap.classList.add('panning'); } e.preventDefault(); return; }
+  if (k === 'Escape') {
+    if (S.draft) cancelDraft();
+    else if (S.tool !== 'select') setTool('select');
+    else { S.sel.clear(); S.selPin = null; S.hlPinned = null; afterSelect(); }
+    return;
+  }
+  if (k === 'Enter') { const d = S.draft; if (d && d.kind === 'trace') { const last = d.pts.pop(); if (last) finishTrace({ x: last[0], y: last[1] }); else cancelDraft(); } return; }
+  if (k === 'Backspace' && S.draft && S.draft.kind === 'trace') { e.preventDefault(); if (S.draft.pts.length) { S.draft.pts.pop(); schedule('over'); } else cancelDraft(); return; }
+  if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); deleteSelection(); return; }
+  if (k.startsWith('Arrow')) {
+    const comps = [...S.sel].map(compById).filter(Boolean); if (!comps.length) return;
+    e.preventDefault();
+    const st = (e.shiftKey ? 10 : 1) / view.z, dx = k === 'ArrowLeft' ? -st : k === 'ArrowRight' ? st : 0, dy = k === 'ArrowUp' ? -st : k === 'ArrowDown' ? st : 0;
+    comps.forEach(c => { c.x = f2(c.x + dx); c.y = f2(c.y + dy); });
+    touch(); schedule('scene'); clearTimeout(S.nudgeT); S.nudgeT = setTimeout(() => commit({ light: true }), 400);
+    return;
+  }
+  const kl = k.toLowerCase();
+  const toolKeys = { v: 'select', h: 'pan', t: 'trace', p: 'point', j: 'pin', m: 'measure', o: 'outline', k: 'calib' };
+  if (toolKeys[kl] && !e.altKey) { setTool(toolKeys[kl]); return; }
+  if (kl === 'r') { if (S.tool === 'place') { S.placeRot = (S.placeRot + (e.shiftKey ? 270 : 90)) % 360; renderOptbar(); schedule('over'); } else rotateSel(e.shiftKey ? -90 : 90); return; }
+  if (kl === 'q' || kl === 'e') { rotateSel((kl === 'q' ? -1 : 1) * (e.shiftKey ? 15 : 1)); return; }
+  if (kl === 'f') { flipSel(); return; }
+  if (kl === 'l' && S.tool === 'trace') { const L = ['top', 'bottom', 'wire']; S.traceLayer = L[(L.indexOf(S.traceLayer) + 1) % 3]; if (S.draft) S.draft.layer = S.traceLayer; renderOptbar(); schedule('over'); return; }
+  if (k === '0') { fitView(); return; }
+  if (k === '+' || k === '=') { const r = svg.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, 1.25); return; }
+  if (k === '-') { const r = svg.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, .8); return; }
+  if (k === '?') openHelp();
+});
+document.addEventListener('keyup', e => { if (e.key === ' ') { S.spaceDown = false; wrap.classList.remove('panning'); } });
+window.addEventListener('blur', () => { S.spaceDown = false; wrap.classList.remove('panning'); });
+
+/* ================= files: photo, project, export ================= */
+const readURL = file => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(file); });
+const readText = file => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsText(file); });
+const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Pilti ei saanud avada')); i.src = src; });
+
+async function loadImageFile(file) {
+  try {
+    let src = await readURL(file), im = await loadImg(src);
+    let w = im.naturalWidth, h = im.naturalHeight;
+    const MAX = 6000;
+    if (Math.max(w, h) > MAX) {
+      const k = MAX / Math.max(w, h), cv = document.createElement('canvas');
+      cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+      cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+      src = cv.toDataURL('image/jpeg', .92); w = cv.width; h = cv.height;
+      toast('Väga suur foto vähendati 6000 px-ni');
+    }
+    const fresh = doc.sample;
+    if (fresh) { doc = newDoc(); doc.name = (file.name || 'Plaat').replace(/\.[^.]+$/, ''); doc.ppm = f2(w / 100); S.sel.clear(); S.selPin = null; S.hlPinned = null; }
+    img = { src, w, h, name: file.name || 'foto' };
+    renderImage(); saveImage();
+    if (fresh) resetHistory();
+    commit(); fitView(); renderBanner();
+    if (!doc.calibrated) { setTool('calib'); toast('Foto laetud — nüüd kalibreeri mõõtkava'); }
+    else toast('Foto vahetatud, komponendid jäid alles');
+  } catch (err) { toast('Seda faili ei õnnestunud pildina avada', 'warn'); }
+}
+async function handleFiles(files) {
+  const f = [...files][0]; if (!f) return;
+  if (/\.json$/i.test(f.name) || f.type === 'application/json') return loadProjectFile(f);
+  if (f.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|bmp)$/i.test(f.name)) return loadImageFile(f);
+  toast('Toetatud on fotod (JPG, PNG, WebP) ja projektifailid (.json)', 'warn');
+}
+async function loadProjectFile(f) {
+  try {
+    const data = JSON.parse(await readText(f));
+    if (!data || data.app !== 'pcb-kaardistaja' || !data.doc) throw new Error('vale fail');
+    doc = { ...newDoc(), ...data.doc, sample: false };
+    img = data.img || null;
+    if (data.ui) { Object.assign(ui, data.ui); ui.layers = { ...DEFAULT_LAYERS, ...(data.ui.layers || {}) }; }
+    S.sel.clear(); S.selPin = null; S.hlPinned = null; S.draft = null;
+    touch(); resetHistory(); renderImage(); saveImage(); renderAll(); fitView(); renderBanner(); queueSave();
+    toast(`Avatud: ${doc.name}`);
+  } catch (e) { toast('See ei ole PCB Kaardistaja projektifail', 'warn'); }
+}
+const dlCap = (window.claude && typeof window.claude.use === 'function') ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+async function saveFile(name, data, mime) {
+  const cap = await Promise.race([dlCap, new Promise(r => setTimeout(() => r(null), 1500))]);
+  if (cap) {
+    try { await cap.save({ filename: name, data }); toast('Salvestatud: ' + name); return true; }
+    catch (e) { if (e && e.code === 'declined') return false; toast('Salvestamine ei õnnestunud: ' + ((e && e.message) || 'tundmatu viga'), 'warn'); return false; }
+  }
+  try {
+    const blob = data instanceof Blob ? data : new Blob([data], { type: mime });
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast('Salvestatud: ' + name); return true;
+  } catch (e) { toast('Brauser ei lubanud faili salvestada', 'warn'); return false; }
+}
+const safeName = () => (doc.name || 'plaat').trim().replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '-') || 'plaat';
+function saveProject() {
+  const data = JSON.stringify({ app: 'pcb-kaardistaja', v: 1, saved: new Date().toISOString(), doc: { ...doc, sample: false }, img, ui });
+  saveFile(safeName() + '.pcbmap.json', data, 'application/json');
+}
+
+/* ---- export ---- */
+const PAL = { top: '#d23c25', bottom: '#2a64c8', wire: '#c08000', ink: '#16201c', ink2: '#4a5852', pad: '#d0a630', padEdge: '#6a510b', padInk: '#241a03', drill: '#ffffff', body: '#14201b', dim: '#9c2c94', bodyFill: 'rgba(20,32,27,.05)' };
+const EXPORT_CSS = `.fp-halo{display:none}.fp-body>*{fill:${PAL.bodyFill};stroke:${PAL.body};stroke-width:.12}.fp-marks>*{fill:none;stroke:${PAL.body};stroke-width:.12}.fp-marks>.dot{fill:${PAL.body};stroke:none}.pad{fill:${PAL.pad};stroke:${PAL.padEdge};stroke-width:.05}.pad.extra{fill:#c9772f}.drill{fill:${PAL.drill}}.lbl{font-family:Consolas,'Courier New',monospace;font-weight:700;fill:${PAL.ink};text-anchor:middle;dominant-baseline:central;stroke:#fff;paint-order:stroke;stroke-linejoin:round}.lbl.val{font-weight:400;fill:${PAL.ink2}}.pinl{font-family:Consolas,monospace;font-weight:700;fill:${PAL.padInk};text-anchor:middle;dominant-baseline:central}.pinn{font-family:Consolas,monospace;fill:${PAL.ink};text-anchor:middle;dominant-baseline:central;stroke:#fff;paint-order:stroke}.t-line{fill:none;stroke-linecap:round;stroke-linejoin:round}.dimg line{stroke:${PAL.dim};fill:none}.dimg polygon{fill:${PAL.dim}}.dimg text{font-family:Consolas,monospace;font-weight:700;fill:${PAL.dim};text-anchor:middle;dominant-baseline:central;stroke:#fff;paint-order:stroke}.o-line{fill:none;stroke:${PAL.dim};stroke-dasharray:${2 * 1}mm 1mm}.o-hit,.hit,.t-hit,.d-hit{display:none}.dimmed{opacity:1}`;
+function exportRegion() {
+  const o = doc.outlines[0], m = 8 * doc.ppm;
+  if (o) return [o.x - m, o.y - m, o.w + 2 * m, o.h + 2 * m];
+  const [x0, y0, x1, y1] = contentBounds(); return [x0, y0, x1 - x0, y1 - y0];
+}
+function buildSVG(withPhoto) {
+  const [x, y, w, h] = exportRegion(), ppm = doc.ppm;
+  const z = 11 / (1.1 * ppm); // labels ≈ 1.1 mm tall
+  const body = sceneMarkup({ export: true, z, pal: PAL });
+  // component strokes live inside mm-scaled groups; dimension and outline strokes are in photo pixels
+  const css = EXPORT_CSS + `.dimg line,.o-line{stroke-width:${f2(.15 * ppm)}}.o-line{stroke-dasharray:${f2(2 * ppm)} ${f2(1 * ppm)}}`;
+  const photo = withPhoto && img ? `<image href="${img.src}" xlink:href="${img.src}" x="0" y="0" width="${img.w}" height="${img.h}" opacity="${ui.opacity}" preserveAspectRatio="none"/>` : '';
+  const fs = f2(2.2 * ppm), tb = `<g font-family="Consolas,monospace" fill="${PAL.ink2}" font-size="${f2(1.6 * ppm)}"><text x="${f2(x + w - 2 * ppm)}" y="${f2(y + h - 2 * ppm)}" text-anchor="end"><tspan font-weight="700" font-size="${fs}" fill="${PAL.ink}">${esc(doc.name)}</tspan>  ·  1:1 mm  ·  ${new Date().toLocaleDateString('et-EE')}</text></g>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${f2(w / ppm)}mm" height="${f2(h / ppm)}mm" viewBox="${f2(x)} ${f2(y)} ${f2(w)} ${f2(h)}"><title>${esc(doc.name)}</title><style>${css}</style><rect x="${f2(x)}" y="${f2(y)}" width="${f2(w)}" height="${f2(h)}" fill="#ffffff"/>${photo}${body}${tb}</svg>`;
+}
+const vectorFixup = s => s.replace(/vector-effect="non-scaling-stroke"/g, '');
+async function exportPNG(withPhoto) {
+  const [x, y, w, h] = exportRegion();
+  const k = clamp(4000 / Math.max(w, h), 1, 3), cv = document.createElement('canvas');
+  cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+  const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
+  if (withPhoto && img) { const im = await loadImg(img.src); g.globalAlpha = ui.opacity; g.drawImage(im, -x * k, -y * k, img.w * k, img.h * k); g.globalAlpha = 1; }
+  const s = buildSVG(false).replace(/<rect x="[^"]+" y="[^"]+" width="[^"]+" height="[^"]+" fill="#ffffff"\/>/, '');
+  const url = URL.createObjectURL(new Blob([s], { type: 'image/svg+xml' }));
+  try { const im = await loadImg(url); g.drawImage(im, 0, 0, cv.width, cv.height); } finally { URL.revokeObjectURL(url); }
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  return saveFile(safeName() + '.png', blob, 'image/png');
+}
+const csvCell = v => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+const csv = rows => '﻿' + rows.map(r => r.map(csvCell).join(';')).join('\r\n');
+function netlistCSV() {
+  const rows = [['Võrk', 'Tähis', 'Jalg', 'Jala nimi', 'Väärtus', 'Korpus']];
+  for (const n of getNets().list) for (const p of n.pins) { const c = compById(p.c), pn = compFP(c).pinMap.get(p.p); rows.push([n.name, c.ref, p.p, pn ? pn.name : '', c.value, fpLabel(c)]); }
+  return csv(rows);
+}
+function netlistText() { return getNets().list.map(n => `${n.name}: ${n.pins.map(p => pinLabel(p.c, p.p)).join(', ')}`).join('\n'); }
+function bomCSV() {
+  const rows = [['Tähis', 'Väärtus', 'Korpus', 'Pool', 'X (mm)', 'Y (mm)', 'Pööre (°)', 'Jalgu', 'Märkused']];
+  const list = [...doc.comps].sort((a, b) => a.ref.localeCompare(b.ref, 'et', { numeric: true }));
+  for (const c of list) { const [x, y] = toMM([c.x, c.y]); rows.push([c.ref, c.value, fpLabel(c), c.side === 'bottom' ? 'alumine' : 'pealmine', fmtN(x), fmtN(y), fmtN(c.rot, 1), compFP(c).pins.length, c.note || '']); }
+  return csv(rows);
+}
+function openExport() {
+  openModal(`<h2>Ekspordi</h2><p>Mõõtkava ${doc.calibrated ? '<b class="mono">' + fmtN(doc.ppm) + ' px/mm</b>' : '<b>pole kalibreeritud</b> — millimeetrid on hinnangulised'}. Ala: ${doc.outlines.length ? 'plaadi kontuur + 8 mm varu' : 'kogu foto'}.</p>
+  <label class="f">Projekti nimi (failinimeks)<input id="exName" value="${esc(doc.name)}" autocomplete="off"></label>
+  <label class="chk"><input type="checkbox" id="exPhoto"${S.exPhoto ? ' checked' : ''}> Lisa foto taustaks (SVG ja PNG)</label>
+  <div class="ex-grid">
+    <button data-ex="svg"><b>Joonis · SVG</b><span>Vektorjoonis mõõtkavas 1:1, prinditav ja avatav CAD-is või Inkscape'is</span></button>
+    <button data-ex="png"><b>Pilt · PNG</b><span>Kõrge eraldusvõimega pilt dokumentatsiooni jaoks</span></button>
+    <button data-ex="net"><b>Võrguloend · CSV</b><span>Iga võrgu jalad koos nimedega</span></button>
+    <button data-ex="bom"><b>Komponendid · CSV</b><span>Tähis, väärtus, korpus, pool ja asukoht mm</span></button>
+    <button data-ex="json"><b>Projekt · JSON</b><span>Kogu töö koos fotoga, et hiljem jätkata</span></button>
+    <button data-ex="copy"><b>Kopeeri võrguloend</b><span>Tekstina lõikelauale, nt „GND: U1.4, C1.2“</span></button>
+  </div>
+  <div class="dlg-foot"><button class="btn" data-close>Sulge</button></div>`, true);
+}
+async function runExport(kind) {
+  const withPhoto = S.exPhoto;
+  let ok = true;
+  if (kind === 'svg') ok = await saveFile(safeName() + '.svg', vectorFixup(buildSVG(withPhoto)), 'image/svg+xml');
+  else if (kind === 'png') ok = await exportPNG(withPhoto);
+  else if (kind === 'net') ok = await saveFile(safeName() + '-vorgud.csv', netlistCSV(), 'text/csv');
+  else if (kind === 'bom') ok = await saveFile(safeName() + '-komponendid.csv', bomCSV(), 'text/csv');
+  else if (kind === 'json') { saveProject(); }
+  else if (kind === 'copy') {
+    const txt = netlistText() || '(võrke pole)';
+    try { await navigator.clipboard.writeText(txt); toast('Võrguloend kopeeritud'); }
+    catch (e) { openModal(`<h2>Võrguloend</h2><p>Kopeerimine polnud lubatud — vali tekst ja kopeeri käsitsi.</p><textarea class="inp mono" style="height:220px;padding:8px" readonly>${esc(txt)}</textarea><div class="dlg-foot"><button class="btn primary" data-close>Sulge</button></div>`, true); }
+  }
+  if (ok !== false) { S.exported = true; renderSteps(); }
+}
+
+/* ---- calibration dialog ---- */
+function openCalib(px) {
+  const presets = [['2,54', 'pinnisamm'], ['10,16', '4 sammu'], ['25,4', '1 toll'], ['5', ''], ['10', ''], ['50', ''], ['100', '']];
+  openModal(`<h2>Kui pikk see lõik tegelikult on?</h2><p>Märkisid <b class="mono">${fmtN(px, 1)} px</b>. Sisesta sama lõigu tegelik pikkus, nt nihikuga mõõdetud plaadi serv või teadaolev jalgade samm.</p>
+  <div class="big-inp"><input id="calMM" inputmode="decimal" placeholder="25,4" autocomplete="off" autofocus><span>mm</span></div>
+  <div class="presets">${presets.map(([v, l]) => `<button data-cal="${v}">${v}${l ? ' · ' + l : ''}</button>`).join('')}</div>
+  <p id="calOut" class="mono">&nbsp;</p>
+  <div class="dlg-foot"><button class="btn" data-calx>Tühista</button><button class="btn primary" data-calok>Rakenda mõõtkava</button></div>`);
+  const inp = $('#calMM'), out = $('#calOut');
+  const upd = () => { const mm = parseNum(inp.value); out.textContent = mm > 0 ? `= ${fmtN(px / mm, 3)} px/mm · 1 px = ${fmtN(mm / px * 1000, 1)} µm` : ' '; };
+  inp.addEventListener('input', upd);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') apply(); });
+  const apply = () => {
+    const mm = parseNum(inp.value);
+    if (!(mm > 0)) { toast('Sisesta pikkus millimeetrites', 'warn'); inp.focus(); return; }
+    doc.ppm = Math.round(px / mm * 10000) / 10000;
+    doc.calibrated = true; doc.calib = { a: S.draft.a.map(f2), b: S.draft.b.map(f2), mm };
+    S.draft = null; closeModal(); commit();
+    toast(`Mõõtkava ${fmtN(doc.ppm)} px/mm — komponendid on nüüd õiges suuruses`);
+  };
+  modal.onclick = e => {
+    const p = e.target.closest('[data-cal]');
+    if (p) { inp.value = p.dataset.cal; upd(); inp.focus(); return; }
+    if (e.target.closest('[data-calok]')) { apply(); return; }
+    if (e.target.closest('[data-calx]') || e.target === modal) { modal.onclick = null; S.draft = null; closeModal(); schedule('over'); }
+  };
+}
+
+/* ---- photo rotate / mirror (keeps everything aligned) ---- */
+async function transformImage(kind) {
+  if (!img) { toast('Fotot pole veel laetud', 'warn'); return; }
+  refreshEndpoints();
+  const im = await loadImg(img.src), W = img.w, H = img.h, cv = document.createElement('canvas'), g = cv.getContext('2d');
+  if (kind === 'rot') { cv.width = H; cv.height = W; g.translate(H, 0); g.rotate(Math.PI / 2); }
+  else { cv.width = W; cv.height = H; g.translate(W, 0); g.scale(-1, 1); }
+  g.drawImage(im, 0, 0);
+  const src = cv.toDataURL(/^data:image\/png/.test(img.src) ? 'image/png' : 'image/jpeg', .92);
+  const T = kind === 'rot' ? ([x, y]) => [f2(H - y), f2(x)] : ([x, y]) => [f2(W - x), f2(y)];
+  for (const c of doc.comps) { [c.x, c.y] = T([c.x, c.y]); if (kind === 'rot') c.rot = (c.rot + 90) % 360; else { c.side = c.side === 'bottom' ? 'top' : 'bottom'; c.rot = (360 - c.rot) % 360; } }
+  const te = ep => { [ep.x, ep.y] = T([ep.x, ep.y]); };
+  for (const t of doc.traces) { te(t.a); te(t.b); t.pts = t.pts.map(T); }
+  for (const d of doc.dims) { te(d.a); te(d.b); if (kind === 'flip') d.off = -d.off; }
+  for (const o of doc.outlines) { if (kind === 'rot') { const nx = H - (o.y + o.h), ny = o.x; o.x = nx; o.y = ny; [o.w, o.h] = [o.h, o.w]; } else o.x = W - o.x - o.w; }
+  if (doc.calib) { doc.calib.a = T(doc.calib.a); doc.calib.b = T(doc.calib.b); }
+  img = { ...img, src, w: cv.width, h: cv.height };
+  renderImage(); saveImage(); commit(); fitView();
+  toast(kind === 'rot' ? 'Foto pööratud 90°' : 'Foto peegeldatud');
+}
+
+async function newProject() {
+  if (!doc.sample && (doc.comps.length || doc.traces.length)) {
+    const ok = await confirmDlg('Alusta uut projekti?', 'Praegune töö kaob brauseri automaatsalvestusest. Kui tahad seda alles hoida, salvesta enne projektifail.', 'Alusta uut', true);
+    if (!ok) return;
+  }
+  doc = newDoc(); img = null; S.sel.clear(); S.selPin = null; S.hlPinned = null; S.draft = null;
+  touch(); resetHistory(); renderImage(); saveImage(); renderAll(); renderBanner(); fitView(); queueSave();
+  S.step = 'photo'; renderSteps(); renderOptbar();
+}
+
+/* ================= sample board (procedural photo + half-finished map) ================= */
+const SMP_COMPS = [
+  // ref, type, x, y (board mm), rot, value, params, placed-in-demo, label [x,y]
+  ['J1', 'usbc', 4.6, 25, 90, 'USB-C', {}, true, [4.1, 18.9]],
+  ['U2', 'sot223', 22, 12, 180, 'AMS1117-3.3', {}, true, [22, 6.3]],
+  ['C1', 'c_smd', 16, 20, 90, '10µ', { size: '0805' }, true, [13.8, 20]],
+  ['C2', 'c_smd', 28, 20, 90, '10µ', { size: '0805' }, true, [30.2, 20]],
+  ['U1', 'soic', 42, 24, 0, 'ATtiny85', { pins: '8', body: '3.9' }, true, [42, 29]],
+  ['R1', 'r_smd', 52, 30, 0, '330', { size: '0805' }, true, [52, 28.3]],
+  ['D1', 'led_smd', 58, 30, 180, 'roheline', { size: '0805' }, true, [58, 28.3]],
+  ['R2', 'r_smd', 55, 22, 0, '1k', { size: '0805' }, false, [55, 20.6]],
+  ['Q1', 'sot23', 62, 22, 0, 'BC847', { pins: '3' }, false, [59.6, 20.4]],
+  ['J2', 'hdr1', 70, 25, 90, '', { pins: 4, pitch: '2.54' }, false, [70, 17.8]],
+  ['C3', 'c_el', 30, 38, 0, '100µ', { D: '6.3', pitch: '2.5' }, false, [30, 33.6]],
+  ['TP1', 'tp', 34, 16, 0, '', {}, false, [36.6, 16]],
+  ['TP2', 'tp', 12, 14, 0, '', {}, false, [12, 12.1]],
+  ['V1', 'via', 21, 34, 0, '', {}, false, null],
+  ['V2', 'via', 18, 17, 0, '', {}, false, null],
+  ['V3', 'via', 27, 8.85, 0, '', {}, false, null],
+  ['H1', 'hole', 3.5, 3.5, 0, '', { D: '3.2' }, true, null],
+  ['H2', 'hole', 72.5, 3.5, 0, '', { D: '3.2' }, false, null],
+  ['H3', 'hole', 3.5, 46.5, 0, '', { D: '3.2' }, false, null],
+  ['H4', 'hole', 72.5, 46.5, 0, '', { D: '3.2' }, false, null]
+];
+const SMP_PN = { U1: { 1: 'RESET', 2: 'PB3', 3: 'PB4', 4: 'GND', 5: 'PB0', 6: 'PB1', 7: 'PB2', 8: 'VCC' }, U2: { 1: 'GND', 2: 'VOUT', 3: 'VIN', 4: 'VOUT' }, J2: { 1: 'VCC', 2: 'OUT', 3: 'IO', 4: 'GND' } };
+const SMP_TRACES = [
+  // net, from, waypoints, to, width, in-demo
+  ['VBUS', ['J1', 'A4B9'], [[12.4, 22.6]], ['C1', '1'], .8, true],
+  ['VBUS', ['C1', '1'], [[16, 12.55]], ['U2', '3'], .8, true],
+  ['VBUS', [16, 14], [], ['TP2', '1'], .5, false],
+  ['VBUS', [16, 17], [], ['V2', '1'], .5, false],
+  ['GND', ['J1', 'B1A12'], [[12, 28.2], [16, 24.2]], ['C1', '2'], .8, true],
+  ['GND', ['C1', '2'], [], ['C2', '2'], .8, true],
+  ['GND', ['C2', '2'], [[32, 21], [36.9, 25.9]], ['U1', '4'], .6, false],
+  ['GND', ['U1', '4'], [[39.2, 28], [43.2, 32], [59, 32]], ['D1', '1'], .6, false],
+  ['GND', ['U2', '1'], [], ['V3', '1'], .8, false],
+  ['GND', ['J2', '4'], [[70, 30], [68, 32]], [59, 32], .6, false],
+  ['GND', ['Q1', '2'], [], [62.95, 32], .5, false],
+  ['GND', ['C3', '2'], [[35.2, 38], [41.2, 32]], [43.2, 32], .6, false],
+  ['3V3', ['U2', '4'], [[22, 16.5], [24.5, 19]], ['C2', '1'], .8, true],
+  ['3V3', ['C2', '1'], [[41.7, 19]], ['U1', '8'], .6, true],
+  ['3V3', ['U1', '8'], [[47.55, 19.345], [68.155, 19.345]], ['J2', '1'], .6, false],
+  ['3V3', [34, 19], [], ['TP1', '1'], .5, false],
+  ['', ['U1', '6'], [[46.5, 24.635], [51, 29.135]], ['R1', '1'], .4, true],
+  ['', ['R1', '2'], [], ['D1', '2'], .4, true],
+  ['', ['U1', '7'], [[48.635, 23.365], [50, 22]], ['R2', '1'], .4, false],
+  ['', ['R2', '2'], [[60.05, 22]], ['Q1', '1'], .4, false],
+  ['', ['Q1', '3'], [[64.73, 23.73]], ['J2', '2'], .4, false],
+  ['', ['C3', '1'], [[25, 38]], ['V1', '1'], .6, false]
+];
+
+function buildSample() {
+  const ppm = 14, M = 48, BW = 76, BH = 50, W = Math.round(BW * ppm + 2 * M), H = Math.round(BH * ppm + 2 * M);
+  const B = (x, y) => [M + x * ppm, M + y * ppm];
+  const rnd = mulberry(7);
+  const specs = SMP_COMPS.map(([ref, type, x, y, rot, value, params, placed, lbl]) => {
+    const c = { id: 'tmp', type, ref, value, x: B(x, y)[0], y: B(x, y)[1], rot, side: 'top', params: { ...defaultParams(DEF[type]), ...params }, pn: SMP_PN[ref] || {}, extra: [] };
+    return { c, placed, lbl, f: baseFP(type, c.params) };
+  });
+  const byRef = Object.fromEntries(specs.map(s => [s.c.ref, s]));
+  doc = newDoc(); doc.ppm = ppm; touch();
+  const pinXY = (ref, pid) => { const s = byRef[ref], p = s.f.pins.find(q => q.id === pid); return l2w(s.c, p.x, p.y); };
+  const endXY = e => typeof e[0] === 'string' ? pinXY(e[0], e[1]) : B(e[0], e[1]);
+
+  /* --- photo --- */
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  let gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, '#3a3631'); gr.addColorStop(1, '#201e1c');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < W * H / 14; i++) { const v = rnd(); g.fillStyle = `rgba(${v > .5 ? 255 : 0},${v > .5 ? 255 : 0},${v > .5 ? 255 : 0},${rnd() * .05})`; g.fillRect(rnd() * W, rnd() * H, 1.4, 1.4); }
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 26; g.shadowOffsetY = 10; rr(M, M, BW * ppm, BH * ppm, 2 * ppm); g.fillStyle = '#1b5638'; g.fill(); g.restore();
+  g.save(); rr(M, M, BW * ppm, BH * ppm, 2 * ppm); g.clip();
+  gr = g.createLinearGradient(M, M, M + BW * ppm, M + BH * ppm); gr.addColorStop(0, '#22694a'); gr.addColorStop(.55, '#1c5a3d'); gr.addColorStop(1, '#164a31');
+  g.fillStyle = gr; g.fillRect(M, M, BW * ppm, BH * ppm);
+  for (let i = 0; i < 9000; i++) { g.fillStyle = `rgba(${rnd() > .5 ? '190,240,200' : '0,20,10'},${rnd() * .07})`; g.fillRect(M + rnd() * BW * ppm, M + rnd() * BH * ppm, 1.2, 1.2); }
+  // copper under mask
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  for (const [, a, via, b, w] of SMP_TRACES) {
+    const pts = [endXY(a), ...via.map(p => B(p[0], p[1])), endXY(b)];
+    g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]));
+    g.strokeStyle = '#2e7d50'; g.lineWidth = w * ppm; g.stroke();
+    g.strokeStyle = 'rgba(170,230,180,.16)'; g.lineWidth = w * ppm * .35; g.stroke();
+  }
+  // silkscreen
+  g.strokeStyle = '#e6eae0'; g.fillStyle = '#e6eae0'; g.lineWidth = .16 * ppm;
+  for (const s of specs) {
+    const { c, f, lbl } = s;
+    if (DEF[c.type].cat !== 'point' && c.type !== 'usbc') {
+      g.save(); g.translate(c.x, c.y); g.rotate(c.rot * DEG); g.scale(ppm, ppm); g.lineWidth = .16;
+      const b = f.bbox; g.strokeRect(b.x0 - .35, b.y0 - .35, b.x1 - b.x0 + .7, b.y1 - b.y0 + .7);
+      g.restore();
+    }
+    if (c.type === 'tp') { g.beginPath(); g.arc(c.x, c.y, 1.25 * ppm, 0, 7); g.stroke(); }
+    if (lbl) { const [lx, ly] = B(lbl[0], lbl[1]); g.font = `700 ${Math.round(1.25 * ppm)}px Arial, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(c.ref, lx, ly); }
+  }
+  g.font = `700 ${Math.round(1.6 * ppm)}px Arial, sans-serif`; g.textAlign = 'left'; g.fillText('BB-01  rev A', ...B(50, 45));
+  g.font = `700 ${Math.round(1.4 * ppm)}px Arial, sans-serif`; g.fillText('+', ...B(25.6, 35.4));
+  g.font = `600 ${Math.round(1.1 * ppm)}px Arial, sans-serif`; g.textAlign = 'center'; ['V', 'O', 'I', 'G'].forEach((t, i) => g.fillText(t, ...B(72.6, 21.19 + i * 2.54)));
+  // pads (tin)
+  for (const s of specs) for (const p of s.f.pins) {
+    const [x, y] = l2w(s.c, p.x, p.y), w = p.w * ppm, h = p.h * ppm;
+    g.save(); g.translate(x, y); g.rotate(s.c.rot * DEG);
+    const pg = g.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2); pg.addColorStop(0, '#e2e3dc'); pg.addColorStop(1, '#a9aba3'); g.fillStyle = pg;
+    if (p.shape === 'circle' || (p.shape === 'oval' && p.w === p.h)) { g.beginPath(); g.arc(0, 0, w / 2, 0, 7); g.fill(); }
+    else { const r = p.shape === 'oval' ? Math.min(w, h) / 2 : Math.min(w, h) * .12; rr(-w / 2, -h / 2, w, h, r); g.fill(); }
+    if (p.drill) { g.fillStyle = '#141311'; g.beginPath(); g.arc(0, 0, p.drill / 2 * ppm, 0, 7); g.fill(); }
+    g.restore();
+  }
+  // component bodies
+  for (const s of specs) {
+    const { c, f } = s, t = c.type, body = f.body[0];
+    g.save(); g.translate(c.x, c.y); g.rotate(c.rot * DEG); g.scale(ppm, ppm);
+    if (t === 'soic' || t === 'sot223' || t === 'sot23') {
+      const b = body; g.fillStyle = '#c7c9c2';
+      for (const p of f.pins) {
+        if (p.x < b.x || p.x > b.x + b.w) { const x0 = p.x < b.x ? p.x : b.x + b.w, x1 = p.x < b.x ? b.x : p.x; g.fillRect(x0, p.y - p.h * .32, x1 - x0, p.h * .64); }
+        else if (p.y < b.y || p.y > b.y + b.h) { const y0 = p.y < b.y ? p.y : b.y + b.h, y1 = p.y < b.y ? b.y : p.y; g.fillRect(p.x - p.w * .36, y0, p.w * .72, y1 - y0); }
+      }
+      const bg = g.createLinearGradient(b.x, b.y, b.x + b.w, b.y + b.h); bg.addColorStop(0, '#2c2d30'); bg.addColorStop(1, '#151517');
+      g.fillStyle = bg; g.fillRect(b.x, b.y, b.w, b.h);
+      g.fillStyle = 'rgba(255,255,255,.07)'; g.fillRect(b.x, b.y, b.w, b.h * .18);
+      const d = f.marks.find(m => m.t === 'dot'); if (d) { g.fillStyle = '#0c0c0d'; g.beginPath(); g.arc(d.x, d.y, d.r * 1.3, 0, 7); g.fill(); }
+      g.save(); if (t === 'soic') g.rotate(-Math.PI / 2); g.fillStyle = 'rgba(220,220,215,.75)'; g.font = `600 ${t === 'sot23' ? .55 : .75}px Arial`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(t === 'soic' ? 'ATTINY85' : t === 'sot223' ? 'AMS1117' : '1F', 0, 0); g.restore();
+    } else if (t === 'r_smd' || t === 'c_smd' || t === 'led_smd') {
+      const b = body;
+      g.fillStyle = t === 'r_smd' ? '#141414' : t === 'c_smd' ? '#b88b58' : '#e8e3d2'; g.fillRect(b.x, b.y, b.w, b.h);
+      g.fillStyle = '#c9cac3'; g.fillRect(b.x, b.y, .32, b.h); g.fillRect(b.x + b.w - .32, b.y, .32, b.h);
+      if (t === 'r_smd') { g.fillStyle = '#f2f2ee'; g.font = '600 .6px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(c.value === '330' ? '331' : '102', 0, .03); }
+      if (t === 'led_smd') { g.fillStyle = 'rgba(120,200,120,.85)'; g.fillRect(-.45, -.35, .9, .7); g.fillStyle = '#2f8f3a'; g.fillRect(b.x + .35, b.y, .18, b.h); }
+    } else if (t === 'usbc') {
+      const b = body, sg = g.createLinearGradient(b.x, b.y, b.x + b.w, b.y + b.h); sg.addColorStop(0, '#d5d8dc'); sg.addColorStop(.5, '#a7adb3'); sg.addColorStop(1, '#868c92');
+      g.fillStyle = sg; g.fillRect(b.x, b.y, b.w, b.h);
+      g.strokeStyle = 'rgba(60,64,68,.6)'; g.lineWidth = .08; g.strokeRect(b.x + .3, b.y + .3, b.w - .6, b.h - .6);
+      g.fillStyle = '#2b2e31'; g.fillRect(-3.9, 3.2, 7.8, .9);
+    } else if (t === 'hdr1') {
+      const b = body; g.fillStyle = '#171717'; g.fillRect(b.x, b.y, b.w, b.h);
+      for (const p of f.pins) { g.fillStyle = '#d9b552'; g.fillRect(p.x - .32, p.y - .32, .64, .64); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(p.x - .32, p.y - .32, .64, .16); }
+    } else if (t === 'c_el') {
+      const r = body.r; g.fillStyle = '#1f2c5c'; g.beginPath(); g.arc(0, 0, r, 0, 7); g.fill();
+      g.fillStyle = '#9fb1dd'; g.beginPath(); g.arc(0, 0, r, -0.95, 0.95); g.arc(0, 0, r * .82, 0.95, -0.95, true); g.fill();
+      const cg = g.createRadialGradient(-r * .3, -r * .3, .2, 0, 0, r * .8); cg.addColorStop(0, '#e6e8eb'); cg.addColorStop(1, '#9ea4ab');
+      g.fillStyle = cg; g.beginPath(); g.arc(0, 0, r * .78, 0, 7); g.fill();
+      g.strokeStyle = '#7d838a'; g.lineWidth = .12; g.beginPath(); g.moveTo(-r * .45, 0); g.lineTo(r * .45, 0); g.moveTo(0, -r * .45); g.lineTo(0, r * .45); g.stroke();
+    }
+    g.restore();
+  }
+  g.restore();
+  g.strokeStyle = 'rgba(210,225,190,.25)'; g.lineWidth = 1.5; rr(M, M, BW * ppm, BH * ppm, 2 * ppm); g.stroke();
+  const vg = g.createRadialGradient(W * .45, H * .4, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.38)');
+  g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  const lg = g.createLinearGradient(0, 0, W, H); lg.addColorStop(0, 'rgba(255,248,230,.07)'); lg.addColorStop(.5, 'rgba(255,255,255,0)'); g.fillStyle = lg; g.fillRect(0, 0, W, H);
+  const src = cv.toDataURL('image/jpeg', .9);
+
+  /* --- half-finished map --- */
+  const d = newDoc(); d.name = 'Näidisplaat BB-01'; d.ppm = ppm; d.calibrated = true; d.sample = true;
+  d.calib = { a: B(0, 0), b: B(BW, 0), mm: BW };
+  doc = d;
+  const ids = {};
+  for (const s of specs) if (s.placed) { const c = addComp(s.c.type, s.c.x, s.c.y, { rot: s.c.rot, value: s.c.value, params: { ...s.c.params }, pn: { ...s.c.pn } }); c.ref = s.c.ref; ids[s.c.ref] = c.id; }
+  for (const [net, a, via, b, w, demo] of SMP_TRACES) {
+    if (!demo) continue;
+    const ep = e => { const q = endXY(e); return typeof e[0] === 'string' && ids[e[0]] ? { c: ids[e[0]], p: e[1], x: f2(q[0]), y: f2(q[1]) } : { x: f2(q[0]), y: f2(q[1]) }; };
+    d.traces.push({ id: uid('t'), a: ep(a), b: ep(b), pts: via.map(p => B(p[0], p[1]).map(f2)), w, layer: 'top', net });
+  }
+  d.dims.push({ id: uid('d'), a: { x: B(0, 0)[0], y: B(0, 0)[1] }, b: { x: B(BW, 0)[0], y: B(BW, 0)[1] }, off: -26 });
+  d.dims.push({ id: uid('d'), a: { x: B(0, 0)[0], y: B(0, 0)[1] }, b: { x: B(0, BH)[0], y: B(0, BH)[1] }, off: 26 });
+  d.outlines.push({ id: uid('o'), x: M, y: M, w: BW * ppm, h: BH * ppm, dims: false });
+  touch();
+  img = { src, w: W, h: H, name: 'naidisplaat-bb01.jpg' };
+}
+
+/* ================= wiring ================= */
+function renderAll() { renderScene(); renderOverlay(); renderSide(); renderSteps(); renderOptbar(); renderStatus(); renderRail(); }
+
+$('#steps').addEventListener('click', e => { const b = e.target.closest('[data-step]'); if (b) goStep(b.dataset.step); });
+$('#rail').addEventListener('click', e => { const b = e.target.closest('[data-tool]'); if (b) setTool(b.dataset.tool); });
+$('#tabs').addEventListener('click', e => {
+  if (e.target.closest('#sideClose')) { closeSideNarrow(); return; }
+  const b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab);
+});
+$('#btnPanel').addEventListener('click', () => $('#app').classList.toggle('side-open'));
+$('#btnUndo').addEventListener('click', undo);
+$('#btnRedo').addEventListener('click', redo);
+$('#btnNew').addEventListener('click', newProject);
+$('#btnOpen').addEventListener('click', () => $('#fileProj').click());
+$('#btnSave').addEventListener('click', saveProject);
+$('#btnExport').addEventListener('click', () => { S.step = 'export'; renderSteps(); openExport(); });
+$('#btnHelp').addEventListener('click', openHelp);
+$('#dzPick').addEventListener('click', () => $('#fileImg').click());
+$('#fileImg').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) loadImageFile(f); });
+$('#fileProj').addEventListener('change', e => { const f = e.target.files; if (f.length) handleFiles(f); e.target.value = ''; });
+$('#projName').addEventListener('change', e => { doc.name = e.target.value.trim() || 'Plaat'; commit({ light: true }); });
+$('#projName').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+
+/* bottom strip */
+$('#opRange').addEventListener('input', e => { ui.opacity = e.target.value / 100; if (!ui.layers.img) ui.layers.img = true; updateImageStyle(); queueSave(); });
+$('#ctRange').addEventListener('input', e => { ui.contrast = e.target.value / 100; updateImageStyle(); queueSave(); });
+$('#btnGray').addEventListener('click', () => { ui.gray = !ui.gray; updateImageStyle(); queueSave(); });
+$('#btnRot').addEventListener('click', () => transformImage('rot'));
+$('#btnFlip').addEventListener('click', () => transformImage('flip'));
+$('#zIn').addEventListener('click', () => { const r = svg.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, 1.25); });
+$('#zOut').addEventListener('click', () => { const r = svg.getBoundingClientRect(); zoomAt(r.width / 2, r.height / 2, .8); });
+$('#zFit').addEventListener('click', fitView);
+$('#scaleChip').addEventListener('click', () => goStep('scale'));
+$('#btnLayers').addEventListener('click', e => {
+  const p = $('#layersPop'), open = p.hidden; p.hidden = !open; e.currentTarget.setAttribute('aria-expanded', String(open));
+  if (open) renderLayersPop();
+});
+document.addEventListener('pointerdown', e => { const p = $('#layersPop'); if (!p.hidden && !e.target.closest('#layersPop,#btnLayers')) { p.hidden = true; $('#btnLayers').setAttribute('aria-expanded', 'false'); } });
+$('#layersPop').addEventListener('change', e => {
+  const k = e.target.dataset.layer; if (!k) return;
+  ui.layers[k] = e.target.checked; updateImageStyle(); schedule('scene'); queueSave();
+});
+
+/* options bar */
+$('#optbar').addEventListener('click', e => {
+  const b = e.target.closest('[data-opt]'); if (!b) return;
+  const o = b.dataset.opt, v = b.dataset.v;
+  if (o === 'layer') { S.traceLayer = v; if (S.draft && S.draft.kind === 'trace') S.draft.layer = v; renderOptbar(); schedule('over'); }
+  else if (o === 'ptype') { S.pointType = v; renderOptbar(); schedule('over'); }
+  else if (o === 'pickimg') $('#fileImg').click();
+  else if (o === 'rot') transformImage('rot');
+  else if (o === 'flip') transformImage('flip');
+});
+$('#optbar').addEventListener('change', e => {
+  const id = e.target.id, v = parseNum(e.target.value);
+  if (id === 'obW') { if (v > 0) { S.traceW = v; if (S.draft) S.draft.w = v; } renderOptbar(); }
+  else if (id === 'obPin') { S.pinSize = v > 0 ? v : 0; renderOptbar(); schedule('over'); }
+  else if (id === 'obPpm') { if (v > 0) { doc.ppm = v; doc.calibrated = true; commit(); toast(`Mõõtkava ${fmtN(v)} px/mm`); } else renderOptbar(); }
+});
+$('#optbar').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.target.blur(); });
+
+/* banner */
+$('#banner').addEventListener('click', e => {
+  const b = e.target.closest('[data-ban]'); if (!b) return;
+  if (b.dataset.ban === 'close') { ui.bannerOff = true; renderBanner(); queueSave(); }
+  else if (b.dataset.ban === 'photo') $('#fileImg').click();
+  else if (b.dataset.ban === 'empty') newProject();
+});
+
+/* modal generic */
+modal.addEventListener('click', e => {
+  if (e.target.closest('[data-close]') || (e.target === modal && !modal.onclick)) { closeModal(); return; }
+  const ex = e.target.closest('[data-ex]'); if (ex) runExport(ex.dataset.ex);
+});
+modal.addEventListener('change', e => {
+  if (e.target.id === 'exPhoto') S.exPhoto = e.target.checked;
+  if (e.target.id === 'exName') { doc.name = e.target.value.trim() || 'Plaat'; commit({ light: true }); }
+});
+
+/* sidebar */
+tabBody.addEventListener('click', e => {
+  const tile = e.target.closest('.tile');
+  if (tile) { const t = tile.dataset.type; if (S.tool === 'place' && S.placeType === t) setTool('select'); else { S.placeType = t; S.placeRot = 0; setTool('place'); S.placeType = t; renderOptbar(); renderSide(); } closeSideNarrow(); return; }
+  const a = e.target.closest('[data-act]'); if (!a) {
+    const segb = e.target.closest('[data-opt]');
+    if (segb) {
+      const o = anyById([...S.sel][0]); if (!o) return;
+      if (segb.dataset.opt === 'side') o.side = segb.dataset.v;
+      if (segb.dataset.opt === 'tlayer') o.layer = segb.dataset.v;
+      commit();
+    }
+    return;
+  }
+  const act = a.dataset.act, cur = [...S.sel][0], c = compById(cur);
+  const pinRow = a.closest('[data-pin]'), pid = pinRow ? pinRow.dataset.pin : null;
+  switch (act) {
+    case 'pick': {
+      const id = a.dataset.id;
+      if (S.sel.size === 1 && S.sel.has(id)) { S.sel.clear(); S.selPin = null; }
+      else { selectOnly(id); centerOn(id); const n = kindOf(id) === 'trace' ? getNets().byTrace.get(id) : null; S.hlPinned = n ? n.key : null; }
+      renderSide(); schedule('scene'); renderOptbar(); scrollRowIntoView(); break;
+    }
+    case 'addpin': setTool('pin'); toast(`Klõpsa ${c ? c.ref : 'komponendi'} peal kohta, kus jalg asub`); break;
+    case 'selpin': if (c) { S.selPin = { c: c.id, p: pid }; const n = getNets().byPin.get(c.id + ':' + pid); S.hlPinned = n ? n.key : null; centerOnPin(c.id, pid); renderSide(); schedule('scene'); } break;
+    case 'tracefrom': if (c) { closeSideNarrow(); startTraceFrom(c.id, pid); } break;
+    case 'delpin': if (c) deletePin(c, pid); break;
+    case 'hlnet': { const k = a.dataset.net; S.hlPinned = S.hlPinned === k ? null : k; schedule('scene'); renderSide(); break; }
+    case 'dup': duplicateSelection(); break;
+    case 'rot90': rotateSel(90); renderSide(); break;
+    case 'del': deleteSelection(); break;
+    case 'pingo': { const cid = a.dataset.c, p = a.dataset.p; selectOnly(cid); S.selPin = { c: cid, p }; centerOnPin(cid, p); setTab('board'); schedule('scene'); scrollRowIntoView(); break; }
+  }
+});
+tabBody.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'libQ') { S.libQ = t.value; renderSide(); return; }
+  if (t.id === 'boardQ') { S.boardQ = t.value; renderSide(); return; }
+  const o = anyById([...S.sel][0]);
+  if (t.dataset.f && o && kindOf(o.id) === 'comp') {
+    const f = t.dataset.f;
+    if (f === 'ref' || f === 'value' || f === 'note') { o[f] = t.value; schedule('scene'); }
+    else { const v = parseNum(t.value); if (!Number.isFinite(v)) return; const [ox, oy] = origin(); if (f === 'x') o.x = f2(ox + v * doc.ppm); if (f === 'y') o.y = f2(oy + v * doc.ppm); if (f === 'rot') o.rot = v; touch(); schedule('scene'); }
+  }
+  if (t.dataset.pn != null && o) { o.pn = o.pn || {}; o.pn[t.dataset.pn] = t.value; touch(); schedule('scene'); }
+});
+tabBody.addEventListener('change', e => {
+  const t = e.target, o = anyById([...S.sel][0]);
+  if (t.id === 'netColors') { ui.netColors = t.checked; schedule('scene'); renderSide(); queueSave(); return; }
+  if (t.dataset.netname) {
+    const n = getNets().byKey.get(t.dataset.netname); if (!n) return;
+    const name = t.value.trim();
+    for (const id of n.traces) { const tr = doc.traces.find(x => x.id === id); if (tr) tr.net = name; }
+    commit(); return;
+  }
+  if (!o) return;
+  if (t.dataset.param) {
+    const def = DEF[o.type], p = def.params.find(q => q.k === t.dataset.param);
+    let v = t.value;
+    if (p && p.n) { v = parseNum(v); if (!Number.isFinite(v)) { renderSide(); return; } v = clamp(v, p.n[0], p.n[1]); }
+    o.params = { ...o.params, [t.dataset.param]: v };
+    commit(); return;
+  }
+  if (t.dataset.f || t.dataset.pn != null) { commit({ light: true }); return; }
+  if (t.dataset.tf) {
+    if (t.dataset.tf === 'w') { const v = parseNum(t.value); if (v > 0) o.w = v; }
+    if (t.dataset.tf === 'net') { const n = getNets().byTrace.get(o.id), name = t.value.trim(); (n ? n.traces : [o.id]).forEach(id => { const tr = doc.traces.find(x => x.id === id); if (tr) tr.net = name; }); }
+    commit(); return;
+  }
+  if (t.dataset.of) {
+    if (t.dataset.of === 'dims') o.dims = t.checked;
+    else { const v = parseNum(t.value); if (v > 0) o[t.dataset.of] = f2(v * doc.ppm); }
+    commit();
+  }
+});
+tabBody.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') e.target.blur(); });
+tabBody.addEventListener('pointerover', e => { const n = e.target.closest('.net'); const k = n ? n.dataset.net : null; if (k !== S.hlNet) { S.hlNet = k; schedule('scene'); } });
+tabBody.addEventListener('pointerleave', () => { if (S.hlNet) { S.hlNet = null; schedule('scene'); } });
+tabBody.addEventListener('dragstart', e => {
+  const t = e.target.closest('.tile'); if (!t) return;
+  e.dataTransfer.setData('text/x-pcb-part', t.dataset.type); e.dataTransfer.setData('text/plain', t.dataset.type); e.dataTransfer.effectAllowed = 'copy';
+});
+function centerOn(id) {
+  const o = anyById(id); if (!o) return; let p;
+  const k = kindOf(id);
+  if (k === 'comp') p = [o.x, o.y]; else if (k === 'outline') p = [o.x + o.w / 2, o.y + o.h / 2];
+  else if (k === 'trace') { const pts = tracePts(o); p = pts[Math.floor(pts.length / 2)]; } else p = epPos(o.a);
+  panTo(p);
+}
+function centerOnPin(cid, pid) { const q = pinWorld(cid, pid); if (q) panTo(q); }
+function panTo(p) {
+  const r = svg.getBoundingClientRect(), sx = p[0] * view.z + view.x, sy = p[1] * view.z + view.y;
+  if (sx > 60 && sx < r.width - 40 && sy > 40 && sy < r.height - 40) return;
+  view.x = r.width / 2 - p[0] * view.z; view.y = r.height / 2 - p[1] * view.z; applyView(); schedule('scene');
+}
+
+/* drag & drop + paste */
+let dragDepth = 0;
+const isFileDrag = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+window.addEventListener('dragenter', e => { if (isFileDrag(e)) { dragDepth++; const d = $('#drop'); d.hidden = false; d.classList.add('hot', 'overlay'); } });
+window.addEventListener('dragleave', e => { if (isFileDrag(e) && --dragDepth <= 0) { dragDepth = 0; const d = $('#drop'); d.classList.remove('hot', 'overlay'); d.hidden = !!img; } });
+window.addEventListener('dragover', e => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = isFileDrag(e) ? 'copy' : 'copy'; });
+window.addEventListener('drop', e => {
+  e.preventDefault(); dragDepth = 0;
+  const d = $('#drop'); d.classList.remove('hot', 'overlay'); d.hidden = !!img;
+  const type = e.dataTransfer.getData('text/x-pcb-part');
+  if (type && DEF[type] && wrap.contains(e.target)) {
+    const w = toWorld(e), c = addComp(type, w[0], w[1]);
+    selectOnly(c.id); S.tab = 'board'; commit(); scrollRowIntoView();
+    toast(`${c.ref} paigutatud — ${DEF[type].name}`); return;
+  }
+  if (e.dataTransfer.files && e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+document.addEventListener('paste', e => {
+  if (typing(document.activeElement)) return;
+  const f = [...(e.clipboardData ? e.clipboardData.files : [])].find(x => x.type.startsWith('image/'));
+  if (f) { e.preventDefault(); loadImageFile(f); }
+});
+window.addEventListener('resize', () => schedule('scene'));
+
+/* ================= boot ================= */
+async function boot() {
+  let restored = false;
+  try {
+    const a = await IDB.get('auto');
+    if (a && a.doc && (a.doc.comps.length || a.doc.traces.length || !a.doc.sample)) {
+      const im = await IDB.get('img');
+      doc = { ...newDoc(), ...a.doc }; img = im || null;
+      if (a.ui) { Object.assign(ui, a.ui); ui.layers = { ...DEFAULT_LAYERS, ...(a.ui.layers || {}) }; }
+      restored = true;
+      if (a.view && a.view.z) Object.assign(view, a.view);
+    }
+  } catch (e) { }
+  if (!restored) { buildSample(); saveImage(); }
+  touch(); resetHistory(); renderImage(); renderAll(); renderBanner();
+  if (!restored || !view.z || view.z === 1) fitView(); else { applyView(); renderScene(); }
+  if (restored) S.step = img ? 'place' : 'photo';
+  renderSteps(); renderOptbar();
+}
+boot();
+
+})();
+</script>
+
+</body>
+</html>

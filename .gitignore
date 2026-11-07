@@ -1,0 +1,20 @@
+# sõltuvused ja ehitused
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+src-tauri/target/
+src-tauri/gen/
+
+# prototüübi vaheväljund (PCB-Kaardistaja.html jääb repo)
+prototype/build/
+
+# kohalikud seaded ja logid
+.claude/settings.local.json
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

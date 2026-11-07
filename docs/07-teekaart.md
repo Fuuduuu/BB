@@ -30,7 +30,8 @@ Töö käik: arhitekti plaan → ehitaja samm → ehitaja kontrollid ja üleandm
 
 **Eeltingimused arendusmasinas:**
 - Node.js LTS (paigaldatud: 26.13.0) ja `corepack enable`, mis teeb `pnpm`-i kättesaadavaks;
-- **puudub veel:** Rust (`rustup`, stabiilne toolchain) ja Windowsi C++ Build Tools (Visual Studio Build Tools, „Desktop development with C++“), mida Tauri `src-tauri` kompileerimiseks vajab;
+- Windowsi C++ Build Tools 2022 koos x64/x86 tööriistadega (olemas, kontrollitud `vswhere`-iga 2026-11-07);
+- **puudub veel:** Rust (`rustup`, stabiilne toolchain), mida Tauri `src-tauri` kompileerimiseks vajab. Plaani osad A ja B ei vaja Rusti;
 - WebView2 runtime (Windows 11-s olemas).
 
 **Sisu:**

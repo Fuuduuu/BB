@@ -412,6 +412,7 @@ export interface ProjectRepository {
   save(req: SaveReq): Promise<void>;                     // base_rev võrdlusega
   saveView(session: string, view: ViewState): Promise<void>;
   copy(req: CopyReq): Promise<OpenedProject>;
+  backupFull(session: string, reason: 'migration'): Promise<void>;   // päevane täiskoopia tehakse avamisel hostis
   backups(projectId: string): Promise<BackupInfo[]>;
   restore(req: RestoreReq): Promise<OpenedProject>;
   close(session: string): Promise<void>;

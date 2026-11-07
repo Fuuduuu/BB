@@ -101,7 +101,8 @@ export type EngineError =
   | { code: 'read_only' }
   | { code: 'stale_rev'; expected: number; actual: number }
   | { code: 'stale_session' }
-  | { code: 'storage'; reason: 'disk_full' | 'read_only' | 'missing' | 'locked' | 'unknown' };
+  | { code: 'storage'; reason: 'disk_full' | 'read_only' | 'missing' | 'locked' | 'not_project' | 'too_new' | 'unknown' };
+                                       // not_project: fail pole BB projekt; too_new: fail on tehtud uuema äpiga
 ```
 
 Lepingu reeglid:

@@ -14,7 +14,7 @@ BenchBeep (`C:\dev\TraceBench`) oli sama eesmärgiga eelmine katse. Seda **ei v�
 | Töökoja sõnavara: Koht, Väärtus, „Mõõdetud siin“, „Võrdluseks“, „Kinnitamata“ | `PROJECT_MEMORY.md` | [01 › Sõnastik](01-pohimotted.md#sõnastik), [06 › Tekstid](06-kasutajaliides.md#tekstid) |
 | Mõõtmised aeguvad pärast remonti, aga jäävad ajalukku | `stale_after_repair` | `staleByRepairId` ja „enne remonti“ ([04](04-andmemudel.md#remont-ja-aegumine)) |
 | Paigaldamata komponent | `not_populated` | `dnp` |
-| Visuaalne ja mõõdetud teadmine on eri tasemel | Visual vs Electrical graph | väli `basis` (oletatud / nähtud) ja mõõtmise viide `evidenceId`, millest arvutatakse tase „mõõdetud“ ([01](01-pohimotted.md#info-usaldusväärsus-kolm-taset)) |
+| Visuaalne ja mõõdetud teadmine on eri tasemel | Visual vs Electrical graph | väli `basis` (oletatud / nähtud); tase „mõõdetud“ arvutatakse kehtivatest läbivusmõõtmistest ([01](01-pohimotted.md#info-usaldusväärsus-kolm-taset)) |
 | Projekt võib alata fotota ja tundmatu seadmega | `POHIKIRI.md` §3 | [02 § 2](02-kasutaja-teekond.md#2-uus-plaat): kõik väljad valikulised |
 | Rollide värvid: 5V punane, 12V sinine, maandus must | `POHIKIRI_AI.md` §4 | vaikerollid ([04](04-andmemudel.md#vaikimisi-rollid)) |
 | Rada ei jookse linnulennult | `POHIKIRI_AI.md` §4 | rada käänupunktidega; linnulennul ühendus on eraldi tüüp „link“ |
@@ -27,7 +27,7 @@ BenchBeep (`C:\dev\TraceBench`) oli sama eesmärgiga eelmine katse. Seda **ei v�
 
 | BenchBeepi probleem | Tagajärg | Siinne reegel |
 |---|---|---|
-| Üks ekraani fail kasvas 209 KB-ni (`board_canvas_screen.dart`), lisaks mega-kontrollerid | muudatused murdsid teisi osi; audit ja parandused venisid | moodulid + registri kaastööd; faili piir 400/600 rida CI-s ([03 § 2](03-arhitektuur.md#2-kihid)) |
+| Üks ekraani fail kasvas 209 KB-ni (`board_canvas_screen.dart`), lisaks mega-kontrollerid | muudatused murdsid teisi osi; audit ja parandused venisid | moodulid + registri kaastööd; UI ei saa dokumenti muuta, see käib ainult mootori käskude kaudu ([ADR-003](adr/ADR-003-frontend-backend.md)); faili piir 400/600 rida CI-s ([03 § 2](03-arhitektuur.md#2-kihid)) |
 | Tõe torustik: `events.jsonl` → Pythoni materializer → `known_facts.json` → käsitsi „Värskenda andmeid“ | kasutaja nägi aegunud andmeid ja pidi torustikku ise juhtima | üks dokument mälus, käsud koos tagasivõtmisega, automaatsalvestus; logi on ajalugu, mitte tõe allikas ([03 § 6](03-arhitektuur.md#6-käsud-tagasivõtmine-ja-logi)) |
 | Komponent kahe objektina: kandidaat ja kinnitatud paigutus (BB-03, BB-08) | segadus, topeltvalik, kinnitusvoog jäi tegemata | üks komponent = üks objekt; „Tuvastatud“ on ainult olek |
 | Mõõtmise sihtmärk vahetus ise (BB-01: valisid C2, salvestati R1) | vale andmekirje, kõige ohtlikum viga | valik ainult SessionStore'is; tööriist/filter/paneel ei muuda valikut; mõõtmise mustand on seotud jalaga ega liigu Koha vahetusel kaasa; regressioonitestid M1-s ja M3-s |

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "bb": {
+      "command": "python",
+      "args": ["tools/mcp-bb/bb_mcp.py"],
+      "timeout": 30000,
+      "trust": false
+    }
+  }
+}

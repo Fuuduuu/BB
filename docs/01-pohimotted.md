@@ -31,7 +31,7 @@ Need on tähtsuse järjekorras. Kui kaks põhimõtet lähevad vastuollu, võidab
 
 ## Info usaldusväärsus: kolm taset
 
-Remondis on tähtis teada, kust mingi teadmine pärineb. BenchBeep tegi selle jaoks keeruka sündmuste torustiku. Siin on see lihtne: ühendusel on väli `basis` (oletatud või nähtud) ja mõõtmise viide `evidenceId`, millest tase arvutatakse ([04 › Ühenduse tase](04-andmemudel.md#ühenduse-tase-coremeasureconnectionlevel)):
+Remondis on tähtis teada, kust mingi teadmine pärineb. BenchBeep tegi selle jaoks keeruka sündmuste torustiku. Siin on see lihtne: ühendusel on väli `basis` (oletatud või nähtud) ja tase „mõõdetud“ arvutatakse kehtivatest läbivusmõõtmistest ([04 › Ühenduse tase](04-andmemudel.md#ühenduse-tase-connectionlevels)):
 
 | Tase | Tähendus | Näide | Välimus |
 |---|---|---|---|
@@ -41,7 +41,8 @@ Remondis on tähtis teada, kust mingi teadmine pärineb. BenchBeep tegi selle ja
 
 Reeglid:
 - Ühenduse vaikimisi tase sõltub sellest, kuidas see tekkis: rajatööriist annab *nähtud*, piiksumisrežiim annab *mõõdetud*, kiirühendus (`C`) annab *oletatud*.
-- *Mõõdetud* on ühendus ainult seni, kuni seda kinnitav läbivuse mõõtmine on olemas ja kehtiv. Mõõtmise kustutamise või remondi järel langeb ühendus tagasi *nähtud* või *oletatud* tasemele. Käsitsi mõõdetuks märkimist ei ole.
+- *Mõõdetud* on ühendus seni, kuni samade jalgade vahel on kehtiv piiksuv läbivusmõõtmine. Mõõtmise kustutamise või remondi järel langeb ühendus tagasi *nähtud* või *oletatud* tasemele. Käsitsi mõõdetuks märkimist ei ole.
+- Piiks tõendab väikest takistust, mitte tingimata sama vaskrada. Mõõtmine salvestatakse alati, aga jalad samasse võrku ühendada on tehniku otsus ([04 › Piiks](04-andmemudel.md#piiks-ei-tõenda-sama-vaskrada)).
 - Komponendil on olek **Tuvastatud / Tuvastamata**. Tuvastamata on kõik, mille väärtus või tüüp on kahtlane; nimekirjas ja skeemil kuvatakse see küsimärgiga.
 - Mõõtmine on alati kasutaja sisestatud väärtus. Äpp ega AI ei loo mõõtmisi kunagi ise.
 - Remondi järel jäävad varasemad mõõtmised alles märkega **„enne remonti“** ja neid ei kasutata enam kehtivate hinnangutena.

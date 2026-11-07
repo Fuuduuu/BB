@@ -104,7 +104,8 @@ Juhend ei peata kasutajat kunagi. Rida „Jätan vahele“ (nt fotota töö) mä
 
 **Äpp:**
 - sobitab vaate fotoga ja salvestab foto projekti faili (originaal jääb muutmata);
-- **pööramine ja peegeldamine teisendavad ka kogu olemasoleva kaardistuse**, nii et kõik jääb fotol õigele kohale;
+- telefonifoto õige suund võetakse foto EXIF-andmetest. Väga suurt fotot (üle 12 MP) näidatakse lõuendil väiksema koopiana, originaal jääb alles;
+- **pööramine ja peegeldamine pööravad kogu vaate koos kaardistusega**, nii et kõik jääb fotol õigele kohale. Kaardistuse andmeid ümber ei arvutata ja jalgade numbrid ei saa valeks minna;
 - „Hall“ teeb foto halliks, et värvilised rajad ja rollid paistaksid paremini välja.
 
 **Reeglid:** foto nähtavus on vaikimisi 85 %. Liugur on alati nähtav, `0` peidab foto ja `100` näitab täielikult. Nähtavus on vaate seadistus, mitte projekti andmed, ja tagasivõtmine seda ei puuduta.
@@ -137,7 +138,7 @@ Juhend ei peata kasutajat kunagi. Rida „Jätan vahele“ (nt fotota töö) mä
 | **Lohistamine** | haara komponendist ja vii paika; nooled nihutavad 1 px, Shift+nool 10 px | alati |
 | **Pööramine** | `R` = 90°, `Q`/`E` = ±1°, Shift+`Q`/`E` = ±15°, kontekstipaneelis täpne kraad | foto pole ideaalselt sirge |
 | **Suuruse muutmine** | valitud komponendil on 8 käepidet; Shift hoiab proportsiooni; paneelis laius ja kõrgus % | foto on moonutatud või korpus erineb |
-| **Parameetrid** | paneelis jalgade arv, samm, kere laius (nt SOIC-8 → SOIC-14) | teine variant samast perest |
+| **Parameetrid** | paneelis jalgade arv, samm, kere laius (nt SOIC-8 → SOIC-14). Sama numbriga jalad jäävad ühendatuks; kui jalgu kaob, loetleb äpp mõjutatud ühendused ja mõõtmised ning küsib kinnitust | teine variant samast perest |
 | **Kahe jala joondus** | tööriist *Joonda* (`A`): klõpsa jalg 1 → klõpsa see koht fotol → klõpsa teine jalg → klõpsa see koht fotol | kiireim viis panna IC täpselt paika |
 
 Kahe jala joondus arvutab korraga asukoha, pöörde ja ühtlase mõõtkava. Kui mõõtkava pole kalibreeritud, pakub äpp kasutada joonduse tulemust kalibreerimiseks (osa 5).
@@ -184,7 +185,16 @@ Vali kaks või enam jalga (klõps ja Shift+klõps) ning vajuta `C`. Tekib õhuke
 Tööriist **Piiks** (`B`):
 1. Klõpsa jalal, mille juures hoiad musta sondi. See muutub **ankruks** (sinine rõngas ja silt „Must sond: U1.4“).
 2. Klõpsa järgmisel jalal, mida punase sondiga puudutad. Kursori juurde ilmub küsimus **„Piiksub?“**: `Enter` / `J` = jah, `Esc` / `E` = ei.
-3. **Jah** salvestab ühe tagasivõetava sammuna läbivuse mõõtmise ja ühenduse: olemasolev otseühendus samade jalgade vahel saab ✓-märgi; kui jalad on juba muu tee kaudu samas võrgus, lisatakse ainult mõõtmine; muidu tekib uus *mõõdetud* link. Ühendus on mõõdetud ainult seni, kuni see mõõtmine on olemas ja kehtiv: kustutamise või remondi järel kaob ✓ ja ühenduse juures on „Mõõda uuesti“. **Ei** salvestab negatiivse tulemuse. Kui need jalad hiljem ühendatakse, hoiatab äpp: „Läbivustest ütles, et ühendust pole.“
+3. **Jah** salvestab läbivuse mõõtmise ja ühendab jalad samasse võrku, kõik ühe tagasivõetava sammuna:
+   - olemasolev ühendus samade jalgade vahel saab ✓-märgi;
+   - kui jalad on juba samas võrgus, lisatakse ainult mõõtmine;
+   - muidu tekib uus *mõõdetud* link.
+
+   **Piiks tähendab väikest takistust, mitte tingimata sama vaskrada:** ka 10 Ω takisti otsad piiksuvad. Seepärast ei ühenda äpp automaatselt kahel juhul: kui jalad on sama passiivkomponendi otsad (takisti, pool, kaitse, kondensaator, diood …) või kui ühendamine liidaks kaks eri rolliga võrku. Siis salvestatakse ainult mõõtmine ja lõuendil küsitakse: „Piiksub läbi komponendi R5. Ühendan ikkagi?“ ([04 › Piiks](04-andmemudel.md#piiks-ei-tõenda-sama-vaskrada)).
+
+   ✓ kehtib seni, kuni samade jalgade vahel on kehtiv piiksuv mõõtmine. Kustutamise või remondi järel kaob ✓ ja ühenduse juures on „Mõõda uuesti“. Sama jalapaari tavaline läbivusmõõtmine taastab ✓.
+
+   **Ei** salvestab negatiivse tulemuse. Kui need jalad hiljem ühendatakse, hoiatab äpp: „Läbivustest ütles, et ühendust pole.“
 4. Jätka järgmiste jalgadega samast ankrust. `Shift`+klõps teeb uue ankru, `Esc` lõpetab režiimi.
 
 Nii saab näiteks kogu GND-võrgu kaardistada minutiga: ankur GND-l, siis klõps igal kahtlustatud jalal.
@@ -212,7 +222,7 @@ Põhiteekond on **Koht → Väärtus → Ühik → Salvesta**, kus ühik tuleb r
 1. Klõpsab jalal (koht). Kontekstipaneeli ülaosas on alati **„Mõõda“** plokk:
    - **Koht:** `U1.8` (kiip) · **Vastaspunkt:** `GND` (vaikimisi esimene GND-rolliga jalg, „muuda“);
    - **Režiim:** `V` · `Ω` · `Diood` · `Piiks` (`Alt+1`…`Alt+4`, sest väärtuse väli on fookuses);
-   - **Väärtus:** väli on kohe fookuses. Lubatud on koma ja sufiksid (`4,98`, `4k7`, `1,2M`, `680m`);
+   - **Väärtus:** väli on kohe fookuses. Lubatud on koma ja sufiksid (`4,98`, `4k7`, `1,2M`, `680m`); takistusel ja dioodil ka `OL` (avatud ahel);
    - **Toide:** *Toitega* / *Toiteta* (`Alt+P`, jääb meelde järgmiseks mõõtmiseks).
 2. Vajutab `Enter`.
 
@@ -227,13 +237,14 @@ Põhiteekond on **Koht → Väärtus → Ühik → Salvesta**, kus ühik tuleb r
 - **Sisestatud väärtus kuulub sellele jalale, millele see kirjutati.** Kui vahetad Kohta enne `Enter`-it (`Tab`, klõps teisel jalal), ei liigu väärtus kaasa: uus jalg avaneb oma mustandiga või tühja väljaga ja tagasi tulles on eelmise jala sisestus alles. `Esc` tühjendab mustandi. Salvestamata mustand projekti faili ei lähe.
 - **Pinge hinnang arvestab mõlemat sondi:** oodatav väärtus on Koha nimipinge miinus vastaspunkti nimipinge. Kui vastaspunkt pole GND, näitab plokk oodatavat väärtust (punane 5V, must 12V → „oodatav −7,0 V“).
 - Kui vastaspunkti pole (GND-rolliga võrku pole veel), on vastaspunkt „määramata“ ja pinge salvestatakse ikkagi, aga hinnang on „—“. Äpp ei oleta tagantjärele, kus must sond oli: vastaspunkti saab hiljem mõõtmise real määrata ja siis arvutatakse hinnang.
-- Takistus ja läbivus vajavad vastaspunkti; ilma selleta on „Salvesta“ keelatud ja näidatakse vihjet „Vali vastaspunkt“.
+- **OK tähendab, et näit vastab rolli järgi oodatule,** mitte seda, et komponent on korras. Pinge tolerants on projekti seadetes (vaikimisi 10 %, vähemalt 0,1 V). V1 hindab alalispinget; vahelduvpinge salvestatakse märkusena ilma hinnanguta.
+- Takistus, diood ja läbivus vajavad vastaspunkti; ilma selleta on „Salvesta“ keelatud ja näidatakse vihjet „Vali vastaspunkt“. Dioodirežiimis on Koht `+` ja vastaspunkt `−`.
 - Valesti sisestatud väärtus (`abc`) hoiab nupu keelatuna ja välja punasena. Andmeid ei kao.
 - *Mõõtmised* vahekaart näitab kõiki mõõtmisi koos filtritega: kõik, kahtlased, toitega, toiteta, enne remonti. Klõps viib jalale.
 
 ## 11. Vigade otsing ja remont
 
-**Kahtlaste vaade:** ülaribal või mõõteribal nupp **„Näita kahtlaseid“** tuhmistab kõik peale kahtlaste jalgade, rollikonfliktide ja ühendamata toitejalgade.
+**Kahtlaste vaade:** ülaribal või mõõteribal nupp **„Näita kahtlaseid“** tuhmistab kõik peale kahtlaste jalgade, rollikonfliktide, ühendamata toitejalgade ja kahejalgsete komponentide, mille mõlemad jalad on samas võrgus.
 
 **Kahjustatud ala:** tööriist *Märgi ala* (`X`). Lohista ristkülik või ring fotol (põlenud koht, korrosioon, katkine rada) ja lisa lühike kirjeldus. Alad on oranžid ja kuvatakse raportis.
 
@@ -294,10 +305,12 @@ CSV formaat: eraldaja `;`, kümnendkoma, UTF-8 BOM (avaneb eestikeelses Excelis 
 
 ## 15. Sulgemine, uuesti avamine ja taastamine
 
-- Salvestamine toimub automaatselt: muudatus läheb kettale hiljemalt 2 s jooksul. Ülaribal on olek „Salvestatud · 14:32“ või „Salvestan…“. Kui kirjutamine ebaõnnestub, tuleb punane riba „Salvestamine ebaõnnestus: <põhjus>. [Proovi uuesti] [Salvesta mujale…]“. Töö jätkub ja iga järgmine muudatus proovib uuesti. „Salvesta mujale…“ teeb tervikliku koopia koos fotodega ja töö jätkub uues failis.
+- Salvestamine toimub automaatselt: muudatus läheb kettale 1,5 s pärast viimast muudatust, pideva töö ajal vähemalt iga 10 s järel. Ka vaate muutus (suum, kihid) salvestub. Ülaribal on olek „Salvestatud · 14:32“ või „Salvestan…“. Kui kirjutamine ebaõnnestub, tuleb punane riba „Salvestamine ebaõnnestus: <põhjus>. [Proovi uuesti] [Salvesta mujale…]“. Töö jätkub ja iga järgmine muudatus proovib uuesti. „Salvesta mujale…“ teeb tervikliku koopia koos fotodega ja töö jätkub uues failis.
 - Akna sulgemisel salvestatakse lõpuni ja kui see õnnestub, suletakse ilma küsimata. Kui viimane salvestus ebaõnnestub, akent ei suleta: dialoog pakub **Proovi uuesti**, **Salvesta mujale…** või **Sulge salvestamata**, ja viimane ütleb selgelt, et muudatused kaovad. Sama kehtib avalehele minekul ja teise projekti avamisel ([03 § 9](03-arhitektuur.md#salvestuse-vastutaja-savecoordinator-moodul-project)).
 - Uuesti avamisel on töölaud samas seisus: vaade, kihid, aktiivne tööriist ja vahekaart.
-- Kokkujooksmise järel on alles viimane automaatsalvestus. Projekti fail on SQLite ja kirjutatakse tehingutena, nii et pooleli jäänud kirjutus faili ei riku.
+- Kokkujooksmise järel on alles viimane automaatsalvestus. Projekti fail on SQLite ja kirjutatakse tehingutena, nii et pooleli jäänud kirjutus faili ei riku. Faili võib kopeerida ka siis, kui äpp on lahti.
+- Sama faili teist korda avades tuuakse ette juba avatud aken. Kui fail on avatud teises programmis või arvutis, avaneb see kirjutuskaitstuna ja äpp ütleb seda.
+- Enne faili uuendamist uuemale vormingule ja iga päeva esimesel avamisel tehakse automaatne varukoopia (alles hoitakse 5 viimast). Avalehel saab projekti kaardilt valida „Taasta varukoopiast…“.
 - Tagasivõtmise ajalugu kehtib seansi jooksul (200 sammu); projekti avamisel algab see uuesti. Logi vahekaardil on kogu ajalugu ka hiljem nähtav.
 
 ---

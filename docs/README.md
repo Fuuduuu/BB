@@ -17,7 +17,7 @@ Need dokumendid on ehituse alus. Kui kood ja dokumendid lähevad lahku, otsustab
 | 07 | [Teekaart](07-teekaart.md) | Verstapostid M0–M6 ja iga verstaposti „valmis kui“ tingimused |
 | 08 | [BenchBeepi õppetunnid](08-benchbeepi-opetused.md) | Mis vanast projektist võetakse üle ja mida enam kunagi ei korrata |
 
-Otsused: [ADR-002 TypeScript + Tauri](adr/ADR-002-typescript-tauri.md) (kehtiv), [ADR-001 Flutter](adr/ADR-001-keel-ja-platvorm.md) (asendatud).
+Otsused: [ADR-002 TypeScript + Tauri](adr/ADR-002-typescript-tauri.md) (kehtiv), [ADR-003 frontend ja backend eraldi](adr/ADR-003-frontend-backend.md) (ettepanek), [ADR-001 Flutter](adr/ADR-001-keel-ja-platvorm.md) (asendatud).
 
 ## Lähtematerjal
 

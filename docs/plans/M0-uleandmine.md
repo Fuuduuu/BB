@@ -151,3 +151,56 @@ Testid katavad muu hulgas täieliku näidisdokumendi JSON-ülekande andmeid kaot
 - Kasutajaliidest, salvestusadapterit, võrkude arvutust ega mõõtmise hinnangut ei teostatud. Ülesanne 2 ei ole kogu M0 vastuvõtt.
 
 **Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused. Ülesanne 3 ja ülesande 2 commit ootavad oma kokkulepitud luba.
+
+### Ülesande 2 vastuvõtt ja ülesande 4 täpsustus
+
+2026-11-07 edastas kasutaja arhitekti otsuse **„ülesanne 2 sobib“**. Tegelik Git-i kontroll näitab vastuvõetud teostust harus `m0` commitina `16d2330` (`feat(domain): board document model and helpers`); kuus stardifaili on endiselt jälgimata.
+
+Arhitekti lisareeglid kanti [ülesande 4 plaani](M0-vundament.md#ülesanne-4-dokumendimootor-pcbkengine): `overload: true` välistab arvväärtuse ka nulli korral, `beep` tohib olla määratud ainult läbivusel ning objektide id-d peavad olema unikaalsed ja tüübile vastava prefiksiga. Prefiksile peab järgnema midagi, kuid täpselt kümmet märki ei nõuta; jala loetav `id` on erand ja `uid` kasutab `pin_` prefiksit.
+
+`ImportCheck` prefiks on arhitekti otsusega `chk_`. `'chk'` lisamine `IdPrefix`-isse, vastav genereerimistest ja `chk_` lisamine dokumendi 04 prefiksite loendisse tehakse **ülesande 4 commit'is koos invariantidega**. Praegu täiendati ainult plaani ja üleandmist; domeenikoodi, dokumendi 04 ega mootori invariante ei muudetud.
+
+## Ülesanne 3 · Leping
+
+**2026-11-07 · Codex · valmis arhitekti ülevaatuseks.** Alus ja HEAD on `16d2330`, haru `m0`, tööpuu `C:\Users\TRUMPIT\.codex\worktrees\bb-m0\BB`. Ülesanne 3 on teostatud, commit'imata. Ülesande 4 käitusaegset koodi ei ole alustatud.
+
+### Teostus ja failid
+
+- `packages/contracts/src/result.ts`: `Result<T, E>` ning olekuta `ok` ja `err` abifunktsioonid. Need on paketi ainsad käitusaegsed teostused.
+- `src/errors.ts`: täpselt ADR-003 `EngineError` variandid ja plaani `StorageReason`, sealhulgas `not_project` ja `too_new`.
+- `src/snapshot.ts`: `Snapshot`, `Derived` ja rekursiivne `DeepReadonly`. Kirjutuskaitse ulatub valikuliste objektide, sõnastike, massiivide ja tupliteni. `Derived` sisaldab M0-s ainult `unplacedBoard` ja `unplacedSchematic` loendeid.
+- `src/document-engine.ts`: sünkroonne `DocumentEngine`, `CommandOk`, `Unsubscribe`, käsutüübid ja sündmuse kuju.
+- `src/project-service.ts`: asünkroonne `ProjectService` ning kõik ülesande 3 päringu-, vastuse-, vaate-, varukoopia- ja salvestusseisundi tüübid.
+- `src/index.ts`: avalikud ekspordid; `src/contracts.test-d.ts`: Vitesti `expectTypeOf` ja TypeScripti negatiivsed tüübitestid.
+- `packages/contracts/package.json` ja `pnpm-lock.yaml`: sõltuvused `@pcbk/domain: workspace:*` ja `zod: 4.6.7`. Tootmiskood impordib neist ainult tüüpe; Reacti, mootorit ega hosti API-t ei impordita.
+
+### Plaanis lahtiseks jäetud toetavad tüübid
+
+ADR nimetab `CommandId`, `ParamsOf`, `DomainEvent` ja `Unsubscribe`, kuid ei defineeri nende kuju. Teostus kasutab järgmisi väikseid täpsustusi:
+
+- `CommandMap` on laiendatav liides. Tuumas on plaanis nõutud `items.delete: { ids: string[] }`; võimaluse enda `contract.ts` saab lisada oma käsutüübid [TypeScripti mooduliaugmentatsiooniga](https://www.typescriptlang.org/docs/handbook/declaration-merging.html#module-augmentation). Keskne leping ei impordi võimaluse teostust ega vaja iga uue käsu jaoks käsitsi täiendamist.
+- `CommandId` tuletatakse selle kaardi punktiga nimedest ning `ParamsOf<C>` säilitab käsu ja parameetrite seose. Tüübitestis tõendati avaliku `@pcbk/contracts` kaudu lisatud käsu kasutamist ning vale parameetri ja registreerimata käsu tagasilükkamist.
+- `DomainEvent` on M0-s kirjutuskaitstud ümbris `{ type: \`${string}.${string}\`; sessionId: string; rev: number; payload: unknown }`. Seansi ja versiooni saab kontrollida ilma sisule oletusi tegemata. Võimaluse konkreetse sündmuse sisu tüübid lisanduvad selle lepingusse; M0 sündmuse käitusloogikat siin ei ole.
+- `Unsubscribe = () => void`. `Snapshot` kirjutuskaitse on siin tüübi tasemel; tegelik sügav külmutamine tuleb plaani järgi ülesande 4 mootoris.
+
+### Tegelikud kontrollid
+
+| Käsk või katse | Tulemus |
+|---|---|
+| `pnpm.cmd typecheck` pärast tüübitestide kirjutamist, enne teostust | **Kukkus**: lepingu ekspordid puudusid, väljumiskood 2. |
+| `pnpm.cmd typecheck` pärast teostust | **Läbis** nii üldise kui DOM-i ja Node'i tüüpideta backendikontrolli. |
+| `pnpm.cmd check` kell 23:29 | **Läbis**: mõlemad TypeScripti kontrollid, ESLint, sõltuvused, failipikkus ning **72/72 käitustesti kümnes failis**. Sõltuvuskontrollis 37 moodulit ja 83 sõltuvust. |
+| `pnpm.cmd format:check` | **Läbis**. |
+| `pnpm.cmd install --frozen-lockfile` | **Läbis** kõigi 10 tööruumi projekti peal. |
+| `ok`/`err` käitusaegne suitsukontroll | **Läbis** nullväärtuse, `undefined`-väärtusega edu ning vea haru kontrollid päris lähtekoodi peal. |
+| Sõltumatu lugemisülevaatus ja failideta rikkekatsed | Olulisi vigu ei leitud. Katsed kinnitasid, et tüübitestid tabavad sügava kirjutuskaitse eemaldamise ning sünkroonse/asünkroonse lepingu muutmise. Claude'i vastuvõttu see ei asenda. |
+| BB dokumentide kontrollfunktsioon | **Läbis**: tööpuus 26 ja põhikaustas 25 Markdown-faili, probleeme ei leitud. |
+| `git diff --check` ja failipiir | **Läbis**: 11 faili, sealhulgas säilitatud plaanimuudatused; commit'iks lisatud sisu puudub, kuus stardifaili on endiselt jälgimata. |
+
+`contracts.test-d.ts` kontrollitakse päriselt `tsc` abil ega käivitata Vitesti käitustestina. Negatiivsed `@ts-expect-error` kontrollid ebaõnnestuvad, kui keelatud muutmine või vigane käsk hakkab kompileeruma. Tüübitestide lisandumist ei loeta 72 käitustesti sisse. Testitud on ka meetodite tagastustüübid: dokumendikäsk on sünkroonne, failitoiming annab `Promise`-i ja tellimine annab katkestusfunktsiooni.
+
+### Säilitatud varasem töö ja järgmine samm
+
+Arhitekti kinnitatud ülesande 4 plaanitäpsustused olid alustamisel commit'imata ja jäid alles. Kasutaja suunise järgi lähevad need järgmise ülesande commit'i kaasa; selle ülesande 3 käigus ei muudetud nende sisu, `IdPrefix`-it ega dokumendi 04 prefiksite loendit. Kuus stardifaili jäävad eraldi. Ühine STATUS on põhikaustas.
+
+**Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 3. Käesolev töö ei ole commit'itud ega push'itud; ülesanne 4 ootab oma ülevaatuse piiri.

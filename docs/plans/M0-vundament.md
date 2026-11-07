@@ -244,6 +244,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
 **Failid:**
 - Loo: `packages/engine/src/{engine,history,ownership,invariants,journal,registry,items,index}.ts`.
 - Test: `packages/engine/src/engine.test.ts`.
+- Muuda selles ülesandes: `packages/domain/src/ids.ts` (`IdPrefix` saab `'chk'`), `packages/domain/src/ids.test.ts` (`newId('chk')`) ja [04 prefiksite loend](../04-andmemudel.md#põhimõtted) (`chk_` lisatakse `txt_` järele). Need muudatused kuuluvad ülesande 4 commit'i koos invariantidega, mitte ülesande 2 parandusse.
 
 **Liidesed:**
 - Tarbib: `@pcbk/domain` (skeemid, `DocKey`), `@pcbk/contracts`.
@@ -268,10 +269,39 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   Undo ja redo suurendavad samuti `rev`-i.
 - **Omandi kontroll:** iga paiga `path[0]` peab olema käsu mooduli `owns` või käsu `alsoWrites` hulgas. `reserved` väljad (veel ehitamata moodulite omad) on kõigile keelatud. `rev` ja `format_version` on tuuma omad ja käsk neid ei muuda. Kontroll **ei sõltu** `NODE_ENV`-ist.
 - **M0 invariandid:**
-  - komponentide id-d on unikaalsed;
+  - dokumendi objektikirjete id-d on unikaalsed kõigis loendites, mitte ainult komponentidel; viite kordumine ei ole uus objekt ega duplikaat;
+  - objekti id algab alloleva tüübile vastava prefiksiga ja selle järel on vähemalt üks märk. Täpselt kümmet nanoid-märki ei nõuta: fikseeritud vaikerollide id-d ja muu pikkusega imporditud id-d jäävad lubatuks. `newId` genereerib endiselt kümne märgiga juhuosa;
   - `ref` on mittetühi ja tõstutundetult unikaalne;
   - jala id on komponendi sees unikaalne;
-  - jala `uid` on projektis unikaalne.
+  - jala `uid` on projektis unikaalne ja prefiksiga `pin_` koos mittetühja lõpuga. Jala inimesele loetav `id` (`"1"`, `"EP"`, `"x1"` jne) ei vaja prefiksit ning võib eri komponentides korduda;
+  - mõõtmisel `overload === true` välistab `value` olemasolu, ka `value: 0`. See reegel ei lisa nõuet, et kõigil teistel mõõtmistel peab arvväärtus olema;
+  - `beep` võib olla määratud ainult režiimis `continuity`; see kehtib nii `true` kui ka `false` kohta.
+
+  | Objekt / loend | Prefiks |
+  |---|---|
+  | `components` | `cmp_` |
+  | `junctions` | `jun_` |
+  | `connections` | `con_` |
+  | `netLabels` | `lbl_` |
+  | `roles` | `rol_` |
+  | `measurements` | `msr_` |
+  | `repairs` | `rep_` |
+  | `photos` | `pho_` |
+  | `dimensions` | `dim_` |
+  | `areas` | `are_` |
+  | `textNotes` | `txt_` |
+  | `importChecks` | `chk_` |
+  | jala `uid` | `pin_` |
+
+  `att_` jääb manuse prefiksiks, kui manus hiljem dokumenti lisandub; ülesanne 4 ei lisa puuduvat andmetüüpi. Mõõtmiste ajaloolised kontaktiviited võivad endiselt viidata kustutatud jalale; need ei ole uued jalaobjektid.
+
+  **Lisakontrollid sammule 1 (arhitekti otsus pärast ülesande 2 vastuvõttu):**
+  - `overload: true` koos `value: 0` ja muu arvväärtusega lükatakse tagasi; `overload: true` ilma `value`-ta on lubatud;
+  - `beep: true` ja `beep: false` lükatakse tagasi kõigis kolmes muus režiimis; läbivusrežiimis on mõlemad lubatud;
+  - iga objektitüübi vale prefiks ning tühi lõpp (nt `cmp_`) lükatakse tagasi; lühike mittetühi lõpp ja fikseeritud vaikerollide id-d on lubatud;
+  - korduvad objektide id-d, komponendi sees korduv jala id ning projektis korduv jala `uid` lükatakse tagasi; sama jala id eri komponentides ja korduvad viited samale jalale on lubatud;
+  - iga tagasilükatud invariant tagastab `validation` ning jätab dokumendi, `rev`-i, ajaloo ja päeviku muutmata;
+  - `newId('chk')` toodab `chk_` prefiksi ja kümne märgiga juhuosa; invariant ise ei seo imporditud id-sid selle pikkusega.
 - **Üldkäsk `items.delete({ ids: string[] })`** kustutab M0-s ainult komponente. See on registreeritud tuumas koos `alsoWrites: ['components']`.
 
 - [ ] **Samm 1: kirjuta kukkuvad testid** (testmoodul `demo` omab välja `name`, kahjulik moodul `evil` proovib muuta `components`-i):

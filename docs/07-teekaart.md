@@ -10,14 +10,20 @@ Iga verstapost lõpeb töötava ja paigaldatava äpiga. Järgmist verstaposti ei
 - [ ] `pnpm check` on roheline (tsc, eslint, dependency-cruiser, failipikkus, Vitest, Playwright, cargo test).
 - [ ] Uus plaat → nime muutmine → sulge → ava viimastest: nimi on alles; `Ctrl+Z` töötab.
 - [ ] Fail `.pcbk` avaneb ka pärast äpi jõuga sulgemist (kirjutamise ajal tapetud protsess).
+- [ ] Kui projekti fail muutub kirjutuskaitstuks, tuleb punane riba; akna sulgemine ei kaota muudatusi ilma „Sulge salvestamata“ kinnituseta ja „Salvesta mujale…“ loob koopia, kus on samad andmed ([03 § 9](03-arhitektuur.md#salvestuse-vastutaja-savecoordinator-moodul-project)).
+- [ ] Hiljaks jäänud kirjutus ei kirjuta uuemat olekut üle (`project_save` keeldub vanemast `rev`-ist; ühiktest ja `cargo test`).
+- [ ] Käsk, mis muudab välja väljaspool oma `owns` ja `alsoWrites` loendit, kukutab testi ([03 § 4](03-arhitektuur.md#4-moodulisüsteem)).
 - [ ] Näidismoodul (`notes`) lisatakse ühe reaga ja ilmub navigaatorisse.
 - [ ] CI ehitab `.msi` paigaldaja.
 
 ## M1 · Plaat ja komponendid
 
-**Sisu:** moodulid `photo`, `calibration`, `selection`, `components`, `pins`; korpuste teek porditud prototüübist (kõik ~40 võtit ja samad arvud); paigutus, suuruse muutmine, kahe jala joondus; jalgade olekud ja oma jalad; jõudlustest.
+**Sisu:** moodulid `photo`, `calibration`, `selection`, `components`, `pins`; korpuste teek porditud prototüübist (kõik ~40 võtit ja samad arvud); paigutus, suuruse muutmine, kahe jala joondus; jalgade olekud ja oma jalad; jõudlustest. Lisaks **minimaalne mõõtmine** (mooduli `measurements` algus): `Measurement` mudel, käsud `measurements.add` ja `measurements.remove` ning lihtne Mõõda-plokk valitud jalale (pinge, väärtus, `Enter`, jalaga seotud mustand) ilma hindamise ja nimekirjata. Piiksumisrežiim (M2) kasutab seda.
 
 **Valmis kui:**
+- [ ] **Esimene läbiv töövoog** päris äpis: loo projekt → lisa komponent → vali jalg → salvesta mõõtmine → sulge → ava uuesti; mõõtmine on alles samal jalal.
+- [ ] Jalale kirjutatud, aga salvestamata väärtus ei salvestu `Tab`-i ega klõpsuga teisele jalale minnes; tagasi tulles on see alles ([03 § 5](03-arhitektuur.md#5-olek-kolm-eraldi-hoidlat)).
+- [ ] „Salvesta mujale…“ koopia avaneb koos fotoga.
 - [ ] [02 § 16](02-kasutaja-teekond.md#16-vastuvõtustsenaarium-e2e-test-plaat-algusest-lõpuni) sammud 1–5 lähevad läbi.
 - [ ] SOIC-8 jalg 1 on (−2,8; −1,905) mm ja jalg 8 (2,8; −1,905) mm; QFP-44 jalg 12 on alumisel küljel (ühiktest).
 - [ ] Kahe jala joondus taastab teadaoleva asendi täpsusega < 0,01 px ja < 0,01°.
@@ -25,23 +31,24 @@ Iga verstapost lõpeb töötava ja paigaldatava äpiga. Järgmist verstaposti ei
 
 ## M2 · Ühendused ja võrgud
 
-**Sisu:** moodulid `connections`, `nets`, `beep`; rajatööriist, kiirühendus, piiksumisrežiim, võrkude arvutus, rollid ja värvid, rollikonflikt, negatiivse läbivuse hoiatus, võrguloendi eksport.
+**Sisu:** moodulid `connections`, `nets`, `beep`; rajatööriist, kiirühendus, piiksumisrežiim (`beep.record`, kasutab M1 mõõtmise mudelit), ühenduse arvutatud tase, võrkude arvutus, rollid ja värvid, rollikonflikt, negatiivse läbivuse hoiatus, võrguloendi eksport.
 
 **Valmis kui:**
 - [ ] Stsenaariumi sammud 6–8 lähevad läbi.
+- [ ] Piiksumisrežiimi „Jah“ on üks samm: `Ctrl+Z` eemaldab nii mõõtmise kui ka ühenduse. Mõõtmise kustutamine või remondist tulenev aegumine võtab ühenduselt ✓-märgi ära ([04 › Ühenduse tase](04-andmemudel.md#ühenduse-tase-coremeasureconnectionlevel)).
 - [ ] Vaba ots 0,2 mm kaugusel teisest rajast liitub, 0,6 mm kaugusel ei liitu (ühiktest).
 - [ ] GND + 5V liitmine annab konflikti ja ei kirjuta rolli üle; tagasivõtmine taastab.
 - [ ] 50 jala kaardistamine piiksumisrežiimis võtab < 2 minutit (käsitsi proov).
 
 ## M3 · Mõõtmised ja vigade otsing
 
-**Sisu:** moodulid `measurements`, `repair`, `journal`; kiirsisestus, `parseReading`, hindamine, mõõtmiste nimekiri ja filtrid, kahtlaste vaade, kahjustatud alad, remonditoimingud koos aegumisega, logi.
+**Sisu:** moodulid `measurements` (täiendus M1 algusele), `repair`, `journal`; kiirsisestus kõigis režiimides, `parseReading`, hindamine mõlema sondi järgi, mõõtmiste nimekiri ja filtrid, kahtlaste vaade, kahjustatud alad, remonditoimingud koos aegumisega, logi.
 
 **Valmis kui:**
 - [ ] Stsenaariumi sammud 9–10 lähevad läbi.
-- [ ] Kõik hindamise kontrollväärtused ([04](04-andmemudel.md#mõõtmiste-hindamine)) on testidega kaetud.
+- [ ] Kõik hindamise kontrollväärtused ([04](04-andmemudel.md#mõõtmiste-hindamine)) on testidega kaetud, sh must sond mujal kui GND-l (punane 5V, must 12V → −7 V on OK).
 - [ ] 20 pinget järjest saab mõõta ainult klaviatuuriga (`Tab`, number, `Enter`) ilma hiireta.
-- [ ] Mõõtmise koht ei muutu tööriista, filtri ega vahekaardi vahetusel (regressioonitest BenchBeepi BB-01, BB-04 ja BB-11 kohta).
+- [ ] Mõõtmise koht ja sisestatud väärtus ei muutu tööriista, filtri ega vahekaardi vahetusel ning `Tab`-i või klõpsuga teisele jalale minnes ei salvestu eelmise jala väärtus uuele jalale (regressioonitest BenchBeepi BB-01, BB-04 ja BB-11 kohta).
 
 ## M4 · Skeem, valmimine ja eksport
 

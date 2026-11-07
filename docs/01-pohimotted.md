@@ -31,7 +31,7 @@ Need on tähtsuse järjekorras. Kui kaks põhimõtet lähevad vastuollu, võidab
 
 ## Info usaldusväärsus: kolm taset
 
-Remondis on tähtis teada, kust mingi teadmine pärineb. BenchBeep tegi selle jaoks keeruka sündmuste torustiku. Siin on see lihtne ühe välja kujul (`basis`) seal, kus see loeb:
+Remondis on tähtis teada, kust mingi teadmine pärineb. BenchBeep tegi selle jaoks keeruka sündmuste torustiku. Siin on see lihtne: ühendusel on väli `basis` (oletatud või nähtud) ja mõõtmise viide `evidenceId`, millest tase arvutatakse ([04 › Ühenduse tase](04-andmemudel.md#ühenduse-tase-coremeasureconnectionlevel)):
 
 | Tase | Tähendus | Näide | Välimus |
 |---|---|---|---|
@@ -41,6 +41,7 @@ Remondis on tähtis teada, kust mingi teadmine pärineb. BenchBeep tegi selle ja
 
 Reeglid:
 - Ühenduse vaikimisi tase sõltub sellest, kuidas see tekkis: rajatööriist annab *nähtud*, piiksumisrežiim annab *mõõdetud*, kiirühendus (`C`) annab *oletatud*.
+- *Mõõdetud* on ühendus ainult seni, kuni seda kinnitav läbivuse mõõtmine on olemas ja kehtiv. Mõõtmise kustutamise või remondi järel langeb ühendus tagasi *nähtud* või *oletatud* tasemele. Käsitsi mõõdetuks märkimist ei ole.
 - Komponendil on olek **Tuvastatud / Tuvastamata**. Tuvastamata on kõik, mille väärtus või tüüp on kahtlane; nimekirjas ja skeemil kuvatakse see küsimärgiga.
 - Mõõtmine on alati kasutaja sisestatud väärtus. Äpp ega AI ei loo mõõtmisi kunagi ise.
 - Remondi järel jäävad varasemad mõõtmised alles märkega **„enne remonti“** ja neid ei kasutata enam kehtivate hinnangutena.
@@ -64,7 +65,7 @@ Reeglid:
 
 ## Mida v1 ei tee (hiljem)
 
-- AI: fotoanalüüs, komponentide tuvastus, soovitused, remondikokkuvõtted ([03 › AI liides](03-arhitektuur.md#ai-liides-hilisem)).
+- AI: fotoanalüüs, komponentide tuvastus, soovitused, remondikokkuvõtted ([03 › AI liides](03-arhitektuur.md#13-ai-liides-hilisem)).
 - Kahe poole (pealmine ja alumine) fotode joondus üksteise peale ja perspektiivi parandus (M5).
 - Mõõteriista otseühendus (seriaal/Bluetooth-multimeeter).
 - Telefoni abirakendus pildistamiseks.

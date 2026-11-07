@@ -66,6 +66,7 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 | Juhe | pidev, kumer kaar (juhe on plaadist kõrgemal) |
 | Link, oletatud | 1,5 px katkendjoon `6 4` |
 | Link, mõõdetud | 1,5 px punktiirjoon `2 3` + ✓ |
+| Mõõtmine aegunud või kustutatud | joonistatakse algse taseme järgi (nähtud rada või oletatud link) ilma ✓-märgita; kontekstis „Mõõda uuesti“ |
 | Alumine kiht | 70 % läbipaistvusega, kui vaadatakse pealmist poolt |
 | Rollikonflikt | punane 2 px halo ümber kogu võrgu |
 

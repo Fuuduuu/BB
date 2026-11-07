@@ -184,7 +184,7 @@ Vali kaks või enam jalga (klõps ja Shift+klõps) ning vajuta `C`. Tekib õhuke
 Tööriist **Piiks** (`B`):
 1. Klõpsa jalal, mille juures hoiad musta sondi. See muutub **ankruks** (sinine rõngas ja silt „Must sond: U1.4“).
 2. Klõpsa järgmisel jalal, mida punase sondiga puudutad. Kursori juurde ilmub küsimus **„Piiksub?“**: `Enter` / `J` = jah, `Esc` / `E` = ei.
-3. **Jah** salvestab läbivuse mõõtmise ja loob *mõõdetud* ühenduse. **Ei** salvestab negatiivse tulemuse. Kui need jalad hiljem ühendatakse, hoiatab äpp: „Läbivustest ütles, et ühendust pole.“
+3. **Jah** salvestab ühe tagasivõetava sammuna läbivuse mõõtmise ja ühenduse: olemasolev otseühendus samade jalgade vahel saab ✓-märgi; kui jalad on juba muu tee kaudu samas võrgus, lisatakse ainult mõõtmine; muidu tekib uus *mõõdetud* link. Ühendus on mõõdetud ainult seni, kuni see mõõtmine on olemas ja kehtiv: kustutamise või remondi järel kaob ✓ ja ühenduse juures on „Mõõda uuesti“. **Ei** salvestab negatiivse tulemuse. Kui need jalad hiljem ühendatakse, hoiatab äpp: „Läbivustest ütles, et ühendust pole.“
 4. Jätka järgmiste jalgadega samast ankrust. `Shift`+klõps teeb uue ankru, `Esc` lõpetab režiimi.
 
 Nii saab näiteks kogu GND-võrgu kaardistada minutiga: ankur GND-l, siis klõps igal kahtlustatud jalal.
@@ -218,13 +218,15 @@ Põhiteekond on **Koht → Väärtus → Ühik → Salvesta**, kus ühik tuleb r
 
 **Äpp:**
 - salvestab mõõtmise ja näitab selle kohe ploki all reana `4,98 V · toitega · OK ✓ · 14:32`;
-- arvutab **hinnangu** võrgu rolli põhjal ([04 › Hindamisreeglid](04-andmemudel.md#mõõtmiste-hindamine)): **OK** (roheline), **madal** või **kõrge** (punane), **lühise kahtlus** (punane), **—** (pole millega võrrelda, neutraalne);
+- arvutab **hinnangu** mõlema sondi võrgu rolli põhjal ([04 › Hindamisreeglid](04-andmemudel.md#mõõtmiste-hindamine)): **OK** (roheline), **madal** või **kõrge** (punane), **lühise kahtlus** (punane), **—** (pole millega võrrelda, neutraalne);
 - värvib jala rõnga hinnangu järgi ja kuvab väärtuse väikese sildina jala kõrval;
 - jätab fookuse väärtuse väljale. `Tab` viib sama komponendi järgmisele jalale, `Shift+Tab` eelmisele. Teisel jalal klõpsamine vahetab koha.
 
 **Reeglid:**
 - **Koht ei vahetu kunagi iseenesest.** Tööriista või filtri vahetus ega tühjale alale klõpsamine ei muuda mõõdetavat jalga (BenchBeepi viga BB-01).
-- Kui vastaspunkti pole (GND-rolliga võrku pole veel), on vastaspunkt „määramata“ ja pinge salvestatakse ikkagi. Hinnang on „—“, kuni GND on määratud.
+- **Sisestatud väärtus kuulub sellele jalale, millele see kirjutati.** Kui vahetad Kohta enne `Enter`-it (`Tab`, klõps teisel jalal), ei liigu väärtus kaasa: uus jalg avaneb oma mustandiga või tühja väljaga ja tagasi tulles on eelmise jala sisestus alles. `Esc` tühjendab mustandi. Salvestamata mustand projekti faili ei lähe.
+- **Pinge hinnang arvestab mõlemat sondi:** oodatav väärtus on Koha nimipinge miinus vastaspunkti nimipinge. Kui vastaspunkt pole GND, näitab plokk oodatavat väärtust (punane 5V, must 12V → „oodatav −7,0 V“).
+- Kui vastaspunkti pole (GND-rolliga võrku pole veel), on vastaspunkt „määramata“ ja pinge salvestatakse ikkagi, aga hinnang on „—“. Äpp ei oleta tagantjärele, kus must sond oli: vastaspunkti saab hiljem mõõtmise real määrata ja siis arvutatakse hinnang.
 - Takistus ja läbivus vajavad vastaspunkti; ilma selleta on „Salvesta“ keelatud ja näidatakse vihjet „Vali vastaspunkt“.
 - Valesti sisestatud väärtus (`abc`) hoiab nupu keelatuna ja välja punasena. Andmeid ei kao.
 - *Mõõtmised* vahekaart näitab kõiki mõõtmisi koos filtritega: kõik, kahtlased, toitega, toiteta, enne remonti. Klõps viib jalale.
@@ -292,8 +294,8 @@ CSV formaat: eraldaja `;`, kümnendkoma, UTF-8 BOM (avaneb eestikeelses Excelis 
 
 ## 15. Sulgemine, uuesti avamine ja taastamine
 
-- Salvestamine toimub automaatselt: muudatus läheb kettale hiljemalt 2 s jooksul. Ülaribal on olek „Salvestatud · 14:32“ või „Salvestan…“. Kui kirjutamine ebaõnnestub, tuleb punane riba „Salvestamine ebaõnnestus: <põhjus>. [Proovi uuesti] [Salvesta mujale…]“.
-- Akna sulgemisel salvestatakse lõpuni ja suletakse ilma küsimata.
+- Salvestamine toimub automaatselt: muudatus läheb kettale hiljemalt 2 s jooksul. Ülaribal on olek „Salvestatud · 14:32“ või „Salvestan…“. Kui kirjutamine ebaõnnestub, tuleb punane riba „Salvestamine ebaõnnestus: <põhjus>. [Proovi uuesti] [Salvesta mujale…]“. Töö jätkub ja iga järgmine muudatus proovib uuesti. „Salvesta mujale…“ teeb tervikliku koopia koos fotodega ja töö jätkub uues failis.
+- Akna sulgemisel salvestatakse lõpuni ja kui see õnnestub, suletakse ilma küsimata. Kui viimane salvestus ebaõnnestub, akent ei suleta: dialoog pakub **Proovi uuesti**, **Salvesta mujale…** või **Sulge salvestamata**, ja viimane ütleb selgelt, et muudatused kaovad. Sama kehtib avalehele minekul ja teise projekti avamisel ([03 § 9](03-arhitektuur.md#salvestuse-vastutaja-savecoordinator-moodul-project)).
 - Uuesti avamisel on töölaud samas seisus: vaade, kihid, aktiivne tööriist ja vahekaart.
 - Kokkujooksmise järel on alles viimane automaatsalvestus. Projekti fail on SQLite ja kirjutatakse tehingutena, nii et pooleli jäänud kirjutus faili ei riku.
 - Tagasivõtmise ajalugu kehtib seansi jooksul (200 sammu); projekti avamisel algab see uuesti. Logi vahekaardil on kogu ajalugu ka hiljem nähtav.

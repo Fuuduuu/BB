@@ -69,7 +69,8 @@ interface Connection {
   waypoints: Vec2[];                   // ainult 'trace' ja 'wire'
   layer: 'top' | 'bottom';             // 'trace' puhul
   widthMm: number;                     // 'trace' vaikimisi 0.4
-  basis: 'assumed' | 'visual' | 'measured';
+  basis: 'assumed' | 'visual';         // kuidas ühendus tekkis: kiirühendus ja piiksu link = oletatud, joonistatud rada/juhe = nähtud
+  evidenceId?: string;                 // Measurement.id, mis ühenduse mõõtmisega kinnitas; tase „mõõdetud“ arvutatakse (vt „Ühenduse tase“)
 }
 type Endpoint = { pin: PinRef } | { point: Vec2 };
 
@@ -80,7 +81,7 @@ interface Measurement {
   id: string;
   mode: 'voltage' | 'resistance' | 'diode' | 'continuity';
   at: PinRef;                          // Koht (punane sond)
-  ref?: PinRef;                        // Vastaspunkt (must sond)
+  ref?: PinRef;                        // Vastaspunkt (must sond); ilma selleta pinget ei hinnata
   value?: number;                      // SI ühikutes: V või Ω
   beep?: boolean;                      // läbivus
   power: 'on' | 'off' | 'unknown';
@@ -119,6 +120,15 @@ Tumedas teemas joonistatakse GND heledama halliga (`#9aa5a0`), et see paistaks t
 - **Nimi ja roll** tulevad siltidest, mille `anchor` kuulub võrku. Kui kahel sildil on eri `roleId`, siis `roleConflict = true`, `role = undefined` ja `conflictingRoles` loetleb need. Nimeks saab esimene mitte-tühi `name` (ankrute tähestikulises järjekorras); kui seda pole, siis `N1`, `N2` … (võrgu võtme järjekorras).
 - **Negatiivne läbivus:** kui kahe jala vahel on mõõtmine `beep = false` ja need jalad satuvad samasse võrku, siis `beepContradiction = true` (hoiatus „Läbivustest ütles, et ühendust pole“).
 
+## Ühenduse tase (`core/measure/connectionLevel`)
+
+Ühenduse usaldusväärsuse tase ([01](01-pohimotted.md#info-usaldusväärsus-kolm-taset)) arvutatakse, mitte ei salvestata:
+
+- `level = 'measured'`, kui `evidenceId` viitab olemasolevale ja mitte aegunud mõõtmisele, kus `mode = continuity`, `beep = true` ning `{at, ref}` on sama jalapaar mis ühenduse otsad. Muidu `level = basis`.
+- Seetõttu viib mõõtmise kustutamine (`measurements.remove`), remondist tulenev aegumine või ühenduse otsa lahtiühendamine ühenduse kohe tagasi *nähtud* või *oletatud* tasemele. Ühenduse andmeid selleks ei muudeta ja tagasivõtmine taastab ka taseme.
+- Kui `evidenceId` on olemas, aga tase pole `measured`, näitab ühenduse kontekst „Mõõtmine aegunud“ või „Mõõtmine kustutatud“ ja nuppu „Mõõda uuesti“ (avab piiksumisrežiimi selle jalapaariga).
+- Käsitsi mõõdetuks märkimist ei ole. `evidenceId` paneb ainult käsk `beep.record` (piiksumisrežiimi „Jah“), mis teeb **ühe tagasivõetava sammuna** järgmist: lisab läbivuse mõõtmise; kui samade jalgade vahel on juba otseühendus, saab see `evidenceId`; kui jalad on juba muu tee kaudu samas võrgus, jääb alles ainult mõõtmine; muidu tekib uus link (`basis = 'assumed'`, `evidenceId`). Vastus „Ei“ lisab ainult mõõtmise `beep = false`.
+
 ## Mõõtmiste hindamine
 
 `evaluate(m: Measurement, nets): Verdict`, kus `Verdict = 'ok' | 'low' | 'high' | 'short' | 'none'`.
@@ -126,12 +136,14 @@ Tumedas teemas joonistatakse GND heledama halliga (`#9aa5a0`), et see paistaks t
 | Juhtum | Tingimus | Tulemus |
 |---|---|---|
 | Aegunud | `m.staleByRepairId` on määratud | `none` (ei värvi jalga) |
-| Pinge toitega | `mode = voltage`, `power = on`, Koha võrgu roll kehtib ja `nominalV` on määratud; tolerants `tol = max(0.1, 0.1 · nominalV)` | `|v − nominalV| ≤ tol` → `ok`; väiksem → `low`; suurem → `high` |
+| Pinge toitega | `mode = voltage`, `power = on`, `ref` on määratud ning nii Koha kui ka vastaspunkti võrgul on kehtiv roll koos `nominalV`-ga. Oodatav pinge `exp = nominalV(at) − nominalV(ref)`, tolerants `tol = max(0.1, 0.1 · |exp|)` | järjekorras: `|v − exp| ≤ tol` → `ok`; `exp ≠ 0`, `v` märk on vastupidine ja `|v| > tol` → `high` (vihje „Sondid võivad olla vahetuses“); `|v| < |exp|` → `low`; muidu `high` |
 | Takistus toite ja maa vahel | `mode = resistance`, üks ots power- ja teine ground-võrgus | `value < 1.0 Ω` → `short`, muidu `none` |
 | Läbivus eri rollide vahel | `mode = continuity`, `beep = true`, otste võrkudel on eri roll ja kumbki pole `signal`/`unknown` | `short` |
-| Kõik muu | sh rollita võrk, toiteta pinge, diood | `none` |
+| Kõik muu | sh rollita võrk, vastaspunktita pinge, vastaspunkt signaal- või rollita võrgus, toiteta pinge, diood | `none` |
 
-Kontrollväärtused (`core/measure/evaluate.test.ts`): 5V võrgus 4,55 → ok; 4,49 → low; 5,51 → high. 3V3 võrgus 2,9 → low. GND võrgus 0,05 → ok; 0,2 → high. Takistus 5V ↔ GND: 0,6 Ω → short; 1,0 Ω → none. Läbivus 12V ↔ 5V → short; Signaal ↔ 5V → none. Toiteta pinge → none.
+Pinge hinnang arvestab alati mõlemat sondi. Vastaspunktita pinget ei hinnata, sest äpp ei oleta, kus must sond oli; vastaspunkti saab hiljem mõõtmise real määrata (`measurements.update`) ja siis hinnang arvutatakse.
+
+Kontrollväärtused (`core/measure/evaluate.test.ts`), must sond GND-võrgus: 5V võrgus 4,55 → ok; 4,49 → low; 5,51 → high; −5,0 → high (sondid vahetuses). 3V3 võrgus 2,9 → low. GND võrgus 0,05 → ok; 0,2 → high. Must sond mujal: punane 5V, must 12V: −7,0 → ok; −5,0 → low; +7,0 → high (sondid vahetuses); punane 12V, must 5V: 7,0 → ok. Vastaspunktita pinge → none; vastaspunkt Signaal-võrgus → none. Takistus 5V ↔ GND: 0,6 Ω → short; 1,0 Ω → none. Läbivus 12V ↔ 5V → short; Signaal ↔ 5V → none. Toiteta pinge → none.
 
 **Jala hinnang** (`latestVerdicts`): iga jala jaoks loetakse viimane kehtiv (mitte aegunud) mõõtmine, kus jalg on `at` või (takistuse ja läbivuse puhul) `ref`.
 
@@ -153,7 +165,7 @@ interface ProgressSnapshot {
   componentsIdentified: [done: number, total: number]; // total ilma DNP-ta
   pinsMapped: [number, number];                        // võrgus või pinNc
   powerDefined: boolean;                               // GND-roll olemas ja iga power-rolliga võrk ≥ 2 jalaga
-  assumedConnections: number;
+  assumedConnections: number;                          // ühendused, mille arvutatud tase on „oletatud“
   roleConflicts: number;
   suspectMeasurements: number;                         // kehtivad low/high/short
 }
@@ -164,6 +176,7 @@ Edenemisriba = keskmine kolmest osakaalust: komponendid tuvastatud, jalad kaardi
 
 - Komponendi kustutamine teeb järgmist: selle jalgadele viitavad ühenduste otsad muutuvad vabadeks punktideks, mõõtmised jäävad alles (loetav `atLabel` säilib), sildid, mille ankur oli selle jalg, kustutatakse ja skeemi paigutus eemaldatakse. Kõik see on üks tagasivõetav käsk.
 - Oma jala kustutamisel kehtivad samad reeglid selle ühe jala kohta.
+- Mõõtmise kustutamine ei muuda ühendusi. Ühendus, mille `evidenceId` sellele viitas, langeb arvutatud tasemelt tagasi *nähtud* või *oletatud* tasemele ([Ühenduse tase](#ühenduse-tase-coremeasureconnectionlevel)); tagasivõtmine taastab mõlemad.
 - Rolli kustutamine on lubatud ainult siis, kui ükski silt seda ei kasuta. Vaikerolle ei saa kustutada, ainult ümber nimetada või värvi muuta.
 
 ## JSON eksport ja import

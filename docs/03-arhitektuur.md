@@ -100,6 +100,7 @@ export interface AppModule {
   id: string;                          // 'measurements' (unikaalne)
   title: string;                       // 'Mõõtmised'
   dependsOn?: string[];                // ['nets']
+  owns?: DocKey[];                     // BoardDoc väljad, mille omanik see moodul on (vt „Andmete omanik“)
   commands?: CommandSpec<any>[];       // tagasivõetavad muudatused (ka käsupaletis)
   tools?: ToolSpec[];                  // lõuendi tööriistad (tööriistaribal)
   layers?: LayerSpec[];                // lõuendi kihid, z-järjekord
@@ -151,6 +152,13 @@ export const modules: AppModule[] = [
 - **Päringud:** puhtad funktsioonid `core`-ist (`resolveNets(doc)`) või mooduli avalikud selektorid (`import { useNets } from '@/modules/nets'`).
 - **Sündmused:** `bus.on('measurement.added', fn)` kõrvalmõjude jaoks (nt remondimoodul pakub uut mõõtmist). Sündmus ei muuda dokumenti; muudatus käib alati käsu kaudu.
 
+**Andmete omanik.** Kuna käsk saab Immeri mustandina terve dokumendi, piiratakse kirjutamist eraldi reegliga, et ükski moodul ei kasvaks keskseks megakontrolleriks:
+- Igal `BoardDoc` tipptaseme väljal (`type DocKey = keyof BoardDoc`) on täpselt üks omanik-moodul, kes märgib selle oma `owns` loendisse. `rev` ja `format_version` kuuluvad tuumale (`dispatch`, migratsioonid). Omanike tabel on failis [05 › Andmete omanikud](05-moodulid.md#andmete-omanikud).
+- Käsk muudab ainult oma mooduli välju ja neid, mis on loetletud tema `alsoWrites` loendis. Iga erand on seega koodis nähtav (nt `repair.add` → `measurements`, `beep.record` → `measurements`, `connections`).
+- `dispatch` kontrollib seda Immeri paikade järgi: paiga tee esimene osa peab olema käsu lubatud väli. Arenduses ja testides viskab rikkumine vea, väljalaskes läheb hoiatus logisse.
+- `ModuleRegistry` kontrollib käivitusel, et igal väljal on täpselt üks omanik ja et `alsoWrites` viitab olemasolevatele väljadele.
+- Teised moodulid loevad mooduli andmeid selle `index.ts` tüübitud selektorite või `core`-i puhaste funktsioonide kaudu.
+
 Uue mooduli mall ja iga mooduli kirjeldus on failis [05-moodulid.md](05-moodulid.md).
 
 ## 5. Olek: kolm eraldi hoidlat
@@ -158,10 +166,12 @@ Uue mooduli mall ja iga mooduli kirjeldus on failis [05-moodulid.md](05-moodulid
 | Hoidla | Sisu | Tagasivõetav | Salvestub |
 |---|---|---|---|
 | **ProjectStore** | dokument `BoardDoc` (komponendid, ühendused, rollid, mõõtmised, remondid, skeemi paigutus …) | jah | projekti faili (`document` tabel) |
-| **SessionStore** | valik, hover, aktiivne tööriist, tööriista mustand (pooleli rada), piiksu ankur | ei | ei |
+| **SessionStore** | valik, hover, aktiivne tööriist, tööriista mustand (pooleli rada), mõõtmise mustandid jala kaupa, piiksu ankur | ei | ei |
 | **ViewStore** | suum ja nihe (eraldi plaadi- ja skeemivaatele), kihid, foto nähtavus, kontrast, aktiivne vahekaart | ei | projekti faili (`view` tabel) |
 
 Valik on **ainult SessionStore'is**. Tööriista, vahekaardi või filtri vahetus ei muuda valikut; valikut muudab ainult kasutaja klõps või käsk `selection.set` (põhimõte 5 failis [01](01-pohimotted.md)).
+
+**Mõõtmise mustand kuulub jalale.** Salvestamata mõõtmised on kujul `measureDrafts: Map<PinKey, { mode, text, ref?, power }>`. Mõõda-plokk loeb ja kirjutab alati selle jala mustandit, mis on Koha real. Koha vahetus (`Tab`, `Shift+Tab`, `N`, klõps teisel jalal) ei vii väärtust kaasa: uus jalg saab oma mustandi, mille režiim ja toide tulevad viimati kasutatust. Tööriista, filtri või vahekaardi vahetus ei muuda ei Kohta ega mustandit. `measurements.add` saab Koha ja väärtuse samast mustandist, mitte eraldi väljadest. Mustand kustub salvestamisel, `Esc`-iga ja siis, kui selle jalg kustutatakse; projekti faili see ei lähe.
 
 ## 6. Käsud, tagasivõtmine ja logi
 
@@ -171,6 +181,7 @@ export interface CommandSpec<P> {
   title: string;                      // 'Lisa komponent' (käsupalett, logi)
   params: z.ZodType<P>;               // valideeritakse enne käivitamist
   run(draft: Draft<BoardDoc>, params: P, ctx: CommandCtx): void; // Immeri mustand, sünkroonne, puhas
+  alsoWrites?: DocKey[];              // teise mooduli väljad, mida käsk teadlikult muudab (vt §4 „Andmete omanik“)
   summary?(params: P, doc: BoardDoc): string; // logi rida: 'Lisatud U1 (SOIC-8)'
   palette?: boolean; key?: string;
 }
@@ -182,7 +193,7 @@ commit() | cancel()             //   commit = üks samm ajaloos; cancel taastab 
 undo() / redo()                 // Immeri pöördpaigad, max 200 sammu
 ```
 
-- `dispatch` kutsub välja `produceWithPatches`, lisab `{patches, inversePatches, label}` ajalukku, kirjutab logi rea (`journal` tabel: aeg, käsu id, kokkuvõte) ja käivitab automaatsalvestuse.
+- `dispatch` kutsub välja `produceWithPatches`, lisab `{patches, inversePatches, label}` ajalukku, kirjutab logi rea (`journal` tabel: aeg, käsu id, kokkuvõte) ja suurendab `rev`-i, mille peale `SaveCoordinator` salvestab (§9).
 - Käsk on **puhas ja sünkroonne**. Failid, dialoogid ja võrk käivad väljaspool käsku (platvormikihis) ning tulemus antakse käsule parameetrina.
 - Iga kasutaja tegevus, mis muudab dokumenti, on käsk. Seetõttu toimib tagasivõtmine kõikjal ja AI saab hiljem pakkuda samu käske (§13).
 
@@ -240,8 +251,18 @@ CREATE TABLE thumbnail (id INTEGER PRIMARY KEY CHECK (id = 1), png BLOB NOT NULL
 
 - **Automaatsalvestus:** 1,5 s pärast viimast käsku (debounce) kirjutatakse üks tehing: `document` (terve JSON), uued `journal` read ja `view`. Fotod kirjutatakse ainult lisamisel. Režiim on `PRAGMA journal_mode=WAL`.
 - **Dokumendi JSON** on valideeritud zod-skeemiga `BoardDocSchema` ja sisaldab välja `format_version`. Avamisel käivitatakse vajadusel järjestikused migratsioonid (`core/io/migrations/0001_*.ts` …). Fail, mis on uuem kui äpp, avatakse kirjutuskaitstuna koos teatega.
-- **Rusti käsud** (Tauri `invoke`): `project_create(path, doc)`, `project_open(path) → {doc, view, photos_meta, format_version}`, `project_save(path, doc_json, rev, view_json, journal[])`, `photo_put(path, bytes, mime, w, h) → id`, `photo_url(id)` (asset-protokoll, ilma Base64-ta), `attachment_put/get`, `recent_list/add/remove`, `thumbnail_put`, `export_write(path, bytes)`. Dialoogid käivad `tauri-plugin-dialog` kaudu.
+- **Rusti käsud** (Tauri `invoke`): `project_create(path, doc)`, `project_open(path) → {doc, view, photos_meta, format_version}`, `project_save(path, doc_json, rev, view_json, journal[])` (keeldub, kui `rev` pole suurem kui failis olev), `project_copy(src, dest, doc_json, rev, view_json, journal[])`, `photo_put(path, bytes, mime, w, h) → id`, `photo_url(id)` (asset-protokoll, ilma Base64-ta), `attachment_put/get`, `recent_list/add/remove`, `thumbnail_put`, `export_write(path, bytes)`. Dialoogid käivad `tauri-plugin-dialog` kaudu.
 - **Turvalisus:** Tauri capabilities lubavad failisüsteemis ainult kasutaja valitud failid ja äpi andmekausta; CSP keelab välised skriptid; võrguõigust v1 ei ole.
+
+### Salvestuse vastutaja (`SaveCoordinator`, moodul `project`)
+
+Projekti faili kirjutab ainult `SaveCoordinator`. Teised osad salvestamist ise ei käivita: `SaveCoordinator` jälgib ProjectStore'i `rev`-i ja kirjutab, kui see muutub (nii ei pea `core` moodulit tundma).
+
+- **Üks järjekord.** Korraga on käimas kõige rohkem üks kirjutus. Kui kirjutuse ajal tuleb uus käsk, kirjutatakse pärast selle lõppu kohe uusim olek; vahepealseid olekuid eraldi ei kirjutata. `project_save` keeldub vanemast `rev`-ist, nii et hiljaks jäänud kirjutus ei saa uuemat olekut üle kirjutada.
+- **Logi read** jäävad järjekorda seni, kuni tehing on õnnestunud. Ebaõnnestumisel ei kao ükski rida.
+- **Nähtav olek:** `saved(rev, aeg)` → „Salvestatud · 14:32“; `pending` ja `saving` → „Salvestan…“; `error(põhjus)` → punane riba „Salvestamine ebaõnnestus: <põhjus>. [Proovi uuesti] [Salvesta mujale…]“. Vea ajal töö jätkub mälus, iga uus käsk proovib uuesti ja olek jääb punaseks, kuni kirjutus õnnestub.
+- **Sulgemine ja projekti vahetus** (akna sulgemine, avalehele minek, teise projekti avamine) kutsub kõigepealt `flush()`: oodatakse käimasolev kirjutus ära ja kirjutatakse uusim olek. Õnnestumisel suletakse ilma küsimata. Ebaõnnestumisel akent ei suleta, vaid avaneb dialoog „Viimaseid muudatusi ei õnnestunud salvestada: <põhjus>“ nuppudega **Proovi uuesti**, **Salvesta mujale…** ja **Sulge salvestamata**. Ainult viimane kaotab muudatused ja ütleb seda nupu all otse („Viimased muudatused kaovad“).
+- **Koopia** („Salvesta mujale…“ ja näidisprojekti „Salvesta oma koopiana“): `project_copy` teeb `VACUUM INTO dest` (terviklik koopia koos fotode, manuste, logi ja pisipildiga) ja kirjutab seejärel uusima oleku koopiasse ühe tehinguna. Pärast õnnestumist jätkab äpp uues failis ja see lisatakse viimaste projektide hulka; algne fail jääb viimase õnnestunud salvestuse seisu. Kui algne fail pole loetav (nt mälupulk eemaldati), luuakse uus fail mälus olevast dokumendist, vaatest ja logist ning äpp ütleb selgelt, et fotod jäid algsesse faili.
 
 ## 10. Platvormikiht
 
@@ -274,7 +295,7 @@ export interface Platform {
 | Loogika | Vitest | kogu `src/core` | rea katvus ≥ 90 % |
 | Moodulid | Vitest + Testing Library | paneelid, sektsioonid, tööriistade olekumasinad | iga mooduli põhitegevus |
 | Töövoog | Playwright (web-platvorm) | [02 § 16](02-kasutaja-teekond.md#16-vastuvõtustsenaarium-e2e-test-plaat-algusest-lõpuni) ja jõudlustest | kõik rohelised |
-| Rust | `cargo test` | `project_db`: loomine, salvestus, migratsioon, katkenud kirjutus | kõik rohelised |
+| Rust | `cargo test` | `project_db`: loomine, salvestus, migratsioon, katkenud kirjutus, vanema `rev`-i tagasilükkamine, koopia koos fotodega | kõik rohelised |
 | Staatika | `tsc --noEmit`, ESLint, dependency-cruiser, failipikkuse kontroll | | 0 viga |
 
 CI (GitHub Actions, `windows-latest`) jooksutab kõik tasemed iga push'i peale. Väljalaske silt `v*` ehitab `.msi` paigaldaja ja lisab selle GitHubi Release'i.

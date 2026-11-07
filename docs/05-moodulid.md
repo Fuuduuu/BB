@@ -28,7 +28,7 @@ Nool tähendab `dependsOn` seost. `guide` ja `export` ei sõltu teistest mooduli
 
 | Moodul | Vastutus | Käsud (`id`) | Tööriistad (klahv) | Paneelid ja sektsioonid | Kihid (z) |
 |---|---|---|---|---|---|
-| **project** | avaleht, uus/ava, viimased, automaatsalvestus, pisipilt, prototüübi import, projekti JSON eksport | `project.rename`, `project.setInfo`, `project.markMapped`, `project.unmarkMapped` | | Avaleht; uue plaadi dialoog; ülariba nimi ja salvestuse olek | |
+| **project** | avaleht, uus/ava, viimased, salvestuse vastutaja `SaveCoordinator` (automaatsalvestus, üks järjekord, veaolek, sulgemisel lõpuni salvestamine, koopia; [03 § 9](03-arhitektuur.md#salvestuse-vastutaja-savecoordinator-moodul-project)), pisipilt, prototüübi import, projekti JSON eksport | `project.rename`, `project.setInfo`, `project.markMapped`, `project.unmarkMapped` | | Avaleht; uue plaadi dialoog; ülariba nimi ja salvestuse olek | |
 | **photo** | foto lisamine ja vahetus, nähtavus, kontrast, hall, pööramine ja peegeldamine koos kaardistuse teisendusega | `photo.add`, `photo.transform` | | mõõteriba: nähtavuse liugur, kontrast, ⟳, ⇋ | foto (0) |
 | **calibration** | mõõtkava kahe punktiga, korpuse joondusest tulev ettepanek | `scale.set` | Kalibreeri (`K`) | kalibreerimise aken; mõõteriba kiip | kalibreerimisjoon (100) |
 | **selection** | valimine, raamvalik, liigutamine, kustutamine, nihutamine nooltega, valiku sünk | `items.translate`, `items.delete`, `selection.set` | Vali (`V`), Liiguta vaadet (`H`) | | valikuraam (90) |
@@ -37,7 +37,7 @@ Nool tähendab `dependsOn` seost. `guide` ja `export` ei sõltu teistest mooduli
 | **connections** | rajad, juhtmed, lingid, käänupunktid, kiirühendus | `connections.add`, `connections.update`, `connections.insertWaypoint`, `connections.removeWaypoint` | Rada (`T`), Kiirühendus (`C`, valitud jalgadele) | kontekst: Ühendus (10) | alumised rajad (20), pealmised rajad (40), juhtmed ja lingid (55) |
 | **nets** | võrgud, nimed, rollid, rollide redaktor, konfliktid, võrguloendi eksport | `nets.assign`, `roles.add`, `roles.update`, `roles.remove` | | navigaator: **Võrgud**; kontekst: Võrk (15) | võrgu esiletõst (45) |
 | **measurements** | kiirsisestus, hinnangud, mõõtmiste nimekiri ja filtrid, mõõtmiste CSV | `measurements.add`, `measurements.update`, `measurements.remove` | Mõõda (`M`: viib fookuse väärtuse väljale) | kontekst: **Mõõda** (0, jalal), Mõõtmised (40); navigaator: **Mõõtmised** | hinnangute rõngad ja sildid (80) |
-| **beep** | piiksumisrežiim: ankur, jah/ei, mõõdetud ühendused | (kasutab `measurements.add` ja `connections.add`) | Piiks (`B`) | ankru silt lõuendil | ankur ja küsimus (100) |
+| **beep** | piiksumisrežiim: ankur, jah/ei, mõõdetud ühendused | `beep.record` (üks tagasivõetav samm: läbivuse mõõtmine ja ühenduse loomine või kinnitamine; [04 › Ühenduse tase](04-andmemudel.md#ühenduse-tase-coremeasureconnectionlevel)) | Piiks (`B`) | ankru silt lõuendil | ankur ja küsimus (100) |
 | **repair** | remonditoimingud, aegumine, kahjustatud alad, kahtlaste vaade | `repair.add`, `repair.remove`, `areas.add`, `areas.update`, `areas.remove` | Märgi ala (`X`) | kontekst: Remont (50); mõõteriba: „Näita kahtlaseid“ | alad (10), kahtlaste tuhmistus (85) |
 | **dimensions** | mõõtjooned, plaadi kontuur, nullpunkt | `dimensions.add`, `dimensions.update`, `outline.set`, `outline.clear` | Mõõtjoon (`D`), Kontuur (`O`) | kontekst: Mõõtjoon, Kontuur | kontuur (15), mõõtjooned (70) |
 | **schematic** | skeemivaade, sümbolid, automaatne paigutus, käsitsi paigutus, skeemi eksport | `schematic.place`, `schematic.resetLayout` | (skeemivaates Vali ja Liiguta) | ülariba: **Plaat \| Skeem** | `schematicLayers`: sümbolid, võrgusildid, toitesümbolid |
@@ -46,6 +46,25 @@ Nool tähendab `dependsOn` seost. `guide` ja `export` ei sõltu teistest mooduli
 | **journal** | Logi vahekaart: remondid, mõõtmised, märkused, muudatuste kokkuvõtted | | | navigaator: **Logi** | |
 
 **Üldised käsud** (`items.translate`, `items.delete`) asuvad `core/commands/items.ts`-is, sest need puudutavad mitut objektitüüpi. Iga objektitüübi kustutamise reeglid on failis [04 › Kustutamise reeglid](04-andmemudel.md#kustutamise-reeglid).
+
+## Andmete omanikud
+
+Igal `BoardDoc` väljal on üks omanik-moodul (`owns`). Teise mooduli käsk tohib välja muuta ainult siis, kui see on tema `alsoWrites` loendis; `dispatch` kontrollib seda paikade järgi ([03 § 4](03-arhitektuur.md#4-moodulisüsteem)). Uus erand lisatakse siia tabelisse koos põhjusega.
+
+| Väli | Omanik | Teised kirjutajad (`alsoWrites`) ja põhjus |
+|---|---|---|
+| `name`, `device`, `problem`, `status`, `mappedAt`, `mappedSnapshot` | project | — |
+| `photos`, `activePhotoId` | photo | — |
+| `scale` | calibration | — |
+| `components` | components | pins (`pins.*`: jalgade nimed, NC ja oma jalad asuvad komponendi sees); photo (`photo.transform` teisendab koordinaadid); core `items.translate`, `items.delete` |
+| `connections` | connections | beep (`beep.record`); pins (`pins.remove` vabastab otsad); photo (`photo.transform`); core `items.*` |
+| `netLabels`, `roles` | nets | pins (`pins.remove`) ja core `items.delete` kustutavad jala sildid |
+| `measurements` | measurements | beep (`beep.record`); repair (`repair.add` märgib aegunuks) |
+| `repairs`, `areas` | repair | photo (`photo.transform`, alad); core `items.*` |
+| `dimensions`, `outline` | dimensions | photo (`photo.transform`); core `items.*` |
+| `schematic` | schematic | core `items.delete` (eemaldab paigutuse) |
+| `guide` | guide | — |
+| `rev`, `format_version` | tuum (`dispatch`, migratsioonid) | — |
 
 ## Kaastööd, mida mitu moodulit annavad
 

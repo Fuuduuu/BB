@@ -28,11 +28,12 @@ Töö käik: arhitekti plaan → ehitaja samm → ehitaja kontrollid ja üleandm
 
 ## M0 · Vundament ja esimene komponent
 
-**Eeltingimused arendusmasinas:**
-- Node.js LTS (paigaldatud: 26.13.0) ja `corepack enable`, mis teeb `pnpm`-i kättesaadavaks;
-- Windowsi C++ Build Tools 2022 koos x64/x86 tööriistadega (olemas, kontrollitud `vswhere`-iga 2026-11-07);
-- **puudub veel:** Rust (`rustup`, stabiilne toolchain), mida Tauri `src-tauri` kompileerimiseks vajab. Plaani osad A ja B ei vaja Rusti;
-- WebView2 runtime (Windows 11-s olemas).
+**Eeltingimused arendusmasinas** (kõik olemas, kontrollitud 2026-11-07; täpsed versioonid on failis `docs/STATUS.md`):
+- Node.js LTS ja Corepack koos pnpm-iga;
+- Rust (`rustup`, stable, MSVC host) koos `rustfmt`-i ja `clippy`-ga;
+- Windowsi C++ Build Tools 2022 ja Windows SDK;
+- WebView2 runtime;
+- Tauri CLI 2; keskkonnakontroll `pnpm tauri info` läbis.
 
 **Sisu:**
 - pnpm monorepo, Vite, React, TS strict, Tauri 2;

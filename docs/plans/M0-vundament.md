@@ -507,7 +507,7 @@ Osa lõpus töötab äpp brauseris IndexedDB-ga ja Playwright läbib M0 teekonna
 
 Osa lõpus ehitab CI `.msi` ja kõik [07 › M0](../07-teekaart.md#m0--vundament-ja-esimene-komponent) tingimused on tõendatud.
 
-**Eeltingimus:** Rust (`rustup`, stable) on paigaldatud; see puudub praegu. Visual Studio Build Tools 2022 („Desktop development with C++“) on juba olemas. Enne ülesannet 10 kontrolli `rustc --version`, `cargo --version` ja `pnpm tauri info`.
+**Eeltingimus:** Rust (`rustup`, stable, MSVC), Visual Studio Build Tools 2022 ja WebView2 on paigaldatud ning Tauri keskkonnakontroll läbis (2026-11-07, vt `docs/STATUS.md`). Enne ülesannet 10 kontrolli siiski uuesti `rustc --version`, `cargo --version` ja `pnpm tauri info`.
 
 ### Ülesanne 10: Rusti salvestus (`project_db`)
 

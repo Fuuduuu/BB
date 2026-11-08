@@ -9,6 +9,7 @@
   "dependencies": {
     "@pcbk/contracts": "workspace:*",
     "@pcbk/domain": "workspace:*",
-    "@pcbk/engine": "workspace:*"
+    "@pcbk/engine": "workspace:*",
+    "idb-keyval": "6.3.0"
   }
 }

@@ -16,3 +16,7 @@ export { useViewStore } from './shell/view-store';
 export type { Theme } from './shell/view-store';
 export { bindHistoryKeys } from './shell/keymap';
 export { et } from './shell/i18n/et';
+export { StartScreen } from './shell/StartScreen';
+export type { RecentProjectCard } from './shell/StartScreen';
+export { NewBoardDialog } from './shell/NewBoardDialog';
+export { useTheme } from './shell/use-theme';

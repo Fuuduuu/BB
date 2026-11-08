@@ -4,7 +4,12 @@ import { sealTree } from './immutability';
 import { z } from 'zod';
 import type { DeriveSpec } from './types';
 
-export function makeSnapshot(sessionId: string, doc: BoardDoc, specs: DeriveSpec[]): Snapshot {
+export function makeSnapshot(
+  sessionId: string,
+  doc: BoardDoc,
+  specs: DeriveSpec[],
+  history: Snapshot['history'],
+): Snapshot {
   const derived: Derived = {
     unplacedBoard: doc.components.filter((item) => !item.board).map((item) => item.id),
     unplacedSchematic: doc.components.filter((item) => !item.schematic).map((item) => item.id),
@@ -15,5 +20,5 @@ export function makeSnapshot(sessionId: string, doc: BoardDoc, specs: DeriveSpec
     const input = sealTree({ ...derived });
     derived[spec.key] = z.array(z.string()).parse(spec.run(doc, input));
   }
-  return sealTree({ sessionId, rev: doc.rev, doc, derived });
+  return sealTree({ sessionId, rev: doc.rev, doc, derived, history });
 }

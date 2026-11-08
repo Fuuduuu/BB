@@ -172,7 +172,12 @@ export function createSaveCoordinator(opts: {
     isClean: () => active() && !running && !dirty(),
     saveView(next: ViewState) {
       if (!active()) return;
-      if (view?.navigatorWidth === next.navigatorWidth && view.navigatorTab === next.navigatorTab)
+      if (
+        view?.navigatorWidth === next.navigatorWidth &&
+        view.navigatorTab === next.navigatorTab &&
+        view.contextWidth === next.contextWidth &&
+        view.contextOpen === next.contextOpen
+      )
         return;
       view = { ...next };
       // Read-only viewing remains local; a writable rescue copy can retain this view.

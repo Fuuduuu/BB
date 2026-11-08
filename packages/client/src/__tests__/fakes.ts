@@ -14,6 +14,7 @@ export function snapshot(sessionId = 'session-a', rev = 0, name = 'Board'): Snap
     rev,
     doc: Object.freeze({ ...newBoardDoc(name), rev }),
     derived: Object.freeze({ unplacedBoard: [], unplacedSchematic: [] }),
+    history: Object.freeze({ canUndo: false, canRedo: false }),
   });
 }
 export class FakeEngine implements DocumentEngine {

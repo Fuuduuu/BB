@@ -54,9 +54,19 @@ test('one write at a time; newer document and view are written immediately after
   engine.execute('demo.rename', { name: 'First' });
   await vi.advanceTimersByTimeAsync(1500);
   await blocked.started;
-  projects.saveView({ navigatorWidth: 300, navigatorTab: 'first' });
+  projects.saveView({
+    navigatorWidth: 300,
+    navigatorTab: 'first',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   engine.execute('demo.rename', { name: 'Newest' });
-  projects.saveView({ navigatorWidth: 420, navigatorTab: 'components' });
+  projects.saveView({
+    navigatorWidth: 420,
+    navigatorTab: 'components',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   expect(blocked.requests).toHaveLength(1);
   blocked.release();
   expect((await projects.flush()).ok).toBe(true);
@@ -66,7 +76,12 @@ test('one write at a time; newer document and view are written immediately after
   ]);
   expect(blocked.max()).toBe(1);
   expect(store.files.get(path)!.doc).toEqual(engine.snapshot().doc);
-  expect(store.files.get(path)!.view).toEqual({ navigatorWidth: 420, navigatorTab: 'components' });
+  expect(store.files.get(path)!.view).toEqual({
+    navigatorWidth: 420,
+    navigatorTab: 'components',
+    contextWidth: 340,
+    contextOpen: true,
+  });
 });
 test('stale base_rev reports an error, retains the journal and retries on the next command', async () => {
   const requests: SaveReq[] = [];
@@ -112,33 +127,98 @@ test('journal entries survive a failed write in their original order', async () 
 });
 test('view-only changes save without a document write or rev change', async () => {
   const { engine, projects, memory, store, path } = await projectSetup();
-  const view = { navigatorWidth: 320, navigatorTab: 'components' };
+  const view = {
+    navigatorWidth: 320,
+    navigatorTab: 'components',
+    contextWidth: 340,
+    contextOpen: true,
+  };
   projects.saveView(view);
   view.navigatorWidth = 999;
   expect((await projects.flush()).ok).toBe(true);
   expect(memory.documentWrites).toBe(0);
   expect(memory.viewWrites).toBe(1);
   expect(engine.snapshot().rev).toBe(0);
-  expect(store.files.get(path)!.view).toEqual({ navigatorWidth: 320, navigatorTab: 'components' });
+  expect(store.files.get(path)!.view).toEqual({
+    navigatorWidth: 320,
+    navigatorTab: 'components',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   expect(store.files.get(path)!.journal).toEqual([]);
 });
 test('a failed view write stays dirty and can be retried', async () => {
   const { projects, memory, store, path } = await projectSetup();
-  projects.saveView({ navigatorWidth: 320, navigatorTab: 'components' });
+  projects.saveView({
+    navigatorWidth: 320,
+    navigatorTab: 'components',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   memory.failNext('disk_full');
   expect((await projects.flush()).ok).toBe(false);
   expect(store.files.get(path)!.view).toBeNull();
   expect((await projects.flush()).ok).toBe(true);
-  expect(store.files.get(path)!.view).toEqual({ navigatorWidth: 320, navigatorTab: 'components' });
+  expect(store.files.get(path)!.view).toEqual({
+    navigatorWidth: 320,
+    navigatorTab: 'components',
+    contextWidth: 340,
+    contextOpen: true,
+  });
+});
+
+test('context-only changes persist without touching the document revision or journal', async () => {
+  const { engine, projects, memory, store, path } = await projectSetup();
+  projects.saveView({
+    navigatorWidth: 300,
+    navigatorTab: 'components',
+    contextWidth: 340,
+    contextOpen: true,
+  });
+  expect((await projects.flush()).ok).toBe(true);
+  projects.saveView({
+    navigatorWidth: 300,
+    navigatorTab: 'components',
+    contextWidth: 460,
+    contextOpen: true,
+  });
+  expect((await projects.flush()).ok).toBe(true);
+  projects.saveView({
+    navigatorWidth: 300,
+    navigatorTab: 'components',
+    contextWidth: 460,
+    contextOpen: false,
+  });
+  expect((await projects.flush()).ok).toBe(true);
+  expect(store.files.get(path)!.view).toEqual({
+    navigatorWidth: 300,
+    navigatorTab: 'components',
+    contextWidth: 460,
+    contextOpen: false,
+  });
+  expect(memory.viewWrites).toBe(3);
+  expect(memory.documentWrites).toBe(0);
+  expect(engine.snapshot().rev).toBe(0);
+  expect(store.files.get(path)!.journal).toEqual([]);
 });
 test('close flushes document and view before unloading', async () => {
   const { engine, host, projects, store, path } = await projectSetup();
   engine.execute('demo.rename', { name: 'Last' });
-  projects.saveView({ navigatorWidth: 300, navigatorTab: 'log' });
+  projects.saveView({
+    navigatorWidth: 300,
+    navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   expect(await projects.close()).toEqual({ ok: true, value: undefined });
   expect(host.current()).toBeNull();
   expect(store.files.get(path)!.doc).toMatchObject({ name: 'Last', rev: 1 });
-  expect(store.files.get(path)!.view).toEqual({ navigatorWidth: 300, navigatorTab: 'log' });
+  expect(store.files.get(path)!.view).toEqual({
+    navigatorWidth: 300,
+    navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
+  });
 });
 test('close during in-flight save waits and reports read_only without unloading', async () => {
   let blocked!: ReturnType<typeof blockFirstSave>;

@@ -193,7 +193,7 @@ Uue mooduli mall ja moodulite kirjeldused on failis [05-moodulid.md](05-moodulid
 | **SessionStore** | frontend | valik, hover, aktiivne tööriist, **eelvaade** (lohistamine, suurus, pööre, pooleli rada, raamvalik), mõõtmise mustandid jala kaupa, piiksu ankur | ei | ei |
 | **ViewStore** | frontend | suum ja nihe (eraldi plaadi- ja skeemivaatele), kihid, foto nähtavus, kontrast, aktiivne vahekaart, paneelid | ei | `view` tabel (`ProjectService.saveView`) |
 
-**Hetktõmmis.** Frontend loeb dokumenti ainult hetktõmmisest `Snapshot { sessionId, rev, doc, derived }`, mille mootor avaldab pärast iga dokumenti muutvat käsku.
+**Hetktõmmis.** Frontend loeb dokumenti ainult hetktõmmisest `Snapshot { sessionId, rev, doc, derived, history }`, mille mootor avaldab pärast iga dokumenti muutvat käsku.
 - Samas lõimes on see sama viide, mis mootoris; koopiaid ega paiku ei saadeta.
 - Kaitse on kahekordne: tüüp on sügavalt kirjutuskaitstud (`DeepReadonly`, mitte ainult pealmine `Readonly`) ja objektid on käitusajal külmutatud (Immeri automaatne külmutamine kogu sügavuses).
 - React tellib hetktõmmist `useSyncExternalStore` kaudu ning viide muutub ainult käsu järel.
@@ -217,6 +217,8 @@ Uue mooduli mall ja moodulite kirjeldused on failis [05-moodulid.md](05-moodulid
 
 ## 6. Käsud, tagasivõtmine ja logi
 
+**Täpsustus 2026-11-08:** ajaloo saadavuse omanik on mootor. Iga hetktõmmise `history` annab `canUndo` ja `canRedo` pärast käsku, undo/redo-d, laadimist ja mahalaadimist. UI loeb seda otse hetktõmmisest ega pea teist ajalooloendurit. Laadimisel ja mahalaadimisel on mõlemad `false`. Tühi käsk ei avalda uut hetktõmmist ega muuda ajaloo olekut.
+
 ```ts
 export interface CommandSpec<P> {
   id: `${string}.${string}`;          // 'components.add'
@@ -235,6 +237,14 @@ export interface DocumentEngine {     // @pcbk/contracts, sünkroonne
   snapshot(): Snapshot;
   subscribe(fn: (s: Snapshot) => void): Unsubscribe;
   events(fn: (e: DomainEvent) => void): Unsubscribe;
+}
+
+export interface Snapshot {
+  readonly sessionId: string;
+  readonly rev: number;
+  readonly doc: DeepReadonly<BoardDoc>;
+  readonly derived: DeepReadonly<Derived>;
+  readonly history: DeepReadonly<{ canUndo: boolean; canRedo: boolean }>;
 }
 ```
 

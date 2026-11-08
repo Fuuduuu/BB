@@ -8,6 +8,7 @@ export function CloseDialog({
   open,
   reason,
   busy = false,
+  copyAvailable = true,
   onCancel,
   onDiscard,
   onRetrySave,
@@ -20,12 +21,21 @@ export function CloseDialog({
   onDiscard(): void;
 }) {
   return (
-    <Dialog open={open} title={et.save.closeTitle(et.reason[reason])} onClose={onCancel}>
+    <Dialog
+      open={open}
+      title={et.save.closeTitle(et.reason[reason])}
+      onClose={onCancel}
+      closeDisabled={busy}
+    >
       <div className="pcbk-close-actions" aria-busy={busy}>
         <Button variant="primary" disabled={busy} onClick={onRetrySave}>
           {et.common.retry}
         </Button>
-        <Button disabled={busy} onClick={onSaveElsewhere}>
+        <Button
+          disabled={busy || !copyAvailable}
+          onClick={onSaveElsewhere}
+          title={copyAvailable ? undefined : et.project.copyUnavailable}
+        >
           {et.common.saveElsewhere}
         </Button>
         <div className="pcbk-discard">

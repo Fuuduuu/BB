@@ -53,9 +53,13 @@ test('Escape cancels the close request without discarding changes; busy actions 
     onDiscard: vi.fn(),
     onCancel: vi.fn(),
   };
-  render(<CloseDialog open reason="disk_full" busy {...actions} />);
+  const { rerender } = render(<CloseDialog open reason="disk_full" {...actions} />);
   fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }));
   expect(actions.onCancel).toHaveBeenCalledOnce();
+  actions.onCancel.mockClear();
+  rerender(<CloseDialog open reason="disk_full" busy {...actions} />);
+  fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }));
+  expect(actions.onCancel).not.toHaveBeenCalled();
   for (const name of [et.common.retry, et.common.saveElsewhere, et.save.discard]) {
     const button = screen.getByRole('button', { name }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);

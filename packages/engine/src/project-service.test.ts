@@ -144,7 +144,12 @@ test('old timers and statuses do not affect a reopened session', async () => {
 test('copy rescues unsaved data after a storage failure without changing the original file', async () => {
   const { engine, projects, memory, store, path } = await projectSetup();
   engine.execute('demo.rename', { name: 'Rescued' });
-  projects.saveView({ navigatorWidth: 340, navigatorTab: 'log' });
+  projects.saveView({
+    navigatorWidth: 340,
+    navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   memory.failNext('disk_full');
   expect((await projects.flush()).ok).toBe(false);
   const originalId = store.files.get(path)!.projectId;
@@ -156,6 +161,8 @@ test('copy rescues unsaved data after a storage failure without changing the ori
   expect(store.files.get('Rescue.pcbk')!.view).toEqual({
     navigatorWidth: 340,
     navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
   });
   expect(store.files.get('Rescue.pcbk')!.journal).toHaveLength(1);
   expect(store.files.get(path)!.doc).toMatchObject({ name: 'Board', rev: 0 });
@@ -180,7 +187,12 @@ test('commands during copy are retained and saved into the new file', async () =
   const copying = projects.copy({ dest: 'New.pcbk', identity: 'new' });
   await started.promise;
   engine.execute('demo.rename', { name: 'Later' });
-  projects.saveView({ navigatorWidth: 380, navigatorTab: 'components' });
+  projects.saveView({
+    navigatorWidth: 380,
+    navigatorTab: 'components',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   release.resolve();
   expect((await copying).ok).toBe(true);
   expect(engine.snapshot().doc.name).toBe('Later');
@@ -189,6 +201,8 @@ test('commands during copy are retained and saved into the new file', async () =
   expect(store.files.get('New.pcbk')!.view).toEqual({
     navigatorWidth: 380,
     navigatorTab: 'components',
+    contextWidth: 340,
+    contextOpen: true,
   });
   expect(store.files.get('New.pcbk')!.journal).toHaveLength(2);
   expect(store.files.get('New.pcbk')!.projectId).not.toBe(store.files.get(path)!.projectId);

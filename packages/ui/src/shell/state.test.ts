@@ -51,28 +51,60 @@ describe('view state', () => {
 
   test('restores only the persisted contract fields and returns a detached view', () => {
     useViewStore.getState().setTheme('dark');
-    useViewStore.getState().setContextOpen(false);
-    useViewStore.getState().restore({ navigatorWidth: 360, navigatorTab: 'log' });
+    useViewStore.getState().restore({
+      navigatorWidth: 360,
+      navigatorTab: 'log',
+      contextWidth: 390,
+      contextOpen: false,
+    });
     const view = useViewStore.getState().getView();
-    expect(view).toEqual({ navigatorWidth: 360, navigatorTab: 'log' });
-    expect(useViewStore.getState()).toMatchObject({ theme: 'dark', contextOpen: false });
+    expect(view).toEqual({
+      navigatorWidth: 360,
+      navigatorTab: 'log',
+      contextWidth: 390,
+      contextOpen: false,
+    });
+    expect(useViewStore.getState()).toMatchObject({
+      theme: 'dark',
+      contextWidth: 390,
+      contextOpen: false,
+    });
     view.navigatorWidth = 250;
+    view.contextWidth = 280;
     expect(useViewStore.getState().navigatorWidth).toBe(360);
+    expect(useViewStore.getState().contextWidth).toBe(390);
     useViewStore.getState().restore(null);
     expect(useViewStore.getState().getView()).toEqual({
       navigatorWidth: 300,
       navigatorTab: 'components',
+      contextWidth: 340,
+      contextOpen: true,
     });
+    expect(useViewStore.getState().theme).toBe('dark');
   });
 
   test('invalid or extreme persisted widths cannot break the layout', () => {
-    useViewStore.getState().restore({ navigatorWidth: Number.NaN, navigatorTab: '' });
+    useViewStore.getState().restore({
+      navigatorWidth: Number.NaN,
+      navigatorTab: '',
+      contextWidth: Number.POSITIVE_INFINITY,
+      contextOpen: true,
+    });
     expect(useViewStore.getState().getView()).toEqual({
       navigatorWidth: 300,
       navigatorTab: 'components',
+      contextWidth: 340,
+      contextOpen: true,
     });
-    useViewStore.getState().restore({ navigatorWidth: -100, navigatorTab: 'components' });
+    useViewStore.getState().restore({
+      navigatorWidth: -100,
+      navigatorTab: 'components',
+      contextWidth: 1000,
+      contextOpen: false,
+    });
     expect(useViewStore.getState().navigatorWidth).toBe(240);
+    expect(useViewStore.getState().contextWidth).toBe(460);
+    expect(useViewStore.getState().contextOpen).toBe(false);
     useViewStore.getState().setContextWidth(Number.POSITIVE_INFINITY);
     expect(useViewStore.getState().contextWidth).toBe(340);
   });

@@ -1,0 +1,180 @@
+.pcbk-start {
+  min-height: 100%;
+  padding: 64px 32px 48px;
+  overflow: auto;
+  background: radial-gradient(ellipse at 50% 0, var(--accent-soft), transparent 65%), var(--bg);
+}
+.pcbk-start__content {
+  max-width: 940px;
+  margin: 0 auto;
+}
+.pcbk-start__intro {
+  max-width: 600px;
+  margin: 0 auto 64px;
+  text-align: center;
+}
+.pcbk-start__brand-mark {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.pcbk-start__brand-mark span {
+  width: 12px;
+  height: 12px;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+}
+.pcbk-start__brand-mark span + span {
+  margin-left: 18px;
+  position: relative;
+}
+.pcbk-start__brand-mark span + span::before {
+  position: absolute;
+  content: '';
+  top: 2px;
+  right: 9px;
+  width: 20px;
+  height: 2px;
+  background: var(--accent);
+}
+.pcbk-start h1 {
+  margin: 0 0 14px;
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 600;
+  letter-spacing: -1.2px;
+}
+.pcbk-start h1 span {
+  color: var(--accent);
+}
+.pcbk-start__intro > p {
+  color: var(--ink-2);
+  max-width: 460px;
+  margin: 0 auto;
+}
+.pcbk-start__actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 28px 0 18px;
+}
+.pcbk-start__actions .bb-button {
+  min-height: 40px;
+  padding-inline: 20px;
+}
+.pcbk-start__intro > .pcbk-start__storage {
+  font-size: 12px;
+  max-width: 390px;
+}
+.pcbk-start__recent h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+.pcbk-start__empty {
+  margin: 0;
+  padding: 28px;
+  border: 1px dashed var(--line-2);
+  border-radius: 10px;
+  color: var(--ink-2);
+  text-align: center;
+}
+.pcbk-project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 16px;
+}
+.pcbk-project-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.pcbk-project-card__open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding: 18px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.pcbk-project-card__open:hover:not(:disabled) {
+  background: var(--well);
+}
+.pcbk-project-card__open:focus-visible {
+  outline-offset: -3px;
+}
+.pcbk-project-card__open strong,
+.pcbk-project-card__open span {
+  overflow-wrap: anywhere;
+}
+.pcbk-project-card__open strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+.pcbk-project-card__open span,
+.pcbk-project-card__open time {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.pcbk-project-card__open:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.pcbk-project-card__open .pcbk-project-card__missing {
+  color: var(--danger);
+}
+.pcbk-project-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 0 8px 8px;
+}
+.pcbk-project-card__actions .bb-button {
+  font-size: 11px;
+  padding-inline: 8px;
+}
+.pcbk-open-list {
+  display: grid;
+  gap: 8px;
+}
+.pcbk-open-list > .pcbk-project-card__open {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.pcbk-open-list__hint {
+  margin: 0 0 18px;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.pcbk-new-board {
+  display: grid;
+  gap: 18px;
+}
+.pcbk-new-board__actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.pcbk-new-board__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+@media (max-width: 560px) {
+  .pcbk-start {
+    padding: 36px 18px;
+  }
+  .pcbk-start__intro {
+    margin-bottom: 40px;
+  }
+}

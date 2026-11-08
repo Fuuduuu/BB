@@ -8,7 +8,12 @@ export type SaveStatus =
   | { state: 'saving' }
   | { state: 'error'; reason: StorageReason };
 
-export type ViewState = { navigatorWidth: number; navigatorTab: string };
+export type ViewState = {
+  navigatorWidth: number;
+  navigatorTab: string;
+  contextWidth: number;
+  contextOpen: boolean;
+};
 
 export type ProjectInfo = {
   projectId: string;

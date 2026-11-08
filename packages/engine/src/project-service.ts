@@ -1,6 +1,6 @@
 import { BoardDocSchema, CURRENT_FORMAT_VERSION, migrateDoc, newBoardDoc } from '@pcbk/domain';
 import type { BoardDoc } from '@pcbk/domain';
-import { err, ok } from '@pcbk/contracts';
+import { err, ok, parseViewState } from '@pcbk/contracts';
 import type {
   DocumentEngine,
   EngineError,
@@ -28,7 +28,6 @@ const createSchema = z.strictObject({
 const openSchema = z.strictObject({ path: z.string().min(1) });
 const copySchema = z.strictObject({ dest: z.string().min(1), identity: z.enum(['same', 'new']) });
 const restoreSchema = z.strictObject({ backup: z.string().min(1), dest: z.string().min(1) });
-const viewSchema = z.strictObject({ navigatorWidth: z.number(), navigatorTab: z.string() });
 type Context = { opened: OpenedProject; sessionId: string; saver: SaveCoordinator };
 
 export function createProjectService(opts: {
@@ -159,7 +158,7 @@ export function createProjectService(opts: {
     const raw = migrateDoc(opened.doc, version);
     try {
       const doc = validateDocument(BoardDocSchema.parse(raw));
-      if (opened.view !== null) opened.view = viewSchema.parse(opened.view);
+      opened.view = parseViewState(opened.view);
       return { doc, baseRev: header.data.rev, migrated };
     } catch {
       throw new StorageError('not_project');
@@ -237,8 +236,8 @@ export function createProjectService(opts: {
       }, true);
     },
     saveView(view) {
-      const parsed = viewSchema.safeParse(view);
-      if (parsed.success) active?.saver.saveView(parsed.data);
+      const parsed = parseViewState(view);
+      if (parsed) active?.saver.saveView(parsed);
     },
     status(listener) {
       listeners.add(listener);

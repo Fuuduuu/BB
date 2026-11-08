@@ -12,6 +12,7 @@ import { bindHistoryKeys } from './keymap';
 import { useSessionStore } from './session-store';
 import type { Selection } from './session-store';
 import { useViewStore } from './view-store';
+import { useTheme } from './use-theme';
 import { et } from './i18n/et';
 
 const emptyRegistry = new UiRegistry();
@@ -29,9 +30,8 @@ const isWide = () => window.matchMedia?.(wideQuery).matches ?? true;
 
 export interface AppShellProps extends SaveRecoveryActions, RootRecoveryActions {
   registry?: UiRegistry;
-  canUndo: boolean;
-  canRedo: boolean;
   canvas?: ReactNode;
+  manageTheme?: boolean;
 }
 export function AppShell(props: AppShellProps) {
   return (
@@ -116,9 +116,14 @@ function ExtraSlots({ registry, slot }: { registry: UiRegistry; slot: 'topBar' |
 }
 function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps) {
   const engine = useEngine();
-  const { sessionId, name } = useSnapshot((s) => ({ sessionId: s.sessionId, name: s.doc.name }));
+  const { sessionId, name, history } = useSnapshot((s) => ({
+    sessionId: s.sessionId,
+    name: s.doc.name,
+    history: s.history,
+  }));
   const status = useSaveStatus();
   const view = useViewStore();
+  useTheme(props.manageTheme !== false);
   const selection = useSelection(sessionId);
   const wide = useSyncExternalStore(subscribeWidth, isWide, () => true);
   useEffect(() => {
@@ -128,25 +133,14 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
     () =>
       bindHistoryKeys(window, {
         undo: () => {
-          if (props.canUndo) engine.undo();
+          if (history.canUndo) engine.undo();
         },
         redo: () => {
-          if (props.canRedo) engine.redo();
+          if (history.canRedo) engine.redo();
         },
       }),
-    [engine, props.canUndo, props.canRedo],
+    [engine, history.canUndo, history.canRedo],
   );
-  useEffect(() => {
-    const previous = document.documentElement.getAttribute('data-theme');
-    document.documentElement.dataset.theme = view.theme;
-    return () => {
-      if (previous === null) document.documentElement.removeAttribute('data-theme');
-      else document.documentElement.dataset.theme = previous;
-    };
-  }, [view.theme]);
-  useEffect(() => {
-    if (!wide) useViewStore.getState().setContextOpen(false);
-  }, [wide, sessionId]);
   useEffect(() => {
     if (!wide && selection.kind !== 'none') useViewStore.getState().setContextOpen(true);
   }, [wide, selection]);
@@ -159,8 +153,8 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
       <TopBar
         name={name}
         status={status}
-        canUndo={props.canUndo}
-        canRedo={props.canRedo}
+        canUndo={history.canUndo}
+        canRedo={history.canRedo}
         onUndo={() => engine.undo()}
         onRedo={() => engine.redo()}
       >

@@ -125,7 +125,12 @@ test.each(['close', 'open'] as const)(
     seed(store, path, newBoardDoc('Readonly'), 1, true);
     seed(store, 'Other.pcbk', newBoardDoc('Other'));
     expect((await projects.open({ path })).ok).toBe(true);
-    projects.saveView({ navigatorWidth: 480, navigatorTab: 'log' });
+    projects.saveView({
+      navigatorWidth: 480,
+      navigatorTab: 'log',
+      contextWidth: 340,
+      contextOpen: true,
+    });
     const result =
       operation === 'close' ? await projects.close() : await projects.open({ path: 'Other.pcbk' });
     expect(result.ok).toBe(true);
@@ -138,7 +143,12 @@ test('an ephemeral read-only view is kept in a new writable rescue copy', async 
   const { engine, projects, store, path } = await projectSetup({ create: false });
   seed(store, path, newBoardDoc('Readonly'), 1, true);
   await projects.open({ path });
-  projects.saveView({ navigatorWidth: 480, navigatorTab: 'log' });
+  projects.saveView({
+    navigatorWidth: 480,
+    navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   expect(await projects.copy({ dest: 'Writable.pcbk', identity: 'same' })).toMatchObject({
     ok: true,
     value: { readOnly: false, path: 'Writable.pcbk' },
@@ -146,6 +156,8 @@ test('an ephemeral read-only view is kept in a new writable rescue copy', async 
   expect(store.files.get('Writable.pcbk')!.view).toEqual({
     navigatorWidth: 480,
     navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
   });
   expect(engine.execute('demo.rename', { name: 'Editable' }).ok).toBe(true);
   expect((await projects.flush()).ok).toBe(true);

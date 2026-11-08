@@ -1,4 +1,5 @@
 import { newBoardDoc } from '@pcbk/domain';
+import type { ViewState } from '@pcbk/contracts';
 import * as api from '@pcbk/engine';
 import { expect, test } from 'vitest';
 import * as storage from './storage-memory';
@@ -8,6 +9,35 @@ function setup() {
   const store = storage.createMemoryStore();
   return { store, repo: storage.createMemoryRepository(store) };
 }
+
+test('memory view writes normalize legacy fields and exclude theme without changing document data', async () => {
+  const { store, repo } = setup();
+  const opened = await repo.create({
+    projectId: 'project_a',
+    name: 'Board',
+    doc: newBoardDoc('Board'),
+  });
+  const before = structuredClone(store.files.get(opened.path)!);
+  await repo.saveView(opened.session, {
+    navigatorWidth: 420,
+    navigatorTab: 'log',
+    theme: 'dark',
+    future: 7,
+  } as unknown as ViewState);
+  const expected = {
+    ...before,
+    view: { navigatorWidth: 420, navigatorTab: 'log', contextWidth: 340, contextOpen: true },
+  };
+  expect(store.files.get(opened.path)).toEqual(expected);
+  await expect(
+    repo.saveView(opened.session, { navigatorWidth: 0 } as ViewState),
+  ).rejects.toMatchObject({
+    reason: 'unknown',
+  });
+  expect(store.files.get(opened.path)).toEqual(expected);
+  expect(repo.documentWrites).toBe(0);
+  expect(repo.viewWrites).toBe(1);
+});
 test('memory repository shares data and exclusive locks between instances', async () => {
   const { store, repo } = setup();
   const doc = newBoardDoc('Board');

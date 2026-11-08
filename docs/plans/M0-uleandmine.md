@@ -546,3 +546,77 @@ Brauserikatse kasutas eraldatud arenduse eelvaadet ja lepingupõhiseid testandme
 Lõuend on plaani kohaselt tühi paneel. Komponentide päris vormid, projektiekraanid ja veebisalvestus kuuluvad ülesandesse 9; jalgu, mõõtmisi ega skeemi ei joonistata. Jalamarkerite visuaalset vastavust ei väideta enne vastava lõuenditöö teostust. Taaste-/failidialoogide tegelikud toimingud ühendab rakenduse koostekoht; siin on kontrollitud callback'ide käivitamine.
 
 **Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 8, lisaks eeltoodud ühenduskohtade täpsustus enne ülesannet 9. Commit, push ja `main`-i ühendamine vajavad kasutaja luba. Kuus stardifaili jäävad eraldi tööks.
+
+## Ülesanne 9 · veebisalvestus ja esimese komponendi töövoog
+
+**Seis:** valmis arhitekti ülevaatuseks, commit'imata. Alus ja HEAD on `82ef22e`, haru `m0`. Kasutaja kinnitas ülesande 8 commit'i/push'i ja lubas ülesandega 9 jätkata Gemini ülevaatust ootamata. Ülesannet 10 ei alustatud; `main` jäi muutmata.
+
+### Teostatud ja muudetud kohad
+
+- `packages/adapters/src/storage-web.ts` ja kaks testifaili: `idb-keyval`-il põhinev `ProjectRepository`. Projekt on üks `project:web://<projectId>` kirje (`meta`, `doc`, `rev`, `view`, `journal`). Loomine, CAS-salvestus ja vaate muutmine kasutavad atomaarset `update()` tehingut; dokumendi ja päeviku kirjutus õnnestuvad koos. Veakoodid vastavad olemasolevale pordile.
+- `recents()`/`removeRecent()` kasutavad `localStorage`-i indeksit (kuni 20 kaarti). Indeksi tõrge ei muuda õnnestunud projekti salvestust ebaõnnestunuks. Eraldi `listProjects()` loeb **kõiki** sobivaid IDB projektikirjeid, et vanemad või viimaste indeksita projektid jääksid avatavaks. Vigaseid kirjeid ei kustutata. Veebikirje valikuline `meta.updated_at` säilitab tegeliku dokumendi muutmisaja; avamine ja vaate muutmine seda ei uuenda.
+- `packages/ui/src/shell/{StartScreen,NewBoardDialog}.tsx`, stiilid ja testid: avaleht, viimaste projektide kaardid, brauserisse salvestatud projektide avamisloend, kohe kasutatav uue plaadi vorm. Vaikimisi nimi kasutab kohalikku kuupäeva; tühja nimega saab alustada. Fotoala/näidisprojekt ei kuulu M0-sse.
+- `packages/features/components/ui/`: `createComponentsUi(ids)`, komponentide loend ja lisamine, omadused, jalgade nimed, NC, jala lisamine/eemaldamine. Tähis, tüüp, märgistus, väärtus, märkused, tuvastatud/DNP on muudetavad. Tekstimustand kinnitub blur/Enteriga ühe käsuna; `Esc` katkestab. Uue komponendi väärtus ja märgistus on päriselt tühjad, teegi vihje on ainult placeholder. Kõik uued tekstid on `et.ts`-is.
+- `packages/features/project/ui/index.tsx`: projekti UI moodul, sh salvestust ootav avalehele naasmine. `apps/web/src/{engine,ui}.features.ts` loetlevad moodulid; `runtime.ts` on ainus mootori, adapteri ja UI kokku panemise koht. M1+ väljad on registris reserveeritud.
+- `apps/web/`: päris Reacti rakendus, käivitamine/ehitamine ja kuus Playwrighti vastuvõtukatset. `EngineProvider` annab UI-le olemasolevad lepingud. Navigaatori laius/vahekaart salvestuvad `ProjectService.saveView` kaudu, avamisel taastub `ProjectInfo.view`.
+- Toetuse puudumisel on koopia/taastamise nupud keelatud ja selgitusega. `Dialog.closeDisabled` väldib katkestamist ajal, kui pooleliolevat kirjutust ei saa tühistada. Ühine `useTheme()` hoiab teema ka avalehel; eraldi kasutatav `AppShell` haldab teemat vaikimisi ise.
+- Manifestid/ekspordid, lukufail, Playwrighti veebiserveri seadistus ja Vitesti rakendustestide kaasamine. Vitesti korraga töötavate protsesside piir on nüüd 4: varasem 37 faili korraga käivitamine põhjustas ühe olemasoleva TypeScripti alamprotsessitesti ajalimiidi. Kontrolli sisu ega ajalimiiti ei nõrgendatud.
+
+### Tegelikud kontrollid
+
+| Kontroll | Tulemus |
+|---|---|
+| Kolm plaani e2e-testi enne rakenduse teostust | **3/3 kogutud testi kukkus** tühjal serveeritud lehel puuduva „Uus plaat“ tegevuse tõttu; mitte puuduva testimooduli impordi tõttu. |
+| Üksuste TDD | Adapter 18 RED → 21 GREEN; kõigi projektide loend 3 RED → GREEN, ajatemplid veel 3 RED → GREEN; adapter kokku **26/26**. Projektiekraanid 10 RED → GREEN, lisaregressioonidega **12/12**. Komponendid 7 RED → **12/12 GREEN**. Ajalooümbris **3 RED → 3 GREEN** päris mootoriga. |
+| `pnpm.cmd check`, 2026-11-08 22:42 | **373/373 testi 38 failis**; mõlemad TS kontrollid, ESLint, sõltuvusreeglid ja failipikkus läbisid. 156 moodulit, 501 seost, 0 rikkumist. Backend-testid jäävad Node'i; UI-testid valivad jsdom'i. |
+| `pnpm.cmd e2e`, sama lõppkontroll | **6/6 Chromiumis**. Põhijada R1 → R7 → undo → R1 → redo → R7 → reload → avalehelt taasavamine; uue komponendi tühjad väljad; navigaatori laius säilib otse reload'i järel; salvestustõrke järel ühekordne teadlik loobumine; projektide leidmine puuduva viimaste indeksiga; tume teema säilib avalehele naastes. Laiusekatse lisakinnitus: undo jääb keelatuks ka enne reload'i (**eraldi kordus 1/1**). |
+| `pnpm.cmd --filter @pcbk/web build` | Läbis; Vite 8 tootmisjärgu ehitis sisaldab kohalikke fonte. |
+| Sõltumatud ülevaatused | Salvestuse/ühenduse ja UX-i eraldi lugemised. Ülevaataja kordas 21 projekti leidmisvea päris Chromiumis. Pärast kolme parandust integratsiooni kordusülevaatus puhas, **43/43 sihitud testi**. Viimane teema paranduse e2e-tõend on ehitaja oma. |
+| Vormindus ja lukufail | `pnpm.cmd format:check`, `pnpm.cmd install --frozen-lockfile --offline` ja `git diff --check` läbisid. |
+| BB dokumendikontroll ja tööpuu | Tööpuus **26** ning põhikaustas **25** faili: probleeme pole. Ülesande ulatus **48 faili**, HEAD `82ef22e`, commit'iks lisatud sisu pole; kuus stardifaili on eraldi töö. |
+| Päris väljalaske ehitise vaatlus | Avaleht, loomine, lisamine, nimetamine, undo/redo, märgistus/väärtus, taasavamine, hele/tume ning 1100 × 700 ülekate. Horisontaalset ülevoolu ega väliseid ressursipäringuid ei olnud; brauseri konsoolis **0 viga, 0 hoiatust**. Kasutati ainult eraldi sünteetilist projekti. |
+
+### Leitud vead ja parandused
+
+1. Viimaste 20 projekti kasutamine ka avamisloendina muutis vanema salvestatud projekti kasutajale kättesaamatuks. Täielik IDB loend on nüüd sellest eraldi; ka `localStorage`-i indeksi kadumine ei peida projekti. Adapteri ja UI regressioonid olid enne parandust punased; ühendust kontrollib e2e.
+2. „Sulge salvestamata“ jättis brauseri lahkumishoiatuse aktiivseks ja küsis teist kinnitust. Päris sünteetilise kvooditõrkega e2e näitas **RED (1 lisakinnitus) → GREEN (0)**; teadlik loobumine kasutab eraldi lippu. Salvestatud vana dokument jääb muutmata ja uus komponent kaob ainult kasutaja valitud loobumisel.
+3. Poolelioleva loomise sai dialoogist katkestada, kuid hilisem vastus avas projekti ikkagi. Katkestamine on mittekatkestatava kirjutuse ajal keelatud; vea korral saab uuesti proovida. Kogutud regressioon kukkus enne parandust ja läbib nüüd.
+4. Avalehele naasmine eemaldas tumeda teema, kuigi eelistus oli UI mälus alles. Teema rakendatakse nüüd UI juures, mitte üksnes töölauda kuvavas komponendis. E2e **RED → GREEN**. See ei lisa eelistuse kettale salvestamist.
+5. Väärtuse väli kasutab monofonti, loendi numbrid vähemalt 10,5 px ning abitekstid kontrastsemat `--ink-2` värvi vastavalt 06 nõuetele.
+6. Viimaste kaardi kuupäev muutus avamisajaks ka siis, kui dokument ei muutunud. Kaart kasutab nüüd sama püsivat muutmisaega nagu avamisloend. Täiendatud ajatesti **RED → GREEN**, adapteri lõppkordus **26/26** ja uus tootmisjärgu ehitus läbisid kell 22:46.
+
+### Teostusvalikud, lepingupiir ja järgmine samm
+
+- **Ajaloo saadavus:** avalikku `DocumentEngine`-i ei muudetud. `apps/web/src/history-availability.ts` on koostekoha delegeeriv ümbris: loendab ainult õnnestunud revisjoni kasvatavaid käske, undo/redo tulemusi ning arvestab `HISTORY_LIMIT`-iga. No-op ja vigane käsk säilitavad redo; uus seanss nullib loendurid. Kõik UI tarbijad ja projektiteenus saavad sama ümbrise, toormootor jääb koostekohta. Mootori sünkroonse snapshot'i järel avaldatakse saadavuse muutus eraldi, et nupud ei jääks sammu maha. M0-s on see testitud ühenduslahendus; käsugruppide või ajaloo poliitika muutmisel tuleb see asendada või arhitektiga lepingut täpsustada.
+- **Vaate püsivus:** salvestatakse täpselt lepingu `navigatorWidth` ja `navigatorTab`. Konteksti laius/avatus ja teema püsivad selle äpiseansi UI mälus. Laiem 06 püsimisnõue vajab hilisemas plaanis omaniku/lepingu täpsustust; uut peidetud salvestusteed pole.
+- **Veebi piir:** CAS väldib vana revisjoni ülekirjutamist, kuid pole eksklusiivne akendevaheline faililukk. Koopia, varukoopiad ja taastamine on adapteris toetamata (`unknown`) ning UI selgitab seda. Need on töölaua järgnevate ülesannete töö. Brauseri salvestus ei ole `.pcbk` fail kettal.
+- **Sulgemine:** `ProjectService.close()` säilib muutmata ja tõrke korral ei minda avalehele. Veebis tähendab kasutaja „Sulge salvestamata“ kogu lehe taaslaadimist, mis lõpetab teenuse ja mäluseansi koos; eraldi `host.unload()`-i UI ei kutsu. Diagnostika allalaadimine annab praegu versiooni, aja ja revisjoni tehnilise kokkuvõtte, mitte töölaua tulevast vealogi.
+- **UI piir:** lisamisdialoogi jalgade arv on 0–256 (täisarv), augu puhul 0; see on vormi praktiline piir, mitte domeeni uus invariant. Jalgu saab lisada käsitsi. Foto ja jalamarkerid/lõuenditööriistad tulevad M1-s, skeem M2-s.
+- Sõltuvused on `idb-keyval` **6.3.0** ja testides `fake-indexeddb` **6.2.7**. Esmalt leitud 6.2.8 oli samal päeval avaldatud ja käivitas paigaldaja vanusepiiri; kasutusele võeti varasem versioon. Ühtegi vanusepiiri erandit ega turvapoliitika leevendust repo seadistusse ei jäetud.
+- Osa B plaanitud teostus ja automatiseeritud vastuvõtt on valmis; inimese visuaalne vastuvõtt ja arhitekti otsus on veel tegemata. Kogu M0 pole valmis: Rust/Tauri osa C ja väljalase on järgmised.
+
+Käivitamine arenduses: `pnpm --filter @pcbk/web dev`; kontrollid: `pnpm check`, `pnpm e2e`; ehitus: `pnpm --filter @pcbk/web build`.
+
+**Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 9. Commit, push ja `main`-i ühendamine ootavad kasutaja luba. Kuus stardifaili jäävad sellest commit'ist välja; ülesanne 10 on alustamata.
+
+### Ülesanne 9 · arhitekti kolm parandust (2026-11-09)
+
+**Seis:** parandused teostatud, uus ülevaatus ja inimese visuaalne vastuvõtt ootel. See jaotis asendab eespool kirjeldatud ajalooümbrise ning ainult kahe vaatevälja/mälus oleva teema lahenduse. Arhitekti otsused on dokumentides märgitud nõutud kujul „täpsustus 2026-11-08“; teostus ja kontrollid toimusid 2026-11-09. HEAD on endiselt `82ef22e`; commit'i, push'i ega ülesannet 10 pole tehtud.
+
+1. **Ajaloo saadavus on mootoris.** `Snapshot.history` on sügavalt readonly/külmutatud `{ canUndo, canRedo }`. Käsk, undo/redo, laadimine ja mahalaadimine avaldavad õige oleku; tühi või tagasi lükatud käsk säilitab vana hetktõmmise ja redo. Mootor arvutab tulevase ajaloo oleku enne tõrkuda võivat ettevalmistust ning muudab ajalugu alles eduka commit'i osana. Kest loeb nupud ja klahvide saadavuse otse hetktõmmisest. `apps/web/src/history-availability.ts` ja selle test on eemaldatud; koostekohas teist loendurit enam pole.
+2. **Mõlemad paneelid ja teema püsivad.** `ViewState` sisaldab nelja välja; `DEFAULT_VIEW_STATE` on `{ navigatorWidth: 300, navigatorTab: 'components', contextWidth: 340, contextOpen: true }`. Jagatud puhas `parseViewState` täidab puuduvad väljad, tagastab vigase vaate korral `null` ja eemaldab tundmatud väljad. Projekt avaneb ka vigase vaatega. UI, projektiteenus ja salvestuskoordinaator arvestavad kõiki nelja välja, ka ainult parema paneeli muutmist. Adapteri otsene vaatekirjutus eemaldab samuti lisaväljad/teema. Taastatud avatud paneel ei sulgu kitsas aknas automaatselt; valik saab ülekatte endiselt avada. Teema loetakse/kirjutatakse ainult UI `localStorage`-i võtmega `pcbk.theme`, `try/catch`-iga; puuduv/vigane eelistus annab `'system'` ning kirjutustõrge ei takista aktiivset valikut.
+3. **Projektikaardi aeg on sekunditeta.** Kuupäev säilib ning kohalik aeg on `HH:MM`; masinloetav `datetime` jääb alles.
+
+**Dokumendid ja tüübid:** uuendatud on `contracts`, tüübitestid, `03` § 6 (ja hetktõmmise kuju § 5), ADR-003 lepingu koodiplokk/reeglid ja M0 plaani ülesanne 3. Vaikeväärtused ja leebe parser asuvad ühes kohas; `format_version` ei muutunud.
+
+| Tegelik kontroll | Tulemus |
+|---|---|
+| Ajaloo TDD ja atomaarne käitumine | **13 RED → GREEN**, lisaks sihitud ajaloo/tõrke regressioonid **48/48**. |
+| Vaate TDD | Esmalt **31/44 RED**, otseste adapterikirjutuste lisatestid **2 RED**; backend'i lõppkontroll **133/133**. Vanad kaheväljalised ja vigased vaated avanevad nõutud kujul. |
+| UI regressioonid | Teemamälu, denied-storage ja nelja välja taastamine RED → GREEN; kesta nuppude/taastatud kitsas paneeli regressioonid **2 RED → GREEN**. Sekunditeta kuupäeva test kukkus vana renderdusega ja läbib uuega. |
+| `pnpm.cmd check`, 00:08 | **463/463 testi 43 failis**; mõlemad TypeScripti kontrollid, ESLint, sõltuvused **162 moodulit / 519 seost**, failipikkus läbisid. |
+| `pnpm.cmd e2e`, lõppjooks | **8/8 Chromiumis**. Lisandusid teema püsimine täieliku reload'i järel ning parema paneeli laiuse/avatuse taastumine. Viimane kontroll loeb ka IDB-sse jõudnud nelja välja vaate. |
+| Paneeli e2e kordus | **5/5**. Ühes varasemas koondjooksus alustas test reload'i enne asünkroonse sulgemise lõppu; test ootab nüüd avalehe valmimist ja kontrollib püsivat vaadet enne taaslaadimist. Katset ei muudetud leebemaks ega lisatud fikseeritud und. |
+| Sõltumatu ülevaatus | Kolme otsuse ja nende ühenduste lugemine: uusi leide pole; **134/134 sihitud testi 10 failis**. Ülevaataja ei muutnud faile ega asendanud ehitaja e2e-kontrolli. |
+
+Arhitekti mitteblokeeriv märkus salvestatud oleku avamisaja kohta jääb töölauasalvestusega täpsustamiseks; seda käitumist siin ei muudetud. Edasi: arhitekti kordusülevaatus ja kasutaja visuaalne vastuvõtt. Käivitamine repo juurest: **`pnpm --filter @pcbk/web dev`** (PowerShelli skriptipiirangu korral `pnpm.cmd --filter @pcbk/web dev`).

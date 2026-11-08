@@ -1,6 +1,7 @@
 import { StorageError } from '@pcbk/engine';
 import type { ProjectRepository } from '@pcbk/engine';
 import type { BackupInfo, StorageReason, ViewState } from '@pcbk/contracts';
+import { parseViewState } from '@pcbk/contracts';
 import type { JournalEntry } from '@pcbk/engine';
 
 export type MemoryProject = {
@@ -102,7 +103,9 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
       documentWrites++;
     },
     async saveView(session, view) {
-      writable(session).view = clone(view);
+      const parsed = parseViewState(view);
+      if (!parsed) throw new StorageError('unknown');
+      writable(session).view = parsed;
       viewWrites++;
     },
     async copy(req) {

@@ -9,6 +9,7 @@ export type DialogProps = PropsWithChildren<{
   title: string;
   onClose: () => void;
   closeLabel?: string;
+  closeDisabled?: boolean;
   className?: string;
 }>;
 
@@ -17,6 +18,7 @@ export function Dialog({
   title,
   onClose,
   closeLabel = et.common.close,
+  closeDisabled = false,
   children,
   className = '',
 }: DialogProps) {
@@ -38,12 +40,12 @@ export function Dialog({
       aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        if (!closeDisabled) onClose();
       }}
     >
       <header className="bb-dialog__header">
         <h2 id={titleId}>{title}</h2>
-        <Button variant="ghost" onClick={onClose} aria-label={closeLabel}>
+        <Button variant="ghost" onClick={onClose} aria-label={closeLabel} disabled={closeDisabled}>
           <CloseIcon />
         </Button>
       </header>

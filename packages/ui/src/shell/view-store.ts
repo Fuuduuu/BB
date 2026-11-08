@@ -1,11 +1,12 @@
+import { DEFAULT_VIEW_STATE } from '@pcbk/contracts';
 import type { ViewState } from '@pcbk/contracts';
 import { create } from 'zustand';
+import { readStoredTheme, saveStoredTheme } from './theme-storage';
+import type { Theme } from './theme-storage';
 
-export type Theme = 'system' | 'light' | 'dark';
+export type { Theme } from './theme-storage';
 
 interface ViewStore extends ViewState {
-  contextWidth: number;
-  contextOpen: boolean;
   theme: Theme;
   setNavigatorWidth(width: number): void;
   setNavigatorTab(tab: string): void;
@@ -17,30 +18,45 @@ interface ViewStore extends ViewState {
   reset(): void;
 }
 
-const defaults = {
-  navigatorWidth: 300,
-  navigatorTab: 'components',
-  contextWidth: 340,
-  contextOpen: true,
-  theme: 'system' as Theme,
-};
-
 function clamp(width: number, min: number, max: number, fallback: number) {
   return Number.isFinite(width) ? Math.max(min, Math.min(max, width)) : fallback;
 }
 
 export const useViewStore = create<ViewStore>((set, get) => ({
-  ...defaults,
-  setNavigatorWidth: (width) => set({ navigatorWidth: clamp(width, 240, 420, 300) }),
-  setNavigatorTab: (tab) => set({ navigatorTab: tab || defaults.navigatorTab }),
-  setContextWidth: (width) => set({ contextWidth: clamp(width, 280, 460, 340) }),
+  ...DEFAULT_VIEW_STATE,
+  theme: readStoredTheme(),
+  setNavigatorWidth: (width) =>
+    set({ navigatorWidth: clamp(width, 240, 420, DEFAULT_VIEW_STATE.navigatorWidth) }),
+  setNavigatorTab: (tab) => set({ navigatorTab: tab || DEFAULT_VIEW_STATE.navigatorTab }),
+  setContextWidth: (width) =>
+    set({ contextWidth: clamp(width, 280, 460, DEFAULT_VIEW_STATE.contextWidth) }),
   setContextOpen: (contextOpen) => set({ contextOpen }),
-  setTheme: (theme) => set({ theme }),
+  setTheme: (theme) => {
+    set({ theme });
+    saveStoredTheme(theme);
+  },
   restore: (view) =>
     set({
-      navigatorWidth: clamp(view?.navigatorWidth ?? defaults.navigatorWidth, 240, 420, 300),
-      navigatorTab: view?.navigatorTab || defaults.navigatorTab,
+      navigatorWidth: clamp(
+        view?.navigatorWidth ?? DEFAULT_VIEW_STATE.navigatorWidth,
+        240,
+        420,
+        DEFAULT_VIEW_STATE.navigatorWidth,
+      ),
+      navigatorTab: view?.navigatorTab || DEFAULT_VIEW_STATE.navigatorTab,
+      contextWidth: clamp(
+        view?.contextWidth ?? DEFAULT_VIEW_STATE.contextWidth,
+        280,
+        460,
+        DEFAULT_VIEW_STATE.contextWidth,
+      ),
+      contextOpen: view?.contextOpen ?? DEFAULT_VIEW_STATE.contextOpen,
     }),
-  getView: () => ({ navigatorWidth: get().navigatorWidth, navigatorTab: get().navigatorTab }),
-  reset: () => set(defaults),
+  getView: () => ({
+    navigatorWidth: get().navigatorWidth,
+    navigatorTab: get().navigatorTab,
+    contextWidth: get().contextWidth,
+    contextOpen: get().contextOpen,
+  }),
+  reset: () => set({ ...DEFAULT_VIEW_STATE, theme: readStoredTheme() }),
 }));

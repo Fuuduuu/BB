@@ -56,7 +56,7 @@ export function createEngine(opts: {
   reserved?: DocKey[];
 }): { engine: DocumentEngine; host: EngineHost } {
   const registry = buildRegistry([...opts.modules, coreItems], opts.reserved);
-  const empty = makeSnapshot('', sealTree(newBoardDoc('')), []);
+  const empty = makeSnapshot('', sealTree(newBoardDoc('')), [], createHistory().status());
   let snapshot = empty;
   let active: Active | null = null;
   let busy = false;
@@ -92,7 +92,12 @@ export function createEngine(opts: {
         draft.rev = rev;
       }),
     );
-    const prepared = makeSnapshot(state.sessionId, doc, registry.derive);
+    const prepared = makeSnapshot(
+      state.sessionId,
+      doc,
+      registry.derive,
+      state.history.projectedStatus(kind),
+    );
     const at = z.iso.datetime().parse(opts.clock.now());
     const summary = z.string().parse(entry.summary);
     const emitted = pending.map((event) => sealTree({ ...event, sessionId: state.sessionId, rev }));
@@ -202,8 +207,9 @@ export function createEngine(opts: {
       try {
         z.string().min(1).parse(sessionId);
         const doc = sealTree(validateDocument(input));
-        const prepared = makeSnapshot(sessionId, doc, registry.derive);
-        active = { sessionId, doc, readOnly, history: createHistory(), journal: createJournal() };
+        const history = createHistory();
+        const prepared = makeSnapshot(sessionId, doc, registry.derive, history.status());
+        active = { sessionId, doc, readOnly, history, journal: createJournal() };
         snapshot = prepared;
         notify(subscribers, snapshot);
       } finally {

@@ -62,6 +62,8 @@ flowchart LR
 
 ### Leping
 
+**Täpsustus 2026-11-08:** `Snapshot.history` pärineb mootorist ning UI ei jäljenda ajaloo loendurit. `ViewState` salvestab mõlema paneeli oleku; teema on eraldi UI eelistus võtmega `pcbk.theme` ja projekti faili ei lähe.
+
 ```ts
 // Sünkroonne dokumendimootor: iga klõps ja klahv, ilma Promise'ita
 export interface DocumentEngine {
@@ -77,9 +79,17 @@ export interface DocumentEngine {
 export interface Snapshot {
   readonly sessionId: string;              // projekti avamisseanss
   readonly rev: number;
-  readonly doc: Readonly<BoardDoc>;
-  readonly derived: Readonly<Derived>;     // võrgud, hinnangud, ühenduse tasemed, valmidus
+  readonly doc: DeepReadonly<BoardDoc>;
+  readonly derived: DeepReadonly<Derived>; // võrgud, hinnangud, ühenduse tasemed, valmidus
+  readonly history: DeepReadonly<{ canUndo: boolean; canRedo: boolean }>; // täpsustus 2026-11-08
 }
+
+export type ViewState = {
+  navigatorWidth: number;  // vaikimisi 300
+  navigatorTab: string;    // vaikimisi 'components'
+  contextWidth: number;    // vaikimisi 340
+  contextOpen: boolean;    // vaikimisi true
+};
 
 // Asünkroonne projektihaldur: kõik, mis puudutab faile ja Rusti
 export interface ProjectService {
@@ -106,7 +116,8 @@ export type EngineError =
 ```
 
 Lepingu reeglid:
-- **Üks dokument, mitte kaks.** Frontend saab pärast iga käsku sama külmutatud viite, mis on mootoris. Muuta seda ei saa: Immer külmutab ja tüüp on `Readonly`. Paikade protokolli v1-s pole. Paigad on mootori sees ainult ajaloo jaoks.
+- **Üks dokument, mitte kaks.** Frontend saab pärast iga käsku sama külmutatud viite, mis on mootoris. Muuta seda ei saa: Immer külmutab ja tüüp on `DeepReadonly`. Paikade protokolli v1-s pole. Paigad on mootori sees ainult ajaloo jaoks.
+- **Vaate parsimine on leebe (täpsustus 2026-11-08).** Puuduvad vaateväljad täidetakse vaikeväärtustega; vigane vaade annab `null` ega takista projekti avamist. Teema lugemine/kirjutamine UI `localStorage`-is kasutab `try/catch`-i ja puuduva või vigase eelistuse korral väärtust `'system'`.
 - **Arvutatud andmed tulevad mootorist** koos sama `rev`-iga. Mootor vajab neid ise niikuinii (`repair.add` peab teadma võrke) ja arvutab need ühe korra versiooni kohta. Frontend arvutab ainult joonistusgeomeetriat ja vormindab tekste.
 - **Eelvaade ei ole dokument.** Lohistamine, suuruse muutmine, pööramine ja pooleli rada elavad `SessionStore`'is. Mootorisse läheb üks käsk hiire vabastamisel ja `Esc` kustutab eelvaate. Salvestus ja logi eelvaadet ei näe, tehinguid lepingus ei ole.
 - **Seansid ja identiteet:**

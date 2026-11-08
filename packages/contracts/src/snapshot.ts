@@ -16,4 +16,5 @@ export interface Snapshot {
   readonly rev: number;
   readonly doc: DeepReadonly<BoardDoc>;
   readonly derived: DeepReadonly<Derived>;
+  readonly history: DeepReadonly<{ canUndo: boolean; canRedo: boolean }>;
 }

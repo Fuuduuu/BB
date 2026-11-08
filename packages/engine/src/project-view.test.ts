@@ -19,7 +19,12 @@ test.each(['open', 'restore'] as const)(
   async (operation) => {
     const { projects, memory, store, path } = await projectSetup({ create: false });
     seed(store, path, newBoardDoc('Saved'));
-    store.files.get(path)!.view = { navigatorWidth: 420, navigatorTab: 'components' };
+    store.files.get(path)!.view = {
+      navigatorWidth: 420,
+      navigatorTab: 'components',
+      contextWidth: 340,
+      contextOpen: true,
+    };
     let target = path;
     let result;
     if (operation === 'restore') {
@@ -34,7 +39,12 @@ test.each(['open', 'restore'] as const)(
       ok: true,
       value: {
         path: target,
-        view: { navigatorWidth: 420, navigatorTab: 'components' },
+        view: {
+          navigatorWidth: 420,
+          navigatorTab: 'components',
+          contextWidth: 340,
+          contextOpen: true,
+        },
       },
     });
     if (!result.ok) throw new Error('Expected opened project');
@@ -46,12 +56,16 @@ test.each(['open', 'restore'] as const)(
         view: {
           navigatorWidth: 420,
           navigatorTab: 'components',
+          contextWidth: 340,
+          contextOpen: true,
         },
       },
     });
     expect(store.files.get(target)!.view).toEqual({
       navigatorWidth: 420,
       navigatorTab: 'components',
+      contextWidth: 340,
+      contextOpen: true,
     });
   },
 );
@@ -62,20 +76,32 @@ test('open returns null for a file without a saved view', async () => {
 });
 test('opening the already active path returns the current in-memory view', async () => {
   const { projects, path } = await projectSetup();
-  projects.saveView({ navigatorWidth: 380, navigatorTab: 'log' });
+  projects.saveView({
+    navigatorWidth: 380,
+    navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   expect(await projects.open({ path })).toMatchObject({
     ok: true,
     value: {
       view: {
         navigatorWidth: 380,
         navigatorTab: 'log',
+        contextWidth: 340,
+        contextOpen: true,
       },
     },
   });
 });
 test('copy returns the newest unsaved in-memory view without sharing its reference', async () => {
   const { projects, store } = await projectSetup();
-  projects.saveView({ navigatorWidth: 500, navigatorTab: 'log' });
+  projects.saveView({
+    navigatorWidth: 500,
+    navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   const copied = await projects.copy({ dest: 'Copy.pcbk', identity: 'same' });
   expect(copied).toMatchObject({
     ok: true,
@@ -83,6 +109,8 @@ test('copy returns the newest unsaved in-memory view without sharing its referen
       view: {
         navigatorWidth: 500,
         navigatorTab: 'log',
+        contextWidth: 340,
+        contextOpen: true,
       },
     },
   });
@@ -94,10 +122,17 @@ test('copy returns the newest unsaved in-memory view without sharing its referen
       view: {
         navigatorWidth: 500,
         navigatorTab: 'log',
+        contextWidth: 340,
+        contextOpen: true,
       },
     },
   });
-  expect(store.files.get('Copy.pcbk')!.view).toEqual({ navigatorWidth: 500, navigatorTab: 'log' });
+  expect(store.files.get('Copy.pcbk')!.view).toEqual({
+    navigatorWidth: 500,
+    navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
+  });
 });
 test('copy response includes a view changed while the copy was awaiting storage', async () => {
   const started = deferred();
@@ -112,10 +147,20 @@ test('copy response includes a view changed while the copy was awaiting storage'
       },
     }),
   });
-  projects.saveView({ navigatorWidth: 320, navigatorTab: 'old' });
+  projects.saveView({
+    navigatorWidth: 320,
+    navigatorTab: 'old',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   const copying = projects.copy({ dest: 'Copy.pcbk', identity: 'new' });
   await started.promise;
-  projects.saveView({ navigatorWidth: 640, navigatorTab: 'latest' });
+  projects.saveView({
+    navigatorWidth: 640,
+    navigatorTab: 'latest',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   release.resolve();
   expect(await copying).toMatchObject({
     ok: true,
@@ -123,6 +168,8 @@ test('copy response includes a view changed while the copy was awaiting storage'
       view: {
         navigatorWidth: 640,
         navigatorTab: 'latest',
+        contextWidth: 340,
+        contextOpen: true,
       },
     },
   });
@@ -130,16 +177,28 @@ test('copy response includes a view changed while the copy was awaiting storage'
   expect(store.files.get('Copy.pcbk')!.view).toEqual({
     navigatorWidth: 640,
     navigatorTab: 'latest',
+    contextWidth: 340,
+    contextOpen: true,
   });
 });
 test('copy activation cannot overwrite a newer view supplied by a status observer', async () => {
   const { projects, store } = await projectSetup();
-  projects.saveView({ navigatorWidth: 360, navigatorTab: 'copied' });
+  projects.saveView({
+    navigatorWidth: 360,
+    navigatorTab: 'copied',
+    contextWidth: 340,
+    contextOpen: true,
+  });
   let changed = false;
   projects.status((status) => {
     if (changed || status.state !== 'saved') return;
     changed = true;
-    projects.saveView({ navigatorWidth: 700, navigatorTab: 'observer' });
+    projects.saveView({
+      navigatorWidth: 700,
+      navigatorTab: 'observer',
+      contextWidth: 340,
+      contextOpen: true,
+    });
   });
   expect(await projects.copy({ dest: 'Copy.pcbk', identity: 'new' })).toMatchObject({
     ok: true,
@@ -147,6 +206,8 @@ test('copy activation cannot overwrite a newer view supplied by a status observe
       view: {
         navigatorWidth: 700,
         navigatorTab: 'observer',
+        contextWidth: 340,
+        contextOpen: true,
       },
     },
   });
@@ -154,5 +215,7 @@ test('copy activation cannot overwrite a newer view supplied by a status observe
   expect(store.files.get('Copy.pcbk')!.view).toEqual({
     navigatorWidth: 700,
     navigatorTab: 'observer',
+    contextWidth: 340,
+    contextOpen: true,
   });
 });

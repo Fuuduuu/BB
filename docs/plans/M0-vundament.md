@@ -217,7 +217,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   - `CommandOk = { rev: number }`;
   - `StorageReason = 'disk_full' | 'read_only' | 'missing' | 'locked' | 'not_project' | 'too_new' | 'unknown'`;
   - `SaveStatus = { state: 'saved'; rev: number; at: string } | { state: 'pending' } | { state: 'saving' } | { state: 'error'; reason: StorageReason }`;
-  - `ViewState = { navigatorWidth: number; navigatorTab: string }` (M0);
+  - `ViewState = { navigatorWidth: number; navigatorTab: string; contextWidth: number; contextOpen: boolean }` (M0; täpsustus 2026-11-08), vaikeväärtused `300`, `'components'`, `340`, `true`;
   - `ProjectInfo = { projectId: string; sessionId: string; name: string; path: string; readOnly: boolean; view: ViewState | null }`;
   - `CreateReq = { name: string; device?: string; problem?: string; path?: string }`;
   - `OpenReq = { path: string }`;
@@ -225,6 +225,8 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   - `BackupInfo = { file: string; kind: 'full' | 'doc'; at: string; base?: string }`;
   - `RestoreReq = { backup: string; dest: string }`.
 - `Snapshot.doc` ja `Snapshot.derived` on tüübiga `DeepReadonly<…>` (rekursiivne, sh massiivid).
+- `Snapshot.history: DeepReadonly<{ canUndo: boolean; canRedo: boolean }>` pärineb mootorist pärast käsku, undo/redo-d, laadimist ja mahalaadimist; tühi käsk jätab hetktõmmise samaks (täpsustus 2026-11-08).
+- `DEFAULT_VIEW_STATE` ja puhas `parseViewState(unknown): ViewState | null` ühtlustavad leebe lugemise: puuduvad väljad saavad vaikeväärtused, vigane vaade annab `null` ega peata projekti avamist. Teema on UI `localStorage`-is võtmega `pcbk.theme`, `try/catch`-iga ja vaikimisi `'system'`; projekti faili ei lähe.
 - `Derived` on M0-s `{ unplacedBoard: string[]; unplacedSchematic: string[] }` (komponentide id-d).
 
 - [ ] **Samm 1: kirjuta tüübitest**:
@@ -235,7 +237,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   expectTypeOf<DocumentEngine['execute']>().returns.toEqualTypeOf<Result<CommandOk, EngineError>>();
   ```
 - [ ] **Samm 2:** `pnpm typecheck` → KUKUB.
-- [ ] **Samm 3:** kirjuta liidesed. Pakett ei sisalda olekut ega teostust, välja arvatud `ok()` ja `err()`.
+- [ ] **Samm 3:** kirjuta liidesed. Pakett ei sisalda olekut; puhtad abifunktsioonid on `ok()`, `err()` ja vaate leebe parser ning vaate vaikeväärtused (täpsustus 2026-11-08).
 - [ ] **Samm 4:** typecheck → LÄBIB.
 - [ ] **Samm 5:** commit `feat(contracts): engine and project service contracts`; üleandmine.
 

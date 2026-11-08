@@ -6,6 +6,7 @@ import { FakeEngine, FakeProjects, snapshot } from '../../../client/src/__tests_
 import { AppShell } from './AppShell';
 import { PanelErrorBoundary, RootErrorBoundary } from './ErrorBoundary';
 import { SaveStatus } from './SaveStatus';
+import { ErrorBar } from './ErrorBar';
 import { et } from './i18n/et';
 import { useViewStore } from './view-store';
 import { useSessionStore } from './session-store';
@@ -29,7 +30,7 @@ function setup(canvas?: React.ReactNode) {
   const callbacks = actions();
   render(
     <EngineProvider engine={engine} projects={projects}>
-      <AppShell {...callbacks} canUndo canRedo canvas={canvas} />
+      <AppShell {...callbacks} canvas={canvas} />
     </EngineProvider>,
   );
   return { engine, projects, ...callbacks };
@@ -119,6 +120,19 @@ test('every StorageReason has an Estonian text', () => {
   };
   expect(et.reason).toEqual(expected);
 });
+test('a host without copy support disables the rescue action with an explanation', () => {
+  render(
+    <ErrorBar
+      reason="disk_full"
+      copyAvailable={false}
+      onRetrySave={vi.fn()}
+      onSaveElsewhere={vi.fn()}
+    />,
+  );
+  const copy = screen.getByRole('button', { name: et.common.saveElsewhere }) as HTMLButtonElement;
+  expect(copy.disabled).toBe(true);
+  expect(copy.title).toBe(et.project.copyUnavailable);
+});
 test('save errors keep retry and rescue actions visible', () => {
   const app = setup();
   act(() => app.projects.emit({ sessionId: 'session-a', state: 'error', reason: 'disk_full' }));
@@ -130,6 +144,9 @@ test('save errors keep retry and rescue actions visible', () => {
 });
 test('Ctrl+Z inside a text field does not trigger engine undo', () => {
   const app = setup(<input aria-label="Märkus" />);
+  act(() =>
+    app.engine.replace({ ...snapshot('session-a', 1), history: { canUndo: true, canRedo: true } }),
+  );
   const undo = vi.spyOn(app.engine, 'undo');
   const redo = vi.spyOn(app.engine, 'redo');
   const input = screen.getByRole('textbox');
@@ -140,6 +157,51 @@ test('Ctrl+Z inside a text field does not trigger engine undo', () => {
   fireEvent.keyDown(window, { key: 'Z', ctrlKey: true, shiftKey: true });
   expect(undo).toHaveBeenCalledOnce();
   expect(redo).toHaveBeenCalledTimes(2);
+});
+test('history buttons follow the engine snapshot rather than a second UI history', () => {
+  const engine = new FakeEngine({ ...snapshot(), history: { canUndo: true, canRedo: false } });
+  render(
+    <EngineProvider engine={engine} projects={new FakeProjects()}>
+      <AppShell {...actions()} />
+    </EngineProvider>,
+  );
+  expect((screen.getByRole('button', { name: et.shell.undo }) as HTMLButtonElement).disabled).toBe(
+    false,
+  );
+  expect((screen.getByRole('button', { name: et.shell.redo }) as HTMLButtonElement).disabled).toBe(
+    true,
+  );
+  act(() =>
+    engine.replace({ ...snapshot('session-a', 1), history: { canUndo: false, canRedo: true } }),
+  );
+  expect((screen.getByRole('button', { name: et.shell.undo }) as HTMLButtonElement).disabled).toBe(
+    true,
+  );
+  expect((screen.getByRole('button', { name: et.shell.redo }) as HTMLButtonElement).disabled).toBe(
+    false,
+  );
+});
+test('a restored open context panel stays open in a narrow window', () => {
+  const previous = window.matchMedia;
+  window.matchMedia = () =>
+    ({
+      matches: false,
+      addEventListener() {},
+      removeEventListener() {},
+    }) as unknown as MediaQueryList;
+  try {
+    useViewStore.getState().restore({
+      navigatorWidth: 300,
+      navigatorTab: 'components',
+      contextWidth: 360,
+      contextOpen: true,
+    });
+    setup();
+    expect(screen.getByRole('complementary', { name: et.shell.context })).toBeTruthy();
+    expect(useViewStore.getState().contextWidth).toBe(360);
+  } finally {
+    window.matchMedia = previous;
+  }
 });
 test('pane resizing is keyboard accessible and retains the chosen width', () => {
   setup();
@@ -177,7 +239,7 @@ test('switching projects never renders the previous selection in the new project
   try {
     render(
       <EngineProvider engine={engine} projects={new FakeProjects()}>
-        <AppShell {...actions()} canUndo={false} canRedo={false} registry={registry} />
+        <AppShell {...actions()} registry={registry} />
       </EngineProvider>,
     );
     act(() => useSessionStore.getState().setSelection({ kind: 'component', id: 'cmp_old' }));
@@ -202,7 +264,7 @@ test('navigator tabs support arrows without changing the selected component', ()
   ]);
   render(
     <EngineProvider engine={new FakeEngine()} projects={new FakeProjects()}>
-      <AppShell {...actions()} canUndo={false} canRedo={false} registry={registry} />
+      <AppShell {...actions()} registry={registry} />
     </EngineProvider>,
   );
   act(() => useSessionStore.getState().setSelection({ kind: 'component', id: 'cmp_kept' }));

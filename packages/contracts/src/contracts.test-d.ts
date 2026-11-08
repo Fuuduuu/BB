@@ -39,10 +39,17 @@ declare const projects: ProjectService;
 
 expectTypeOf<Snapshot['doc']>().toEqualTypeOf<DeepReadonly<BoardDoc>>();
 expectTypeOf<Snapshot['derived']>().toEqualTypeOf<DeepReadonly<Derived>>();
+expectTypeOf<Snapshot['history']>().toEqualTypeOf<
+  DeepReadonly<{ canUndo: boolean; canRedo: boolean }>
+>();
 expectTypeOf<Snapshot['doc']['components'][number]['pins']>().toMatchTypeOf<readonly unknown[]>();
 
 // @ts-expect-error snapshot metadata is readonly
 snapshot.rev = 2;
+// @ts-expect-error history availability is owned by the engine
+snapshot.history.canUndo = false;
+// @ts-expect-error the entire history reference is readonly
+snapshot.history = { canUndo: true, canRedo: false };
 // @ts-expect-error the entire document reference is readonly
 snapshot.doc = {} as BoardDoc;
 // @ts-expect-error document collections cannot be replaced
@@ -121,7 +128,12 @@ const create: CreateReq = {
 const open: OpenReq = { path: 'Plaat.pcbk' };
 const copy: CopyReq = { dest: 'Koopia.pcbk', identity: 'new' };
 const restore: RestoreReq = { backup: 'backup.pcbk', dest: 'Taastatud.pcbk' };
-const view: ViewState = { navigatorWidth: 260, navigatorTab: 'components' };
+const view: ViewState = {
+  navigatorWidth: 260,
+  navigatorTab: 'components',
+  contextWidth: 340,
+  contextOpen: true,
+};
 expectTypeOf<ProjectInfo['view']>().toEqualTypeOf<ViewState | null>();
 expectTypeOf(projects.create(create)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
 expectTypeOf(projects.open(open)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();

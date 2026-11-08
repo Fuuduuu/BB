@@ -122,6 +122,7 @@ const open: OpenReq = { path: 'Plaat.pcbk' };
 const copy: CopyReq = { dest: 'Koopia.pcbk', identity: 'new' };
 const restore: RestoreReq = { backup: 'backup.pcbk', dest: 'Taastatud.pcbk' };
 const view: ViewState = { navigatorWidth: 260, navigatorTab: 'components' };
+expectTypeOf<ProjectInfo['view']>().toEqualTypeOf<ViewState | null>();
 expectTypeOf(projects.create(create)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
 expectTypeOf(projects.open(open)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
 expectTypeOf(projects.close()).toEqualTypeOf<Promise<Result<void, EngineError>>>();

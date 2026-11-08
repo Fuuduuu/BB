@@ -218,7 +218,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   - `StorageReason = 'disk_full' | 'read_only' | 'missing' | 'locked' | 'not_project' | 'too_new' | 'unknown'`;
   - `SaveStatus = { state: 'saved'; rev: number; at: string } | { state: 'pending' } | { state: 'saving' } | { state: 'error'; reason: StorageReason }`;
   - `ViewState = { navigatorWidth: number; navigatorTab: string }` (M0);
-  - `ProjectInfo = { projectId: string; sessionId: string; name: string; path: string; readOnly: boolean }`;
+  - `ProjectInfo = { projectId: string; sessionId: string; name: string; path: string; readOnly: boolean; view: ViewState | null }`;
   - `CreateReq = { name: string; device?: string; problem?: string; path?: string }`;
   - `OpenReq = { path: string }`;
   - `CopyReq = { dest: string; identity: 'same' | 'new' }`;

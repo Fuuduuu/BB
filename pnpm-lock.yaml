@@ -198,7 +198,17 @@ importers:
 
   apps/web: {}
 
-  packages/adapters: {}
+  packages/adapters:
+    dependencies:
+      '@pcbk/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@pcbk/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@pcbk/engine':
+        specifier: workspace:*
+        version: link:../engine
 
   packages/client: {}
 

@@ -16,6 +16,7 @@ export type ProjectInfo = {
   name: string;
   path: string;
   readOnly: boolean;
+  view: ViewState | null;
 };
 
 export type CreateReq = { name: string; device?: string; problem?: string; path?: string };

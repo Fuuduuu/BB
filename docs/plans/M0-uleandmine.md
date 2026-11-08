@@ -359,3 +359,92 @@ Vormindus ja `git diff --check` läbisid. BB dokumentide kontrollfunktsioon läb
 - Plaadipaigutuse olemasolul peab käsitsi lisatud jala eemaldamine koristama `customPads`-i ning jalale viitavad `padMap`-i kirjed. M0 selles paranduses paigutuste loogikat ei lisa.
 
 **Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 5. Commit, push ja `main`-i ühendamine ootavad vastavat kasutaja luba; ülesannet 6 enne ülevaatuse otsust ei alustata.
+
+### Ülesande 5 lõpetamine
+
+Kasutaja kinnitas ülesande 5 commiti `a00e17f` (`feat(components): first engine module with registry checks`, 27 faili) ja lubas alustada ülesannet 6. Git-ist kontrolliti sama HEAD-i, haru `m0` ning puhast jälgitavat tööpuud; kuus stardifaili jäid jälgimata.
+
+## Ülesanne 6 · Pordid, mälusalvesti ja projektihaldus
+
+**2026-11-08 · Codex · osa A teostus valmis arhitekti ülevaatuseks.** Alus ja HEAD on `a00e17f`, haru `m0`, tööpuu `C:\Users\TRUMPIT\.codex\worktrees\bb-m0\BB`. Ülesanne 6 on commit'imata; ülesanne 7 on alustamata.
+
+### Teostatud
+
+- `ProjectRepository`, `PhotoStore`, `OpenedProject`, `SaveReq`, loomise/koopia sisemised päringud ning `StorageError`. `Clock` ja ühine `IdGen` kasutavad olemasolevaid tüüpe. Pordid ei tunne Reacti, DOM-i ega Taurit.
+- `storage-memory` jagab kahe hoidlaeksemplari vahel faile ja eksklusiivseid lukke. Dokumendi ning päeviku kirjutus kontrollib `baseRev`-i ja on terviklik; ebaõnnestunud kirjutus ei muuda faili. Olemas on `failNext`, `setReadOnly`, edukate dokumendi-/vaatekirjutuste loendurid ning koopia, migratsioonieelne täisvarukoopia ja taastamine. Need on mälusimulatsioonid, mitte tõend päris failisüsteemi või SQLite'i töökindlusest.
+- `SaveCoordinator` salvestab 1,5 s pärast viimast muudatust, hiljemalt 10 s pärast esimest. Dokument ja vaade käivad ühes järjekorras; poolelioleva kirjutuse ajal tekkinud uuem olek läheb faili kohe järgmise kirjutusega. `baseRev` muutub ainult eduka kirjutuse järel. Viga jätab päevikuread ja musta vaate alles ning punane olek püsib kuni eduni.
+- `ProjectService` järjestab loomise, avamise, sulgemise, koopia, taastamise ja selgesõnalise `flush`-i. Avamine kontrollib versiooni, teeb enne migratsiooni täisvarukoopia, käivitab päris `migrateDoc`-i, valideerib skeemi/invariandid ja alles siis laeb dokumendi uue `sessionId`-ga. Uuem vorming ja vigane fail ei lae mootorit; ebaõnnestunud uus avamine jätab eelmise projekti alles.
+- Sulgemine ja projektivahetus kontrollivad pärast `await flush()`-i samas jätkus veel kord salvestuse puhtust. Viimasesse Promise-vahemikku sattunud edukas käsk salvestatakse enne `unload/load`-i. Salvestuse tõrke korral jääb aktiivne dokument alles.
+- Päästekoopia võib jätkata ka pärast algse faili salvestustõrget. Kutsuja annab kaasa uusima dokumendi, vaate ja logi; koopia tegemise ajal lisandunud käsud jäävad mällu ning salvestatakse uude faili. Kirjutatava koopia puhul säilivad mootoriseanss ja undo-ajalugu; kirjutuskaitstud lähtefaili koopia laeb sama dokumendi uude kirjutatavasse seanssi.
+- Juba kirjutuskaitstuna avatud projekti vaadet võib mälus muuta ilma faili kirjutamata ja sulgemist blokeerimata. Kirjutatav päästekoopia saab selle vaate kaasa. Kui fail muutub kirjutuskaitstuks alles poolelioleva kirjutuse ajal, säilib õige salvestusviga ja projekt jääb sulgemata.
+
+### Muudetud failid
+
+| Koht | Sisu |
+|---|---|
+| `packages/engine/src/ports.ts`, `index.ts` | pordid, sisemised andmekujud ja avalikud ekspordid |
+| `packages/engine/src/save-coordinator.ts` | ajastus, üks kirjutusjärjekord, logi/vaate korduskatse ja seansi kontroll |
+| `packages/engine/src/project-service.ts` | elutsükkel, valideerimine, migratsioon, koopia ja vabastamata lukkude korduskatse |
+| `packages/adapters/src/{storage-memory,index}.ts`, `package.json` ja lukufail | mälusalvesti, ühised lukud ja tööruumisõltuvused; uusi väliseid sõltuvusversioone pole |
+| `packages/engine/src/{project-service,save-coordinator,project-lifecycle}.test.ts`, `__tests__/project-helpers.ts` | päris mootori/hoidla integratsioonid, blokeeritud I/O ning Promise-vahemike regressioonid |
+| `packages/adapters/src/storage-memory.test.ts` | lukk, revisjonivõrdlus, tõrked, muutumatus, varukoopia/taastamine |
+| See üleandmine ja põhikausta STATUS | jooksev seis; kuus stardifaili on eraldi töö |
+
+### Tegelikud kontrollid
+
+| Käsk või katse | Tulemus |
+|---|---|
+| Esmased testid enne teostust | **27/27 kukkus** puuduvate tehaste/teostuse tõttu; seejärel mälusalvesti **4/4** ja projektihalduse/salvestuse **23/23** läbisid. |
+| Esmane `pnpm.cmd check`, 12:27 | **245/245 testi**, 24 faili; kõik viis väravat läbisid. |
+| Sõltumatu ülevaatuse regressioonid enne parandusi | **7 kukkus, 1 läbis**. Kinnitati hiline andmekadu sulgemisel/avamisel, kaotatud luku vabastamise korduskatse ning kirjutuskaitstud vaate põhjustatud sulgemistõrge. |
+| Samad regressioonid pärast parandusi | **8/8 läbis**. Promise-vahemiku katsed läbivad nii sulgemise kui avamise 13 ajastusega (0–12 jätku). |
+| Vigase ajastuse seadistuse lisakontroll | Uus katse kukkus enne parandust; teenus valideerib ja kopeerib ajastuse nüüd juba loomisel, enne faili avamist. Elutsükli testifail läbis seejärel **9/9**. |
+| Lõplik `pnpm.cmd check`, 12:52 | **254/254 testi**, 25 faili. Mõlemad TypeScripti kontrollid, ESLint, sõltuvusreeglid ja failipikkus läbisid; 78 moodulit, 243 sõltuvust, 0 rikkumist. |
+| Osa A vastuvõtukäsk `pnpm.cmd test packages` | **230/230 testi**, 21 faili, Vitesti Node'i keskkonnas. Tootmise backend kompileerub eraldi ilma DOM-i ja Node'i globaalideta. |
+| `pnpm.cmd install --frozen-lockfile --offline` | **Läbis** kõigi 10 tööruumi projekti peal; pärast seda sõltuvusi ei muudetud. |
+| Vormindus, dokumendid ja tööpuu | `format:check` ja `git diff --check` läbisid; BB dokumentide kontrollfunktsioon läbis tööpuus 26 ja põhikaustas 25 faili. Ülesande diff on 14 faili, HEAD `a00e17f`, commit'iks lisatud sisu puudub ning kuus stardifaili on jälgimata. |
+
+**Kasutaja kaks rõhutatud katset:**
+- Poolelioleva esimese salvestuse ajal tehti **50 edukat käsku/tagasivõtmist**. Lõpuks on failis täpselt mootori dokument `rev: 51`, kõik 51 logirida (neist 16 undo), kirjutused kasutavad paare `baseRev/rev = 0/1` ja `1/51`, korraga kirjutab üks hoidlaoperatsioon.
+- Poolelioleva salvestuse ajal käivitatud `close` ootab seda kirjutust. Faili muutmine kirjutuskaitstuks annab `storage/read_only`; mootoris jääb „Unsaved“ alles, failis on vana dokument. Kirjutuskaitse eemaldamisel õnnestub kordussulgemine koos säilinud logireaga.
+
+### Sõltumatu ülevaatus ja parandusotsused
+
+| Leid | Parandus ja tõend |
+|---|---|
+| P1: viimane edukas käsk võis `flush`-i ja `unload/load`-i vahel kaduda | `isClean` kontroll käib vahetult enne seansi lõpetamist samas jätkus; vajadusel korratakse salvestust. Sulgemise/avamise Promise-ajastused on regressiooniga kaetud. |
+| P2: `repo.close` tõrke järel kadus luku vabastamiseks vajalik tunnus | Vabastamata hoidlatunnused säilivad eraldi kogumis. `close` ja `flush` proovivad neid uuesti ega teata ebaõnnestunud vabastamisest edu. Eduka projektivahetuse/koopia järel jääb uus projekt aktiivseks, vana luku tõrge on olekuteates kuni korduskatse eduni. Katsed katavad kõik kolm teed. |
+| P2: kirjutuskaitstud projekti vaate muutmine takistas sulgemist | Sellise seansi vaade on mälus ega märgi faili mustaks; selle saab kirjutatavasse koopiasse kaasa võtta. Sulgemise, avamise ja koopia katsed läbivad. |
+
+Ülevaataja ei muutnud faile ega indeksit. Ta kontrollis lisaks koopia ajal saabuvaid käske/vaadet 20 Promise-ajastusega ning tõrkuvat koopiat; andmed säilisid. Kõik kolm leidu parandati ühe RED→GREEN vooruga; uut sõltumatut ülevaatust pärast parandusi ei väideta.
+
+### Plaanis lahtiseks jäetud valikud ja piir
+
+- Hoidla `create` ja `copy` päringud laiendavad UI päringuid `projectId` ja dokumendiga, koopial ka vaate/päevikuga. Sisemised koondpäringud annavad edasi ülesannete 10/11 Rusti andmevoole vajalikud andmed; `projectId` loomine kutsuja ID-porti kasutades on teostusvalik, mis tuleb Rusti sisendiga sidumisel arvesse võtta. Avalikku `ProjectService` lepingut ei muudetud.
+- `StorageError` kannab `reason`-it ja vajadusel `actualRev`-i. Revisjonikonflikt annab `flush`-i vastuses olemasoleva `stale_rev` vea, kuid olekuteates kasutatakse lepingus lubatud `unknown` põhjust. Võõrast revisjoni ei võeta automaatselt uueks `baseRev`-iks ega kirjutata sellest üle.
+- Salvestuse tõrge jätab projekti mootorisse. Kui dokument on juba täielikult salvestatud, kuid hoidla käepideme vabastamine ebaõnnestub, on mootor suletud ja uued käsud keelatud; vabastamise tunnus säilib korduskatseks. See eristub salvestamata dokumendi sulgemistõrkest.
+- Migratsioonikatses registreeritakse ajutiselt päris testmigratsioon domeeni `MIGRATIONS` tabelisse ja taastatakse tabel pärast katset. Tootmise tabelit ei muudetud; praegused moodulid migratsioone ei lisa. Vigaste tulevaste migratsioonifunktsioonide semantika, sealhulgas revisjoni muutmine, vajab oma migratsiooni testi/otsust.
+- Mälusalvesti varukoopiad/koopia/taastamine ei ehita päris failide ajutise nime, ümbernimetamise, fotode, säilitustähtaja ega SQLite'i mehhanismi. Need kuuluvad ülesannetesse 10–11. UI ja inimese visuaalne vastuvõtt on alustamata.
+
+**Vaate taastamise otsus:** arhitekt kinnitas `ProjectInfo.view: ViewState | null` lisamise. See on teostatud allolevas lepingutäpsustuses; eraldi laadimisteadet pole vaja.
+
+### Ülesanne 6 · ProjectInfo.view lepingutäpsustus
+
+**2026-11-08 · arhitekti otsus teostatud.** Arhitekt kinnitas salvestusloogika ja nõudis enne commiti laaditud vaate lisamist vastusesse.
+
+- `packages/contracts/src/project-service.ts`: `ProjectInfo` sisaldab kohustuslikku `view: ViewState | null` välja. Tüübitest lukustab selle täpse kuju; M0 plaani ülesande 3 tüübirida on uuendatud.
+- `create`, `open` ja `restore` tagastavad laaditud vaate või selle puudumisel `null`. Väärtus tuleb koordinaatori eraldatud koopiast, nii et vastuse muutmine ei muuda teenuse vaadet. Juba aktiivse faili avamine tagastab selle jooksva mälus oleva vaate.
+- `copy` tagastab uusima mälus olnud vaate, ka siis, kui see muutus hoidlaoperatsiooni oodates. Koopiasse kaasa võetud vaade rakendatakse enne esimese olekuteate avaldamist; teate kuulaja tehtud veel uuemat muudatust ei kirjutata enam vana väärtusega üle. Poolelioleva koopia ajal tekkinud vaate eraldi salvestus säilib.
+- Uus `project-view.test.ts` kontrollib loomist ilma vaateta, avamist/taastamist salvestatud vaatega, vaateta faili, juba aktiivset faili, mälus olnud uusimat koopia vaadet, asünkroonset koopiat ja olekukuulaja uuemat vaadet. Samuti kontrollitakse tagastusväärtuse eraldatust.
+
+**Tegelik tõend:** enne muudatust kukkusid **8/8 uut testi** ja tüübitest (`ProjectInfo.view` puudus). Esmase väljalisa järel läbis 7 testi, üks kinnitas koopia olekukuulaja uuema vaate ülekirjutamist. Pärast teatejärjekorra parandust läbis **8/8**. Lõplik `pnpm.cmd check`, 16:51: **262/262 testi 26 failis**; mõlemad TS kontrollid, ESLint, sõltuvused (79 moodulit, 245 seost) ja failipikkus läbisid. Osa A `pnpm.cmd test packages` läbis **238/238 testi 22 failis Node'is**.
+
+Vormindus, `git diff --check` ja dokumentide kontroll läbisid (tööpuus 26, põhikaustas 25 Markdown-faili). Kogu ülesande 6 diff on nüüd 18 faili; HEAD on `a00e17f`, commit'iks lisatud sisu puudub ja kuus stardifaili on endiselt jälgimata.
+
+Sihitud sõltumatu lugemine kontrollis `ProjectInfo` kasutuskohti ja tuvastas koopia teatejärjekorra probleemi. Ülevaataja faile ei muutnud; paranduse tõend on eespool kirjeldatud regressioon.
+
+**Arhitekti mitteblokeerivad märkmed hilisema plaani jaoks:**
+- Vanem vorming kirjutuskaitstud kandjal annab praegu `read_only`. Koos esimese päris migratsiooniga tuleb otsustada mälus migreerimine ja kirjutuskaitstud avamine, äpi andmekausta tehtav varukoopia ning „Salvesta mujale…“ tee. M0-s pole tootmise migratsioone; praegust käitumist selles muudatuses ei muudeta.
+- Vigase sisuga BB fail annab praegu `not_project`. Hiljem tuleb planeerida täpsem veateade ning taastamise tee: kirjutuskaitstud avamine koos vigade loendiga. Praegust valideerimist ei lõdvendata.
+
+**Järgmine samm:** lepingutäpsustus on valmis kontrollimiseks ja kasutaja eraldi commit'i otsuseks. Commit, push ja `main`-i ühendamine pole tehtud; ülesanne 7 on alustamata.

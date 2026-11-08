@@ -448,3 +448,55 @@ Sihitud sõltumatu lugemine kontrollis `ProjectInfo` kasutuskohti ja tuvastas ko
 - Vigase sisuga BB fail annab praegu `not_project`. Hiljem tuleb planeerida täpsem veateade ning taastamise tee: kirjutuskaitstud avamine koos vigade loendiga. Praegust valideerimist ei lõdvendata.
 
 **Järgmine samm:** lepingutäpsustus on valmis kontrollimiseks ja kasutaja eraldi commit'i otsuseks. Commit, push ja `main`-i ühendamine pole tehtud; ülesanne 7 on alustamata.
+
+### Ülesande 6 lõpetamine
+
+Ülesande 7 alustamisel kinnitas Git ülesande 6 commiti `983e9c6` (`feat(engine): project service and save coordinator`). Haru on `m0`, jälgitav tööpuu oli puhas ja kuus stardifaili jäid jälgimata. Kasutaja lubas alustada ülesannet 7. STATUS-e varasem commiti ootel kirje asendati tegeliku Git-i seisuga.
+
+## Ülesanne 7 · Kliendikiht
+
+**2026-11-08 · Codex · valmis arhitekti ülevaatuseks.** Alus ja HEAD on `983e9c6`, haru `m0`, tööpuu `C:\Users\TRUMPIT\.codex\worktrees\bb-m0\BB`. Ülesanne 7 on commit'imata; ülesanne 8 on alustamata.
+
+### Teostatud
+
+- `EngineProvider` annab Reactile lepingu `DocumentEngine` ja `ProjectService` eksemplarid. `useEngine`/`useProjects` tagastavad süstitud teenused; puuduva provideri korral tekib tehniline `missing_engine_provider` erind.
+- `useSnapshot(select)` tellib toorhetktõmmist React 18 `useSyncExternalStore` abil. Muutumatu viitega teavitus ei renderda tarbijat uuesti. Selektor arvutatakse pärast toorhetktõmmise lugemist ja memoiseeritakse hetktõmmise/selektori järgi, mistõttu objektina tagastatav valik ei tekita lugemis- ega renderdustsüklit.
+- `session-filter.ts` eirab sama seansi sama või väiksema revisjoni hetktõmmist. Uus seanss võib alata väiksema revisjoniga; sulgemise tühi `sessionId` tühjendab vaate. Tellimuse payload ei kirjuta sünkroonset `engine.snapshot()` hetkeolekut üle.
+- `useSaveStatus` võtab vastu ainult aktiivse mittetühja seansi teateid. Seansi/teenuse vahetus ei kanna vana viga kaasa; vana dokumendirevisjoni `saved` ei väida uuemat dokumenti salvestatuks. Enne tegelikku teadet ja avatud projektita tagastatakse `pending`; salvestusaega välja ei mõelda.
+- Tellimused eemaldatakse unmount'il ja teenuseallikate vahetamisel, ka React StrictMode'i korral. Dokumendi sügav kirjutuskaitse säilib selektori tagastustüübis. Tootmiskliendis pole mootori, adapterite ega feature'i teostuse importi.
+
+### Muudetud failid
+
+| Koht | Sisu |
+|---|---|
+| `packages/client/src/{context,index}.ts` | provider, teenuste getter-hook'id ja paketi avalik API |
+| `packages/client/src/{use-snapshot,use-save-status,session-filter}.ts` | välise oleku lugemine, olekuteated ja seansi/revisjoni filter |
+| `packages/client/src/client.test.tsx`, `client.test-d.ts`, `__tests__/fakes.ts` | lepingu võltsallikatega Reacti testid ja kirjutuskaitse/geneerilise tüübi kontroll |
+| `packages/client/package.json`, juure `package.json`, `pnpm-lock.yaml` | lepingu sõltuvus, React 18 peer ning lukustatud Reacti/DOM-i testivahendid |
+| See üleandmine ja põhikausta STATUS | jooksev seis; kuus stardifaili jäävad eraldi |
+
+### Tegelikud kontrollid
+
+| Käsk või katse | Tulemus |
+|---|---|
+| `pnpm.cmd test packages/client` enne teostust | Pärast testide deklareeritud domeenisõltuvuse linkimist **17/17 testi kukkus**, kuna `EngineProvider` puudus. Varasemat lahendamata impordi viga ei loeta RED-tõendiks. |
+| Sama käsk pärast teostust | **17/17 läbis** React 18 ja Testing Libraryga jsdom'is. Need on hook'i-/komponenditestid, mitte inimese visuaalne vastuvõtt. |
+| `pnpm.cmd check`, 18:15 | **279/279 testi 27 failis**. Mõlemad TypeScripti kontrollid, ESLint, sõltuvusreeglid ja failipikkus läbisid; 88 moodulit, 270 sõltuvust, 0 rikkumist. `client.test-d.ts` kontrollib lepingut ja sügavalt readonly valikut päris `tsc` abil. |
+| Sõltumatu ülevaatus | Luges tegelikku diffi ja teenuste avaldamisjärjekorda; parandamist nõudvaid vigu ei leidnud. Ülevaataja käivitas eraldi klienditestid **17/17** ning `git diff --check HEAD`; mõlemad läbisid. Faile/indeksit ei muutnud. |
+| `format:check`, lukustatud paigaldus ja dokumendid | **Läbisid**: `pnpm.cmd install --frozen-lockfile --offline`, vormindus ning BB dokumentide kontrollfunktsioon (26 faili tööpuus, 25 põhikaustas). |
+| Lõplik tööpuu | `git diff --check` läbis; 12 ülesande faili, HEAD `983e9c6`, commit'iks lisatud sisu puudub. Kuus stardifaili on endiselt jälgimata ja eraldi töös. |
+
+Testid katavad muutumatu viitega teavituse, uue hetktõmmise, objektselektori, selektori vahetuse, sama/väiksema revisjoni, uue ja tühja seansi, vana teate, esialgse kordusteate, aegunud `saved`-revisjoni, StrictMode'i, unmount'i ja provideri allikavahetuse. Varasemad backend-testid on endiselt Node'i keskkonnas; ainult kliendi testifail valib jsdom'i.
+
+### Teostusvalikud ja piir
+
+- Pakett kasutab React **18.3.1** peer-sõltuvust; ReactDOM **18.3.1**, React 18 tüübid, Testing Library **16.3.3**/DOM **10.4.1** ja jsdom **31.0.0** on juure arendussõltuvustena täpselt lukustatud. Versioonide ja peer'ide sobivust kontrolliti ametlikust npm registrist. Eraldi selektori-shim'i ega uut transpordikihti ei lisatud.
+- Selektori tulemuse võrdsusel põhinev täiendav renderduse vältimine pole M0 ülesande 7 nõue. Praegu lähtutakse hetktõmmise viitest; Reacti toorhetktõmmise lugemine ja selektori arvutamine on eraldi.
+- Hiljem liituva staatuse tarbija saab algoleku praeguse `ProjectService.status()` sünkroonsest kordusteatest. Tüüpleping ise kordust/getter'it ei luba; teise teenuseteostuse lisamisel tuleb sama käitumine tagada või arhitektiga lepingut täpsustada. Kordusteateta jääb konservatiivne `pending` kuni tegeliku teateni.
+- Avalikku lepingut, mootorit ega salvestusloogikat ei muudetud. SSR/hydration, kõik võimalikud katkestatud Concurrent Reacti järjestused ja päris brauseri visuaalne vastuvõtt pole selle üleandmisega tõendatud. Äpi ekraanid/disainisüsteem on järgmiste ülesannete töö.
+
+### Kasutaja tellitud pluginaülevaatus
+
+Plugin Managementi lugemispõhine ülevaatus ei tuvastanud BB praeguse töö jaoks vajalikku lisapluginat. Olemasolevad Superpowersi ja GitHubi võimalused toetavad ehitust/ülevaatust; Figma on saadaval visuaalse kavandi vajadusel, turvaülevaatuse vahendid eraldi kontrolliks ning Playwright/brauseri/arvuti tööriistad päris UI töövoogude katsetamiseks. Praegused hook'i-testid kasutavad kohalikku Vitesti ja Testing Libraryt. Pluginaid, ühendusi ega õigusi ei muudetud.
+
+**Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 7. Commit, push ja `main`-i ühendamine vajavad vastavat kasutaja luba; ülesannet 8 enne ülevaatuse otsust ei alustata.

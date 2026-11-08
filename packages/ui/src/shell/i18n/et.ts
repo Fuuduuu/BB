@@ -1,0 +1,62 @@
+import type { StorageReason } from '@pcbk/contracts';
+
+const reason = {
+  disk_full: 'ketas täis',
+  read_only: 'fail on kirjutuskaitstud',
+  missing: 'faili ei leitud',
+  locked: 'fail on avatud mujal',
+  not_project: 'see fail ei ole PCB Kaardistaja projekt',
+  too_new: 'fail on tehtud uuema äpiga',
+  unknown: 'tundmatu viga',
+} satisfies Record<StorageReason, string>;
+
+export const et = {
+  reason,
+  appName: 'PCB Kaardistaja',
+  brand: { pcb: 'PCB', name: 'Kaardistaja' },
+  common: {
+    close: 'Sulge',
+    dismiss: 'Peida teade',
+    retry: 'Proovi uuesti',
+    saveElsewhere: 'Salvesta mujale…',
+    cancel: 'Katkesta',
+  },
+  shell: {
+    projectName: 'Projekti nimi',
+    untitled: 'Nimetu plaat',
+    navigator: 'Navigaator',
+    components: 'Komponendid',
+    navigatorEmpty: 'Siia ilmuvad plaadi komponendid.',
+    context: 'Omadused',
+    contextEmpty: 'Vali komponent, et näha selle omadusi.',
+    showContext: 'Näita omadusi',
+    hideContext: 'Peida omadused',
+    resizeNavigator: 'Navigaatori laius',
+    resizeContext: 'Omaduste paneeli laius',
+    canvas: 'Plaat',
+    canvasEmpty: 'Sinu plaadi tööala',
+    canvasHint: 'Komponendid ja ühendused kuvatakse siin.',
+    bottomBar: 'Plaadi olek',
+    ready: 'Valmis',
+    undo: 'Võta tagasi',
+    redo: 'Tee uuesti',
+    appearance: 'Välimus',
+    themeSystem: 'Süsteemi järgi',
+    themeLight: 'Hele',
+    themeDark: 'Tume',
+  },
+  save: {
+    saving: 'Salvestan…',
+    saved: (time: string) => `Salvestatud · ${time}`,
+    failed: (why: string) => `Salvestamine ebaõnnestus: ${why}.`,
+    closeTitle: (why: string) => `Viimaseid muudatusi ei õnnestunud salvestada: ${why}`,
+    discard: 'Sulge salvestamata',
+    discardHint: 'Viimased muudatused kaovad',
+  },
+  error: {
+    root: 'Midagi läks valesti.',
+    panel: 'Selle osa kuvamisel tekkis viga.',
+    copyReload: 'Salvesta koopia ja lae uuesti',
+    diagnostics: 'Salvesta diagnostika…',
+  },
+} as const;

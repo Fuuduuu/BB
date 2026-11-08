@@ -1,0 +1,227 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.4 var(--f-ui);
+  -webkit-font-smoothing: antialiased;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.bb-mono {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+}
+.bb-button {
+  min-height: 32px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bb-button:hover:not(:disabled) {
+  border-color: var(--ink-2);
+  background: var(--well);
+}
+.bb-button--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.bb-button--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 90%, var(--ink));
+  border-color: var(--accent);
+}
+.bb-button--danger {
+  color: var(--danger);
+}
+.bb-button--danger:hover:not(:disabled) {
+  border-color: var(--danger);
+}
+.bb-button--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-2);
+}
+.bb-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.bb-button svg {
+  flex-shrink: 0;
+}
+.bb-field {
+  display: grid;
+  gap: 6px;
+}
+.bb-field__label {
+  font-size: 12px;
+  font-weight: 600;
+}
+.bb-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid var(--line-2);
+  border-radius: 7px;
+  padding: 6px 10px;
+  background: var(--panel);
+  color: var(--ink);
+}
+.bb-input::placeholder {
+  color: var(--ink-2);
+  opacity: 1;
+}
+.bb-input:focus-visible {
+  border-color: var(--accent);
+}
+.bb-input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+.bb-field__hint,
+.bb-field__error {
+  margin: 0;
+  font-size: 12px;
+}
+.bb-field__hint {
+  color: var(--ink-2);
+}
+.bb-field__error {
+  color: var(--danger);
+}
+.bb-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+}
+.bb-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.bb-panel__header h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.bb-panel__body {
+  padding: 16px;
+  overflow: auto;
+  min-height: 0;
+}
+.bb-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.bb-dialog::backdrop {
+  background: rgba(5, 12, 8, 0.45);
+}
+.bb-dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 12px;
+}
+.bb-dialog__header h2 {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.bb-dialog__header > .bb-button {
+  flex: none;
+  padding: 5px;
+  min-width: 32px;
+}
+.bb-dialog__body {
+  padding: 8px 20px 20px;
+}
+.bb-toast-viewport {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  bottom: 64px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 32px));
+}
+.bb-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--line-2);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+.bb-toast > span {
+  overflow-wrap: anywhere;
+}
+.bb-toast--success {
+  border-left: 3px solid var(--ok);
+}
+.bb-toast--error {
+  border-left: 3px solid var(--danger);
+}
+.bb-toast .bb-button {
+  padding: 3px;
+  min-height: 28px;
+  min-width: 28px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

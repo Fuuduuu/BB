@@ -500,3 +500,49 @@ Testid katavad muutumatu viitega teavituse, uue hetktõmmise, objektselektori, s
 Plugin Managementi lugemispõhine ülevaatus ei tuvastanud BB praeguse töö jaoks vajalikku lisapluginat. Olemasolevad Superpowersi ja GitHubi võimalused toetavad ehitust/ülevaatust; Figma on saadaval visuaalse kavandi vajadusel, turvaülevaatuse vahendid eraldi kontrolliks ning Playwright/brauseri/arvuti tööriistad päris UI töövoogude katsetamiseks. Praegused hook'i-testid kasutavad kohalikku Vitesti ja Testing Libraryt. Pluginaid, ühendusi ega õigusi ei muudetud.
 
 **Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 7. Commit, push ja `main`-i ühendamine vajavad vastavat kasutaja luba; ülesannet 8 enne ülevaatuse otsust ei alustata.
+
+## Ülesanne 8 · disainisüsteem ja kest
+
+**Seis:** valmis arhitekti ülevaatuseks, commit'imata. Alus ja HEAD on `706651b`, haru `m0`; ülesande 7 vastuvõtu ja push'i kinnitas kasutaja. Ülesannet 9 ei alustatud.
+
+### Teostatud
+
+- `packages/ui/src/kit/`: `Button`, `Field`, `Panel`, native `Dialog`, kontrollitud `Toast`, tokenid, stiilid ja kohalikud Archivo/Martian Mono fondid. Toast kestab 2,5 s, korraga kuni kolm; väljatõrjutud teated eemaldatakse järjekorrast.
+- `packages/ui/src/shell/`: `AppShell`, `TopBar`, `SaveStatus`, `ErrorBar`, `CloseDialog`, juure ja paneeli `ErrorBoundary`, klaviatuuriga/hiirega muudetavad paneelilaiused. Kõik selle ülesande kasutajale nähtavad tekstid on `shell/i18n/et.ts`-is; toorvea sisu ekraanile ei jõua.
+- `UiRegistry` kontrollib moodulite ja iga toetatud laienduskoha id-de unikaalsust ning tagastab eraldatud koopiad. M0 liides toetab navigaatorit, kontekstisektsioone ning üla-/alariba. Tulevaste lõuenditööriistade jm lepinguid ette ei loodud.
+- Zustandi `useSessionStore` hoiab valikut; `useViewStore` paneelide laiusi, vahekaarti, konteksti avatust ja teemat. Projektivahetusel valik nullitakse ning renderdamine filtreerib vana seansi valiku juba enne efekti käivitumist.
+- `Ctrl+Z`, `Ctrl+Y` ja `Ctrl+Shift+Z` töötavad väljaspool vormivälju, muudetavat teksti ja avatud modaalakent. Ka Meta töötab. Vahekaardid toetavad nooli/Home/End ning vahekaardi vahetus ei muuda valikut.
+- Hele/tume/süsteemi teema, põhitekst ja numbrifont, nähtav klaviatuurifookus. Kõrgused 52/48 px, paneelid 300/340 px koos 06 piiridega; alla 1280 px avaneb kontekst valikul ülekattena.
+- Paketi ekspordid: `@pcbk/ui`, `@pcbk/ui/styles.css`, `@pcbk/ui/fonts`. Rakenduse koostekoht peab importima stiilid ja fondid. Lisandusid Zustand **5.1.0**, mõlemad Fontsource-paketid **5.3.0** ning otse määratud Vite **8.3.6** brauseri eelvaate jaoks; versioonid on lukustatud.
+
+### Tegelikud kontrollid
+
+| Kontroll | Tulemus |
+|---|---|
+| Testid enne teostust | Kit: **7/7** kogutud testi kukkus funktsionaalsuseta karkassi vastu. Olek/registrid/klahvid: **11/16** kukkus; ülejäänud juhtumid ei vajanud vastavat puuduvat käitumist. Kesta esimene käivitus peatus puuduval `AppShell`-i impordil, seega seda ei loeta kogutud käitumistestide arvuks. |
+| Leitud vigade regressioonid | Vana valik uues seansis, nooleklahviga vahekaardivahetus ja modaalaknast lekkinud ajalooklahv: igaühel eraldi **RED → GREEN** tõend. |
+| `pnpm.cmd check`, 2026-11-08 18:50 | **319/319 testi 33 failis**; mõlemad TypeScripti kontrollid, ESLint, sõltuvusreeglid ja failipikkus läbisid. 121 moodulit, 379 seost, 0 rikkumist. UI 40 testi on jsdom'is; backend jääb Node'i. |
+| Sõltumatu lõppülevaatus | **40/40 UI-testi 6 failis**, diff kontroll puhas; uusi parandamist nõudvaid leide pole. Ülevaataja faile ei muutnud. |
+| `pnpm.cmd format:check` | Läbis. |
+| `pnpm.cmd install --frozen-lockfile --offline` | Läbis. |
+| BB dokumendikontroll | **26 faili tööpuus, 25 põhikaustas**, probleeme ei leidnud. |
+| Lõplik tööpuu | `git diff --check` läbis; **36 ülesande faili**, HEAD `706651b`, commit'iks lisatud sisu puudub. Kuus stardifaili jäävad sellest tööst välja. |
+| Chromium, päris brauser | Kontrollitud hele/tume teema 1440 × 900 ja kitsas paigutus 1100 × 700; ribad 52/48 px, paneelid 300/340 px, horisontaalset ülevoolu pole. Kitsas vaates kattis 340 px kontekst lõuendit ega vähendanud selle laiust. Kohalikud WOFF2 fondid laadisid samalt päritolult. |
+| Dialoog ja vead brauseris | Sulgemise tekstid/kolm tegevust, `Esc` katkestus ja fookuse tagastus avanupule; salvestusviga näitas püsivat riba, uuesti proovimine taastas salvestatud oleku. Tahtlik paneelikrahh jättis kesta kasutatavaks. |
+
+Brauserikatse kasutas eraldatud arenduse eelvaadet ja lepingupõhiseid testandmeid kaustas `.superpowers/sdd/M0-vundament/ui-preview/`, mitte tulevase `apps/web`-i teostust ega päris projekte. Pildid on kohalikus ignoreeritud `output/playwright/` kaustas. See on ehitaja kontroll, **inimese visuaalne vastuvõtt on veel tegemata**.
+
+### Ülevaatuse parandused ja piir
+
+1. Vana valik ei jõua uue seansi kontekstilaiendusse; vastasel juhul võis uus paneel jääda veaseisu ka pärast valiku puhastamist. Parandus on regressioonitestiga ning ülevaataja kinnitas ka kitsas vaates ülekatte lähtestamise.
+2. Heleda põhinupu teksti kontrast oli prototüübi `#fff8f2` korral 4,46 : 1; toetav `--accent-ink` on heledas teemas nüüd valge. Dokumendi 06 määratud `--accent` jäi samaks. Tumeda logo tekst kasutab `--ink`-i, roheline jääb ikoonile. Muudatuste eesmärk on 06 nõutud vähemalt 4,5 : 1 tekstikontrast.
+3. Paneelieraldaja fookuses on 2 px aktsendivärvi joon; ülariba laiendused asuvad ülaribas. Dialoogi hõivatud toimingud on keelatud ning katkestamine ei käivita salvestamata sulgemist.
+
+**Arhitektile enne ülesande 9 ühendustööd:**
+
+- `DocumentEngine`/`Snapshot` ei avalda praegu ajaloo saadavust. Kest võtab `canUndo`/`canRedo` sisendina, et tühja ajaloo nupud saaks keelata; väärtusi ta ei mõtle välja. Ettepanek: kinnitada üks autoriteetne saadavuse allikas mootori avalikus lepingus või muu arhitekti valitud lahendus. Dokumenti, revisjoni ja mootorilepingut selle töö käigus ei muudetud.
+- Praegune `ViewState` sisaldab ainult `navigatorWidth` ja `navigatorTab`. `restore()`/`getView()` kasutavad täpselt neid. Konteksti laius/avatus ja teema säilivad praegu UI mälus; nende püsimine pärast äpi sulgemist pole teostatud. Kui see on juba M0 vastuvõtu nõue, tuleb arhitektil täpsustada lepingu või üldseadete omanik; salaja uut salvestusteed ei lisatud.
+
+Lõuend on plaani kohaselt tühi paneel. Komponentide päris vormid, projektiekraanid ja veebisalvestus kuuluvad ülesandesse 9; jalgu, mõõtmisi ega skeemi ei joonistata. Jalamarkerite visuaalset vastavust ei väideta enne vastava lõuenditöö teostust. Taaste-/failidialoogide tegelikud toimingud ühendab rakenduse koostekoht; siin on kontrollitud callback'ide käivitamine.
+
+**Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 8, lisaks eeltoodud ühenduskohtade täpsustus enne ülesannet 9. Commit, push ja `main`-i ühendamine vajavad kasutaja luba. Kuus stardifaili jäävad eraldi tööks.

@@ -1,0 +1,314 @@
+.pcbk-app {
+  height: 100dvh;
+  min-height: 700px;
+  min-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.4 var(--f-ui);
+}
+.pcbk-topbar {
+  height: 52px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.pcbk-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink);
+  text-decoration: none;
+}
+.pcbk-brand svg {
+  color: var(--mask);
+}
+.pcbk-brand-accent {
+  color: var(--ink);
+}
+.pcbk-project-heading {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  min-width: 0;
+}
+.pcbk-project-heading h1 {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+.pcbk-save-status {
+  font-size: 11px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.pcbk-topbar-actions,
+.pcbk-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.pcbk-toolbar-divider {
+  height: 20px;
+  width: 1px;
+  background: var(--line);
+}
+.pcbk-theme-select {
+  color: var(--ink-2);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  height: 32px;
+  font: inherit;
+  font-size: 12px;
+  padding: 0 6px;
+}
+.pcbk-workspace {
+  display: grid;
+  grid-template-columns: var(--navigator-width) 4px minmax(0, 1fr) 4px var(--context-width);
+  min-height: 0;
+  flex: 1;
+  position: relative;
+}
+.pcbk-workspace[data-context-open='false'] {
+  grid-template-columns: var(--navigator-width) 4px minmax(0, 1fr);
+}
+.pcbk-navigator,
+.pcbk-context {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  background: var(--panel);
+}
+.pcbk-pane-heading {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.pcbk-pane-content {
+  padding: 16px;
+  overflow: auto;
+}
+.pcbk-empty-pane {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin: 16px 18px;
+  line-height: 1.6;
+}
+.pcbk-pane-content .pcbk-empty-pane {
+  margin: 0;
+}
+.pcbk-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  padding: 8px 12px 0;
+}
+.pcbk-tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 8px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pcbk-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+.pcbk-resizer {
+  background: var(--line);
+  cursor: col-resize;
+  touch-action: none;
+  position: relative;
+  z-index: 2;
+}
+.pcbk-resizer::after {
+  content: '';
+  position: absolute;
+  inset: 0 -3px;
+}
+.pcbk-resizer:hover {
+  background: var(--sel);
+}
+.pcbk-resizer:focus-visible {
+  background: var(--sel);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.pcbk-canvas {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+  background: var(--canvas);
+}
+.pcbk-canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  text-align: center;
+}
+.pcbk-canvas-empty h2 {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 20px 0 8px;
+}
+.pcbk-canvas-empty p {
+  margin: 0;
+  max-width: 300px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.pcbk-board-symbol {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  color: var(--mask);
+  background: var(--panel);
+  font-size: 34px;
+}
+.pcbk-bottom-bar {
+  height: 48px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 18px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.pcbk-ready {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pcbk-ready i {
+  display: block;
+  height: 6px;
+  width: 6px;
+  background: var(--ok);
+  border-radius: 50%;
+}
+.pcbk-error-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--danger);
+  background: var(--panel);
+  color: var(--danger);
+}
+.pcbk-error-bar strong {
+  font-size: 13px;
+}
+.pcbk-close-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pcbk-discard p {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+.pcbk-root-error {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  font-family: var(--f-ui);
+  color: var(--ink);
+}
+.pcbk-root-error-content {
+  max-width: 640px;
+  padding: 32px;
+}
+.pcbk-root-error h1 {
+  font-size: 24px;
+}
+.pcbk-panel-error {
+  padding: 20px;
+  color: var(--ink);
+  font-size: 13px;
+}
+.pcbk-panel-error p {
+  line-height: 1.6;
+}
+.mono {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1279px) {
+  .pcbk-workspace,
+  .pcbk-workspace[data-context-open='false'] {
+    grid-template-columns: var(--navigator-width) 4px minmax(0, 1fr);
+  }
+  .pcbk-context {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--context-width);
+    box-shadow: var(--shadow);
+    z-index: 4;
+    border-left: 1px solid var(--line-2);
+  }
+  .pcbk-resizer[aria-controls='pcbk-context'] {
+    position: absolute;
+    right: var(--context-width);
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    z-index: 5;
+  }
+  .pcbk-project-heading {
+    flex-direction: column;
+    gap: 0;
+  }
+  .pcbk-topbar {
+    gap: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pcbk-app *,
+  .pcbk-app *::before,
+  .pcbk-app *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

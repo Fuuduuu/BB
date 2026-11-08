@@ -6,7 +6,7 @@ Kõik tüübid on failides `packages/domain/src/model/*.ts` koos zod-skeemidega.
 
 - **Muutumatu dokument.** `BoardDoc` muudetakse ainult käskudega (Immeri mustand mootoris). Frontend näeb seda sügavalt külmutatud hetktõmmisena ([03 § 5](03-arhitektuur.md#5-olek-kolm-eraldi-hoidlat)).
 - **Üks elektriline tõde, kaks esitust.** Komponent, selle jalad, ühendused ja mõõtmised on ühised. Plaat (foto) ja Skeem on ainult nende paigutused ja joonistused, mis võivad kumbki puududa.
-- **Id-d** on stabiilsed stringid kujul `<prefiks>_<nanoid(10)>`: `cmp_`, `jun_`, `con_`, `lbl_`, `rol_`, `msr_`, `rep_`, `pho_`, `dim_`, `are_`, `att_`, `txt_`. Uue objekti id loob käsu kutsuja.
+- **Id-d** on stabiilsed stringid. Uued id-d luuakse kujul `<prefiks>_<nanoid(10)>`: `cmp_`, `jun_`, `con_`, `lbl_`, `rol_`, `msr_`, `rep_`, `pho_`, `dim_`, `are_`, `att_`, `txt_`, `chk_`. Uue objekti id loob käsu kutsuja. Valideerimine nõuab objekti tüübile vastavat prefiksit ja mittetühja lõppu, mitte täpselt kümmet märki; fikseeritud vaikerollide ja muu pikkusega imporditud id-d jäävad lubatuks.
 - **Jalad:**
   - Jalg (`Pin`) kuulub komponendile ja selle id on püsiv. Korpusest tulnud jalal on id korpuse jala number või nimi (`"4"`, `"A4B9"`, `"EP"`), käsitsi lisatud jalal `"x1"`, `"x2"` …
   - Lisaks on igal jalal **eksemplari tunnus `uid`** (`pin_<nanoid(10)>`), mida ei taaskasutata. Kui jalg kustutatakse ja hiljem tekib sama numbriga uus jalg (nt SOIC-14 → SOIC-8 → SOIC-14), on uuel jalal uus `uid`. Tagasivõtmine taastab sama jala koos sama `uid`-ga.
@@ -34,7 +34,7 @@ type Layer = 'top' | 'bottom';
 
 interface BoardDoc {
   format_version: 1;
-  rev: number;                         // kasvab iga käsuga, ka tagasivõtmisel
+  rev: number;                         // kasvab iga dokumenti muutva käsuga, ka tagasivõtmisel
   name: string;
   device?: string;                     // seade / mudel
   problem?: string;                    // „Mis on viga?“

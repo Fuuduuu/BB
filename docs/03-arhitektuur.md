@@ -193,7 +193,7 @@ Uue mooduli mall ja moodulite kirjeldused on failis [05-moodulid.md](05-moodulid
 | **SessionStore** | frontend | valik, hover, aktiivne tööriist, **eelvaade** (lohistamine, suurus, pööre, pooleli rada, raamvalik), mõõtmise mustandid jala kaupa, piiksu ankur | ei | ei |
 | **ViewStore** | frontend | suum ja nihe (eraldi plaadi- ja skeemivaatele), kihid, foto nähtavus, kontrast, aktiivne vahekaart, paneelid | ei | `view` tabel (`ProjectService.saveView`) |
 
-**Hetktõmmis.** Frontend loeb dokumenti ainult hetktõmmisest `Snapshot { sessionId, rev, doc, derived }`, mille mootor avaldab pärast iga käsku.
+**Hetktõmmis.** Frontend loeb dokumenti ainult hetktõmmisest `Snapshot { sessionId, rev, doc, derived }`, mille mootor avaldab pärast iga dokumenti muutvat käsku.
 - Samas lõimes on see sama viide, mis mootoris; koopiaid ega paiku ei saadeta.
 - Kaitse on kahekordne: tüüp on sügavalt kirjutuskaitstud (`DeepReadonly`, mitte ainult pealmine `Readonly`) ja objektid on käitusajal külmutatud (Immeri automaatne külmutamine kogu sügavuses).
 - React tellib hetktõmmist `useSyncExternalStore` kaudu ning viide muutub ainult käsu järel.
@@ -250,7 +250,9 @@ export interface DocumentEngine {     // @pcbk/contracts, sünkroonne
 9. teavitab tellijaid uue hetktõmmisega, mille arvutatud andmed on § 7.4 järgi värsked;
 10. avaldab sündmused.
 
-`undo` ja `redo` taastavad sisu pöördpaikadega, aga **`rev` kasvab ka nende puhul**. `rev` on dokumendi versioon salvestuse jaoks, mitte ajaloo kursor.
+**Tühi käsk ei loo versiooni.** Kui õnnestunud käsu Immeri paigad on tühjad, tagastatakse `ok({ rev: senine })`. Ajalukku ega päevikusse sammu ei lisata, tellijaid ei teavitata ja redo-haru säilib. Puhverdatud sündmused visatakse ära.
+
+`undo` ja `redo` taastavad sisu pöördpaikadega. **`rev` kasvab iga dokumenti muutva käsuga, ka tagasivõtmisel**. `rev` on dokumendi versioon salvestuse jaoks, mitte ajaloo kursor.
 
 Reeglid:
 - Käsk on **puhas ja sünkroonne**. Failid, dialoogid ja võrk käivad `ProjectService`'i ja portide kaudu, tulemus antakse käsule parameetrina.

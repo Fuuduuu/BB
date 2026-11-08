@@ -13,6 +13,7 @@ export type IdPrefix =
   | 'are'
   | 'att'
   | 'txt'
+  | 'chk'
   | 'pin';
 
 export function newId(prefix: IdPrefix): string {

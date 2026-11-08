@@ -204,3 +204,86 @@ ADR nimetab `CommandId`, `ParamsOf`, `DomainEvent` ja `Unsubscribe`, kuid ei def
 Arhitekti kinnitatud ülesande 4 plaanitäpsustused olid alustamisel commit'imata ja jäid alles. Kasutaja suunise järgi lähevad need järgmise ülesande commit'i kaasa; selle ülesande 3 käigus ei muudetud nende sisu, `IdPrefix`-it ega dokumendi 04 prefiksite loendit. Kuus stardifaili jäävad eraldi. Ühine STATUS on põhikaustas.
 
 **Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 3. Käesolev töö ei ole commit'itud ega push'itud; ülesanne 4 ootab oma ülevaatuse piiri.
+
+### Ülesande 3 lõpetamine
+
+Kasutaja kinnitas ülesande 3 commiti `369276c` (`feat(contracts): engine and project service contracts`, 11 faili) ning lubas alustada ülesannet 4. Git-ist kontrolliti sama HEAD-i ja puhast jälgitavat tööpuud; kuus stardifaili jäid jälgimata. Commit sisaldab ka kinnitatud ülesande 4 plaanitäpsustusi.
+
+## Ülesanne 4 · Dokumendimootor
+
+**2026-11-08 · Codex · valmis arhitekti ülevaatuseks.** Alus ja HEAD on `369276c`, haru `m0`, tööpuu `C:\Users\TRUMPIT\.codex\worktrees\bb-m0\BB`. Ülesande 4 muudatused on commit'imata; ülesanne 5 on alustamata.
+
+### Teostatud liidesed ja vastutused
+
+- `createEngine` tagastab eraldi `DocumentEngine`-i ja `EngineHost`-i. `execute`, `undo` ja `redo` on sünkroonsed ning tagastavad lepingu `Result`-i. Käsu parameetrid ja `requestId` metadata valideeritakse enne muutmist.
+- Omanikukontroll käib Immeri paikade järgi ning kehtib ka väljalaskes. `owns` ja `alsoWrites` ei anna õigust `reserved` väljadele ega tuuma `rev`/`format_version` väljadele. Tundmatu juurväli annab `validation`, mitte vale `DocKey`-ga omandivea.
+- Ajalugu hoiab `patches`/`inversePatches`, maksimaalselt 200 sammu. Undo/redo taastavad sisu, kuid kasvatavad `rev`-i; edukas uus dokumenti muutev käsk lõpetab redo-haru. Tagasilükatud ega tühi käsk ei muuda olemasolevat ajalugu ega päevikut.
+- Kõik plaani invariandid on olemas: objektide id-de projektisisene unikaalsus, liigipõhine prefiks koos mittetühja lõpuga, tähiste tõstutundetu unikaalsus, jala id unikaalsus komponendis ning `uid` unikaalsus projektis. Prefiksikaart katab tüübi tasemel kõik `BoardDoc` id-ga objektide loendid, et uue loendi lisamisel kontroll märkamata ei puuduks.
+- Mõõtmise `overload: true` välistab `value`, ka nulli; `beep` saab olla määratud ainult läbivusel, nii `true` kui `false`. Ajalooline kontaktiviide ei ole uus jalaobjekt ega tekita unikaalsuskonflikti.
+- Autoriteetne dokument, hetktõmmis, arvutatud loendid ja ajaloo paigad on sügavalt muutumatud. Lisaks Immeri sisse lülitatud automaatsele külmutusele läbib `sealTree` ka võõra pealt külmutatud objekti lapsed. WeakSet-vahemälu säilitab muutumata harude jagatud viited.
+- Päevik saab ainult kinnitatud käigud koos süstitud kella, käsu id, `requestId` ja kokkuvõttega. Tagasipanek säilitab järjekorra ning ei dubleeri kirjeid. Eelmise seansi kirjed ei satu uue projekti päevikusse.
+- `items.delete` kustutab M0-s komponente; mõõtmisajalugu säilib ja undo taastab samad jala `uid`-id. Paigutamata komponentide mõlemad loendid uuenevad koos käsu ning undo/redo versiooniga.
+
+### Muudetud failid
+
+| Rühm | Failid |
+|---|---|
+| Mootor ja avalik API | `packages/engine/src/{engine,types,index}.ts` |
+| Eraldatud vastutused | `src/{registry,ownership,invariants,history,journal,items,events,derivation,immutability}.ts` |
+| Testid | `src/{engine,invariants,lifecycle,robustness,noop}.test.ts`, `src/__tests__/helpers.ts` |
+| Arhitekti prefiksiotsus | `packages/domain/src/ids.ts`, `ids.test.ts`, [04 põhimõtted](../04-andmemudel.md#põhimõtted): `chk_` ning genereerimise ja valideerimise erinevus |
+| Sõltuvused | `packages/engine/package.json`, `pnpm-lock.yaml`: `@pcbk/domain`/`@pcbk/contracts` tööruumilingid, `immer@11.2.9`, `zod@4.6.7` |
+| Üleandmine | see fail ning eraldi põhikausta STATUS; stardifailid jäävad eraldi |
+
+### Tegelikud kontrollid
+
+| Käsk või katse | Tulemus |
+|---|---|
+| `pnpm.cmd test packages/engine` enne teostust | **72 testi kukkus**, kolm faili; `createEngine` puudus. |
+| Sama käsk pärast esmast teostust | **72/72 läbis**; seejärel lisati olemasoleva ajaloo/päeviku säilimise katse ja sõltumatu ülevaatuse regressioonid. |
+| Esmane `pnpm.cmd check` | **145/145 testi läbis**; mõlemad TypeScripti kontrollid, ESLint, sõltuvused ja failipikkus läbisid. |
+| Ülevaatuse regressioonid enne parandusi | **7 kukkus, 2 läbis**; kinnitati metadata osaline kinnitamine, muudetavad lapsed/accessorid, vale veakuju ja asünkroonse vaatleja erind. |
+| `pnpm.cmd check` pärast parandusi, 01:17 | **154/154 testi läbis**, 14 faili (mootoris 82 testi neljas failis); kõik viis väravat läbisid. Sõltuvuskontrollis 53 moodulit ja 145 sõltuvust. |
+| `pnpm.cmd format:check` | **Läbis**. |
+| `pnpm.cmd install --frozen-lockfile` | **Läbis** kõigi 10 tööruumi projekti peal; sõltuvusi pärast seda ei muudetud. |
+| Lõpu `pnpm.cmd typecheck` ja `format:check` | **Läbisid** ka pärast prefiksikaardi täielikkuse tüübi ja hostiliidese kommentaari lisamist; käituskoodi need täiendused ei muutnud. |
+| BB dokumentide kontrollfunktsioon | **Läbis**: tööpuus 26 ja põhikaustas 25 Markdown-faili, probleeme ei leitud. |
+| `git diff --check` ja lõppseis | **Läbis**; 23 muudetud/lisatud faili, HEAD endiselt `369276c`, commit'iks lisatud sisu puudub. Kuus stardifaili on endiselt jälgimata. |
+
+### Sõltumatu ülevaatuse leiud ja parandused
+
+| Leid | Parandus |
+|---|---|
+| P1: vigane `requestId` võis põhjustada päeviku külmutusvea pärast osalist kinnitamist | Metadata valideeritakse ning päevikurida valmistatakse koos muu tulevase olekuga ette enne avaldamist. Kolm vigase metadata regressiooni tõendavad täielikku tagasilükkamist. |
+| P1: pealt külmutatud objekt peitis muudetavaid jalaobjekte, ka ajaloopaikades | Rekursiivne külmutaja ei usalda pelgalt `Object.isFrozen` tulemust. Dokumendipuu ja ajaloopaigad suletakse enne kinnitamist; accessorid ja mitteandmelised prototüübid ei saa käsu kaudu dokumendi osaks. Test kontrollib ka redo järel muutumatust ja muutumata harude viidete säilimist. |
+| P2: omandivea `field` võis olla tundmatu string | Tundmatu juurväli tagastab `validation`; `ownership.field` jääb päris `DocKey`-ks. |
+| P2: `async` vaatleja tagasilükatud Promise pääses välja | Teavitaja käsitleb ka tagastatud thenable'i erindit. Testis ei tekkinud pärast parandust ühtegi `unhandledRejection`-it. |
+
+Kõik neli leidu parandati ühe testidega tõendatud vooruga; uut sõltumatut ülevaatust ei väideta. Claude'i arhitektuurne vastuvõtt on järgmine samm.
+
+### Plaanis lahtiseks jäetud valikud ja piir
+
+- Ilma avatud projektita on `host.current()` null ning `snapshot()` annab külmutatud neutraalse hetktõmmise `sessionId: ''` ja `rev: 0`. Käsud tagastavad `stale_session`. Laadimine/sulgemine teavitab tellijaid; vigane uus laadimine jätab olemasoleva projekti alles.
+- `Clock.now(): string` järgib 03 lepingut. `CommandCtx` sisaldab eelnevaid arvutatud andmeid ja puhverdatud `emit`-i. `DeriveSpec` on M0-s `{ key, run }`, mille võtmed on kaks olemasolevat paigutamata komponentide loendit.
+- Sündmused avaldatakse pärast uut hetktõmmist; draft-viited kopeeritakse ohutuks muutumatuks sisuks. Undo/redo teavitab hetktõmmise tellijaid ega käivita käsu keha uuesti. Teavitamise ajal korduv sisenev muutmiskäsk annab `validation(engine_busy)`; vaatleja erind ei võta kinnitatud käsku tagasi.
+- Arhitekti täpsustuse järgi tekitab ajaloo- ja päevikusammu ainult dokumenti muutev käsk. Tühjade paikadega õnnestunud käsk tagastab senise `rev`-i, säilitab hetktõmmise viite ja redo-haru ega avalda teavitusi või puhverdatud sündmusi.
+- `requeueJournal` ootab algseid `drainJournal`-ist saadud kirjeobjekte. See on samas protsessis olev hosti liides; algsete objektide identiteet võimaldab eristada vana seansi ja korduvaid kirjeid. Vastav märkus on ka avalikul hostiliidesel.
+- Registris on M0 käsuotsingu turvakontrollid (kattuvad mooduli-/käsu-id-d, tuuma omand, kattuvad arvutused). Täielik `dependsOn`-i, omanike katvuse ja moodulite register ning päris `project`/`components` moodulid jäävad **ülesandesse 5**. Faili salvestamist, migratsioonide käivitamist ja `SaveCoordinator`-it pole siin teostatud.
+- `EngineModule` heterogeenne `CommandSpec<any>[]` on plaani kohane ja ühes kohas kommentaariga põhjendatud; käivitus kasutab alati eduka zod-parsimise tulemust. Reacti, DOM-i ega Tauri sõltuvusi mootoris pole.
+
+### Ülesanne 4 · tühja käsu parandus
+
+**2026-11-08 · arhitekti ülevaatuse järel.** Tühjade Immeri paikadega õnnestunud käsk tagastab nüüd `ok({ rev: senine })` enne kinnitamist. Sama dokumendi ja hetktõmmise viide, ajalugu, päevik ja redo-haru säilivad; teavitusi ei lähe ning puhverdatud sündmused visatakse ära. Kokkuvõtet, arvutatud andmeid ega kellaaega uuesti ei arvutata.
+
+- `engine.ts`: tühjade paikade korral varane tagastus.
+- `items.ts`: olematu id kustutamine ei asenda komponentide loendit tarbetult uue massiiviga.
+- `noop.test.ts`: kaks nõutud regressioonitesti, sh olemasoleva ajaloo/päeviku säilimine, redo pärast undo-d ja puhverdatud sündmuse mahajätmine. Mõlemad kukkusid enne parandust ning läbisid pärast seda.
+- [03 § 6](../03-arhitektuur.md#6-käsud-tagasivõtmine-ja-logi), [04 `BoardDoc`](../04-andmemudel.md#tüübid) ja [M0 ülesanne 4](M0-vundament.md#ülesanne-4-dokumendimootor-pcbkengine) kajastavad arhitekti otsust. `rev` kasvab iga dokumenti muutva käsuga, ka tagasivõtmisel.
+
+**Viimane kontroll, 02:16:** `pnpm.cmd check` läbis kõik viis väravat ja **156/156 testi 15 failis** (mootoris 84 testi). Sõltuvuskontroll läbis: 54 moodulit, 147 sõltuvust. `pnpm.cmd format:check` läbis.
+
+Dokumendikontroll läbis tööpuus 26 ja põhikaustas 25 faili. Kogu ülesande 4 praegune diff hõlmab 26 faili; kuus stardifaili on endiselt jälgimata ja commit'iks lisatud sisu puudub. HEAD on `369276c`.
+
+Mitteblokeerivad märkmed järgmisele plaanile: tühja ajaloo `undo` annab endiselt `not_found` (`id: 'undo'`); UI peab keelama kättesaamatu undo/redo. Ühenduste mooduli lisamisel tuleb lisada 03 § 6 viidete tervikluse invariandid (otsad ja sildi ankrud olemas, orbliitepunkte pole) ning laiendada `items.delete` dokumendi 04 seotud kirjete kustutamise reeglitega. M0 ei lisa ühenduste loogikat.
+
+**Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 4. Commit, push ja `main`-i ühendamine ootavad vastavat kasutaja luba; ülesannet 5 enne ülevaatuse otsust ei alustata.

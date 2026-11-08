@@ -17,6 +17,7 @@ test('entity and pin IDs have the requested prefix and ten URL-safe random chara
     'are',
     'att',
     'txt',
+    'chk',
     'pin',
   ];
   for (const prefix of prefixes) {

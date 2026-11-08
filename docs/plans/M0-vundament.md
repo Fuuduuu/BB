@@ -267,6 +267,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   10. sündmused.
 
   Undo ja redo suurendavad samuti `rev`-i.
+- **Tühi käsk ei loo versiooni (arhitekti otsus):** kui õnnestunud käsu Immeri paigad on tühjad, tagastatakse `ok({ rev: senine })`. Dokument, ajalugu ja päevik ei muutu, redo-haru säilib, tellijaid ei teavitata ja puhverdatud sündmused visatakse ära.
 - **Omandi kontroll:** iga paiga `path[0]` peab olema käsu mooduli `owns` või käsu `alsoWrites` hulgas. `reserved` väljad (veel ehitamata moodulite omad) on kõigile keelatud. `rev` ja `format_version` on tuuma omad ja käsk neid ei muuda. Kontroll **ei sõltu** `NODE_ENV`-ist.
 - **M0 invariandid:**
   - dokumendi objektikirjete id-d on unikaalsed kõigis loendites, mitte ainult komponentidel; viite kordumine ei ole uus objekt ega duplikaat;
@@ -323,6 +324,8 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   });
   test('read-only session rejects commands with read_only', …);
   test('journal entry per command with requestId', …);
+  test('items.delete with absent id preserves rev, history and journal', …);
+  test('empty command after undo preserves redo and discards buffered events', …);
   ```
 - [ ] **Samm 2:** `pnpm test packages/engine` → KUKUB.
 - [ ] **Samm 3:** teosta mootor. Immeri `autoFreeze` peab olema sees. Ajalugu hoiab paiku (`patches`, `inversePatches`), mitte koopiaid.

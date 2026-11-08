@@ -56,6 +56,22 @@ export function mutationModule(run: (doc: Draft<BoardDoc>) => void, owns?: DocKe
     commands: [{ id: 'test.mutate', title: 'Mutate', params: z.strictObject({}), run }],
   };
 }
+// Transaction tests isolate one module; placeholders own every other non-reserved field.
+export function withTestOwners(modules: EngineModule[], reserved: DocKey[] = []): EngineModule[] {
+  const assigned = new Set<DocKey>([
+    'rev',
+    'format_version',
+    ...reserved,
+    ...modules.flatMap((module) => module.owns ?? []),
+  ]);
+  return [
+    ...modules,
+    {
+      id: 'test-unused-fields',
+      owns: BoardDocSchema.keyof().options.filter((key) => !assigned.has(key)),
+    },
+  ];
+}
 export function setup(
   options: {
     modules?: EngineModule[];
@@ -67,7 +83,7 @@ export function setup(
 ) {
   expect(api.createEngine).toBeTypeOf('function');
   const result = api.createEngine({
-    modules: options.modules ?? [demo],
+    modules: withTestOwners(options.modules ?? [demo], options.reserved),
     clock: options.clock ?? clock,
     reserved: options.reserved,
   });

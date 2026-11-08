@@ -13,6 +13,7 @@ import { enablePatches, Immer } from 'immer';
 import { z, ZodError } from 'zod';
 import { makeSnapshot } from './derivation';
 import { capturePayload, notify } from './events';
+import { CommandTargetNotFound } from './errors';
 import { createHistory } from './history';
 import { sealTree } from './immutability';
 import type { HistoryEntry } from './history';
@@ -69,6 +70,7 @@ export function createEngine(opts: {
     try {
       return action(active);
     } catch (error) {
+      if (error instanceof CommandTargetNotFound) return err({ code: 'not_found', id: error.id });
       return validation(error);
     } finally {
       busy = false;

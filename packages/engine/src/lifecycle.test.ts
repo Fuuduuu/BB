@@ -3,11 +3,11 @@ import type { BoardDoc } from '@pcbk/domain';
 import type { CommandId, DeepReadonly, DomainEvent, Snapshot } from '@pcbk/contracts';
 import { expect, test } from 'vitest';
 import * as api from './index';
-import { clock, component, demo, mutationModule, setup } from './__tests__/helpers';
+import { clock, component, demo, mutationModule, setup, withTestOwners } from './__tests__/helpers';
 
 test('empty engine and unloading expose no active project and reset history', () => {
   expect(api.createEngine).toBeTypeOf('function');
-  const { engine, host } = api.createEngine({ modules: [demo], clock });
+  const { engine, host } = api.createEngine({ modules: withTestOwners([demo]), clock });
   expect(host.current()).toBeNull();
   expect(engine.snapshot().sessionId).toBe('');
   expect(engine.execute('demo.rename', { name: 'No project' })).toMatchObject({

@@ -287,3 +287,75 @@ Dokumendikontroll läbis tööpuus 26 ja põhikaustas 25 faili. Kogu ülesande 4
 Mitteblokeerivad märkmed järgmisele plaanile: tühja ajaloo `undo` annab endiselt `not_found` (`id: 'undo'`); UI peab keelama kättesaamatu undo/redo. Ühenduste mooduli lisamisel tuleb lisada 03 § 6 viidete tervikluse invariandid (otsad ja sildi ankrud olemas, orbliitepunkte pole) ning laiendada `items.delete` dokumendi 04 seotud kirjete kustutamise reeglitega. M0 ei lisa ühenduste loogikat.
 
 **Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 4. Commit, push ja `main`-i ühendamine ootavad vastavat kasutaja luba; ülesannet 5 enne ülevaatuse otsust ei alustata.
+
+### Ülesande 4 lõpetamine
+
+Kasutaja kinnitas ülesande 4 commiti `0a532fa` (`feat(engine): synchronous document engine with ownership and invariants`) ning lubas alustada ülesannet 5. Git-ist kontrolliti sama HEAD-i ja puhast jälgitavat tööpuud; kuus stardifaili jäid jälgimata.
+
+## Ülesanne 5 · Moodulite register ning project ja components
+
+**2026-11-08 · Codex · valmis arhitekti ülevaatuseks.** Alus ja HEAD on `0a532fa`, haru `m0`, tööpuu `C:\Users\TRUMPIT\.codex\worktrees\bb-m0\BB`. Ülesanne 5 on commit'imata; ülesanne 6 on alustamata.
+
+### Teostatud
+
+- Register nõuab igale `BoardDoc` väljale täpselt üht omanikku: moodul, tuum või `reserved`. Ka valikulised väljad peavad olema kaetud. Topeltomanik, tundmatu väli ning puuduv või tsükliline sõltuvus annavad käivitusel `RegistryError`-i. Mooduli- ja käsu-id-d ei tohi korduda ning `alsoWrites` peab nimetama olemasoleva välja.
+- Sõltuvused järjestatakse enne neist sõltuvaid mooduleid. Nii näeb arvutatud andmete tarbija oma sõltuvuse tulemust ka siis, kui moodulite sisendloend on teises järjekorras.
+- `projectEngine` omab kõiki seitset plaanis määratud välja. `project.rename` trimmib nime ning nõuab 1–120 märki; `project.setInfo` muudab ainult antud seadme/probleemi välju.
+- `componentsEngine` omab `components` välja. Olemas on lisamine, muutmine ning `addPin`, `renamePin`, `setNc` ja `removePin`. Automaatne tähis kasutab domeeni `nextRef`-i. Väärtus ja märgistus on vaikimisi tühjad; uus komponent on mõlemas vaates paigutamata.
+- Feature-lepingud ekspordivad käskude zod-skeemid ja tüübid ning laiendavad `CommandMap`-i. `selectComponents` ja `selectComponent` tagastavad sama sügavalt kirjutuskaitstud hetktõmmise andmed. `makeAddComponent` kasutab kutsuja ID-loojat ja domeeni `defaultPinIds`-i; mootor uusi identiteete ei genereeri.
+- Eemaldatud jala tagasivõtmine taastab sama `uid`-i. Sama numbriga uuele jalale annab kutsuja uue `uid`-i; vana mõõtmiskontakt säilib muutmata. Vigased käsud kasutavad olemasolevat atomaarset omandi-/invariantide kontrolli. Tühjad osalised muudatused säilitavad `rev`-i ja redo-haru.
+
+### Muudetud failid
+
+| Koht | Sisu |
+|---|---|
+| `packages/engine/src/registry.ts`, `registry.test.ts` | täielik omanikukatvus, sõltuvused, tsüklid ja käivituskontrollid |
+| `packages/engine/src/__tests__/helpers.ts`, `lifecycle.test.ts` | varasemad tehingutestid kasutavad puuduvate väljade jaoks selgesõnalisi testomanikke; tootmiskontrolli ei lõdvendatud |
+| `packages/features/project/{contract.ts,engine/index.ts}` | projekti käsud, skeemid ja omanikud |
+| `packages/features/components/{contract.ts,engine/index.ts,engine/commands.ts}` | komponendi/jalgade käsud, selektorid ja ID-abifunktsioon |
+| `packages/features/{__tests__/helpers.ts,components/components.test.ts,components/pins.test.ts,components/contract.test-d.ts,project/project.test.ts}` | päris mootori integratsioonitestid ja lepingu tüübikontroll |
+| `packages/contracts/src/{ids.ts,index.ts}` | ühine `IdGen` tüüp, ilma mootori sõltuvuseta |
+| `packages/features/package.json`, `pnpm-lock.yaml` | tööruumisõltuvused ja juba lukustatud `zod@4.6.7`; uusi väliseid versioone pole |
+| Üleandmine ja põhikausta STATUS | see fail ning ühine jooksev seis; stardifailid jäävad eraldi |
+
+### Tegelikud kontrollid
+
+| Käsk või katse | Tulemus |
+|---|---|
+| Registri testid enne teostust | **15 kukkus, 2 läbis**: seni puudusid omanike katvuse, reservatsioonide ja sõltuvuste kontrollid ning sõltuvuspõhine järjestus. |
+| `pnpm.cmd test packages/engine` pärast registri teostust | **101/101 läbis**, kuus faili, sh 17 registritesti ja kõik varasemad tehingutestid. |
+| Feature-testid ja tüübikontroll enne teostust | Pärast deklareeritud tööruumisõltuvuste linkimist **33/33 testi kukkus** puuduvate moodulite/ID-abifunktsiooni tõttu. Tüübikontroll kukkus puuduvate eksportide ja käsukaardi kirjete tõttu. |
+| `pnpm.cmd test packages/features` pärast teostust | **33/33 läbis**, kolm faili; lisaks kontrollib `contract.test-d.ts` käskude sisendit ja selektorite sügavat kirjutuskaitset TypeScriptiga. |
+| `pnpm.cmd check`, 11:15 | **206/206 testi läbis**, 19 faili. Mõlemad TypeScripti kontrollid, ESLint, sõltuvusreeglid ja failipikkus läbisid. Sõltuvuskontroll: 66 moodulit, 186 sõltuvust, 0 rikkumist. |
+| `pnpm.cmd install --frozen-lockfile --offline` | **Läbis** kõigi 10 tööruumi projekti peal. Keskkond kontrollitud: Node.js 26.13.0, pnpm 12.18.0. |
+| `pnpm.cmd format:check` ja BB dokumentide kontrollfunktsioon | **Läbisid**. Dokumendikontrollis tööpuus 26 ja põhikaustas 25 Markdown-faili; probleeme ei leitud. |
+| `git diff --check` ja esialgne seis enne arhitekti parandusi | **Läbis**; ülesandes 5 oli 19 muudetud/lisatud faili, HEAD `0a532fa`, commit'iks lisatud sisu puudus. Kuus stardifaili jäid jälgimata ja eraldi töösse. |
+
+### Plaanis lahtiseks jäetud valikud ja piir
+
+- `IdGen` oli plaanis nõutud, kuid selle asukoht oli määramata. Tüüp on `@pcbk/contracts`-is kujul `newId(prefix: string): string`, täpselt 03 lepingu järgi: feature-leping ei pea importima mootorit ning ülesande 6 pordid saavad kasutada sama tüüpi.
+- Osalises muudatuses tähendab puuduv või `undefined` väli „jäta samaks“; tühi string on teadlik tühjendamine. `renamePin({ name: null })` eemaldab valikulise nimevälja. Puuduva komponendi või jala muutmine annab arhitekti paranduse järel `not_found` koos sihtmärgi tunnusega; varasem `validation` valik on asendatud alloleva otsusega.
+- Uued jala tunnused loob kutsuja. Mootor kontrollib elavate jalgade `uid`-de unikaalsust; varem kustutatud tunnuse tahtliku taaskasutamise keelamiseks eraldi ajalookogumit ei lisatud. Õige ID-looja ja säilinud ajalooline kontakt on testitud.
+- Ühenduste/siltide korrastamine ja paigutuste viidete täisvoog kuuluvad nende moodulite lisamise juurde. `removePin` muudab M0-s jalgade loendit ja jätab mõõtmised alles; tulevased viidete tervikluse ning seotud kirjete kustutamise reeglid jäävad ülesande 4 üleandmise märkme järgi järgmisse plaani. Nende valmimist siin ei väideta.
+- Salvestust, `ProjectService`-i, kasutajaliidest ega inimese visuaalset vastuvõttu pole selles ülesandes teostatud. Neid ei asenda Node'is läbinud testid.
+
+**Esialgne sõltumatu ülevaatus:** eraldi ülevaataja luges tegelikku `git diff HEAD` muudatust, seotud domeeni/mootori koodi ja teste ega tuvastanud leide. Ta faile ei muutnud ega teste uuesti käivitanud; kontrollitulemused ülal on ehitaja tegelikest käivitustest. Ülevaatus jättis hilisemate moodulite ühendus-/paigutuskoristuse, tahtliku ajaloolise UID taaskasutuse ning salvestuse/UI väljapoole seda ülesannet; nende piir on eespool selgelt kirjas. Seejärel leidis arhitekt allolevad kaks viga, mis esialgses ülevaatuses märkamata jäid.
+
+### Ülesanne 5 · arhitekti parandused
+
+**2026-11-08 · kaks leidu parandatud, ootab uut arhitekti ülevaatust.**
+
+- **Puuduv sihtmärk:** mootori avalik API ekspordib `CommandTargetNotFound(id)` klassi (`packages/engine/src/errors.ts`). `locked` teisendab selle kujule `{ code: 'not_found', id }`; muud erindid jäävad `validation`-iks. Komponentide ja jalgade leidmise abifunktsioonid ning `removePin` kasutavad seda klassi. Komponendi tunnus jääb nt `cmp_absent`, jala tunnus on nt `cmp_a:7`.
+- **Tähis:** lisamise ja muutmise skeemid trimmivad `ref`-i enne tühjuse kontrolli. Mootori invariant võrdleb `ref.trim().toUpperCase()`, mistõttu ka laaditud faili tühikutega duplikaat lükatakse tagasi. Domeeni `nextRef` kasutab sama võrdlust: laaditud `R1 ` kõrval saab uus takisti `R2`, mitte tagasilükatava `R1`.
+- **Regressioonid:** kuus sihtmärgijuhtu kontrollivad täpset veakoodi/tunnust ning dokumendi, `rev`-i, ajaloo ja päeviku säilimist. Mootori eraldi test kontrollib ka erindi eel tehtud mustandimuudatuse ja puhverdatud sündmuse mahajätmist. Kuus tähisetesti katavad lisamise/muutmise trimmimise, tühikutega tõstutundetu duplikaadi, vigase faili laadimise ning automaatse nummerdamise.
+- **Muudetud kohad selles paranduses:** `packages/engine/src/{errors,engine,index,invariants,target-error.test}.ts`, `packages/domain/src/components/refs.ts`, `packages/features/components/{contract.ts,engine/commands.ts,pins.test.ts,refs.test.ts}` ning M0 plaan/üleandmine. Sõltuvused ei muutunud.
+
+Testitõend: enne parandusi **13 katset kukkus ja 8 varasemat läbis**. Pärast esimest parandust läbisid sihtmärgi-/erindikontrollid **25/25**; pärast tähiseparandust läbisid tähiste, invariantide ja domeeni abifunktsioonide katsed **62/62**. Lõplik `pnpm.cmd check`, 11:38: **218/218 testi 21 failis**; mõlemad TypeScripti kontrollid, ESLint, sõltuvusreeglid (69 moodulit, 194 sõltuvust) ja failipikkus läbisid. Need on ehitaja käivitatud kontrollid; uut sõltumatut ülevaatust pärast parandusi ei väideta.
+
+Vormindus ja `git diff --check` läbisid. BB dokumentide kontrollfunktsioon läbis tööpuus 26 ja põhikaustas 25 faili, probleeme ei leitud. Kogu ülesande 5 praegune diff on 27 faili; commit'iks lisatud sisu puudub, kuus stardifaili on endiselt jälgimata ning haru `m0` HEAD on `0a532fa`.
+
+**Arhitektile M1 plaani jaoks, praegu mitteblokeeriv:**
+- Koos esimese teise mooduli lepinguimpordiga lisa `dependsOn` loendi ja tegeliku impordi kooskõla kontroll. M0-s selliseid importe veel pole; praegune kontroll seda tingimust ei taga.
+- Plaadipaigutuse olemasolul peab käsitsi lisatud jala eemaldamine koristama `customPads`-i ning jalale viitavad `padMap`-i kirjed. M0 selles paranduses paigutuste loogikat ei lisa.
+
+**Arhitektilt oodatav otsus:** „sobib“ või konkreetsed parandused ülesandele 5. Commit, push ja `main`-i ühendamine ootavad vastavat kasutaja luba; ülesannet 6 enne ülevaatuse otsust ei alustata.

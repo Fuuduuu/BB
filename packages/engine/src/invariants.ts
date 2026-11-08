@@ -43,9 +43,8 @@ export function validateDocument(input: unknown): BoardDoc {
   const refs = new Set<string>();
   const uids = new Set<string>();
   doc.components.forEach((component, index) => {
-    const ref = component.ref.toUpperCase();
-    if (!component.ref.trim() || refs.has(ref))
-      add(['components', index, 'ref'], 'invalid_or_duplicate_ref');
+    const ref = component.ref.trim().toUpperCase();
+    if (!ref || refs.has(ref)) add(['components', index, 'ref'], 'invalid_or_duplicate_ref');
     refs.add(ref);
     const pins = new Set<string>();
     component.pins.forEach((pin, pinIndex) => {

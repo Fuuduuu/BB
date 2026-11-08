@@ -33,7 +33,7 @@ export function refPrefix(kind: ComponentKind): string {
 
 export function nextRef(doc: BoardDoc, kind: ComponentKind): string {
   const prefix = refPrefix(kind);
-  const used = new Set(doc.components.map((component) => component.ref.toUpperCase()));
+  const used = new Set(doc.components.map((component) => component.ref.trim().toUpperCase()));
   let number = 1;
   while (used.has(`${prefix}${number}`)) number += 1;
   return `${prefix}${number}`;

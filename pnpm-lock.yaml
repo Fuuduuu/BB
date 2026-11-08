@@ -235,7 +235,20 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
-  packages/features: {}
+  packages/features:
+    dependencies:
+      '@pcbk/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@pcbk/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@pcbk/engine':
+        specifier: workspace:*
+        version: link:../engine
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
 
   packages/ui: {}
 

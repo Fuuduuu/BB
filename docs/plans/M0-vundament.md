@@ -356,6 +356,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   - `components.renamePin({ id, pinId, name: string | null })`;
   - `components.setNc({ id, pinId, nc: boolean })`;
   - `components.removePin({ id, pinId })`.
+- **Sihtmärk ja tähis (arhitekti ülevaatuse otsus):** mootor ekspordib `CommandTargetNotFound(id)` klassi ning teisendab selle veaks `{ code: 'not_found', id }`; muud erindid jäävad `validation`-iks. Puuduva jala tunnus on `<komponendi id>:<jala id>`. Lisamise ja muutmise `ref` skeem on `z.string().trim().min(1)`; invariant ja automaatne tähise leidmine võrdlevad tähiseid kujul `ref.trim().toUpperCase()`.
 - **Leping (`features/components/contract.ts`):**
   - `selectComponents(s: Snapshot)`, `selectComponent(s, id)`;
   - `makeAddComponent(ids: IdGen, kind: ComponentKind, pinCount?: number): AddComponentParams`, mis loob `cmp_` id ja iga jala jaoks `pin_` uid.
@@ -373,11 +374,18 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   });
   test('removePin then addPin with same number gets a new uid', …expect(newUid).not.toBe(oldUid));
   test('rename project trims and rejects empty', …);
+  test('missing component or pin → not_found with target id, document and rev unchanged', …);
+  test('add and update trim refs and reject a spaced case-insensitive duplicate', …);
+  test('loading rejects duplicate refs ignoring spaces; automatic refs skip spaced legacy values', …);
   ```
 - [ ] **Samm 2:** testid → KUKUVAD.
 - [ ] **Samm 3:** teosta register ja mõlema mooduli mootori pool.
 - [ ] **Samm 4:** testid → LÄBIVAD; `pnpm depcruise` → 0 viga.
 - [ ] **Samm 5:** commit `feat(components): first engine module with registry checks`; üleandmine.
+
+**M1 plaanimärkmed (ei blokeeri M0):**
+- Koos esimese moodulitevahelise lepinguimpordiga lisa kontroll, et imporditav moodul on `dependsOn` loendis. Praegune sõltuvuskontroll seda tingimust veel ei kontrolli; M0 moodulite vahel sellist importi pole.
+- Kui plaadipaigutus on olemas, peab käsitsi lisatud jala eemaldamine koristama ka selle `customPads`-i ning jalale viitavad `padMap`-i kirjed.
 
 ### Ülesanne 6: Pordid, `storage-memory`, `ProjectService` ja `SaveCoordinator`
 

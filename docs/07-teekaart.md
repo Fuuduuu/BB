@@ -66,6 +66,8 @@ M0 ehitab **ühe päris mooduli**, `components`, läbi kõigi kolme osa: kompone
 M1 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja esimene läbiv töövoog ei oota ära kõiki korpusi.
 
 ### M1.1 · Komponent fotol ja mõõtmine
+_M1.1 töötab virtuaalsel tööpinnal ilma fotota ([03 § 7.1](03-arhitektuur.md#71-koordinaadid)); foto tuleb M1.2-s. Lõuendi stseeniteisendus (`PhotoRef.transform`, M1.1-s identne) ja tekstide vastuteisendus on M1.1-s olemas, et M1.2 ei kirjutaks lõuendit ümber._
+
 **Sisu:**
 - 5 põhikorpust: kahejalgne chip (takisti/kondensaator), SOT-23, SOIC-8, TO-220 ja pinnirida;
 - plaadipaigutus, paigutus ja liigutamine (eelvaade `SessionStore`'is, mootorisse üks käsk);
@@ -90,7 +92,8 @@ M1 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja esimene läbiv töö
 - terviklik foto import Rustis (failist ja kleepimisel baitidest, EXIF, kuvamisvariant, `pcbk://photo`);
 - nähtavus ja kontrast, pööramine ja peegeldamine kogu stseenile;
 - kalibreerimine;
-- **varajane jõudlusproov** päris Tauri aknas tiheda sünteetilise plaadiga (sildid, valik, foto).
+- **varajane jõudlusproov** päris Tauri aknas tiheda sünteetilise plaadiga (sildid, valik, foto);
+- **sünteetilise plaadi generaator** (`tooling/fixtures`): ehitab suure dokumendi tavaliste käskudega; seda kasutavad jõudlusproov ning M2–M3 testid.
 
 **Valmis kui:**
 - [ ] Esimene komponent on paigas kõige rohkem 3 tegevusega pärast foto valimist.
@@ -108,17 +111,20 @@ M1 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja esimene läbiv töö
 - [ ] SOIC-8 → SOIC-14 vahetus hoiab jalad 1–8 seotuna (sama `uid`); SOIC-14 → SOIC-8 küsib kinnitust ja loetleb kaduvate jalgade mõju; nende jalgade mõõtmised muutuvad ajaloolisteks. SOIC-8 → SOIC-14 tagasi ei aktiveeri vanu mõõtmisi (uus `uid`), aga `Ctrl+Z` aktiveerib.
 
 ### M1.4 · Suurus ja joondus
-**Sisu:** suuruse muutmine käepidemetega ja numbritega, kahe jala joondus, oma jalad, jõudluseelarve.
+**Sisu:** suuruse muutmine käepidemetega ja numbritega, kahe jala joondus, oma jalad, jõudluseelarve, paremklõpsu kontekstimenüü baas ([06 › Hiir ja puude](06-kasutajaliides.md#hiir-ja-puude)): komponent (pööra, pool, dubleeri, kustuta), jalg (mõõda, nimeta, NC), tühi ala (lisa komponent siia); hilisemad osad lisavad oma kirjed.
 
 **Valmis kui:**
 - [ ] [02 § 16](02-kasutaja-teekond.md#16-vastuvõtustsenaarium-e2e-test-plaat-algusest-lõpuni) sammud 1–5 lähevad läbi.
 - [ ] Kahe jala joondus taastab teadaoleva asendi täpsusega < 0,01 px ja < 0,01°.
 - [ ] Jõudluseelarve on täidetud ([03 § 7.3](03-arhitektuur.md#73-kihid-ja-jõudlus)).
+- [ ] Paremklõps komponendil, jalal ja tühjal alal avab menüü, mille kirjed teevad sama, mis klahvid ja tööriistad; `Esc` sulgeb menüü ilma muutuseta.
 
 ## M2 · Ühendused, võrgud ja muudetav skeem
 
-**Sisu:**
-- moodulid `connections`, `nets` ja `schematic` ning piiksumisrežiim moodulis `measurements` (`beep.record`);
+M2 jaguneb kolmeks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse järjest: võrgud plaadil, siis mõõtmisest tulenev tase, siis skeem.
+
+### M2.1 · Ühendused ja võrgud plaadil
+**Sisu:** moodulid `connections` ja `nets`.
 - **ühendused ja liitepunktid:**
   - rada fotol kihiga, juhe, kiirühendus ja õhujoon;
   - haru loob liitepunkti, lahtine ots on liitepunkt;
@@ -126,24 +132,39 @@ M1 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja esimene läbiv töö
   - „Eemalda joonistus“ vs „Kustuta ühendus“;
   - raja silt (võrgu nimi) koos lohistatava nihkega;
 - **võrgud** arvutatakse ainult ühendustest (ilma läheduseta) koos kihireegliga; rollid ja värvid, rollikonflikt, negatiivse läbivuse hoiatus, lühistatud komponendi hoiatus, „Ühenda võrguga…“, võrguloendi eksport;
-- **lihtne muudetav skeem:**
-  - komponendi lisamine kummaski vaates ja „Plaadile/Skeemile paigutamata“ loendid;
-  - käsitsi sümbolite paigutus ja pööramine, nummerdatud kast tundmatule korpusele, jalgade funktsiooni määramine;
-  - ühendusjooned ja liitepunktid skeemil, võrgusildid, toite- ja maandussümbolid, tekstimärkused;
-  - ühine valik ja „Näita teises vaates“;
-  - mõõtmine skeemilt;
-- **piiksumisrežiim:** „Piiksub ja ühenda“ (`Enter`), „Ainult mõõtmine“ (`Shift+Enter`), „Ei piiksu“ (`N`); `Esc` katkestab. Ühenduse tase arvutatakse mõõtmistest.
+- paremklõpsu menüü laieneb ühenduse tegevustega (alusta rada jalalt, kustuta ühendus).
 
 **Valmis kui:**
-- [ ] Stsenaariumi sammud 6–9 lähevad läbi.
-- [ ] Skeemil lisatud takisti paigutatakse hiljem fotole sama id-ga; ühes vaates loodud ühendus on teises vaates olemas; tähise ümbernimetamine ei muuda ühendusi ega mõõtmisi.
 - [ ] Kaks ristuvat rada ja raja ots 1 px kaugusel teisest rajast **ei** liitu. Haru tekib ainult liitepunktiga. Mõõtkava muutmine ei muuda ühtegi võrku. Pealmise ja alumise kihi rajad ühinevad ainult läbiva jala kaudu (ühiktestid).
-- [ ] Mõõdetud A–B ühenduse jagamine haruks jätab A–J ja J–B mõõdetuks. Liitepunkti eemaldamine ei jäta võrgusildile katkist ankrut.
+- [ ] Liitepunkti eemaldamine ei jäta võrgusildile katkist ankrut.
 - [ ] Kaks eraldi GND-nimega võrku jäävad eraldi; GND + 5V liitmine annab konflikti ja ei kirjuta rolli üle; tagasivõtmine taastab.
-- [ ] „Eemalda joonistus“ jätab ühenduse ja skeemi alles; „Kustuta ühendus“ eemaldab selle mõlemast vaatest; mõlemad on tagasivõetavad.
+- [ ] „Eemalda joonistus“ jätab ühenduse alles (õhujoonena); „Kustuta ühendus“ eemaldab selle; mõlemad on tagasivõetavad.
+
+### M2.2 · Piiksumisrežiim ja ühenduse tase
+**Sisu:** piiksumisrežiim moodulis `measurements` (`beep.record`) ja ühenduse tase (`connectionLevels`).
+- „Piiksub ja ühenda“ (`Enter`), „Ainult mõõtmine“ (`Shift+Enter`), „Ei piiksu“ (`N`); `Esc` katkestab;
+- ühenduse tase arvutatakse mõõtmistest.
+
+**Valmis kui:**
 - [ ] Piiksumisrežiimi „Piiksub ja ühenda“ on üks samm: `Ctrl+Z` eemaldab nii mõõtmise kui ka ühenduse. „Ainult mõõtmine“ ei muuda ühendusi. `Esc` ei salvesta midagi. Piiks 10 Ω takisti otste vahel ei liida võrke ilma kinnituseta; kui otsad satuvad siiski samasse võrku, tuleb hoiatus.
+- [ ] Mõõdetud A–B ühenduse jagamine haruks jätab A–J ja J–B mõõdetuks.
 - [ ] Mõõtmise kustutamine või remondist tulenev aegumine võtab ühenduselt ✓-märgi ära; uus tavaline läbivusmõõtmine samade jalgade vahel taastab selle ([04 › Ühenduse tase](04-andmemudel.md#ühenduse-tase-connectionlevels)).
 - [ ] 50 jala kaardistamine piiksumisrežiimis võtab alla 2 minuti **kasutuskatses**.
+
+### M2.3 · Muudetav skeem
+**Sisu:** moodul `schematic`.
+- komponendi lisamine kummaski vaates ja „Plaadile/Skeemile paigutamata“ loendid;
+- **sümbolid kõigile `ComponentKind` tüüpidele** (~23: takisti, kondensaator, diood, transistorid, IC-kast jt; sümbol tuleb tüübist, mitte korpusest), käsitsi paigutus ja pööramine, nummerdatud kast tundmatule korpusele, jalgade funktsiooni määramine;
+- ühendusjooned ja liitepunktid skeemil, võrgusildid, toite- ja maandussümbolid;
+- ühine valik ja „Näita teises vaates“;
+- mõõtmine skeemilt.
+
+Tekstimärkused (`textNotes`) ei kuulu M2-sse: neid omab moodul `dimensions` ja need tulevad M4-s.
+
+**Valmis kui:**
+- [ ] Stsenaariumi sammud 6–9 lähevad läbi (kogu M2: M2.1–M2.3 kokku).
+- [ ] Skeemil lisatud takisti paigutatakse hiljem fotole sama id-ga; ühes vaates loodud ühendus on teises vaates olemas; tähise ümbernimetamine ei muuda ühendusi ega mõõtmisi.
+- [ ] „Eemalda joonistus“ jätab ühenduse ja skeemi alles; „Kustuta ühendus“ eemaldab selle mõlemast vaatest; mõlemad on tagasivõetavad.
 
 ## M3 · Mõõtmise täisvoog ja remont
 
@@ -154,7 +175,8 @@ M1 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja esimene läbiv töö
 - ajaloolised mõõtmised („kontakt kustutatud“);
 - mõõtmiste nimekiri ja filtrid, kahtlaste vaade;
 - kahjustatud alad;
-- remonditoimingud koos mõjuga (komponent, võrgud, kogu plaat, mitte midagi) ja aegumisega.
+- remonditoimingud koos mõjuga (komponent, võrgud, kogu plaat, mitte midagi) ja aegumisega;
+- käsupalett `Ctrl+K`: otsing eesti keeles üle kõigi registreeritud käskude ja tööriistade ([01 › põhimõte 7](01-pohimotted.md)).
 
 **Valmis kui:**
 - [ ] Stsenaariumi sammud 10–11 lähevad läbi.
@@ -162,6 +184,7 @@ M1 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja esimene läbiv töö
 - [ ] 20 pinget järjest saab mõõta ainult klaviatuuriga (`Alt+↓`, number, `Enter`) ilma hiireta; fookus ja dialoogid on klaviatuuriga kasutatavad (Playwright).
 - [ ] Mõõtmise koht, must sond ja sisestatud väärtus ei muutu tööriista, filtri, vahekaardi ega Plaat/Skeem vahetusel. Teisele jalale minnes ei salvestu eelmise jala väärtus uuele jalale (regressioonitest BenchBeepi BB-01, BB-04 ja BB-11 kohta).
 - [ ] Rajaparandus valitud võrgule märgib selle võrgu mõõtmised „enne remonti“; komponendita remont nõuab mõju valikut.
+- [ ] `Ctrl+K` leiab käsu eestikeelse nime järgi ja käivitab selle; kontekstiklahvid (nt piiksu nupud) ei ilmu paletis, kui konteksti pole.
 
 ## M4 · Eksport, import ja väljalase
 
@@ -169,9 +192,10 @@ M1 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja esimene läbiv töö
 - moodulid `dimensions`, `guide` ja `export`;
 - skeemi **automaatpaigutus abilisena** (ELK-i proov 20–50 komponendiga, ainult paigutamata või valitud sümbolid);
 - mõõtjooned ja kontuur, valmiduse näitajad ja „Märgi kaardistus valmis“;
+- tekstimärkused mõlemas vaates (`textNotes`, `notes.*`) koos mooduliga `dimensions`;
 - kõik ekspordid, remondiraport, kaardi ja skeemi printimine;
+- avalehe „Näidisprojekt“: avaneb kirjutuskaitstud koopia näidisplaadist, esimene muudatus pakub „Salvesta oma koopiana“ ([02 § 1](02-kasutaja-teekond.md));
 - prototüübi import koos kontrollnimekirjaga („Kontrolli neid ühenduskohti“);
-- ~40 korpusest täielik teek koos sümbolitega;
 - paigaldus ja allkirjastamine ([03 § 14](03-arhitektuur.md#14-paigaldus-ja-väljalase)).
 
 **Valmis kui:**
@@ -186,7 +210,7 @@ M1 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja esimene läbiv töö
   - eri kihtide kattumisest läbiviiku ei teki;
   - kasutaja näeb võrgu muutust enne lõpetamist.
 - [ ] `.msi` paigaldub võrguühenduseta masinasse; `.pcbk` topeltklõps avab äpi; uue versiooni paigaldamine säilitab projektid ja varukoopiad.
-- [ ] **v1.0 väljalase:** allkirjastatud `.msi` GitHubi Release'is ja kasutaja visuaalne vastuvõtt.
+- [ ] **v1.0 väljalase:** `.msi` GitHubi Release'is ja kasutaja visuaalne vastuvõtt. Allkirjastamine on kasutaja otsus: kui koodiallkirjastamise sertifikaat on seadistatud, on `.msi` allkirjastatud; muidu on Release'i märge „allkirjastamata“ ja SmartScreeni hoiatus on teada piirang.
 
 ## M5 · Foto täiendused ja tahvel
 

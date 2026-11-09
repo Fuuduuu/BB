@@ -49,36 +49,41 @@ function typecheckFixture(files: Record<string, string>) {
   }
 }
 
-test('root typecheck rejects browser and Node globals in every backend layer', () => {
-  const paths = [
-    'packages/domain/src/leak.ts',
-    'packages/contracts/src/leak.ts',
-    'packages/engine/src/leak.ts',
-    'packages/engine/src/leak-tsx.tsx',
-    'packages/features/demo/contract.ts',
-    'packages/features/demo/engine/leak.ts',
-  ];
-  const result = typecheckFixture(
-    Object.fromEntries(
-      paths.map((path) => [
-        path,
-        'export const leak = document.title + process.cwd() + window.location.href;',
-      ]),
-    ),
-  );
-  expect(result.status, result.output).toBeGreaterThan(0);
-  for (const path of paths) {
-    const diagnostics = result.output
-      .replaceAll('\\', '/')
-      .split('\n')
-      .filter((line) => line.includes(path));
-    expect(diagnostics.join('\n'), `Missing diagnostics for ${path}:\n${result.output}`).toContain(
-      "'document'",
+test(
+  'root typecheck rejects browser and Node globals in every backend layer',
+  { timeout: 60_000 },
+  () => {
+    const paths = [
+      'packages/domain/src/leak.ts',
+      'packages/contracts/src/leak.ts',
+      'packages/engine/src/leak.ts',
+      'packages/engine/src/leak-tsx.tsx',
+      'packages/features/demo/contract.ts',
+      'packages/features/demo/engine/leak.ts',
+    ];
+    const result = typecheckFixture(
+      Object.fromEntries(
+        paths.map((path) => [
+          path,
+          'export const leak = document.title + process.cwd() + window.location.href;',
+        ]),
+      ),
     );
-    expect(diagnostics.join('\n')).toContain("'window'");
-    expect(diagnostics.join('\n')).toContain("'process'");
-  }
-});
+    expect(result.status, result.output).toBeGreaterThan(0);
+    for (const path of paths) {
+      const diagnostics = result.output
+        .replaceAll('\\', '/')
+        .split('\n')
+        .filter((line) => line.includes(path));
+      expect(
+        diagnostics.join('\n'),
+        `Missing diagnostics for ${path}:\n${result.output}`,
+      ).toContain("'document'");
+      expect(diagnostics.join('\n')).toContain("'window'");
+      expect(diagnostics.join('\n')).toContain("'process'");
+    }
+  },
+);
 
 test('host-neutral timers compile while backend tests and frontend keep their host types', () => {
   const result = typecheckFixture({

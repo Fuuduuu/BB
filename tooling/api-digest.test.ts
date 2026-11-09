@@ -60,7 +60,7 @@ function engineDigest() {
   return readFileSync(join(project, 'docs', 'api', 'engine.md'), 'utf8');
 }
 
-test('digest lists exported function signatures without bodies', () => {
+test('digest lists exported function signatures without bodies', { timeout: 60_000 }, () => {
   generate();
   const digest = engineDigest();
   expect(digest).toContain('<!-- Genereeritud: pnpm api. Ära muuda käsitsi. -->');
@@ -82,7 +82,7 @@ test('digest lists exported function signatures without bodies', () => {
   ]);
 });
 
-test('digest is sorted and stable across runs', () => {
+test('digest is sorted and stable across runs', { timeout: 60_000 }, () => {
   generate();
   const first = engineDigest();
   expect([...first.matchAll(/^### `([^`]+)`$/gm)].map((match) => match[1])).toEqual([

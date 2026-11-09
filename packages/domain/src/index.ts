@@ -3,6 +3,8 @@ export * from './ids';
 export * from './doc';
 export * from './components/refs';
 export * from './components/pins';
+export * from './footprints';
+export { boardPads, bodyOutline, padToBoard } from './geometry/board';
 export * from './migrations';
 export * from './model/primitives';
 export * from './model/component';

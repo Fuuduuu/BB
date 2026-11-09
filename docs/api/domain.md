@@ -61,6 +61,15 @@ export type BoardOutline = {
 export const BoardOutlineSchema: ZodType<BoardOutline>;
 ```
 
+### `boardPads`
+```ts
+export function boardPads(placement: BoardPlacement, pinIds: readonly string[], pxPerMm: number): {
+    pinId: string;
+    at: Vec2;
+    radiusPx: number;
+}[];
+```
+
 ### `BoardPlacement`
 ```ts
 export type BoardPlacement = {
@@ -80,6 +89,11 @@ export type BoardPlacement = {
 ### `BoardPlacementSchema`
 ```ts
 export const BoardPlacementSchema: ZodType<BoardPlacement>;
+```
+
+### `bodyOutline`
+```ts
+export function bodyOutline(placement: BoardPlacement, pxPerMm: number): Vec2[];
 ```
 
 ### `Component`
@@ -256,6 +270,50 @@ export type EndRef = { pin: PinRef; } | { junction: string; };
 export const EndRefSchema: ZodType<EndRef>;
 ```
 
+### `FootprintDef`
+```ts
+export interface FootprintDef {
+    key: string;
+    name: string;
+    defaults: FootprintParams;
+    gen(p: FootprintParams): FootprintGeom | undefined;
+}
+```
+
+### `FootprintGeom`
+```ts
+export interface FootprintGeom {
+    pads: PadGeom[];
+    body: {
+        w: number;
+        h: number;
+        pin1?: Vec2;
+    };
+}
+```
+
+### `footprintGeometry`
+```ts
+export function footprintGeometry(key: string, params: FootprintParams): FootprintGeom | undefined;
+```
+
+### `FootprintParams`
+```ts
+export interface FootprintParams {
+    [key: string]: string | number;
+}
+```
+
+### `footprintPinIds`
+```ts
+export function footprintPinIds(key: string, params: FootprintParams): string[] | undefined;
+```
+
+### `FOOTPRINTS`
+```ts
+export const FOOTPRINTS: readonly FootprintDef[];
+```
+
 ### `HISTORY_LIMIT`
 ```ts
 export const HISTORY_LIMIT: 200;
@@ -413,6 +471,24 @@ export function newId(prefix: IdPrefix): string;
 ### `nextRef`
 ```ts
 export function nextRef(doc: BoardDoc, kind: ComponentKind): string;
+```
+
+### `PadGeom`
+```ts
+export interface PadGeom {
+    id: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    shape: 'rect' | 'circle';
+    through: boolean;
+}
+```
+
+### `padToBoard`
+```ts
+export function padToBoard(p: Pick<BoardPlacement, 'center' | 'rotationDeg' | 'side' | 'scaleX' | 'scaleY'>, local: Vec2, pxPerMm: number): Vec2;
 ```
 
 ### `PhotoRef`

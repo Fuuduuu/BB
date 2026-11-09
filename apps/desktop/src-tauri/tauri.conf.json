@@ -28,8 +28,13 @@
     }
   },
   "bundle": {
-    "active": false,
+    "active": true,
+    "targets": ["msi"],
     "icon": ["icons/icon.ico"],
-    "fileAssociations": [{ "ext": ["pcbk"], "name": "PCB Kaardistaja projekt", "role": "Editor" }]
+    "fileAssociations": [{ "ext": ["pcbk"], "name": "PCB Kaardistaja projekt", "role": "Editor" }],
+    "windows": {
+      "webviewInstallMode": { "type": "offlineInstaller" },
+      "wix": { "language": "et-EE" }
+    }
   }
 }

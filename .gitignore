@@ -8,6 +8,7 @@ output/playwright/
 .playwright-cli/
 src-tauri/target/
 src-tauri/gen/
+/apps/desktop/src-tauri/target/
 
 # prototüübi vaheväljund (PCB-Kaardistaja.html jääb repo)
 prototype/build/

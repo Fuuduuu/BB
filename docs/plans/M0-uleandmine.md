@@ -620,3 +620,42 @@ Käivitamine arenduses: `pnpm --filter @pcbk/web dev`; kontrollid: `pnpm check`,
 | Sõltumatu ülevaatus | Kolme otsuse ja nende ühenduste lugemine: uusi leide pole; **134/134 sihitud testi 10 failis**. Ülevaataja ei muutnud faile ega asendanud ehitaja e2e-kontrolli. |
 
 Arhitekti mitteblokeeriv märkus salvestatud oleku avamisaja kohta jääb töölauasalvestusega täpsustamiseks; seda käitumist siin ei muudetud. Edasi: arhitekti kordusülevaatus ja kasutaja visuaalne vastuvõtt. Käivitamine repo juurest: **`pnpm --filter @pcbk/web dev`** (PowerShelli skriptipiirangu korral `pnpm.cmd --filter @pcbk/web dev`).
+
+
+## M0-13 · CI ja Windowsi paigaldaja
+
+Tööpuu `bb-m0`, haru `m0`, alus `92618f3`. Osa C on kohalikult kontrollitud ja arhitekti ülevaatusel.
+
+- `.github/workflows/ci.yml` käivitab Windowsi kontrollid harude ja `v*` siltide pushidel ning PR-idel. `main` ja `v*` ehitavad pärast kontrolle artefakti `pcbk-msi`. Silt peab vastama Tauri versioonile. Sildi avaldamine on eraldi töö, sest GitHub Actions annab `contents: write` õiguse töö tasemel. `GH_TOKEN` antakse avaldamiskäsule, ülejäänud töövoo õigus on `contents: read`. [GitHub Actionsi õigused](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idpermissions)
+- Ametlikud tegevused on lukustatud täispikkade commitiräsidega. `setup-node` automaatvahemälu on väljas, sest pnpm muutub kättesaadavaks pärast Corepacki seadistamist. Rusti sõltuvuste vahemälu võti sisaldab `Cargo.lock` räsi. [checkout v7.0.1](https://github.com/actions/checkout/releases/tag/v7.0.1), [setup-node v7.1.0](https://github.com/actions/setup-node/releases/tag/v7.1.0), [cache v5.0.5](https://github.com/actions/cache/releases/tag/v5.0.5), [upload-artifact v7.0.2](https://github.com/actions/upload-artifact/releases/tag/v7.0.2), [download-artifact v8.0.2](https://github.com/actions/download-artifact/releases/tag/v8.0.2)
+- `apps/desktop/src-tauri/tauri.conf.json` ehitab `et-EE` MSI koos WebView2 võrguühenduseta paigaldajaga. `0.0.0` läbis ehituse ja jääb alles. `.gitignore` jätab töölaua ehitusväljundi ka juure vorminduskontrollist välja. [Tauri Windowsi paigaldaja](https://v2.tauri.app/distribute/windows-installer/)
+
+| Kohalik kontroll | Tulemus |
+| --- | --- |
+| Node, Corepack, pnpm ja `pnpm install --frozen-lockfile` | Node `26.13.0`, Corepack `0.36.0`, pnpm `12.18.0`. Paigaldus läbis. |
+| `pnpm check`, `pnpm test packages/engine` | **483/483** testi 47 failis ja **183/183** mootoritesti. Tüübikontroll, lint, sõltuvusreeglid, failipikkus ja API kontroll läbisid. |
+| `pnpm format:check`, `pnpm exec prettier --check .github/workflows/ci.yml` | Läbisid. YAML parsimine ja tööde struktuurikontroll läbisid. `actionlint` puudus. |
+| `pnpm exec playwright install chromium`, `CI=true pnpm e2e` | Chromium oli olemas. **8/8** kasutusvoogu uue kohaliku veebiserveriga. |
+| `cargo fmt --check`, `cargo test --locked`, `cargo clippy --locked --features desktop -- -D warnings` | Kõik läbisid. **46/46** Rusti testi. Clippy jooksis kohalikult kahe paralleeltööga. |
+| `pnpm tauri build` | Lõi `apps/desktop/src-tauri/target/release/bundle/msi/PCB Kaardistaja_0.0.0_x64_et-EE.msi` (**220 835 840 baiti**, **210,61 MiB**). Ehitus laadis alla WiX 3.14.1 ja Microsofti x64 WebView2 võrguühenduseta paigaldaja. |
+| MSI andmebaasi lugemine | `ProductVersion=0.0.0`, `ProductLanguage=1061` (`et-EE`), pakendis `MicrosoftEdgeWebView2RuntimeInstaller.exe` ning `.pcbk` laiendi `open`-tegevus argumendiga `"%1"`. |
+
+### M0 vastuvõtt · tingimus ja tõend
+
+| Tingimus | Tõend ja seis |
+| --- | --- |
+| `pnpm check` | Kohalik kontroll läbis. GitHubi jooks ootab pushi. |
+| UI ei impordi mootorit, mootoritestid Node’is | `depcruise.test.ts` ja sõltuvusreeglid läbisid koondkontrollis. Mootori testid Node’is **183/183**. |
+| Uus plaat, komponent, nimetamine, undo/redo, sulgemine ja taasavamine | Veebi e2e **8/8**. Kasutaja proovis arendusäpis kahe komponendi loomist. Kogu paigaldatud töölaua voog ootab kasutuskatset. |
+| Fail jääb kirjutuse katkestamisel avatavaks | Rusti `killed_writer_leaves_consistent_file` läbis. |
+| Kirjutuskaitse või täis ketas, veariba, sulgemine ja „Salvesta mujale…“ | Salvestus- ja sulgemistõrke testid läbisid koondkontrollis. Töölaua visuaalne kontroll ootab kasutajat. |
+| Sama faili teine avamine toob akna ette, teise protsessi lukk blokeerib avamise | `second_process_cannot_open_locked_file` läbis. MSI failiseos on pakendis. Exploreri topeltklõps ja fookus ootavad paigalduskatset. |
+| `base_rev` ja vana `sessionId` | Rusti `save_rejects_wrong_base_rev` ja kliendi seansifiltri testid läbisid. |
+| Omand ja invariandid | Mootori omandi- ja invariantide testid läbisid. |
+| Undo kasvatab `rev`-i ning taastatud sisu salvestub | Mootori undo/redo ja salvestuskoordinaatori testid läbisid. |
+| Vaade püsib ning salvestus hiljemalt 10 s | Salvestuskoordinaatori testid ja veebis vaate taastamise e2e läbisid. Töölaua visuaalne kontroll ootab kasutajat. |
+| Täiskoopia enne migratsiooni ja taastamine uude faili | Projektiteenuse migratsioonitest ja Rusti `restore_creates_new_file_and_validates` läbisid. |
+| CI loob MSI artefakti | Kohalik MSI on olemas. CI-d pole veel jooksutatud. |
+| M0 kasutuskatse | Kasutaja paigaldab MSI, teeb komponendi töövoo, avab `.pcbk` faili Explorerist kaks korda ja kontrollib eemaldamist. Tulemus lisatakse pärast katset. |
+
+Ülevaatuse järel ootab commit `ci: checks, rust tests and msi build` kasutaja luba. Kuus stardifaili jäävad commitist välja. Push ja GitHubi sisselogimine ootavad eraldi luba.

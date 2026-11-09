@@ -57,7 +57,7 @@ M0 ehitab **ühe päris mooduli**, `components`, läbi kõigi kolme osa: kompone
 - [ ] `project_save` ei kirjuta, kui failis pole oodatud `base_rev` (`cargo test`). Vana `sessionId`-ga vastus ja sündmus jäetakse kõrvale (mootori test).
 - [ ] Käsk, mis muudab välja väljaspool oma `owns` ja `alsoWrites` loendit või rikub invarianti, lükatakse tagasi ka väljalaske ehituses. Dokument, ajalugu ja salvestusjärjekord jäävad muutmata.
 - [ ] Tagasivõtmine suurendab `rev`-i ja salvestus kirjutab taastatud sisu.
-- [ ] Ainult vaate muutus (suum, kihid) säilib sulgemisel ilma ühegi dokumendikäsuta. Pidev töö ei lükka salvestamist edasi kauem kui 10 s.
+- [ ] Ainult vaate muutus (M0-s paneelide laius ja avatus ning vahekaart; suum ja kihid lisanduvad lõuendiga M1-s) säilib sulgemisel ilma ühegi dokumendikäsuta. Pidev töö ei lükka salvestamist edasi kauem kui 10 s.
 - [ ] Täisvarukoopia tekib enne migratsiooni (testmigratsiooniga). Taastamine avalehelt uude faili on läbi proovitud.
 - [ ] CI ehitab `.msi` paigaldaja.
 

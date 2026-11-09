@@ -1,0 +1,24 @@
+{
+  "name": "@pcbk/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css",
+    "./fonts": "./src/kit/fonts.ts"
+  },
+  "dependencies": {
+    "@fontsource/archivo": "5.3.0",
+    "@fontsource/martian-mono": "5.3.0",
+    "@pcbk/client": "workspace:*",
+    "@pcbk/contracts": "workspace:*",
+    "zustand": "5.1.0"
+  },
+  "devDependencies": {
+    "react": "18.3.1"
+  },
+  "peerDependencies": {
+    "react": "18.3.1"
+  }
+}

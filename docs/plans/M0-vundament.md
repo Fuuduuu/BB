@@ -100,7 +100,7 @@ docs/plans/M0-uleandmine.md
 
 ## Osa A · Mootor ilma kasutajaliideseta
 
-Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm test --filter "./packages/*"`.
+Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm test packages`.
 
 ### Ülesanne 1: Monorepo ja kvaliteediväravad
 
@@ -199,7 +199,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
     expect(migrateDoc({ format_version: 0 }, 0, m)).toMatchObject({ format_version: 1, upgraded: true });
   });
   ```
-- [ ] **Samm 2:** `pnpm --filter @pcbk/domain test` → KUKUB.
+- [ ] **Samm 2:** `pnpm test packages/domain` → KUKUB.
 - [ ] **Samm 3:** kirjuta skeemid ja funktsioonid. `Component.board` ja `Component.schematic` on valikulised; `Measurement.at/ref` on `MeasuredPin`.
 - [ ] **Samm 4:** testid → LÄBIVAD.
 - [ ] **Samm 5:** commit `feat(domain): board document model and helpers`; üleandmine.
@@ -217,14 +217,16 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   - `CommandOk = { rev: number }`;
   - `StorageReason = 'disk_full' | 'read_only' | 'missing' | 'locked' | 'not_project' | 'too_new' | 'unknown'`;
   - `SaveStatus = { state: 'saved'; rev: number; at: string } | { state: 'pending' } | { state: 'saving' } | { state: 'error'; reason: StorageReason }`;
-  - `ViewState = { navigatorWidth: number; navigatorTab: string }` (M0);
-  - `ProjectInfo = { projectId: string; sessionId: string; name: string; path: string; readOnly: boolean }`;
+  - `ViewState = { navigatorWidth: number; navigatorTab: string; contextWidth: number; contextOpen: boolean }` (M0; täpsustus 2026-11-08), vaikeväärtused `300`, `'components'`, `340`, `true`;
+  - `ProjectInfo = { projectId: string; sessionId: string; name: string; path: string; readOnly: boolean; view: ViewState | null }`;
   - `CreateReq = { name: string; device?: string; problem?: string; path?: string }`;
   - `OpenReq = { path: string }`;
   - `CopyReq = { dest: string; identity: 'same' | 'new' }`;
   - `BackupInfo = { file: string; kind: 'full' | 'doc'; at: string; base?: string }`;
   - `RestoreReq = { backup: string; dest: string }`.
 - `Snapshot.doc` ja `Snapshot.derived` on tüübiga `DeepReadonly<…>` (rekursiivne, sh massiivid).
+- `Snapshot.history: DeepReadonly<{ canUndo: boolean; canRedo: boolean }>` pärineb mootorist pärast käsku, undo/redo-d, laadimist ja mahalaadimist; tühi käsk jätab hetktõmmise samaks (täpsustus 2026-11-08).
+- `DEFAULT_VIEW_STATE` ja puhas `parseViewState(unknown): ViewState | null` ühtlustavad leebe lugemise: puuduvad väljad saavad vaikeväärtused, vigane vaade annab `null` ega peata projekti avamist. Teema on UI `localStorage`-is võtmega `pcbk.theme`, `try/catch`-iga ja vaikimisi `'system'`; projekti faili ei lähe.
 - `Derived` on M0-s `{ unplacedBoard: string[]; unplacedSchematic: string[] }` (komponentide id-d).
 
 - [ ] **Samm 1: kirjuta tüübitest**:
@@ -234,8 +236,8 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   (null as unknown as Snapshot).doc.components[0]!.pins.push({} as never);
   expectTypeOf<DocumentEngine['execute']>().returns.toEqualTypeOf<Result<CommandOk, EngineError>>();
   ```
-- [ ] **Samm 2:** `pnpm --filter @pcbk/contracts typecheck` → KUKUB.
-- [ ] **Samm 3:** kirjuta liidesed. Pakett ei sisalda olekut ega teostust, välja arvatud `ok()` ja `err()`.
+- [ ] **Samm 2:** `pnpm typecheck` → KUKUB.
+- [ ] **Samm 3:** kirjuta liidesed. Pakett ei sisalda olekut; puhtad abifunktsioonid on `ok()`, `err()` ja vaate leebe parser ning vaate vaikeväärtused (täpsustus 2026-11-08).
 - [ ] **Samm 4:** typecheck → LÄBIB.
 - [ ] **Samm 5:** commit `feat(contracts): engine and project service contracts`; üleandmine.
 
@@ -244,6 +246,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
 **Failid:**
 - Loo: `packages/engine/src/{engine,history,ownership,invariants,journal,registry,items,index}.ts`.
 - Test: `packages/engine/src/engine.test.ts`.
+- Muuda selles ülesandes: `packages/domain/src/ids.ts` (`IdPrefix` saab `'chk'`), `packages/domain/src/ids.test.ts` (`newId('chk')`) ja [04 prefiksite loend](../04-andmemudel.md#põhimõtted) (`chk_` lisatakse `txt_` järele). Need muudatused kuuluvad ülesande 4 commit'i koos invariantidega, mitte ülesande 2 parandusse.
 
 **Liidesed:**
 - Tarbib: `@pcbk/domain` (skeemid, `DocKey`), `@pcbk/contracts`.
@@ -266,12 +269,42 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   10. sündmused.
 
   Undo ja redo suurendavad samuti `rev`-i.
+- **Tühi käsk ei loo versiooni (arhitekti otsus):** kui õnnestunud käsu Immeri paigad on tühjad, tagastatakse `ok({ rev: senine })`. Dokument, ajalugu ja päevik ei muutu, redo-haru säilib, tellijaid ei teavitata ja puhverdatud sündmused visatakse ära.
 - **Omandi kontroll:** iga paiga `path[0]` peab olema käsu mooduli `owns` või käsu `alsoWrites` hulgas. `reserved` väljad (veel ehitamata moodulite omad) on kõigile keelatud. `rev` ja `format_version` on tuuma omad ja käsk neid ei muuda. Kontroll **ei sõltu** `NODE_ENV`-ist.
 - **M0 invariandid:**
-  - komponentide id-d on unikaalsed;
+  - dokumendi objektikirjete id-d on unikaalsed kõigis loendites, mitte ainult komponentidel; viite kordumine ei ole uus objekt ega duplikaat;
+  - objekti id algab alloleva tüübile vastava prefiksiga ja selle järel on vähemalt üks märk. Täpselt kümmet nanoid-märki ei nõuta: fikseeritud vaikerollide id-d ja muu pikkusega imporditud id-d jäävad lubatuks. `newId` genereerib endiselt kümne märgiga juhuosa;
   - `ref` on mittetühi ja tõstutundetult unikaalne;
   - jala id on komponendi sees unikaalne;
-  - jala `uid` on projektis unikaalne.
+  - jala `uid` on projektis unikaalne ja prefiksiga `pin_` koos mittetühja lõpuga. Jala inimesele loetav `id` (`"1"`, `"EP"`, `"x1"` jne) ei vaja prefiksit ning võib eri komponentides korduda;
+  - mõõtmisel `overload === true` välistab `value` olemasolu, ka `value: 0`. See reegel ei lisa nõuet, et kõigil teistel mõõtmistel peab arvväärtus olema;
+  - `beep` võib olla määratud ainult režiimis `continuity`; see kehtib nii `true` kui ka `false` kohta.
+
+  | Objekt / loend | Prefiks |
+  |---|---|
+  | `components` | `cmp_` |
+  | `junctions` | `jun_` |
+  | `connections` | `con_` |
+  | `netLabels` | `lbl_` |
+  | `roles` | `rol_` |
+  | `measurements` | `msr_` |
+  | `repairs` | `rep_` |
+  | `photos` | `pho_` |
+  | `dimensions` | `dim_` |
+  | `areas` | `are_` |
+  | `textNotes` | `txt_` |
+  | `importChecks` | `chk_` |
+  | jala `uid` | `pin_` |
+
+  `att_` jääb manuse prefiksiks, kui manus hiljem dokumenti lisandub; ülesanne 4 ei lisa puuduvat andmetüüpi. Mõõtmiste ajaloolised kontaktiviited võivad endiselt viidata kustutatud jalale; need ei ole uued jalaobjektid.
+
+  **Lisakontrollid sammule 1 (arhitekti otsus pärast ülesande 2 vastuvõttu):**
+  - `overload: true` koos `value: 0` ja muu arvväärtusega lükatakse tagasi; `overload: true` ilma `value`-ta on lubatud;
+  - `beep: true` ja `beep: false` lükatakse tagasi kõigis kolmes muus režiimis; läbivusrežiimis on mõlemad lubatud;
+  - iga objektitüübi vale prefiks ning tühi lõpp (nt `cmp_`) lükatakse tagasi; lühike mittetühi lõpp ja fikseeritud vaikerollide id-d on lubatud;
+  - korduvad objektide id-d, komponendi sees korduv jala id ning projektis korduv jala `uid` lükatakse tagasi; sama jala id eri komponentides ja korduvad viited samale jalale on lubatud;
+  - iga tagasilükatud invariant tagastab `validation` ning jätab dokumendi, `rev`-i, ajaloo ja päeviku muutmata;
+  - `newId('chk')` toodab `chk_` prefiksi ja kümne märgiga juhuosa; invariant ise ei seo imporditud id-sid selle pikkusega.
 - **Üldkäsk `items.delete({ ids: string[] })`** kustutab M0-s ainult komponente. See on registreeritud tuumas koos `alsoWrites: ['components']`.
 
 - [ ] **Samm 1: kirjuta kukkuvad testid** (testmoodul `demo` omab välja `name`, kahjulik moodul `evil` proovib muuta `components`-i):
@@ -293,8 +326,10 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   });
   test('read-only session rejects commands with read_only', …);
   test('journal entry per command with requestId', …);
+  test('items.delete with absent id preserves rev, history and journal', …);
+  test('empty command after undo preserves redo and discards buffered events', …);
   ```
-- [ ] **Samm 2:** `pnpm --filter @pcbk/engine test` → KUKUB.
+- [ ] **Samm 2:** `pnpm test packages/engine` → KUKUB.
 - [ ] **Samm 3:** teosta mootor. Immeri `autoFreeze` peab olema sees. Ajalugu hoiab paiku (`patches`, `inversePatches`), mitte koopiaid.
 - [ ] **Samm 4:** testid → LÄBIVAD.
 - [ ] **Samm 5:** commit `feat(engine): synchronous document engine with ownership and invariants`; üleandmine.
@@ -323,6 +358,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   - `components.renamePin({ id, pinId, name: string | null })`;
   - `components.setNc({ id, pinId, nc: boolean })`;
   - `components.removePin({ id, pinId })`.
+- **Sihtmärk ja tähis (arhitekti ülevaatuse otsus):** mootor ekspordib `CommandTargetNotFound(id)` klassi ning teisendab selle veaks `{ code: 'not_found', id }`; muud erindid jäävad `validation`-iks. Puuduva jala tunnus on `<komponendi id>:<jala id>`. Lisamise ja muutmise `ref` skeem on `z.string().trim().min(1)`; invariant ja automaatne tähise leidmine võrdlevad tähiseid kujul `ref.trim().toUpperCase()`.
 - **Leping (`features/components/contract.ts`):**
   - `selectComponents(s: Snapshot)`, `selectComponent(s, id)`;
   - `makeAddComponent(ids: IdGen, kind: ComponentKind, pinCount?: number): AddComponentParams`, mis loob `cmp_` id ja iga jala jaoks `pin_` uid.
@@ -340,11 +376,29 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   });
   test('removePin then addPin with same number gets a new uid', …expect(newUid).not.toBe(oldUid));
   test('rename project trims and rejects empty', …);
+  test('missing component or pin → not_found with target id, document and rev unchanged', …);
+  test('add and update trim refs and reject a spaced case-insensitive duplicate', …);
+  test('loading rejects duplicate refs ignoring spaces; automatic refs skip spaced legacy values', …);
   ```
 - [ ] **Samm 2:** testid → KUKUVAD.
 - [ ] **Samm 3:** teosta register ja mõlema mooduli mootori pool.
 - [ ] **Samm 4:** testid → LÄBIVAD; `pnpm depcruise` → 0 viga.
 - [ ] **Samm 5:** commit `feat(components): first engine module with registry checks`; üleandmine.
+
+**M1 plaanimärkmed (ei blokeeri M0):**
+- Koos esimese moodulitevahelise lepinguimpordiga lisa kontroll, et imporditav moodul on `dependsOn` loendis. Praegune sõltuvuskontroll seda tingimust veel ei kontrolli; M0 moodulite vahel sellist importi pole.
+- Kui plaadipaigutus on olemas, peab käsitsi lisatud jala eemaldamine koristama ka selle `customPads`-i ning jalale viitavad `padMap`-i kirjed.
+- **Stseeni pööre ja peegeldus ning uus komponent (M1.2):** kui stseenile on rakendatud `PhotoRef.transform`, peab uus komponent ekraanil ilmuma püstiselt ja loetavalt. Paigutustööriist kompenseerib uue komponendi algse `rotationDeg` stseeni pöördega; peegelduse korral valib algse `side`-i nii, et jalg 1 on ekraanil vasakul üleval. Juba paigutatud komponendid peegelduvad ja pöörduvad koos fotoga, sest need peavad päris korpusega kohakuti jääma. EXIF-pööret pikslitesse ei küpsetata, sest koordinaadid on originaalfoto pikslites. Test: kõigi 8 teisenduse korral on uue SOIC-8 jalg 1 ekraanil vasakul üleval.
+- **`ViewState` laieneb koos lõuendiga:** plaadi ja skeemi vaate teisendus (`zoom`, `pan`), kihtide nähtavus ning foto nähtavus ja kontrast. Leebe parser täidab vanades failides puuduvad väljad vaikeväärtustega.
+- **Mõõtmise invariandid koos `measurements` mooduliga** (lisaks M0 `overload`/`value` ja `beep` reeglitele):
+  - `value` on kohustuslik, välja arvatud `overload: true` korral;
+  - `overload` on lubatud ainult takistusel ja dioodil;
+  - läbivusel on `beep` ja `ref` kohustuslikud;
+  - takistus on vähemalt 0.
+  Pinge, takistuse ja dioodi `ref` jääb valikuliseks: äpp ei oleta musta sondi asukohta ja ilma selleta hinnangut ei anta.
+- **M2 ühendused:** ühenduse otsad `a` ja `b` ei tohi olla sama ots (eneseühendus on invariandi viga). Lisandub ka 03 §6 viidete terviklus.
+- **Muutuva jalaarvuga tüübid ilma korpuseta** (`ic`, `connector`, `switch`, `other`): lisamisdialoog pakub jalgade arvu ette (`ic` 8, `connector` 2, `switch` 2), kasutaja saab seda muuta. Domeeni `defaultPinIds` jääb samaks.
+- **Gemini ülevaatus 2026-11-09:** UI pesade süsteem ja eraldi `@pcbk/client` pakett jäävad alles. `ui` ei tohi importida `features`-it, nii et moodulid peavad end kesta registreerima; kliendipakett on väike ja hoiab andmetele ligipääsu piiri selge.
 
 ### Ülesanne 6: Pordid, `storage-memory`, `ProjectService` ja `SaveCoordinator`
 
@@ -394,7 +448,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
   ```
 - [ ] **Samm 2:** testid → KUKUVAD.
 - [ ] **Samm 3:** teosta pordid, `storage-memory`, `ProjectService` ja `SaveCoordinator`.
-- [ ] **Samm 4:** testid → LÄBIVAD; kogu osa A: `pnpm test --filter "./packages/*"` → LÄBIB ilma DOM-ita.
+- [ ] **Samm 4:** testid → LÄBIVAD; kogu osa A: `pnpm test packages` → LÄBIB ilma DOM-ita.
 - [ ] **Samm 5:** commit `feat(engine): project service and save coordinator`; üleandmine. **Osa A on valmis.**
 
 ---
@@ -630,7 +684,7 @@ Osa lõpus ehitab CI `.msi` ja kõik [07 › M0](../07-teekaart.md#m0--vundament
 - Loo: `.github/workflows/ci.yml`.
 
 **Liidesed:**
-- **Push ja PR peale** (`windows-latest`): `corepack enable` → `pnpm install --frozen-lockfile` → `pnpm check` (sh Playwright `apps/web` peal) → `cargo test` kaustas `apps/desktop/src-tauri`.
+- **Push ja PR peale** (`windows-latest`): `corepack enable` → `pnpm install --frozen-lockfile` → `pnpm check` (sh Playwright `apps/web` peal) → `pnpm format:check` → `cargo test` kaustas `apps/desktop/src-tauri`.
 - **Push `main`-i ja silt `v*`:** lisaks `pnpm tauri build`, mis teeb `.msi` (WebView2 võrguühenduseta paigaldaja: `webviewInstallMode: offlineInstaller`). `.msi` laaditakse artefaktiks; sildi korral lisatakse see GitHubi Release'i.
 
 - [ ] **Samm 1:** kirjuta töövoog.

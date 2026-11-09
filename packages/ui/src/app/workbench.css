@@ -1,0 +1,18 @@
+.pcbk-web-alert {
+  position: fixed;
+  z-index: 100;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 700px;
+  padding: 14px 18px;
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--danger);
+  box-shadow: var(--shadow);
+  font: 14px/1.5 var(--f-ui);
+}

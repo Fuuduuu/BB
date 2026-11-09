@@ -1,0 +1,13 @@
+import { z } from 'zod';
+
+export const WidgetSchema = z.object({
+  id: z.string(),
+  enabled: z.boolean().optional(),
+});
+
+export type Widget = z.infer<typeof WidgetSchema>;
+
+export const WidgetIdsSchema = z.array(z.string());
+
+export type WidgetLabel = { label: string };
+export const WidgetLabelSchema: z.ZodType<WidgetLabel> = z.object({ label: z.string() });

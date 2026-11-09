@@ -1,0 +1,13 @@
+{
+  "name": "@pcbk/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@pcbk/domain": "workspace:*",
+    "zod": "4.6.7"
+  }
+}

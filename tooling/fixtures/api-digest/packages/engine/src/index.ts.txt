@@ -1,0 +1,26 @@
+export type Mode = 'edit' | 'read';
+
+export { buildService as createProjectService } from './project-service';
+
+export interface EngineModule {
+  readonly id: string;
+}
+
+/** Creates an engine. This detail belongs in implementation docs. */
+export function createEngine(id: string): EngineModule {
+  return { id: `${id}: body-sentinel` };
+}
+
+export class Engine {
+  private bootToken = 'body-sentinel';
+
+  public run(): string {
+    return this.bootToken;
+  }
+}
+
+export const apiVersion = 1;
+
+function hiddenHelper(): number {
+  return 0;
+}

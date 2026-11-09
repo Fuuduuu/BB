@@ -1,0 +1,15 @@
+{
+  "name": "@pcbk/adapters",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@pcbk/contracts": "workspace:*",
+    "@pcbk/domain": "workspace:*",
+    "@pcbk/engine": "workspace:*",
+    "idb-keyval": "6.3.0"
+  }
+}

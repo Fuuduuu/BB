@@ -1,0 +1,18 @@
+{
+  "name": "@pcbk/client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@pcbk/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@pcbk/domain": "workspace:*"
+  }
+}

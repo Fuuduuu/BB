@@ -60,7 +60,7 @@ flowchart LR
 
 | Kiht | Tohib importida | Ei tohi importida |
 |---|---|---|
-| `domain` | `zod` | kõike muud |
+| `domain` | `zod`, `nanoid` | kõike muud |
 | `contracts` | `domain` (tüübid) | `engine`, `client`, `ui`, React |
 | `engine` | `domain`, `contracts` | React, DOM, Tauri, `client`, `ui`, `features/*/ui` |
 | `features/X/contract` | `contracts`, `domain` | `engine`, `ui`, `client` |
@@ -193,7 +193,7 @@ Uue mooduli mall ja moodulite kirjeldused on failis [05-moodulid.md](05-moodulid
 | **SessionStore** | frontend | valik, hover, aktiivne tööriist, **eelvaade** (lohistamine, suurus, pööre, pooleli rada, raamvalik), mõõtmise mustandid jala kaupa, piiksu ankur | ei | ei |
 | **ViewStore** | frontend | suum ja nihe (eraldi plaadi- ja skeemivaatele), kihid, foto nähtavus, kontrast, aktiivne vahekaart, paneelid | ei | `view` tabel (`ProjectService.saveView`) |
 
-**Hetktõmmis.** Frontend loeb dokumenti ainult hetktõmmisest `Snapshot { sessionId, rev, doc, derived }`, mille mootor avaldab pärast iga käsku.
+**Hetktõmmis.** Frontend loeb dokumenti ainult hetktõmmisest `Snapshot { sessionId, rev, doc, derived, history }`, mille mootor avaldab pärast iga dokumenti muutvat käsku.
 - Samas lõimes on see sama viide, mis mootoris; koopiaid ega paiku ei saadeta.
 - Kaitse on kahekordne: tüüp on sügavalt kirjutuskaitstud (`DeepReadonly`, mitte ainult pealmine `Readonly`) ja objektid on käitusajal külmutatud (Immeri automaatne külmutamine kogu sügavuses).
 - React tellib hetktõmmist `useSyncExternalStore` kaudu ning viide muutub ainult käsu järel.
@@ -217,6 +217,8 @@ Uue mooduli mall ja moodulite kirjeldused on failis [05-moodulid.md](05-moodulid
 
 ## 6. Käsud, tagasivõtmine ja logi
 
+**Täpsustus 2026-11-08:** ajaloo saadavuse omanik on mootor. Iga hetktõmmise `history` annab `canUndo` ja `canRedo` pärast käsku, undo/redo-d, laadimist ja mahalaadimist. UI loeb seda otse hetktõmmisest ega pea teist ajalooloendurit. Laadimisel ja mahalaadimisel on mõlemad `false`. Tühi käsk ei avalda uut hetktõmmist ega muuda ajaloo olekut.
+
 ```ts
 export interface CommandSpec<P> {
   id: `${string}.${string}`;          // 'components.add'
@@ -236,6 +238,14 @@ export interface DocumentEngine {     // @pcbk/contracts, sünkroonne
   subscribe(fn: (s: Snapshot) => void): Unsubscribe;
   events(fn: (e: DomainEvent) => void): Unsubscribe;
 }
+
+export interface Snapshot {
+  readonly sessionId: string;
+  readonly rev: number;
+  readonly doc: DeepReadonly<BoardDoc>;
+  readonly derived: DeepReadonly<Derived>;
+  readonly history: DeepReadonly<{ canUndo: boolean; canRedo: boolean }>;
+}
 ```
 
 `execute` teeb järgmist:
@@ -250,7 +260,9 @@ export interface DocumentEngine {     // @pcbk/contracts, sünkroonne
 9. teavitab tellijaid uue hetktõmmisega, mille arvutatud andmed on § 7.4 järgi värsked;
 10. avaldab sündmused.
 
-`undo` ja `redo` taastavad sisu pöördpaikadega, aga **`rev` kasvab ka nende puhul**. `rev` on dokumendi versioon salvestuse jaoks, mitte ajaloo kursor.
+**Tühi käsk ei loo versiooni.** Kui õnnestunud käsu Immeri paigad on tühjad, tagastatakse `ok({ rev: senine })`. Ajalukku ega päevikusse sammu ei lisata, tellijaid ei teavitata ja redo-haru säilib. Puhverdatud sündmused visatakse ära.
+
+`undo` ja `redo` taastavad sisu pöördpaikadega. **`rev` kasvab iga dokumenti muutva käsuga, ka tagasivõtmisel**. `rev` on dokumendi versioon salvestuse jaoks, mitte ajaloo kursor.
 
 Reeglid:
 - Käsk on **puhas ja sünkroonne**. Failid, dialoogid ja võrk käivad `ProjectService`'i ja portide kaudu, tulemus antakse käsule parameetrina.
@@ -266,7 +278,7 @@ Reeglid:
   - Igal fotol on teisendus tööpinnale (`PhotoRef.toBoard`); esimesel on see ühikteisendus.
   - Teise foto lisamine või foto asendamine teise kadreeringuga nõuab joondust ega kirjuta kaardistuse koordinaate ümber.
   - Kui fotot pole, on virtuaalne tööpind 2000×1400 px ja mõõtkava 10 px/mm. Hilisem foto ei skaleeri olemasolevaid komponente vaikimisi.
-- **Foto pööramine ja peegeldamine** (sh EXIF-orientatsioon) on `PhotoRef.transform`. Lõuend rakendab selle **kogu stseenile** (foto koos kaardistusega). Kaardistuse koordinaate ümber ei arvutata, nii et jalad ei saa foto suhtes valeks minna.
+- **Foto pööramine ja peegeldamine** (sh EXIF-orientatsioon) on `PhotoRef.transform`. Lõuend rakendab selle **kogu stseenile** (foto koos kaardistusega). Kaardistuse koordinaate ümber ei arvutata, nii et jalad ei saa foto suhtes valeks minna. Korpuste geomeetria peegeldub koos fotoga, sest padjandid peavad foto peal oma kohale jääma. **Tekstid** (tähised, jalanumbrid, väärtused, sildid) liiguvad koos stseeniga, aga joonistatakse alati loetavalt, ilma peegelduse ja pöördeta (vastuteisendus tekstielemendil).
 - **Komponendi millimeetrid**: korpuse geomeetria ja padjandid. Teisendus: `(x·scaleX, y·scaleY)` → peegeldus, kui pool on alumine → pööre → `·pxPerMm` → `+center`.
 - **Skeemi ruudustik**: sümbolite, liitepunktide ja skeemijoonte asukohad on skeemi ruudustiku ühikutes. Need on eri tüübid ja teisendatakse ainult selgete funktsioonidega.
 - **Ekraan**: `ViewTransform { zoom, pan }` rakendatakse ühele `<g transform>`-ile imperatiivselt (ref), mitte Reacti renderdusega.
@@ -398,6 +410,7 @@ Projekti faili kirjutab ainult `SaveCoordinator`, mis on mootoris `ProjectServic
   - **Dokumendikoopia** ilma fotodeta (`<aeg>.doc.json`) tehakse pideva töö ajal kõige rohkem kord 30 minuti jooksul. Alles hoitakse 5 viimast. See viitab täpselt oma täiskoopiale.
   - Kui pärast viimast täiskoopiat on lisandunud foto või manus, tehakse järgmine taastepunkt täiskoopiana.
   - Täiskoopiat ei kustutata enne, kui sellest sõltuvaid dokumendikoopiaid enam pole.
+  - `ProjectService.backups({ projectId })` loetleb ka suletud projekti varukoopiad, argumendita `ProjectService.backups()` aga eeldab aktiivset projekti.
   - **Taastamine** käib alati uude faili: ajutine koopia valideeritakse ja saab siis lõpliku nime. Originaali ei kirjutata üle. Avalehel on projekti kaardil „Taasta varukoopiast…“. Taastatud fail kannab sama `project_id`-d.
   - Kasutaja näeb varukoopiate asukohta ja nende kettakulu seadetes.
 

@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@pcbk/domain": ["packages/domain/src/index.ts"],
+      "@pcbk/contracts": ["packages/contracts/src/index.ts"],
+      "@pcbk/engine": ["packages/engine/src/index.ts"],
+      "@pcbk/client": ["packages/client/src/index.ts"],
+      "@pcbk/ui": ["packages/ui/src/index.ts"],
+      "@pcbk/adapters": ["packages/adapters/src/index.ts"],
+      "@pcbk/features/*": ["packages/features/*"]
+    }
+  }
+}

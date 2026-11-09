@@ -55,7 +55,7 @@ pub(super) fn write(app_data: &Path, backup: &Path, dest: &Path) -> StorageResul
         return Err(StorageErrorDto::new(Reason::Unknown));
     };
 
-    let pending = PendingFile::new(dest)?;
+    let pending = PendingFile::unique(dest)?;
     // Write into the reserved file so read-only attributes are not copied.
     io::copy(
         &mut File::open(base)?,

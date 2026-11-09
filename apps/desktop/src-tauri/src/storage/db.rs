@@ -139,15 +139,17 @@ impl ProjectDb {
 
     pub fn describe(&self, session: String) -> StorageResult<OpenedProjectDto> {
         let (project_id, format_version) = project_meta(&self.conn)?;
-        let row = self
+        let (doc_json, stored_rev, saved_at) = self
             .conn
-            .query_row("SELECT json,rev FROM document WHERE id=1", [], |r| {
-                Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
-            })
+            .query_row(
+                "SELECT json,rev,updated_at FROM document WHERE id=1",
+                [],
+                |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?, r.get(2)?)),
+            )
             .map_err(|_| StorageErrorDto::new(Reason::NotProject))?;
         let (format, rev) =
-            document_header(&row.0).map_err(|_| StorageErrorDto::new(Reason::NotProject))?;
-        if format != format_version || rev != row.1 {
+            document_header(&doc_json).map_err(|_| StorageErrorDto::new(Reason::NotProject))?;
+        if format != format_version || rev != stored_rev {
             return Err(StorageErrorDto::new(Reason::NotProject));
         }
         let view_json = self
@@ -162,10 +164,11 @@ impl ProjectDb {
                 .to_str()
                 .ok_or_else(|| StorageErrorDto::new(Reason::Unknown))?
                 .to_owned(),
-            doc_json: row.0,
+            doc_json,
             view_json,
             format_version,
             read_only: self.read_only,
+            saved_at,
         })
     }
 

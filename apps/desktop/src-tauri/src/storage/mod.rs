@@ -31,6 +31,7 @@ pub struct OpenedProjectDto {
     pub view_json: Option<String>,
     pub format_version: u32,
     pub read_only: bool,
+    pub saved_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -54,17 +55,9 @@ pub struct ProjectStore {
 struct PendingFile(Option<PathBuf>);
 
 impl PendingFile {
-    fn new(destination: &Path) -> StorageResult<Self> {
-        Self::with_suffix(destination, ".tmp")
-    }
-
     fn unique(destination: &Path) -> StorageResult<Self> {
-        Self::with_suffix(destination, &format!(".{}.tmp", uuid::Uuid::new_v4()))
-    }
-
-    fn with_suffix(destination: &Path, suffix: &str) -> StorageResult<Self> {
         let mut path = destination.as_os_str().to_owned();
-        path.push(suffix);
+        path.push(format!(".{}.tmp", uuid::Uuid::new_v4()));
         let path = PathBuf::from(path);
         fs::OpenOptions::new()
             .write(true)
@@ -184,8 +177,8 @@ impl ProjectStore {
         let session = uuid::Uuid::new_v4().to_string();
         let opened = db.describe(session.clone())?;
         if daily_backup {
-            if let Err(error) = backup::full(&self.app_data, &db, self.clock.now()) {
-                eprintln!("Project backup after open failed: {error:?}");
+            if let Err(error) = backup::daily(&self.app_data, &db, self.clock.now()) {
+                log::warn!("Project backup after open failed: {error:?}");
             }
         }
         sessions.insert(session, db);
@@ -204,7 +197,7 @@ impl ProjectStore {
         }
         let mut sessions = self.sessions()?;
         let path = Self::destination(path, &sessions)?;
-        let pending = PendingFile::new(&path)?;
+        let pending = PendingFile::unique(&path)?;
         {
             let mut conn = rusqlite::Connection::open_with_flags(
                 pending.path(),
@@ -237,7 +230,7 @@ impl ProjectStore {
             .ok_or_else(|| StorageErrorDto::new(Reason::Unknown))?;
         db.save(base_rev, rev, doc_json, journal)?;
         if let Err(error) = backup::after_save(&self.app_data, db, self.clock.now()) {
-            eprintln!("Project backup after save failed: {error:?}");
+            log::warn!("Project backup after save failed: {error:?}");
         }
         Ok(())
     }
@@ -267,7 +260,7 @@ impl ProjectStore {
         let db = sessions
             .get(session)
             .ok_or_else(|| StorageErrorDto::new(Reason::Unknown))?;
-        backup::full(&self.app_data, db, self.clock.now())
+        backup::migration(&self.app_data, db, self.clock.now())
     }
 
     pub fn backups(&self, project_id: &str) -> StorageResult<Vec<BackupInfoDto>> {

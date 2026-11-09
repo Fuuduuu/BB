@@ -32,6 +32,7 @@ export function createSaveCoordinator(opts: {
   session: string;
   sessionId: string;
   baseRev: number;
+  savedAt?: string;
   view: ViewState | null;
   needsSave?: boolean;
   readOnly?: boolean;
@@ -166,7 +167,7 @@ export function createSaveCoordinator(opts: {
     return err({ code: 'stale_session' });
   }
   if (dirty()) schedule();
-  else publish({ state: 'saved', rev: baseRev, at: opts.clock.now() });
+  else publish({ state: 'saved', rev: baseRev, at: opts.savedAt ?? opts.clock.now() });
   return {
     flush,
     isClean: () => active() && !running && !dirty(),

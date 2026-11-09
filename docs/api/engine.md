@@ -161,6 +161,7 @@ export type OpenedProject = {
     view: ViewState | null;
     formatVersion: number;
     readOnly: boolean;
+    savedAt?: string;
 };
 ```
 

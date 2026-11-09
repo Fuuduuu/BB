@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-window",
+  "description": "PCB Kaardistaja kohaliku töölaua käsud ja failidialoogid",
+  "windows": ["main"],
+  "permissions": [
+    "allow-workbench",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-destroy",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "log:allow-log"
+  ]
+}

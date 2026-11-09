@@ -27,6 +27,7 @@ export type OpenedProject = {
   view: ViewState | null;
   formatVersion: number;
   readOnly: boolean;
+  savedAt?: string;
 };
 export type CreateProjectReq = CreateReq & { projectId: string; doc: BoardDoc };
 export type SaveReq = {

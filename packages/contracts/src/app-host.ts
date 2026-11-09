@@ -16,6 +16,7 @@ export interface AppHost {
   listOpenable?(): Promise<RecentProject[]>;
   pickProjectFile?(): Promise<string | null>;
   pickSavePath?(suggestedName: string): Promise<string | null>;
+  recoveryCopyPath?(projectPath: string): Promise<string>;
   onCloseRequested(handler: () => Promise<boolean>): Unsubscribe;
   onOpenPath(handler: (path: string) => void): Unsubscribe;
   /** Lets the browser check for unsaved work synchronously during beforeunload. */

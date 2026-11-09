@@ -17,6 +17,7 @@
     "filelength": "node tooling/check-file-length.mjs",
     "test": "vitest run",
     "e2e": "playwright test",
+    "tauri": "pnpm --filter @pcbk/desktop tauri",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

@@ -28,6 +28,14 @@ export function createMemoryRepository(store?: MemoryStore): {
 export function createMemoryStore(): MemoryStore;
 ```
 
+### `createTauriRepository`
+```ts
+export function createTauriRepository({ invoke, warn, }: {
+    invoke: TauriInvoke;
+    warn?: (message: string) => void;
+}): ProjectRepository;
+```
+
 ### `createWebRepository`
 ```ts
 export function createWebRepository(options?: {
@@ -52,6 +60,7 @@ export type MemoryProject = {
     view: ViewState | null;
     journal: JournalEntry[];
     readOnly: boolean;
+    savedAt?: string;
 };
 ```
 
@@ -66,4 +75,20 @@ export type MemoryStore = {
     }>;
     sequence: number;
 };
+```
+
+### `RecentDto`
+```ts
+export type RecentDto = {
+    path: string;
+    name: string;
+    project_id: string;
+    opened_at: string;
+    exists: boolean;
+};
+```
+
+### `TauriInvoke`
+```ts
+export type TauriInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 ```

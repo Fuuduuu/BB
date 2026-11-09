@@ -114,6 +114,26 @@ test('a reference draft creates one undo step on Enter and tracks undo and redo'
   expect(input.value).toBe('R7');
 });
 
+test('undo replaces a rejected reference draft with the restored value and clears the error', () => {
+  const { engine } = mount();
+  add();
+  add();
+  fireEvent.click(screen.getByRole('button', { name: et.component.select('R1') }));
+  edit(et.component.ref, 'R7');
+  const input = screen.getByLabelText(et.component.ref) as HTMLInputElement;
+  edit(et.component.ref, 'R2');
+  expect(input.value).toBe('R2');
+  expect(screen.getByText(et.component.duplicateRef)).toBeTruthy();
+
+  act(() => {
+    engine.undo();
+  });
+
+  expect(engine.snapshot().doc.components[0]!.ref).toBe('R1');
+  expect(input.value).toBe('R1');
+  expect(screen.queryByText(et.component.duplicateRef)).toBeNull();
+});
+
 test('Escape cancels a draft without a document command', () => {
   const { engine } = mount();
   add();
@@ -137,6 +157,7 @@ test('duplicate and empty references retain the draft with friendly feedback unt
   expect(screen.getByText(et.component.duplicateRef)).toBeTruthy();
   edit(et.component.note, 'Vaata hiljem');
   expect((screen.getByLabelText(et.component.ref) as HTMLInputElement).value).toBe('r1');
+  expect(screen.getByText(et.component.duplicateRef)).toBeTruthy();
   edit(et.component.ref, '');
   expect(screen.getByText(et.component.invalid)).toBeTruthy();
   edit(et.component.ref, 'R9');

@@ -34,6 +34,7 @@ export interface ProjectService {
   create(req: CreateReq): Promise<Result<ProjectInfo, EngineError>>;
   open(req: OpenReq): Promise<Result<ProjectInfo, EngineError>>;
   close(): Promise<Result<void, EngineError>>;
+  discard(): Promise<Result<void, EngineError>>;
   flush(): Promise<Result<void, EngineError>>;
   saveView(view: ViewState): void;
   copy(req: CopyReq): Promise<Result<ProjectInfo, EngineError>>;

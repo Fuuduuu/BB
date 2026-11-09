@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useEngine, useSaveStatus, useSnapshot } from '@pcbk/client';
+import type { Snapshot } from '@pcbk/contracts';
 import { TopBar } from './TopBar';
 import { ErrorBar } from './ErrorBar';
 import type { SaveRecoveryActions } from './ErrorBar';
@@ -17,8 +18,25 @@ import { et } from './i18n/et';
 
 const emptyRegistry = new UiRegistry();
 const noSelection: Selection = { kind: 'none' };
-function useSelection(sessionId: string) {
-  return useSessionStore((s) => (s.sessionId === sessionId ? s.selection : noSelection));
+function useSelection(sessionId: string, components: Snapshot['doc']['components']) {
+  const selected = useSessionStore((s) => (s.sessionId === sessionId ? s.selection : noSelection));
+  const missing =
+    (selected.kind === 'component' &&
+      !components.some((component) => component.id === selected.id)) ||
+    (selected.kind === 'pin' &&
+      !components.some(
+        (component) =>
+          component.id === selected.componentId &&
+          component.pins.some((pin) => pin.id === selected.pinId),
+      ));
+  useEffect(() => {
+    if (!missing) return;
+    const current = useSessionStore.getState();
+    if (current.sessionId === sessionId && current.selection === selected) {
+      current.setSelection(noSelection);
+    }
+  }, [missing, selected, sessionId]);
+  return missing ? noSelection : selected;
 }
 const wideQuery = '(min-width: 1280px)';
 function subscribeWidth(notify: () => void) {
@@ -93,8 +111,7 @@ function Navigator({ registry }: { registry: UiRegistry }) {
     </>
   );
 }
-function Context({ registry, sessionId }: { registry: UiRegistry; sessionId: string }) {
-  const selection = useSelection(sessionId);
+function Context({ registry, selection }: { registry: UiRegistry; selection: Selection }) {
   const sections = registry.contextSections(selection);
   return (
     <>
@@ -116,15 +133,16 @@ function ExtraSlots({ registry, slot }: { registry: UiRegistry; slot: 'topBar' |
 }
 function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps) {
   const engine = useEngine();
-  const { sessionId, name, history } = useSnapshot((s) => ({
+  const { sessionId, name, history, components } = useSnapshot((s) => ({
     sessionId: s.sessionId,
     name: s.doc.name,
     history: s.history,
+    components: s.doc.components,
   }));
   const status = useSaveStatus();
   const view = useViewStore();
   useTheme(props.manageTheme !== false);
-  const selection = useSelection(sessionId);
+  const selection = useSelection(sessionId, components);
   const wide = useSyncExternalStore(subscribeWidth, isWide, () => true);
   useEffect(() => {
     useSessionStore.getState().reset(sessionId);
@@ -216,7 +234,7 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
             />
             <aside className="pcbk-context" id="pcbk-context" aria-label={et.shell.context}>
               <PanelErrorBoundary key={sessionId}>
-                <Context registry={registry} sessionId={sessionId} />
+                <Context registry={registry} selection={selection} />
               </PanelErrorBoundary>
             </aside>
           </>

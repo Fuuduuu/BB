@@ -10,4 +10,5 @@ tools/
 docs/
 *.md
 packages/adapters/src/bindings/
+apps/desktop/src-tauri/gen/schemas/
 pnpm-lock.yaml

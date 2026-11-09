@@ -11,9 +11,9 @@ import type {
 import { et } from '../shell/i18n/et';
 import { useViewStore } from '../shell/view-store';
 import { useProjectLists } from './use-project-lists';
-import { useWorkbenchHost } from './use-workbench-host';
+import { sameProjectPath, useWorkbenchAction, useWorkbenchHost } from './use-workbench-host';
 
-type CloseIntent = 'home' | 'host';
+type CloseIntent = 'home' | 'host' | 'reload';
 type CopyIntent = 'stay' | 'reload' | 'close';
 
 function errorText(error: EngineError) {
@@ -41,36 +41,30 @@ export function useWorkbench(host: AppHost) {
     reason: StorageReason;
     intent: CloseIntent;
   } | null>(null);
-  const [busy, setBusy] = useState(false);
-  const pending = useRef(false);
+  const { busy, run, runClose, finishHostAction } = useWorkbenchAction(setLaunchError);
+  const activePath = useRef<string | null>(null);
   const discarding = useRef(false);
 
-  const run = useCallback(async (action: () => Promise<boolean | void>) => {
-    if (pending.current) return false;
-    pending.current = true;
-    setBusy(true);
-    try {
-      return (await action()) ?? true;
-    } catch {
-      setLaunchError(et.error.root);
-      return false;
-    } finally {
-      pending.current = false;
-      setBusy(false);
-    }
-  }, []);
-
   const activate = useCallback(
-    async (next: ProjectInfo) => {
+    (next: ProjectInfo) => {
       useViewStore.getState().restore(next.view);
+      activePath.current = next.path;
       setInfo(next);
+      setCloseError(null);
       setCreateOpen(false);
       setLaunchError(null);
       setCreateError(null);
-      await refreshRecent();
+      void refreshRecent().catch(() => setLaunchError(et.error.root));
     },
     [refreshRecent],
   );
+
+  const deactivate = useCallback(() => {
+    activePath.current = null;
+    setInfo(null);
+    setCloseError(null);
+    void refreshRecent().catch(() => setLaunchError(et.error.root));
+  }, [refreshRecent]);
 
   const finishClose = useCallback(
     async (intent: CloseIntent) => {
@@ -79,13 +73,20 @@ export function useWorkbench(host: AppHost) {
         setCloseError({ reason: closeReason(result.error), intent });
         return false;
       }
-      setInfo(null);
-      setCloseError(null);
-      void refreshRecent().catch(() => setLaunchError(et.error.root));
+      deactivate();
       return true;
     },
-    [projects, refreshRecent],
+    [projects, deactivate],
   );
+
+  const leaveWorkbench = (intent: CloseIntent) => {
+    if (intent === 'home') return;
+    discarding.current = true;
+    finishHostAction(() => {
+      if (intent === 'reload') host.reload();
+      else host.closeNow();
+    });
+  };
 
   const goHome = useCallback(() => {
     void run(() => finishClose('home'));
@@ -93,9 +94,10 @@ export function useWorkbench(host: AppHost) {
 
   const openProject = useCallback(
     async (path: string) => {
+      if (activePath.current && sameProjectPath(activePath.current, path)) return;
       setLaunchError(null);
       const result = await projects.open({ path });
-      if (result.ok) await activate(result.value);
+      if (result.ok) activate(result.value);
       else {
         setLaunchError(errorText(result.error));
         if (result.error.code === 'storage' && result.error.reason === 'missing') {
@@ -104,6 +106,13 @@ export function useWorkbench(host: AppHost) {
       }
     },
     [projects, activate],
+  );
+
+  const openFromHost = useCallback(
+    (path: string) => {
+      void run(() => openProject(path), true);
+    },
+    [run, openProject],
   );
 
   const open = useCallback(
@@ -128,18 +137,17 @@ export function useWorkbench(host: AppHost) {
     });
   }, [engine, projects, info]);
 
-  const requestClose = useCallback(async () => {
-    if (pending.current) return false;
-    if (!engine.snapshot().sessionId) return true;
-    return run(() => finishClose('host'));
-  }, [engine, run, finishClose]);
-  useWorkbenchHost(host, open, requestClose, discarding);
+  const requestClose = useCallback(
+    () => runClose(() => finishClose('host')),
+    [runClose, finishClose],
+  );
+  const diagnose = useWorkbenchHost(host, openFromHost, requestClose, discarding, setLaunchError);
 
   const create = (request: CreateReq) => {
     void run(async () => {
       setCreateError(null);
       const result = await projects.create(request);
-      if (result.ok) await activate(result.value);
+      if (result.ok) activate(result.value);
       else setCreateError(errorText(result.error));
     });
   };
@@ -160,40 +168,29 @@ export function useWorkbench(host: AppHost) {
 
   const copy = (intent: CopyIntent) => {
     void run(async () => {
-      if (!info || !host.pickSavePath) {
+      if (!info || (!host.pickSavePath && !(intent === 'reload' && host.recoveryCopyPath))) {
         setLaunchError(et.project.copyUnavailable);
         return;
       }
-      const dest = await host.pickSavePath(info.name);
+      const dest =
+        intent === 'reload' && host.recoveryCopyPath
+          ? await host.recoveryCopyPath(info.path)
+          : await host.pickSavePath?.(info.name);
       if (!dest) return;
       const result = await projects.copy({ dest, identity: 'same' });
       if (!result.ok) {
         setLaunchError(errorText(result.error));
         return;
       }
-      await activate(result.value);
-      if (intent === 'reload') host.reload();
+      activate(result.value);
+      if (intent === 'reload') {
+        if (await finishClose('reload')) leaveWorkbench('reload');
+      }
       if (intent === 'close') {
         const closeIntent = closeError?.intent ?? 'home';
-        if ((await finishClose(closeIntent)) && closeIntent === 'host') host.closeNow();
+        if (await finishClose(closeIntent)) leaveWorkbench(closeIntent);
       }
     });
-  };
-
-  const diagnose = () => {
-    const snapshot = engine.snapshot();
-    const summary = JSON.stringify(
-      {
-        app: et.appName,
-        version: '0.0.0',
-        at: new Date().toISOString(),
-        rev: snapshot.rev,
-        hasProject: Boolean(snapshot.sessionId),
-      },
-      null,
-      2,
-    );
-    void host.saveDiagnostics(summary).catch(() => setLaunchError(et.error.root));
   };
 
   const withMissing = (item: RecentProject) => ({
@@ -229,12 +226,20 @@ export function useWorkbench(host: AppHost) {
     retryClose: () => {
       const intent = closeError?.intent ?? 'home';
       void run(async () => {
-        if ((await finishClose(intent)) && intent === 'host') host.closeNow();
+        if (await finishClose(intent)) leaveWorkbench(intent);
       });
     },
     discard: () => {
-      discarding.current = true;
-      host.closeNow();
+      const intent = closeError?.intent ?? 'home';
+      void run(async () => {
+        const result = await projects.discard();
+        if (!result.ok) {
+          setCloseError({ reason: closeReason(result.error), intent });
+          return;
+        }
+        deactivate();
+        leaveWorkbench(host.kind === 'web' && intent === 'home' ? 'host' : intent);
+      });
     },
   };
 }

@@ -273,7 +273,7 @@ fn write_full(
     publish(pending, destination, now)
 }
 
-pub(super) fn full(
+pub(super) fn daily(
     app_data: &Path,
     db: &ProjectDb,
     now: DateTime<FixedOffset>,
@@ -290,6 +290,25 @@ pub(super) fn full(
         prune(&dir)?;
     }
     Ok(())
+}
+
+pub(super) fn migration(
+    app_data: &Path,
+    db: &ProjectDb,
+    now: DateTime<FixedOffset>,
+) -> StorageResult<()> {
+    let (dir, format) = context(app_data, db)?;
+    let mut filename_time = now;
+    loop {
+        if write_full(db, &full_destination(&dir, format, filename_time), now)? {
+            return prune(&dir);
+        }
+        // A daily or migration backup may already occupy this second. Keep
+        // the actual creation time in metadata and find the next free name.
+        filename_time = filename_time
+            .checked_add_signed(TimeDelta::seconds(1))
+            .ok_or_else(|| StorageErrorDto::new(Reason::Unknown))?;
+    }
 }
 
 pub(super) fn after_save(

@@ -24,6 +24,28 @@ const actions = () => ({
   onCopyAndReload: vi.fn(),
   onExportDiagnostics: vi.fn(),
 });
+function snapshotWithComponent(id: string): ReturnType<typeof snapshot> {
+  const initial = snapshot();
+  return {
+    ...initial,
+    doc: {
+      ...initial.doc,
+      components: [
+        {
+          id,
+          ref: 'R1',
+          kind: 'resistor',
+          marking: '',
+          value: '',
+          identified: false,
+          dnp: false,
+          note: '',
+          pins: [],
+        },
+      ],
+    },
+  };
+}
 function setup(canvas?: React.ReactNode) {
   const engine = new FakeEngine(snapshot('session-a', 0, 'Minu plaat'));
   const projects = new FakeProjects();
@@ -235,7 +257,7 @@ test('switching projects never renders the previous selection in the new project
       ],
     },
   ]);
-  const engine = new FakeEngine(snapshot());
+  const engine = new FakeEngine(snapshotWithComponent('cmp_old'));
   try {
     render(
       <EngineProvider engine={engine} projects={new FakeProjects()}>
@@ -263,7 +285,10 @@ test('navigator tabs support arrows without changing the selected component', ()
     },
   ]);
   render(
-    <EngineProvider engine={new FakeEngine()} projects={new FakeProjects()}>
+    <EngineProvider
+      engine={new FakeEngine(snapshotWithComponent('cmp_kept'))}
+      projects={new FakeProjects()}
+    >
       <AppShell {...actions()} registry={registry} />
     </EngineProvider>,
   );

@@ -13,6 +13,7 @@ export type MemoryProject = {
   view: ViewState | null;
   journal: JournalEntry[];
   readOnly: boolean;
+  savedAt?: string;
 };
 export type MemoryStore = {
   files: Map<string, MemoryProject>;
@@ -66,6 +67,7 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
       view: clone(current.view),
       formatVersion: current.formatVersion,
       readOnly: current.readOnly,
+      savedAt: current.savedAt,
     };
   };
   const install = (path: string, value: MemoryProject) => {
@@ -84,6 +86,7 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
         journal: [],
         formatVersion: req.doc.format_version,
         readOnly: false,
+        savedAt: new Date().toISOString(),
       });
     },
     async open(path) {
@@ -100,6 +103,7 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
       current.rev = req.rev;
       current.journal = journal;
       current.formatVersion = req.doc.format_version;
+      current.savedAt = new Date().toISOString();
       documentWrites++;
     },
     async saveView(session, view) {
@@ -122,6 +126,7 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
         formatVersion: req.doc.format_version,
         journal: [...(original?.journal ?? []), ...req.journal],
         readOnly: false,
+        savedAt: new Date().toISOString(),
       });
     },
     async backupFull(session) {

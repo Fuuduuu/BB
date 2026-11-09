@@ -40,16 +40,20 @@ fn daily_backup_uses_local_date_across_midnight() {
 }
 
 #[test]
-fn backup_full_for_migration_is_idempotent_same_day() {
+fn migration_backup_includes_same_day_work() {
     let f = Fixture::new();
     let opened = f.open_with_daily_backup("original.pcbk");
     let full = f.backups(BackupKind::Full).remove(0);
     let before = fs::read(&full.file).unwrap();
-    f.clock.set("2026-11-09T11:00:00+02:00");
     f.save(&opened, 1);
     f.store.backup_full(&opened.session).unwrap();
     f.store.backup_full(&opened.session).unwrap();
-    assert_eq!(f.backups(BackupKind::Full).len(), 1);
+    let copies = f.backups(BackupKind::Full);
+    assert_eq!(copies.len(), 3);
+    for copy in &copies[..2] {
+        assert_eq!(rev(&read_db(&copy.file)), 1);
+        assert_eq!(copy.at, full.at);
+    }
     assert_eq!(fs::read(&full.file).unwrap(), before);
     assert_eq!(rev(&read_db(&full.file)), 0);
 }

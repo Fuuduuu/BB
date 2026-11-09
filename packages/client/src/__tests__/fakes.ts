@@ -64,6 +64,7 @@ export class FakeProjects implements ProjectService {
   backups = unavailable;
   restore = unavailable;
   close = async () => ok(undefined);
+  discard = async () => ok(undefined);
   flush = async () => ok(undefined);
   saveView() {}
   status(fn: (value: SaveNotice) => void) {

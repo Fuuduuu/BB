@@ -179,6 +179,7 @@ export function createWebRepository(
       view: parseViewState(value.view),
       formatVersion: value.meta.format_version,
       readOnly: false,
+      savedAt: value.meta.updated_at ?? value.meta.created_at,
     };
   };
   const unsupported = async (): Promise<never> => {

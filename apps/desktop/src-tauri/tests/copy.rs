@@ -19,10 +19,13 @@ fn request<'a>(source: &'a OpenedProjectDto, dest: &'a Path, doc_json: &'a str) 
 }
 
 #[test]
-fn copy_goes_through_tmp_and_keeps_original() {
+fn stale_tmp_from_crash_does_not_block_create_copy_restore() {
     let f = Fixture::new();
     let original = f.path("Algne plaat õ.pcbk");
+    let create_tmp = f.path("Algne plaat õ.pcbk.tmp");
+    fs::write(&create_tmp, b"interrupted create").unwrap();
     let initial = f.create("Algne plaat õ.pcbk");
+    assert_eq!(fs::read(&create_tmp).unwrap(), b"interrupted create");
     f.store.close(&initial.session).unwrap();
     let db = Connection::open(&original).unwrap();
     db.execute("INSERT INTO thumbnail(id,png) VALUES (1, X'0102')", [])
@@ -31,17 +34,13 @@ fn copy_goes_through_tmp_and_keeps_original() {
     let before = fs::read(&original).unwrap();
     let source = f.store.open(&original).unwrap();
     let dest = f.path("Koopia õ.pcbk");
-    let tmp = f.path("Koopia õ.pcbk.tmp");
-    fs::write(&tmp, b"existing temporary file").unwrap();
-    assert!(f.store.copy(request(&source, &dest, &doc(1))).is_err());
-    assert!(!dest.exists());
-    assert_eq!(fs::read(&tmp).unwrap(), b"existing temporary file");
-    fs::remove_file(&tmp).unwrap();
+    let copy_tmp = f.path("Koopia õ.pcbk.tmp");
+    fs::write(&copy_tmp, b"interrupted copy").unwrap();
 
     let copied = f.store.copy(request(&source, &dest, &doc(1))).unwrap();
     assert!(!copied.from_memory);
     assert_ne!(source.session, copied.opened.session);
-    assert!(!tmp.exists());
+    assert_eq!(fs::read(&copy_tmp).unwrap(), b"interrupted copy");
     f.store.close(&copied.opened.session).unwrap();
     f.store.close(&source.session).unwrap();
     assert_eq!(fs::read(&original).unwrap(), before);
@@ -51,6 +50,18 @@ fn copy_goes_through_tmp_and_keeps_original() {
         .query_row("SELECT png FROM thumbnail", [], |row| row.get(0))
         .unwrap();
     assert_eq!(thumbnail, [1, 2]);
+
+    let backup = f.backups(BackupKind::Full).remove(0);
+    let restored_path = f.path("Taaste õ.pcbk");
+    let restore_tmp = f.path("Taaste õ.pcbk.tmp");
+    fs::write(&restore_tmp, b"interrupted restore").unwrap();
+    let restored = f
+        .store
+        .restore(Path::new(&backup.file), &restored_path)
+        .unwrap();
+    f.store.close(&restored.session).unwrap();
+    assert_eq!(restored.doc_json, doc(0));
+    assert_eq!(fs::read(&restore_tmp).unwrap(), b"interrupted restore");
 }
 
 #[test]

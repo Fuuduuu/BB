@@ -1,0 +1,20 @@
+[[permission]]
+identifier = "allow-workbench"
+description = "PCB projektihoidla, avamistee ja diagnostika käsud."
+commands.allow = [
+  "project_create",
+  "project_open",
+  "project_save",
+  "project_save_view",
+  "project_copy",
+  "project_backup_full",
+  "project_backups",
+  "project_restore",
+  "recent_list",
+  "recent_add",
+  "recent_remove",
+  "project_close",
+  "default_project_path",
+  "take_initial_path",
+  "log_export",
+]

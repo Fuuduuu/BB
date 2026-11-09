@@ -388,6 +388,7 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
 **M1 plaanimärkmed (ei blokeeri M0):**
 - Koos esimese moodulitevahelise lepinguimpordiga lisa kontroll, et imporditav moodul on `dependsOn` loendis. Praegune sõltuvuskontroll seda tingimust veel ei kontrolli; M0 moodulite vahel sellist importi pole.
 - Kui plaadipaigutus on olemas, peab käsitsi lisatud jala eemaldamine koristama ka selle `customPads`-i ning jalale viitavad `padMap`-i kirjed.
+- **Stseeni pööre ja peegeldus ning uus komponent (M1.2):** kui stseenile on rakendatud `PhotoRef.transform`, peab uus komponent ekraanil ilmuma püstiselt ja loetavalt. Paigutustööriist kompenseerib uue komponendi algse `rotationDeg` stseeni pöördega; peegelduse korral valib algse `side`-i nii, et jalg 1 on ekraanil vasakul üleval. Juba paigutatud komponendid peegelduvad ja pöörduvad koos fotoga, sest need peavad päris korpusega kohakuti jääma. EXIF-pööret pikslitesse ei küpsetata, sest koordinaadid on originaalfoto pikslites. Test: kõigi 8 teisenduse korral on uue SOIC-8 jalg 1 ekraanil vasakul üleval.
 - **`ViewState` laieneb koos lõuendiga:** plaadi ja skeemi vaate teisendus (`zoom`, `pan`), kihtide nähtavus ning foto nähtavus ja kontrast. Leebe parser täidab vanades failides puuduvad väljad vaikeväärtustega.
 - **Mõõtmise invariandid koos `measurements` mooduliga** (lisaks M0 `overload`/`value` ja `beep` reeglitele):
   - `value` on kohustuslik, välja arvatud `overload: true` korral;

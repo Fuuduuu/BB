@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
 /** A document field is one command per committed edit, never one per keystroke. */
@@ -20,9 +20,12 @@ export function DraftField({
   const id = useId();
   const [draft, setDraft] = useState(value);
   const [error, setError] = useState<string>();
+  const previousValue = useRef(value);
   useEffect(() => {
-    // A rejected draft stays available for correction, even when other fields change.
-    if (!error) setDraft(value);
+    const changed = previousValue.current !== value;
+    previousValue.current = value;
+    if (changed) setError(undefined);
+    if (changed || !error) setDraft(value);
   }, [value, error]);
   const save = () => {
     if (draft === value) {

@@ -29,7 +29,7 @@ export function Workbench({
     <RootErrorBoundary
       onCopyAndReload={() => workbench.copy('reload')}
       onExportDiagnostics={workbench.diagnose}
-      copyAvailable={copyAvailable}
+      copyAvailable={Boolean(workbench.info && (host.recoveryCopyPath || host.pickSavePath))}
     >
       {workbench.info ? (
         <AppShell

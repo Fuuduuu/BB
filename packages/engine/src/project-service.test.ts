@@ -1,6 +1,6 @@
 import { MIGRATIONS, newBoardDoc } from '@pcbk/domain';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { deferred, projectSetup, seed } from './__tests__/project-helpers';
+import { blockFirstSave, deferred, projectSetup, seed } from './__tests__/project-helpers';
 import * as storage from '../../adapters/src/storage-memory';
 
 beforeEach(() => {
@@ -128,6 +128,67 @@ test('second open of the same file is locked until the first project closes', as
   await expect(other.open(path)).rejects.toMatchObject({ reason: 'locked' });
   await projects.close();
   await expect(other.open(path)).resolves.toMatchObject({ path });
+});
+test('open shows last save time, not open time', async () => {
+  vi.setSystemTime(new Date('2026-11-08T09:00:00Z'));
+  const { engine, projects, path, statuses } = await projectSetup();
+  const savedAt = '2026-11-08T10:00:00.000Z';
+  vi.setSystemTime(new Date(savedAt));
+  engine.execute('demo.rename', { name: 'Saved' });
+  expect((await projects.flush()).ok).toBe(true);
+  expect((await projects.close()).ok).toBe(true);
+
+  vi.setSystemTime(new Date('2026-11-08T13:00:00Z'));
+  const opened = await projects.open({ path });
+  expect(opened).toMatchObject({ ok: true, value: { name: 'Saved' } });
+  expect(statuses.at(-1)).toMatchObject({ state: 'saved', rev: 1, at: savedAt });
+});
+test('discard releases the repository session without saving', async () => {
+  const { engine, host, projects, memory, store, path } = await projectSetup();
+  engine.execute('demo.rename', { name: 'Discarded' });
+  projects.saveView({
+    navigatorWidth: 340,
+    navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
+  });
+  expect((await projects.discard()).ok).toBe(true);
+  expect(host.current()).toBeNull();
+  await vi.advanceTimersByTimeAsync(20_000);
+  expect(memory.documentWrites).toBe(0);
+  expect(memory.viewWrites).toBe(0);
+
+  const other = storage.createMemoryRepository(store);
+  const reopened = await other.open(path);
+  expect(reopened).toMatchObject({ doc: { name: 'Board', rev: 0 }, view: null });
+  await other.close(reopened.session);
+});
+test('discard waits for an in-flight write and skips queued changes', async () => {
+  let saving!: ReturnType<typeof blockFirstSave>;
+  const { engine, host, projects, store, path } = await projectSetup({
+    timing: { debounceMs: 10, maxWaitMs: 100 },
+    wrap(repo) {
+      saving = blockFirstSave(repo);
+      return saving.repo;
+    },
+  });
+  engine.execute('demo.rename', { name: 'Writing' });
+  await vi.advanceTimersByTimeAsync(10);
+  await saving.started;
+  engine.execute('demo.rename', { name: 'Discarded' });
+  const discarding = projects.discard();
+  await vi.advanceTimersByTimeAsync(0);
+
+  const other = storage.createMemoryRepository(store);
+  await expect(other.open(path)).rejects.toMatchObject({ reason: 'locked' });
+  saving.release();
+  expect((await discarding).ok).toBe(true);
+  expect(host.current()).toBeNull();
+  await vi.advanceTimersByTimeAsync(100);
+  expect(saving.requests).toHaveLength(1);
+  const reopened = await other.open(path);
+  expect(reopened.doc).toMatchObject({ name: 'Writing', rev: 1 });
+  await other.close(reopened.session);
 });
 test('old timers and statuses do not affect a reopened session', async () => {
   const { engine, projects, host, store, path, statuses } = await projectSetup();

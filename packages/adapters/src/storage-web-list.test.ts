@@ -106,7 +106,7 @@ test('modification time survives a removed recent card and a fresh repository', 
     journal: [],
   });
   setNow('2026-11-08T16:00:00.000Z');
-  await repo.open(opened.path);
+  expect((await repo.open(opened.path)).savedAt).toBe('2026-11-08T14:00:00.000Z');
   await repo.saveView(opened.session, {
     navigatorWidth: 360,
     navigatorTab: 'components',
@@ -129,7 +129,7 @@ test('older project records fall back to creation time regardless of later openi
   delete old!.meta.updated_at;
   await set(`project:${opened.path}`, old, store);
   setNow('2026-11-08T16:00:00.000Z');
-  await repo.open(opened.path);
+  expect((await repo.open(opened.path)).savedAt).toBe(createdAt);
   expect((await repo.listProjects())[0]!.updatedAt).toBe(createdAt);
   expect(await get(`project:${opened.path}`, store)).toEqual(old);
 });

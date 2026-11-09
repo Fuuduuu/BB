@@ -1,13 +1,111 @@
 #![cfg(feature = "tauri-ipc")]
 
-use std::path::Path;
+use std::{path::Path, sync::Mutex};
 
-use tauri::State;
+use tauri::{AppHandle, Manager, Runtime, State};
 
 use crate::storage::{
     BackupInfoDto, CopyRequest, CopyResultDto, JournalDto, OpenedProjectDto, ProjectStore, Reason,
     RecentDto, StorageErrorDto,
 };
+
+pub struct InitialPath(Mutex<OpenPathState>);
+
+struct OpenPathState {
+    pending: Option<String>,
+    listening: bool,
+}
+
+impl InitialPath {
+    pub fn new(path: Option<String>) -> Self {
+        Self(Mutex::new(OpenPathState {
+            pending: path,
+            listening: false,
+        }))
+    }
+
+    pub fn hold_until_ready(&self, path: String) -> Option<String> {
+        let Ok(mut state) = self.0.lock() else {
+            return Some(path);
+        };
+        if state.listening {
+            Some(path)
+        } else {
+            state.pending = Some(path);
+            None
+        }
+    }
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn take_initial_path(state: State<'_, InitialPath>) -> Result<Option<String>, StorageErrorDto> {
+    let mut paths = state
+        .0
+        .lock()
+        .map_err(|_| StorageErrorDto::new(Reason::Unknown))?;
+    paths.listening = true;
+    Ok(paths.pending.take())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn default_project_path<R: Runtime>(
+    app: AppHandle<R>,
+    name: String,
+    near: Option<String>,
+) -> Result<String, StorageErrorDto> {
+    let path = if let Some(near) = near.as_deref() {
+        let near = project_file(near)?;
+        let directory = near
+            .parent()
+            .filter(|_| near.is_absolute())
+            .ok_or_else(|| StorageErrorDto::new(Reason::Unknown))?;
+        crate::desktop_paths::available_project_path(directory, &name)?
+    } else {
+        let documents = app
+            .path()
+            .document_dir()
+            .map_err(|_| StorageErrorDto::new(Reason::Unknown))?;
+        crate::desktop_paths::default_project_path(&documents, &name)?
+    };
+    path.into_os_string()
+        .into_string()
+        .map_err(|_| StorageErrorDto::new(Reason::Unknown))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn log_export<R: Runtime>(app: AppHandle<R>, dest: String) -> Result<(), StorageErrorDto> {
+    let dest = Path::new(&dest);
+    if !dest
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("txt"))
+    {
+        return Err(StorageErrorDto::new(Reason::Unknown));
+    }
+    let logs = app
+        .path()
+        .app_log_dir()
+        .map_err(|_| StorageErrorDto::new(Reason::Unknown))?;
+    log::logger().flush();
+    crate::logging::export(
+        &logs,
+        dest,
+        &app.package_info().version.to_string(),
+        chrono::Utc::now(),
+    )?;
+    Ok(())
+}
+
+fn project_file(path: &str) -> Result<&Path, StorageErrorDto> {
+    let path = Path::new(path);
+    if path
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("pcbk"))
+    {
+        Ok(path)
+    } else {
+        Err(StorageErrorDto::new(Reason::NotProject))
+    }
+}
 
 #[tauri::command(rename_all = "snake_case")]
 pub fn project_create(
@@ -16,7 +114,7 @@ pub fn project_create(
     project_id: String,
     doc_json: String,
 ) -> Result<OpenedProjectDto, StorageErrorDto> {
-    store.create(Path::new(&path), &project_id, &doc_json)
+    store.create(project_file(&path)?, &project_id, &doc_json)
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -24,7 +122,7 @@ pub fn project_open(
     store: State<'_, ProjectStore>,
     path: String,
 ) -> Result<OpenedProjectDto, StorageErrorDto> {
-    store.open(Path::new(&path))
+    store.open(project_file(&path)?)
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -63,7 +161,7 @@ pub fn project_copy(
 ) -> Result<CopyResultDto, StorageErrorDto> {
     store.copy(CopyRequest {
         session: &session,
-        dest: Path::new(&dest),
+        dest: project_file(&dest)?,
         project_id: &project_id,
         copied_from_project_id: copied_from_project_id.as_deref(),
         doc_json: &doc_json,
@@ -99,7 +197,7 @@ pub fn project_restore(
     backup: String,
     dest: String,
 ) -> Result<OpenedProjectDto, StorageErrorDto> {
-    store.restore(Path::new(&backup), Path::new(&dest))
+    store.restore(Path::new(&backup), project_file(&dest)?)
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -114,7 +212,7 @@ pub fn recent_add(
     name: String,
     project_id: String,
 ) -> Result<(), StorageErrorDto> {
-    store.recent_add(Path::new(&path), &name, &project_id)
+    store.recent_add(project_file(&path)?, &name, &project_id)
 }
 
 #[tauri::command(rename_all = "snake_case")]

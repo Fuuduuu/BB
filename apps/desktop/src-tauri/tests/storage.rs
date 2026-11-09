@@ -59,6 +59,30 @@ fn create_open_save_roundtrip() {
         "request-a"
     );
 }
+
+#[test]
+fn reopening_after_close_without_save_returns_the_persisted_document_and_time() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("board.pcbk");
+    let store = test_store(dir.path());
+    let session = create(&store, &path);
+    store.save(&session, 0, 1, &doc(1), &[]).unwrap();
+    store.close(&session).unwrap();
+    let saved_at = "2026-11-08T12:34:00.000Z";
+    Connection::open(&path)
+        .unwrap()
+        .execute("UPDATE document SET updated_at=?1 WHERE id=1", [saved_at])
+        .unwrap();
+
+    let opened = store.open(&path).unwrap();
+    store.close(&opened.session).unwrap();
+    let reopened = store.open(&path).unwrap();
+    assert_ne!(reopened.session, opened.session);
+    assert_eq!(reopened.doc_json, doc(1));
+    assert_eq!(reopened.saved_at, saved_at);
+    store.close(&reopened.session).unwrap();
+}
+
 #[test]
 fn save_rejects_wrong_base_rev() {
     let dir = tempfile::tempdir().unwrap();
@@ -270,13 +294,9 @@ fn confirmed_create_replaces_file_only_after_building_new_project() {
     assert_eq!(fs::read(&path).unwrap(), before);
     assert_eq!(fs::metadata(&path).unwrap().modified().unwrap(), modified);
     fs::write(&tmp, b"existing temporary file").unwrap();
-    assert!(store.create(&path, "replacement", &doc(0)).is_err());
-    assert_eq!(fs::read(&path).unwrap(), before);
-    assert_eq!(fs::read(&tmp).unwrap(), b"existing temporary file");
-    fs::remove_file(&tmp).unwrap();
     let opened = store.create(&path, "replacement", &doc(0)).unwrap();
     assert_eq!(opened.project_id, "replacement");
-    assert!(!tmp.exists());
+    assert_eq!(fs::read(&tmp).unwrap(), b"existing temporary file");
     store.close(&opened.session).unwrap();
     let reopened = store.open(&path).unwrap();
     assert_eq!(reopened.project_id, "replacement");

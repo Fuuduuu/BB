@@ -132,6 +132,7 @@ export function createProjectService(opts: {
       session: opened.session,
       sessionId,
       baseRev,
+      savedAt: opened.savedAt,
       needsSave,
       view: opened.view,
       readOnly: opened.readOnly,
@@ -196,6 +197,15 @@ export function createProjectService(opts: {
       throw error;
     }
   }
+  async function unload(context: Context) {
+    // Stop new document commands before awaiting asynchronous handle release.
+    context.saver.dispose();
+    active = null;
+    opts.host.unload();
+    pendingReleases.add(context.opened.session);
+    await releasePending(true);
+    return ok(undefined);
+  }
   return {
     create(req) {
       return serial(async () => {
@@ -226,14 +236,21 @@ export function createProjectService(opts: {
           const saved = await context.saver.flush();
           if (!saved.ok) return saved;
         } while (!context.saver.isClean());
-        // Stop new document commands before awaiting asynchronous handle release.
-        context.saver.dispose();
-        active = null;
-        opts.host.unload();
-        pendingReleases.add(context.opened.session);
+        return unload(context);
+      }, true);
+    },
+    discard() {
+      return serial(async () => {
+        const context = active;
+        if (context) {
+          // An in-flight write must settle before releasing its storage handle.
+          // Pause cancels the timers and prevents the saver from starting a follow-up write.
+          await context.saver.pause();
+          return unload(context);
+        }
         await releasePending(true);
         return ok(undefined);
-      }, true);
+      });
     },
     saveView(view) {
       const parsed = parseViewState(view);

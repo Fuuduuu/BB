@@ -13,6 +13,7 @@ export interface AppHost {
     listOpenable?(): Promise<RecentProject[]>;
     pickProjectFile?(): Promise<string | null>;
     pickSavePath?(suggestedName: string): Promise<string | null>;
+    recoveryCopyPath?(projectPath: string): Promise<string>;
     onCloseRequested(handler: () => Promise<boolean>): Unsubscribe;
     onOpenPath(handler: (path: string) => void): Unsubscribe;
     protectBeforeUnload?(shouldWarn: () => boolean): Unsubscribe;
@@ -202,6 +203,7 @@ export interface ProjectService {
     create(req: CreateReq): Promise<Result<ProjectInfo, EngineError>>;
     open(req: OpenReq): Promise<Result<ProjectInfo, EngineError>>;
     close(): Promise<Result<void, EngineError>>;
+    discard(): Promise<Result<void, EngineError>>;
     flush(): Promise<Result<void, EngineError>>;
     saveView(view: ViewState): void;
     copy(req: CopyReq): Promise<Result<ProjectInfo, EngineError>>;

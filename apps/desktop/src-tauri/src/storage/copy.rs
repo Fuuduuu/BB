@@ -75,7 +75,7 @@ pub(super) fn write(
     if request.project_id.trim().is_empty() {
         return Err(StorageErrorDto::new(Reason::Unknown));
     }
-    let pending = PendingFile::new(dest)?;
+    let pending = PendingFile::unique(dest)?;
     let from_memory = vacuum_into(source, pending.path()).is_err();
     if from_memory {
         fs::OpenOptions::new()

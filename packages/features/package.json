@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./engine": "./engine.ts",
+    "./ui": "./ui.ts",
     "./*/contract": "./*/contract.ts",
     "./*/engine": "./*/engine/index.ts",
     "./*/ui": "./*/ui/index.tsx"

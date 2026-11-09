@@ -36,6 +36,10 @@ declare module '@pcbk/contracts' {
 declare const snapshot: Snapshot;
 declare const engine: DocumentEngine;
 declare const projects: ProjectService;
+declare const collections: DeepReadonly<{
+  map: Map<{ id: string }, { count: number }>;
+  set: Set<{ id: string }>;
+}>;
 
 expectTypeOf<Snapshot['doc']>().toEqualTypeOf<DeepReadonly<BoardDoc>>();
 expectTypeOf<Snapshot['derived']>().toEqualTypeOf<DeepReadonly<Derived>>();
@@ -43,6 +47,15 @@ expectTypeOf<Snapshot['history']>().toEqualTypeOf<
   DeepReadonly<{ canUndo: boolean; canRedo: boolean }>
 >();
 expectTypeOf<Snapshot['doc']['components'][number]['pins']>().toMatchTypeOf<readonly unknown[]>();
+expectTypeOf(collections.map).toEqualTypeOf<
+  ReadonlyMap<{ readonly id: string }, { readonly count: number }>
+>();
+expectTypeOf(collections.set).toEqualTypeOf<ReadonlySet<{ readonly id: string }>>();
+
+// @ts-expect-error readonly maps do not expose set
+collections.map.set({ id: 'pin' }, { count: 1 });
+// @ts-expect-error readonly sets do not expose add
+collections.set.add({ id: 'pin' });
 
 // @ts-expect-error snapshot metadata is readonly
 snapshot.rev = 2;

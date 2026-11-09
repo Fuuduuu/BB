@@ -1,21 +1,18 @@
 import { useState } from 'react';
+import type { RecentProject } from '@pcbk/contracts';
 import { Button } from '../kit/Button';
 import { Dialog } from '../kit/Dialog';
 import { et } from './i18n/et';
 import './project-screens.css';
 
-export interface RecentProjectCard {
-  path: string;
-  projectId: string;
-  name: string;
-  device?: string;
-  updatedAt: string;
-  missing?: boolean;
-}
+export type RecentProjectCard = RecentProject;
 
 export interface StartScreenProps {
   recent: readonly RecentProjectCard[];
   availableProjects?: readonly RecentProjectCard[];
+  openAvailable?: boolean;
+  onPickProjectFile?(): void;
+  showBrowserStorage?: boolean;
   onNew(): void;
   onOpen(path: string): void;
   onRemoveRecent(path: string): void;
@@ -56,6 +53,9 @@ function ProjectButton({
 export function StartScreen({
   recent,
   availableProjects = recent,
+  openAvailable = true,
+  onPickProjectFile,
+  showBrowserStorage = true,
   onNew,
   onOpen,
   onRemoveRecent,
@@ -78,9 +78,15 @@ export function StartScreen({
             <Button variant="primary" onClick={onNew}>
               {et.project.newBoard}
             </Button>
-            <Button onClick={() => setOpenList(true)}>{et.project.open}</Button>
+            <Button
+              disabled={!openAvailable}
+              title={openAvailable ? undefined : et.project.openFailed}
+              onClick={onPickProjectFile ?? (() => setOpenList(true))}
+            >
+              {et.project.open}
+            </Button>
           </div>
-          <p className="pcbk-start__storage">{et.project.browserStorage}</p>
+          {showBrowserStorage && <p className="pcbk-start__storage">{et.project.browserStorage}</p>}
         </header>
         <section className="pcbk-start__recent" aria-labelledby="pcbk-recent-heading">
           <h2 id="pcbk-recent-heading">{et.project.recent}</h2>

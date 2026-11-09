@@ -292,14 +292,7 @@ export interface PanelSpec extends SlotSpec {
 
 ### `RecentProjectCard`
 ```ts
-export interface RecentProjectCard {
-    path: string;
-    projectId: string;
-    name: string;
-    device?: string;
-    updatedAt: string;
-    missing?: boolean;
-}
+export type RecentProjectCard = RecentProject;
 ```
 
 ### `RootErrorBoundary`
@@ -365,7 +358,7 @@ export interface SlotSpec {
 
 ### `StartScreen`
 ```ts
-export function StartScreen({ recent, availableProjects, onNew, onOpen, onRemoveRecent, }: StartScreenProps): import("react").JSX.Element;
+export function StartScreen({ recent, availableProjects, openAvailable, onPickProjectFile, showBrowserStorage, onNew, onOpen, onRemoveRecent, }: StartScreenProps): import("react").JSX.Element;
 ```
 
 ### `Theme`
@@ -445,4 +438,12 @@ export function useTheme(enabled?: boolean): void;
 ### `useViewStore`
 ```ts
 export const useViewStore: import("zustand").UseBoundStore<import("zustand").StoreApi<ViewStore>>;
+```
+
+### `Workbench`
+```ts
+export function Workbench({ host, uiModules, }: {
+    host: AppHost;
+    uiModules: (onHome: () => void) => UiModule[];
+}): import("react").JSX.Element;
 ```

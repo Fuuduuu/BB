@@ -225,8 +225,9 @@ Käsk `beep.record({ anchor, pin, beep, connect })` teeb kõik **ühe tagasivõe
 
 Piiksumisrežiimis on nupud **„Piiksub ja ühenda“** (`Enter`, `connect = true`), **„Ainult mõõtmine“** (`Shift+Enter`, `connect = false`) ja **„Ei piiksu“** (`N`). `Esc` katkestab ega salvesta midagi ([02 § 8.3](02-kasutaja-teekond.md#83-piiksumisrežiim-mõõdetud-kõige-kiirem-kaardistus)). Tavaline läbivusmõõtmine Mõõda-plokis ei ühenda kunagi.
 
-„Piiksub ja ühenda“ ei ühenda automaatselt kahel juhul. Siis salvestatakse ainult mõõtmine ja lõuendil küsitakse „Piiksub läbi komponendi R5. Ühendan ikkagi?“:
+„Piiksub ja ühenda“ ei ühenda automaatselt kolmel juhul. Siis salvestatakse ainult mõõtmine ja lõuendil küsitakse „Piiksub läbi komponendi R5. Ühendan ikkagi?“:
 - kui jalad on sama kahejalgse passiivkomponendi otsad (`resistor`, `inductor`, `fuse`, `capacitor`, `capacitor_polarized`, `diode`, `led`, `zener`, `crystal`, `switch`);
+- kui ühendamine paneks **mõne** kahejalgse passiivkomponendi mõlemad jalad samasse võrku, ka kaudselt. Näide: must sond on `J1.1` peal, mis on juba `R5.1`-ga ühendatud, ja punane sond on `R5.2` peal; piiks võib tulla läbi väikese `R5`. Kontroll võrdleb `shortedComponents` hulka enne ja pärast kavandatud ühendust ning nimetab küsimuses uue lühistatud komponendi;
 - kui ühendamine liidaks kaks eri rolliga võrku.
 
 Need kaitsed on abilised, mitte garantii.

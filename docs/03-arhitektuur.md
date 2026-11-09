@@ -278,7 +278,7 @@ Reeglid:
   - Igal fotol on teisendus tööpinnale (`PhotoRef.toBoard`); esimesel on see ühikteisendus.
   - Teise foto lisamine või foto asendamine teise kadreeringuga nõuab joondust ega kirjuta kaardistuse koordinaate ümber.
   - Kui fotot pole, on virtuaalne tööpind 2000×1400 px ja mõõtkava 10 px/mm. Hilisem foto ei skaleeri olemasolevaid komponente vaikimisi.
-- **Foto pööramine ja peegeldamine** (sh EXIF-orientatsioon) on `PhotoRef.transform`. Lõuend rakendab selle **kogu stseenile** (foto koos kaardistusega). Kaardistuse koordinaate ümber ei arvutata, nii et jalad ei saa foto suhtes valeks minna.
+- **Foto pööramine ja peegeldamine** (sh EXIF-orientatsioon) on `PhotoRef.transform`. Lõuend rakendab selle **kogu stseenile** (foto koos kaardistusega). Kaardistuse koordinaate ümber ei arvutata, nii et jalad ei saa foto suhtes valeks minna. Korpuste geomeetria peegeldub koos fotoga, sest padjandid peavad foto peal oma kohale jääma. **Tekstid** (tähised, jalanumbrid, väärtused, sildid) liiguvad koos stseeniga, aga joonistatakse alati loetavalt, ilma peegelduse ja pöördeta (vastuteisendus tekstielemendil).
 - **Komponendi millimeetrid**: korpuse geomeetria ja padjandid. Teisendus: `(x·scaleX, y·scaleY)` → peegeldus, kui pool on alumine → pööre → `·pxPerMm` → `+center`.
 - **Skeemi ruudustik**: sümbolite, liitepunktide ja skeemijoonte asukohad on skeemi ruudustiku ühikutes. Need on eri tüübid ja teisendatakse ainult selgete funktsioonidega.
 - **Ekraan**: `ViewTransform { zoom, pan }` rakendatakse ühele `<g transform>`-ile imperatiivselt (ref), mitte Reacti renderdusega.

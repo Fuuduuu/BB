@@ -67,14 +67,3 @@ export type MemoryStore = {
     sequence: number;
 };
 ```
-
-### `RecentProject`
-```ts
-export type RecentProject = {
-    path: string;
-    projectId: string;
-    name: string;
-    device?: string;
-    updatedAt: string;
-};
-```

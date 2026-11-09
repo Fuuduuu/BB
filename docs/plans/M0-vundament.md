@@ -388,6 +388,16 @@ Osa lõpus jooksevad kõik mootori ja domeeni testid Node'is ilma DOM-ita: `pnpm
 **M1 plaanimärkmed (ei blokeeri M0):**
 - Koos esimese moodulitevahelise lepinguimpordiga lisa kontroll, et imporditav moodul on `dependsOn` loendis. Praegune sõltuvuskontroll seda tingimust veel ei kontrolli; M0 moodulite vahel sellist importi pole.
 - Kui plaadipaigutus on olemas, peab käsitsi lisatud jala eemaldamine koristama ka selle `customPads`-i ning jalale viitavad `padMap`-i kirjed.
+- **`ViewState` laieneb koos lõuendiga:** plaadi ja skeemi vaate teisendus (`zoom`, `pan`), kihtide nähtavus ning foto nähtavus ja kontrast. Leebe parser täidab vanades failides puuduvad väljad vaikeväärtustega.
+- **Mõõtmise invariandid koos `measurements` mooduliga** (lisaks M0 `overload`/`value` ja `beep` reeglitele):
+  - `value` on kohustuslik, välja arvatud `overload: true` korral;
+  - `overload` on lubatud ainult takistusel ja dioodil;
+  - läbivusel on `beep` ja `ref` kohustuslikud;
+  - takistus on vähemalt 0.
+  Pinge, takistuse ja dioodi `ref` jääb valikuliseks: äpp ei oleta musta sondi asukohta ja ilma selleta hinnangut ei anta.
+- **M2 ühendused:** ühenduse otsad `a` ja `b` ei tohi olla sama ots (eneseühendus on invariandi viga). Lisandub ka 03 §6 viidete terviklus.
+- **Muutuva jalaarvuga tüübid ilma korpuseta** (`ic`, `connector`, `switch`, `other`): lisamisdialoog pakub jalgade arvu ette (`ic` 8, `connector` 2, `switch` 2), kasutaja saab seda muuta. Domeeni `defaultPinIds` jääb samaks.
+- **Gemini ülevaatus 2026-11-09:** UI pesade süsteem ja eraldi `@pcbk/client` pakett jäävad alles. `ui` ei tohi importida `features`-it, nii et moodulid peavad end kesta registreerima; kliendipakett on väike ja hoiab andmetele ligipääsu piiri selge.
 
 ### Ülesanne 6: Pordid, `storage-memory`, `ProjectService` ja `SaveCoordinator`
 

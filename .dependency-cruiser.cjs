@@ -82,6 +82,12 @@ module.exports = {
       to: { path: '^packages/engine/', pathNot: '^packages/engine/src/index[.]ts$' },
     },
     {
+      name: 'features-registry-apps-only',
+      severity: 'error',
+      from: { pathNot: '^apps/' },
+      to: { path: '^packages/features/(?:engine|ui)[.]ts$' },
+    },
+    {
       name: 'feature-private-api',
       severity: 'error',
       from: { path: '^packages/features/([^/]+)/', pathNot: tests },

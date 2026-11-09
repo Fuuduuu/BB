@@ -4,6 +4,24 @@
 
 Sisenemispunkt: `packages/contracts/src/index.ts`
 
+### `AppHost`
+```ts
+export interface AppHost {
+    readonly kind: 'web' | 'desktop';
+    recents(): Promise<RecentProject[]>;
+    removeRecent(path: string): Promise<void>;
+    listOpenable?(): Promise<RecentProject[]>;
+    pickProjectFile?(): Promise<string | null>;
+    pickSavePath?(suggestedName: string): Promise<string | null>;
+    onCloseRequested(handler: () => Promise<boolean>): Unsubscribe;
+    onOpenPath(handler: (path: string) => void): Unsubscribe;
+    protectBeforeUnload?(shouldWarn: () => boolean): Unsubscribe;
+    closeNow(): void;
+    reload(): void;
+    saveDiagnostics(summary: string): Promise<void>;
+}
+```
+
 ### `BackupInfo`
 ```ts
 export type BackupInfo = {
@@ -55,7 +73,7 @@ export type CreateReq = {
 
 ### `DeepReadonly`
 ```ts
-export type DeepReadonly<T> = T extends (...args: never[]) => unknown ? T : T extends object ? {
+export type DeepReadonly<T> = T extends (...args: never[]) => unknown ? T : T extends ReadonlyMap<infer K, infer V> ? ReadonlyMap<DeepReadonly<K>, DeepReadonly<V>> : T extends ReadonlySet<infer U> ? ReadonlySet<DeepReadonly<U>> : T extends object ? {
     readonly [K in keyof T]: DeepReadonly<T[K]>;
 } : T;
 ```
@@ -192,6 +210,18 @@ export interface ProjectService {
     status(fn: (s: SaveStatus & {
         sessionId: string;
     }) => void): Unsubscribe;
+}
+```
+
+### `RecentProject`
+```ts
+export interface RecentProject {
+    path: string;
+    projectId: string;
+    name: string;
+    device?: string;
+    updatedAt: string;
+    missing?: boolean;
 }
 ```
 

@@ -1,13 +1,13 @@
 import { createEngine, createProjectService } from '@pcbk/engine';
 import { newId } from '@pcbk/domain';
 import { createWebRepository } from '@pcbk/adapters';
-import { engineFeatures, reservedFields } from './engine.features';
+import { engineFeatures, RESERVED_FIELDS_M0 } from '@pcbk/features/engine';
 export function createRuntime() {
   const clock = { now: () => new Date().toISOString() };
   const ids = { newId };
   const { engine, host } = createEngine({
     modules: engineFeatures,
-    reserved: reservedFields,
+    reserved: RESERVED_FIELDS_M0,
     clock,
   });
   const repo = createWebRepository();

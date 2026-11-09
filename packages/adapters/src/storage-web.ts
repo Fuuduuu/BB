@@ -1,17 +1,10 @@
 import type { JournalEntry, OpenedProject, ProjectRepository } from '@pcbk/engine';
 import { StorageError } from '@pcbk/engine';
-import type { ViewState } from '@pcbk/contracts';
+import type { RecentProject, ViewState } from '@pcbk/contracts';
 import { parseViewState } from '@pcbk/contracts';
 import { createStore, entries, get, update } from 'idb-keyval';
 import type { UseStore } from 'idb-keyval';
 
-export type RecentProject = {
-  path: string;
-  projectId: string;
-  name: string;
-  device?: string;
-  updatedAt: string;
-};
 type WebProject = {
   meta: {
     format_version: number;

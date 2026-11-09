@@ -12,7 +12,7 @@ const fixturePath = fileURLToPath(new URL('./fixtures/depcruise', import.meta.ur
 async function cruiseFixture() {
   expect(existsSync(configPath), 'dependency rules must exist').toBe(true);
   const configuration = require(configPath) as IConfiguration;
-  const report = await cruise(['packages'], {
+  const report = await cruise(['packages', 'apps'], {
     ...configuration.options,
     baseDir: fixturePath,
     tsConfig: { fileName: `${fixturePath}/tsconfig.json` },
@@ -22,6 +22,7 @@ async function cruiseFixture() {
   });
   expect(typeof report.output).toBe('string');
   return JSON.parse(report.output as string) as {
+    modules: { source: string; dependencies: { resolved: string }[] }[];
     summary: { violations: { rule: { name: string }; from: string; to: string }[] };
   };
 }
@@ -41,6 +42,24 @@ test('feature UI cannot bypass the boundary through a workspace alias', async ()
         violation.rule.name === 'feature-ui-not-engine' && violation.from.endsWith('/bad-alias.ts'),
     ),
   ).toBe(true);
+});
+
+test('feature UI cannot import the features registry', async () => {
+  const result = await cruiseFixture();
+  const violations = result.summary.violations.filter(
+    (violation) => violation.rule.name === 'features-registry-apps-only',
+  );
+  expect(violations.map(({ from, to }) => [from, to])).toEqual(
+    expect.arrayContaining([
+      ['packages/features/demo/ui/bad-registry.ts', 'packages/features/engine.ts'],
+      ['packages/features/demo/ui/bad-registry.ts', 'packages/features/ui.ts'],
+    ]),
+  );
+  const app = result.modules.find(({ source }) => source === 'apps/demo/src/good.ts');
+  expect(app?.dependencies.map(({ resolved }) => resolved)).toEqual(
+    expect.arrayContaining(['packages/features/engine.ts', 'packages/features/ui.ts']),
+  );
+  expect(violations.some(({ from }) => from.startsWith('apps/'))).toBe(false);
 });
 
 test('all eight layer boundaries reject forbidden imports', async () => {

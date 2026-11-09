@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use pcbk_desktop::storage::{ProjectStore, Reason};
+use pcbk_desktop::storage::{ProjectStore, Reason, SystemClock};
 use rusqlite::Connection;
 use serde_json::{json, Value};
 use tempfile::TempDir;
@@ -89,11 +89,18 @@ impl Drop for TestWriter {
     }
 }
 
+fn test_store(path: &Path) -> ProjectStore {
+    ProjectStore::new(
+        path.parent().unwrap().join("app-data"),
+        std::sync::Arc::new(SystemClock),
+    )
+}
+
 fn project() -> (TempDir, PathBuf, String) {
     let directory = tempfile::tempdir().expect("temporary project directory");
     let path = directory.path().join("native-process.pcbk");
     let document = json!({"format_version": 1, "rev": 0, "name": "initial"}).to_string();
-    let store = ProjectStore::default();
+    let store = test_store(&path);
     let opened = store
         .create(&path, "native-process-project", &document)
         .expect("create synthetic project");
@@ -114,7 +121,7 @@ fn second_process_cannot_open_locked_file() {
     let mut writer = TestWriter::spawn("hold", &path);
     writer.expect_line("READY");
 
-    let error = ProjectStore::default()
+    let error = test_store(&path)
         .open(&path)
         .expect_err("a second process must not open the held project");
     assert_eq!(error.reason, Reason::Locked);
@@ -125,7 +132,7 @@ fn close_releases_lock() {
     let (_directory, path, _) = project();
     let mut writer = TestWriter::spawn("hold", &path);
     writer.expect_line("READY");
-    let store = ProjectStore::default();
+    let store = test_store(&path);
     assert_eq!(
         store.open(&path).expect_err("child holds the lock").reason,
         Reason::Locked
@@ -157,7 +164,7 @@ fn killed_writer_leaves_consistent_file() {
     writer.expect_line("SAVED 2");
     writer.kill_and_wait();
 
-    let store = ProjectStore::default();
+    let store = test_store(&path);
     let opened = store
         .open(&path)
         .expect("recover project after writer death");

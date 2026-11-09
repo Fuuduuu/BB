@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-use pcbk_desktop::storage::{JournalDto, ProjectStore};
+use pcbk_desktop::storage::{JournalDto, ProjectStore, SystemClock};
 use rusqlite::{params, Connection};
 use serde_json::{json, Value};
 
@@ -29,8 +29,16 @@ fn wait_for_command(expected: &str) -> Result<(), String> {
     }
 }
 
+fn test_store(path: &Path) -> ProjectStore {
+    let folder = path.parent().unwrap_or_else(|| Path::new("."));
+    ProjectStore::new(
+        folder.join("writer-app-data"),
+        std::sync::Arc::new(SystemClock),
+    )
+}
+
 fn hold(path: &Path) -> Result<(), String> {
-    let store = ProjectStore::default();
+    let store = test_store(path);
     let opened = store.open(path).map_err(|error| format!("{error:?}"))?;
     signal("READY")?;
     wait_for_command("CLOSE")?;
@@ -43,7 +51,7 @@ fn hold(path: &Path) -> Result<(), String> {
 }
 
 fn write_loop(path: &Path) -> Result<(), String> {
-    let store = ProjectStore::default();
+    let store = test_store(path);
     let opened = store.open(path).map_err(|error| format!("{error:?}"))?;
     let document: Value =
         serde_json::from_str(&opened.doc_json).map_err(|error| error.to_string())?;

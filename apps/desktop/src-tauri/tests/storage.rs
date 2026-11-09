@@ -1,7 +1,11 @@
-use pcbk_desktop::storage::{JournalDto, ProjectStore, Reason};
+use pcbk_desktop::storage::{JournalDto, ProjectStore, Reason, SystemClock};
 use rusqlite::Connection;
 use serde_json::{json, Value};
 use std::{fs, path::Path};
+
+fn test_store(path: &Path) -> ProjectStore {
+    ProjectStore::new(path.join("app-data"), std::sync::Arc::new(SystemClock))
+}
 
 fn doc(rev: i64) -> String {
     json!({"format_version":1,"rev":rev,"name":"Plaat"}).to_string()
@@ -26,7 +30,7 @@ fn create(store: &ProjectStore, path: &Path) -> String {
 fn create_open_save_roundtrip() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("board.pcbk");
-    let store = ProjectStore::default();
+    let store = test_store(dir.path());
     let session = create(&store, &path);
     store
         .save(&session, 0, 3, &doc(3), &[entry("three")])
@@ -59,7 +63,7 @@ fn create_open_save_roundtrip() {
 fn save_rejects_wrong_base_rev() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("board.pcbk");
-    let store = ProjectStore::default();
+    let store = test_store(dir.path());
     let session = create(&store, &path);
     store
         .save(&session, 0, 3, &doc(3), &[entry("accepted")])
@@ -90,7 +94,7 @@ fn rejects_non_project_file_without_writing() {
     let before = fs::read(&path).unwrap();
     let modified = fs::metadata(&path).unwrap().modified().unwrap();
     assert_eq!(
-        ProjectStore::default().open(&path).unwrap_err().reason,
+        test_store(dir.path()).open(&path).unwrap_err().reason,
         Reason::NotProject
     );
     assert_eq!(fs::read(&path).unwrap(), before);
@@ -109,7 +113,7 @@ fn rejects_sqlite_file_without_meta() {
     let before = fs::read(&path).unwrap();
     let modified = fs::metadata(&path).unwrap().modified().unwrap();
     assert_eq!(
-        ProjectStore::default().open(&path).unwrap_err().reason,
+        test_store(dir.path()).open(&path).unwrap_err().reason,
         Reason::NotProject
     );
     assert_eq!(fs::read(&path).unwrap(), before);
@@ -119,7 +123,7 @@ fn rejects_sqlite_file_without_meta() {
 fn read_only_file_opens_read_only_and_save_fails() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("readonly.pcbk");
-    let store = ProjectStore::default();
+    let store = test_store(dir.path());
     let session = create(&store, &path);
     store.close(&session).unwrap();
     let original = fs::metadata(&path).unwrap().permissions();
@@ -149,7 +153,7 @@ fn opens_and_saves_path_with_estonian_letters_and_spaces() {
     let folder = dir.path().join("Kasutaja õ");
     fs::create_dir(&folder).unwrap();
     let path = folder.join("Plaat õäöü (2).pcbk");
-    let store = ProjectStore::default();
+    let store = test_store(dir.path());
     let session = create(&store, &path);
     store.save(&session, 0, 1, &doc(1), &[]).unwrap();
     store.close(&session).unwrap();
@@ -164,7 +168,7 @@ fn opens_and_saves_path_with_estonian_letters_and_spaces() {
 fn view_save_keeps_rev() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("view.pcbk");
-    let store = ProjectStore::default();
+    let store = test_store(dir.path());
     let session = create(&store, &path);
     let view = r#"{"navigatorWidth":300,"navigatorTab":"components","contextWidth":360,"contextOpen":false}"#;
     store.save_view(&session, view).unwrap();
@@ -185,7 +189,7 @@ fn opened_path_has_no_verbatim_prefix() {
 
     let dir = tempfile::tempdir().unwrap();
     let path = std::path::absolute(dir.path().join("Plaat õäöü (2).pcbk")).unwrap();
-    let store = ProjectStore::default();
+    let store = test_store(dir.path());
     let created = store.create(&path, "project_caller", &doc(0)).unwrap();
     store.close(&created.session).unwrap();
     let reopened = store.open(&path).unwrap();
@@ -201,7 +205,8 @@ fn opened_path_has_no_verbatim_prefix() {
 }
 #[test]
 fn unknown_session_is_unknown() {
-    let store = ProjectStore::default();
+    let dir = tempfile::tempdir().unwrap();
+    let store = test_store(dir.path());
     assert_eq!(
         store.close("not-a-session").unwrap_err().reason,
         Reason::Unknown
@@ -212,7 +217,7 @@ fn unknown_session_is_unknown() {
 fn journal_failure_rolls_back_document_and_all_new_entries() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("atomic.pcbk");
-    let store = ProjectStore::default();
+    let store = test_store(dir.path());
     let session = create(&store, &path);
     store.close(&session).unwrap();
     let db = Connection::open(&path).unwrap();
@@ -256,7 +261,7 @@ fn confirmed_create_replaces_file_only_after_building_new_project() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("replace.pcbk");
     let tmp = dir.path().join("replace.pcbk.tmp");
-    let store = ProjectStore::default();
+    let store = test_store(dir.path());
     let session = create(&store, &path);
     store.close(&session).unwrap();
     let before = fs::read(&path).unwrap();
@@ -282,7 +287,7 @@ fn confirmed_create_replaces_file_only_after_building_new_project() {
 fn rejects_missing_and_newer_files_without_modifying_them() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("future.pcbk");
-    let store = ProjectStore::default();
+    let store = test_store(dir.path());
     assert_eq!(store.open(&path).unwrap_err().reason, Reason::Missing);
     assert!(!path.exists());
     let session = create(&store, &path);
@@ -302,7 +307,7 @@ fn rejects_missing_and_newer_files_without_modifying_them() {
 fn file_becoming_read_only_rejects_save_and_preserves_document() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("changed.pcbk");
-    let store = ProjectStore::default();
+    let store = test_store(dir.path());
     let session = create(&store, &path);
     let original = fs::metadata(&path).unwrap().permissions();
     let mut readonly = original.clone();

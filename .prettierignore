@@ -9,4 +9,5 @@ prototype/
 tools/
 docs/
 *.md
+packages/adapters/src/bindings/
 pnpm-lock.yaml

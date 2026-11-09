@@ -1,0 +1,3 @@
+export function buildService(path: string): number {
+  return path.length;
+}

@@ -1,0 +1,1 @@
+export type ExampleRequest = { readonly id: string };

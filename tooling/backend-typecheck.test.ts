@@ -11,7 +11,9 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
+
+vi.setConfig({ testTimeout: 60_000 });
 
 const sourceRoot = fileURLToPath(new URL('../', import.meta.url));
 

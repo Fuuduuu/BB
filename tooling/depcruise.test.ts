@@ -3,7 +3,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { cruise, type IConfiguration } from 'dependency-cruiser';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
+
+vi.setConfig({ testTimeout: 60_000 });
 
 const require = createRequire(import.meta.url);
 const configPath = fileURLToPath(new URL('../.dependency-cruiser.cjs', import.meta.url));

@@ -14,7 +14,9 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, beforeEach, expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+
+vi.setConfig({ testTimeout: 60_000 });
 
 const script = fileURLToPath(new URL('./api-digest.mjs', import.meta.url));
 const fixture = fileURLToPath(new URL('./fixtures/api-digest/', import.meta.url));

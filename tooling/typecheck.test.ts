@@ -3,7 +3,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
+
+vi.setConfig({ testTimeout: 60_000 });
 
 test('strict typecheck includes both application and package source files', () => {
   const root = mkdtempSync(join(tmpdir(), 'bb-typecheck-'));

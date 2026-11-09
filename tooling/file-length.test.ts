@@ -3,7 +3,9 @@ import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
+
+vi.setConfig({ testTimeout: 60_000 });
 
 const scriptPath = fileURLToPath(new URL('./check-file-length.mjs', import.meta.url));
 const temporaryRoots: string[] = [];

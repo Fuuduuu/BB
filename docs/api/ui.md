@@ -160,6 +160,14 @@ export const et: {
         readonly browserStorage: "Selles brauseris salvestatakse projektid automaatselt. Kasuta taasavamiseks sama brauserit.";
         readonly restore: "Taasta varukoopiast…";
         readonly restoreUnavailable: "Varukoopiast taastamine on saadaval töölauarakenduses.";
+        readonly restoreTitle: "Taasta varukoopiast";
+        readonly restoreLoading: "Varukoopiaid laaditakse…";
+        readonly restoreNone: "Selle projekti varukoopiaid ei leitud.";
+        readonly restoreFailed: "Taastamine ebaõnnestus. Algne projekt on muutmata.";
+        readonly restoreFull: "Täiskoopia";
+        readonly restoreDoc: "Muudatuste koopia";
+        readonly restoreConfirm: "Taasta";
+        readonly restoreName: (name: string) => string;
         readonly copyUnavailable: "Koopia salvestamine on saadaval töölauarakenduses.";
         readonly diagnosticsSaved: "Diagnostika salvestatud";
         readonly returnHome: "Tagasi avalehele";
@@ -358,7 +366,7 @@ export interface SlotSpec {
 
 ### `StartScreen`
 ```ts
-export function StartScreen({ recent, availableProjects, openAvailable, onPickProjectFile, showBrowserStorage, onNew, onOpen, onRemoveRecent, }: StartScreenProps): import("react").JSX.Element;
+export function StartScreen({ recent, availableProjects, openAvailable, onPickProjectFile, showBrowserStorage, onNew, onOpen, onRestore, onRemoveRecent, }: StartScreenProps): import("react").JSX.Element;
 ```
 
 ### `Theme`

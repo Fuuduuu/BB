@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEngine, useProjects } from '@pcbk/client';
 import type {
   AppHost,
+  BackupsReq,
   CreateReq,
   EngineError,
   ProjectInfo,
@@ -35,6 +36,7 @@ export function useWorkbench(host: AppHost) {
   const [missing, setMissing] = useState<string[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [restoreSource, setRestoreSource] = useState<RecentProject | null>(null);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const { recent, available, refreshRecent } = useProjectLists(host, info === null, setLaunchError);
   const [closeError, setCloseError] = useState<{
@@ -52,6 +54,7 @@ export function useWorkbench(host: AppHost) {
       setInfo(next);
       setCloseError(null);
       setCreateOpen(false);
+      setRestoreSource(null);
       setLaunchError(null);
       setCreateError(null);
       void refreshRecent().catch(() => setLaunchError(et.error.root));
@@ -159,6 +162,23 @@ export function useWorkbench(host: AppHost) {
     });
   };
 
+  const loadBackups = useCallback((req: BackupsReq) => projects.backups(req), [projects]);
+
+  const restore = (backup: string) =>
+    run(async () => {
+      if (!restoreSource) return false;
+      try {
+        const dest = await host.pickSavePath?.(et.project.restoreName(restoreSource.name));
+        if (!dest) return true;
+        const result = await projects.restore({ backup, dest });
+        if (!result.ok) return false;
+        activate(result.value);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+
   const removeRecent = (path: string) => {
     void run(async () => {
       await host.removeRecent(path);
@@ -203,6 +223,7 @@ export function useWorkbench(host: AppHost) {
     available: available.map(withMissing),
     createOpen,
     createError,
+    restoreSource,
     launchError,
     closeError,
     busy,
@@ -210,6 +231,8 @@ export function useWorkbench(host: AppHost) {
     create,
     open,
     pickProjectFile,
+    loadBackups,
+    restore,
     removeRecent,
     copy,
     diagnose,
@@ -218,6 +241,8 @@ export function useWorkbench(host: AppHost) {
       setCreateOpen(true);
     },
     closeCreate: () => setCreateOpen(false),
+    openRestore: setRestoreSource,
+    closeRestore: () => setRestoreSource(null),
     dismissError: () => setLaunchError(null),
     cancelClose: () => setCloseError(null),
     retrySave: () => {

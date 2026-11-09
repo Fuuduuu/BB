@@ -154,21 +154,46 @@
   color: var(--ink-2);
   font-size: 12px;
 }
-.pcbk-new-board {
+.pcbk-new-board,
+.pcbk-restore {
   display: grid;
   gap: 18px;
 }
-.pcbk-new-board__actions {
+.pcbk-new-board__actions,
+.pcbk-restore__actions {
   display: flex;
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
 }
-.pcbk-new-board__error {
+.pcbk-new-board__error,
+.pcbk-restore__error {
   margin: 0;
   color: var(--danger);
   font-size: 13px;
+}
+.pcbk-restore__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pcbk-restore__choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.pcbk-restore__choice input {
+  accent-color: var(--accent);
+}
+.pcbk-restore__choice time {
+  color: var(--ink-2);
 }
 @media (max-width: 560px) {
   .pcbk-start {

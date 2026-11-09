@@ -53,6 +53,25 @@ test('a failed new open keeps the previous project loaded', async () => {
   expect(engine.snapshot().doc.name).toBe('Kept');
   expect(engine.undo().ok).toBe(true);
 });
+test('backups with projectId lists without an open project', async () => {
+  const { projects, repo, path, host } = await projectSetup();
+  expect((await projects.close()).ok).toBe(true);
+  const opened = await repo.open(path);
+  await repo.backupFull(opened.session, 'migration');
+  await repo.close(opened.session);
+  const backups = await repo.backups(opened.projectId);
+  expect(backups).toHaveLength(1);
+
+  expect(await projects.backups({ projectId: opened.projectId })).toEqual({
+    ok: true,
+    value: backups,
+  });
+  expect(host.current()).toBeNull();
+});
+test('backups without request still needs an open project', async () => {
+  const { projects } = await projectSetup({ create: false });
+  expect(await projects.backups()).toEqual({ ok: false, error: { code: 'stale_session' } });
+});
 test('newer format returns too_new, leaves engine unloaded and releases the failed open lock', async () => {
   const { projects, host, store, path } = await projectSetup({ create: false });
   seed(store, path, { ...newBoardDoc('Future'), format_version: 2 }, 2);

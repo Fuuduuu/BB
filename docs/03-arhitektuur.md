@@ -410,6 +410,7 @@ Projekti faili kirjutab ainult `SaveCoordinator`, mis on mootoris `ProjectServic
   - **Dokumendikoopia** ilma fotodeta (`<aeg>.doc.json`) tehakse pideva töö ajal kõige rohkem kord 30 minuti jooksul. Alles hoitakse 5 viimast. See viitab täpselt oma täiskoopiale.
   - Kui pärast viimast täiskoopiat on lisandunud foto või manus, tehakse järgmine taastepunkt täiskoopiana.
   - Täiskoopiat ei kustutata enne, kui sellest sõltuvaid dokumendikoopiaid enam pole.
+  - `ProjectService.backups({ projectId })` loetleb ka suletud projekti varukoopiad, argumendita `ProjectService.backups()` aga eeldab aktiivset projekti.
   - **Taastamine** käib alati uude faili: ajutine koopia valideeritakse ja saab siis lõpliku nime. Originaali ei kirjutata üle. Avalehel on projekti kaardil „Taasta varukoopiast…“. Taastatud fail kannab sama `project_id`-d.
   - Kasutaja näeb varukoopiate asukohta ja nende kettakulu seadetes.
 

@@ -33,6 +33,13 @@ export type BackupInfo = {
 };
 ```
 
+### `BackupsReq`
+```ts
+export type BackupsReq = {
+    projectId: string;
+};
+```
+
 ### `CommandId`
 ```ts
 export type CommandId = Extract<keyof CommandMap, `${string}.${string}`>;
@@ -207,7 +214,7 @@ export interface ProjectService {
     flush(): Promise<Result<void, EngineError>>;
     saveView(view: ViewState): void;
     copy(req: CopyReq): Promise<Result<ProjectInfo, EngineError>>;
-    backups(): Promise<Result<BackupInfo[], EngineError>>;
+    backups(req?: BackupsReq): Promise<Result<BackupInfo[], EngineError>>;
     restore(req: RestoreReq): Promise<Result<ProjectInfo, EngineError>>;
     status(fn: (s: SaveStatus & {
         sessionId: string;

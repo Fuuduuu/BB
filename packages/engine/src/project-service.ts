@@ -303,12 +303,13 @@ export function createProjectService(opts: {
         return ok(info(context));
       });
     },
-    backups() {
-      return serial(async () =>
-        active
-          ? ok(await opts.repo.backups(active.opened.projectId))
-          : err({ code: 'stale_session' }),
-      );
+    backups(req) {
+      return serial(async () => {
+        const projectId = req?.projectId ?? active?.opened.projectId;
+        return projectId === undefined
+          ? err({ code: 'stale_session' })
+          : ok(await opts.repo.backups(projectId));
+      });
     },
     restore(req) {
       return serial(async () => {

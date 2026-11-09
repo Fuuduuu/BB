@@ -15,6 +15,7 @@ export interface StartScreenProps {
   showBrowserStorage?: boolean;
   onNew(): void;
   onOpen(path: string): void;
+  onRestore?(project: RecentProjectCard): void;
   onRemoveRecent(path: string): void;
 }
 
@@ -58,6 +59,7 @@ export function StartScreen({
   showBrowserStorage = true,
   onNew,
   onOpen,
+  onRestore,
   onRemoveRecent,
 }: StartScreenProps) {
   const [openList, setOpenList] = useState(false);
@@ -98,8 +100,13 @@ export function StartScreen({
                 <article className="pcbk-project-card" key={project.path}>
                   <ProjectButton project={project} onOpen={onOpen} />
                   <div className="pcbk-project-card__actions">
-                    <span title={et.project.restoreUnavailable}>
-                      <Button variant="ghost" disabled title={et.project.restoreUnavailable}>
+                    <span title={onRestore ? undefined : et.project.restoreUnavailable}>
+                      <Button
+                        variant="ghost"
+                        disabled={!onRestore}
+                        title={onRestore ? undefined : et.project.restoreUnavailable}
+                        onClick={() => onRestore?.(project)}
+                      >
                         {et.project.restore}
                       </Button>
                     </span>

@@ -27,6 +27,7 @@ export type ProjectInfo = {
 export type CreateReq = { name: string; device?: string; problem?: string; path?: string };
 export type OpenReq = { path: string };
 export type CopyReq = { dest: string; identity: 'same' | 'new' };
+export type BackupsReq = { projectId: string };
 export type BackupInfo = { file: string; kind: 'full' | 'doc'; at: string; base?: string };
 export type RestoreReq = { backup: string; dest: string };
 
@@ -38,7 +39,7 @@ export interface ProjectService {
   flush(): Promise<Result<void, EngineError>>;
   saveView(view: ViewState): void;
   copy(req: CopyReq): Promise<Result<ProjectInfo, EngineError>>;
-  backups(): Promise<Result<BackupInfo[], EngineError>>;
+  backups(req?: BackupsReq): Promise<Result<BackupInfo[], EngineError>>;
   restore(req: RestoreReq): Promise<Result<ProjectInfo, EngineError>>;
   status(fn: (s: SaveStatus & { sessionId: string }) => void): Unsubscribe;
 }

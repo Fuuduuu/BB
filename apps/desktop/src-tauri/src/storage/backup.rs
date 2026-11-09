@@ -207,7 +207,7 @@ fn full_destination(dir: &Path, format: u32, now: DateTime<FixedOffset>) -> Path
 }
 
 #[cfg(windows)]
-fn install_new(pending: &mut PendingFile, destination: &Path) -> std::io::Result<()> {
+pub(super) fn install_new(pending: &mut PendingFile, destination: &Path) -> std::io::Result<()> {
     use std::os::windows::ffi::OsStrExt;
 
     #[link(name = "kernel32")]
@@ -238,7 +238,7 @@ fn install_new(pending: &mut PendingFile, destination: &Path) -> std::io::Result
 }
 
 #[cfg(not(windows))]
-fn install_new(pending: &mut PendingFile, destination: &Path) -> std::io::Result<()> {
+pub(super) fn install_new(pending: &mut PendingFile, destination: &Path) -> std::io::Result<()> {
     // A same-directory link installs the completed file without replacing an
     // existing name. PendingFile removes the temporary name on drop.
     fs::hard_link(pending.path(), destination)

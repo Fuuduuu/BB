@@ -3,7 +3,14 @@ import type { ZodIssue } from 'zod';
 import type { CommandId } from './document-engine';
 
 export type StorageReason =
-  'disk_full' | 'read_only' | 'missing' | 'locked' | 'not_project' | 'too_new' | 'unknown';
+  | 'disk_full'
+  | 'read_only'
+  | 'missing'
+  | 'locked'
+  | 'exists'
+  | 'not_project'
+  | 'too_new'
+  | 'unknown';
 
 export type EngineError =
   | { code: 'validation'; issues: ZodIssue[] }

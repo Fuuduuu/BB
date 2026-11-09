@@ -18,6 +18,7 @@ const reasons: ReadonlySet<unknown> = new Set<StorageReason>([
   'read_only',
   'missing',
   'locked',
+  'exists',
   'not_project',
   'too_new',
   'unknown',

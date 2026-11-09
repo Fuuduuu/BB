@@ -70,12 +70,16 @@ impl PendingFile {
         self.0.as_deref().expect("pending file is armed")
     }
 
-    fn publish(mut self, destination: &Path) -> StorageResult<()> {
+    fn sync(&self) -> std::io::Result<()> {
         fs::OpenOptions::new()
             .read(true)
             .write(true)
             .open(self.path())?
-            .sync_all()?;
+            .sync_all()
+    }
+
+    fn publish(mut self, destination: &Path) -> StorageResult<()> {
+        self.sync()?;
         replace_file(self.path(), destination)?;
         // After rename, this operation no longer owns the temporary path.
         self.0 = None;
@@ -270,9 +274,14 @@ impl ProjectStore {
 
     pub fn restore(&self, backup: &Path, destination: &Path) -> StorageResult<OpenedProjectDto> {
         let mut sessions = self.sessions()?;
-        let destination = Self::destination(destination, &sessions)?;
+        let destination = restore::destination(destination)?;
+        if sessions.values().any(|db| db.path == destination) {
+            return Err(StorageErrorDto::new(Reason::Locked));
+        }
         restore::write(&self.app_data, backup, &destination)?;
-        self.register(&mut sessions, db::ProjectDb::open(&destination)?, false)
+        let (db, opened) = restore::open_published(&destination)?;
+        sessions.insert(opened.session.clone(), db);
+        Ok(opened)
     }
 
     fn recent_guard(&self) -> StorageResult<MutexGuard<'_, ()>> {

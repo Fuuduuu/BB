@@ -244,6 +244,40 @@ test('restore failure keeps the start screen and shows the message', async () =>
   expect(screen.getByRole('heading', { name: et.appName })).toBeTruthy();
 });
 
+test('restore_conflict_keeps_choice_and_retries_with_new_name', async () => {
+  const runtime = createRuntime();
+  const restored = await seedProject(runtime, 'Uue nimega taastatud plaat');
+  const { app, pickSavePath, backups, restore } = mountRestore(runtime, restored.path);
+  pickSavePath.mockResolvedValueOnce(restoreSource.path);
+  restore
+    .mockResolvedValueOnce({ ok: false, error: { code: 'storage', reason: 'exists' } })
+    .mockImplementation(({ dest }) => runtime.projects.open({ path: dest }));
+  try {
+    const { dialog, choices, confirm } = await openRestoreDialog();
+    const backup = restoreList[0]!.file;
+    fireEvent.click(choices[1]!);
+    fireEvent.click(confirm);
+    expect((await dialog.findByRole('alert')).textContent).toBe(
+      'See failinimi on juba kasutusel. Vali uus failinimi.',
+    );
+    expect(choices[1]?.checked).toBe(true);
+    expect(confirm.hasAttribute('disabled')).toBe(false);
+    fireEvent.click(confirm);
+
+    expect(await screen.findByText(restored.name)).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: et.project.restoreTitle })).toBeNull();
+    expect(pickSavePath).toHaveBeenCalledTimes(2);
+    expect(backups).toHaveBeenCalledOnce();
+    expect(restore.mock.calls).toEqual([
+      [{ backup, dest: restoreSource.path }],
+      [{ backup, dest: restored.path }],
+    ]);
+  } finally {
+    app.unmount();
+    await runtime.projects.close();
+  }
+});
+
 test('missing project card can still be restored', async () => {
   const runtime = createRuntime();
   const recovered = await seedProject(runtime, 'Kadunud plaat taastatud');

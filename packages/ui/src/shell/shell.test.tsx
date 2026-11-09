@@ -136,6 +136,7 @@ test('every StorageReason has an Estonian text', () => {
     read_only: 'fail on kirjutuskaitstud',
     missing: 'faili ei leitud',
     locked: 'fail on avatud mujal',
+    exists: 'See failinimi on juba kasutusel. Vali uus failinimi.',
     not_project: 'see fail ei ole PCB Kaardistaja projekt',
     too_new: 'fail on tehtud uuema äpiga',
     unknown: 'tundmatu viga',

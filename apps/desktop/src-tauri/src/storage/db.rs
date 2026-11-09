@@ -2,6 +2,7 @@ use super::{schema, JournalDto, OpenedProjectDto, Reason, StorageErrorDto, Stora
 use rusqlite::{params, Connection, OpenFlags, OptionalExtension, TransactionBehavior};
 use serde_json::Value;
 use std::{
+    ffi::CStr,
     fs,
     io::Read,
     path::{Path, PathBuf},
@@ -86,6 +87,10 @@ pub(super) struct ProjectDb {
 
 impl ProjectDb {
     pub fn open(path: &Path) -> StorageResult<Self> {
+        Self::open_using(path, None)
+    }
+
+    pub(super) fn open_using(path: &Path, vfs: Option<&CStr>) -> StorageResult<Self> {
         let metadata = fs::metadata(path)?;
         if !metadata.is_file() {
             return Err(StorageErrorDto::new(Reason::NotProject));
@@ -111,11 +116,12 @@ impl ProjectDb {
         probe.busy_timeout(std::time::Duration::ZERO)?;
         project_meta(&probe)?;
         drop(probe);
+        let connect = |flags| match vfs {
+            Some(vfs) => Connection::open_with_flags_and_vfs(path, flags, vfs),
+            None => Connection::open_with_flags(path, flags),
+        };
         if metadata.permissions().readonly() {
-            let conn = Connection::open_with_flags(
-                path,
-                OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
-            )?;
+            let conn = connect(OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX)?;
             conn.busy_timeout(std::time::Duration::ZERO)?;
             project_meta(&conn)?;
             return Ok(Self {
@@ -124,10 +130,7 @@ impl ProjectDb {
                 read_only: true,
             });
         }
-        let conn = Connection::open_with_flags(
-            path,
-            OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX,
-        )?;
+        let conn = connect(OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX)?;
         schema::configure(&conn)?;
         project_meta(&conn)?;
         Ok(Self {

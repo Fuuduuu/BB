@@ -9,6 +9,7 @@ pub enum Reason {
     ReadOnly,
     Missing,
     Locked,
+    Exists,
     NotProject,
     TooNew,
     StaleRev,

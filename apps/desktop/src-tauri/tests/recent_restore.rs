@@ -1,6 +1,6 @@
 mod common;
 
-use common::{name, read_db, read_json, rev, Fixture, PROJECT_ID};
+use common::{doc, journal, name, read_db, read_json, rev, summaries, Fixture, PROJECT_ID};
 use pcbk_desktop::storage::{BackupKind, Reason};
 use serde_json::Value;
 use std::{fs, path::Path};
@@ -19,12 +19,16 @@ fn restore_full_and_doc_backup_into_new_file() {
     f.clock.set("2026-11-09T10:30:00+02:00");
     f.save(&source, 1);
     let snapshot = f.backups(BackupKind::Doc).remove(0);
+    f.store.close(&source.session).unwrap();
+    let original = f.path("original.pcbk");
+    let original_before = fs::read(&original).unwrap();
+    let full_before = fs::read(&full.file).unwrap();
+    let snapshot_before = fs::read(&snapshot.file).unwrap();
     for (backup, dest, expected_rev, view) in [
-        (full, f.path("full restored.pcbk"), 0, initial_view),
-        (snapshot, f.path("doc restored.pcbk"), 1, latest_view),
+        (&full, f.path("full restored.pcbk"), 0, initial_view),
+        (&snapshot, f.path("doc restored.pcbk"), 1, latest_view),
     ] {
-        let before = fs::read(&backup.file).unwrap();
-        fs::write(&dest, b"confirmed replacement").unwrap();
+        assert!(!dest.exists());
         let restored = f.store.restore(Path::new(&backup.file), &dest).unwrap();
         assert_eq!(restored.project_id, PROJECT_ID);
         assert_eq!(
@@ -43,10 +47,72 @@ fn restore_full_and_doc_backup_into_new_file() {
             .unwrap();
         assert_eq!(integrity, "ok");
         assert_eq!(rev(&db), expected_rev);
-        assert_eq!(fs::read(&backup.file).unwrap(), before);
     }
+    assert!(
+        fs::read(&original).unwrap() == original_before,
+        "original changed"
+    );
+    assert!(
+        fs::read(&full.file).unwrap() == full_before,
+        "base backup changed"
+    );
+    assert!(
+        fs::read(&snapshot.file).unwrap() == snapshot_before,
+        "document backup changed"
+    );
+    assert_eq!(rev(&read_db(original)), 1);
+}
+
+#[test]
+fn restore_keeps_a_writable_session_and_persists_later_revision() {
+    let f = Fixture::new();
+    let source = f.open_with_daily_backup("original.pcbk");
     f.store.close(&source.session).unwrap();
-    assert_eq!(rev(&read_db(f.path("original.pcbk"))), 1);
+    let backup = f.backups(BackupKind::Full).remove(0);
+    let backup_before = fs::read(&backup.file).unwrap();
+    let original = f.path("original.pcbk");
+    let original_before = fs::read(&original).unwrap();
+
+    let dest = f.path("restored.pcbk");
+    let restored = f.store.restore(Path::new(&backup.file), &dest).unwrap();
+    assert!(!restored.read_only);
+    assert_eq!(
+        serde_json::from_str::<Value>(&restored.doc_json).unwrap()["rev"],
+        0
+    );
+    f.store
+        .save(
+            &restored.session,
+            0,
+            1,
+            &doc(1),
+            &[journal("after restore")],
+        )
+        .unwrap();
+    f.store.close(&restored.session).unwrap();
+
+    let reopened = f.store.open(&dest).unwrap();
+    assert_eq!(reopened.project_id, PROJECT_ID);
+    assert_eq!(
+        serde_json::from_str::<Value>(&reopened.doc_json).unwrap()["rev"],
+        1
+    );
+    f.store.close(&reopened.session).unwrap();
+    let db = read_db(&dest);
+    assert_eq!(rev(&db), 1);
+    assert_eq!(summaries(&db), ["after restore"]);
+    let mode: String = db
+        .query_row("PRAGMA journal_mode", [], |row| row.get(0))
+        .unwrap();
+    assert_eq!(mode, "delete");
+    assert!(
+        fs::read(&original).unwrap() == original_before,
+        "original changed"
+    );
+    assert!(
+        fs::read(&backup.file).unwrap() == backup_before,
+        "backup changed"
+    );
 }
 
 #[test]
@@ -57,13 +123,95 @@ fn restore_rejects_path_outside_backups() {
     let outside = f.path("outside.pcbk");
     fs::copy(&full.file, &outside).unwrap();
     let dest = f.path("untouched.pcbk");
-    fs::write(&dest, b"keep me").unwrap();
     assert_eq!(
         f.store.restore(&outside, &dest).unwrap_err().reason,
         Reason::Unknown
     );
-    assert_eq!(fs::read(&dest).unwrap(), b"keep me");
-    assert!(!f.path("untouched.pcbk.tmp").exists());
+    assert!(!dest.exists());
+}
+
+#[test]
+fn restore_rejects_original_and_other_existing_project() {
+    let f = Fixture::new();
+    let original = f.path("original.pcbk");
+    let source = f.open_with_daily_backup("original.pcbk");
+    let backup = f.backups(BackupKind::Full).remove(0);
+    let backup_before = fs::read(&backup.file).unwrap();
+    f.save(&source, 1);
+    f.store.close(&source.session).unwrap();
+
+    let other = f.path("other.pcbk");
+    let project = f.store.create(&other, "project-other", &doc(0)).unwrap();
+    f.store.close(&project.session).unwrap();
+
+    for dest in [original, other] {
+        let before = fs::read(&dest).unwrap();
+        let error = f
+            .store
+            .restore(Path::new(&backup.file), &dest)
+            .expect_err("restore must refuse an existing project");
+        assert_eq!(
+            serde_json::to_value(error).unwrap(),
+            serde_json::json!({"reason": "exists", "actual_rev": null})
+        );
+        assert!(
+            fs::read(&dest).unwrap() == before,
+            "existing project changed"
+        );
+        assert!(
+            fs::read(&backup.file).unwrap() == backup_before,
+            "backup changed"
+        );
+    }
+}
+
+#[test]
+fn restore_rejects_target_with_orphan_sidecars() {
+    let f = Fixture::new();
+    let source = f.open_with_daily_backup("original.pcbk");
+    f.store.close(&source.session).unwrap();
+    let backup = f.backups(BackupKind::Full).remove(0);
+    let backup_before = fs::read(&backup.file).unwrap();
+    for suffix in ["-journal", "-wal", "-shm"] {
+        let dest = f.path(&format!("free{suffix}.pcbk"));
+        let sidecar = f.path(&format!("free{suffix}.pcbk{suffix}"));
+        fs::write(&sidecar, b"foreign SQLite file").unwrap();
+        let error = f
+            .store
+            .restore(Path::new(&backup.file), &dest)
+            .expect_err("restore must refuse a SQLite sidecar");
+        assert_eq!(error.reason, Reason::Exists);
+        assert!(!dest.exists());
+        assert_eq!(fs::read(&sidecar).unwrap(), b"foreign SQLite file");
+        assert!(
+            fs::read(&backup.file).unwrap() == backup_before,
+            "backup changed"
+        );
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn restore_rejects_dangling_symlinks() {
+    let f = Fixture::new();
+    let source = f.open_with_daily_backup("original.pcbk");
+    f.store.close(&source.session).unwrap();
+    let backup = f.backups(BackupKind::Full).remove(0);
+    let missing = f.path("absent.pcbk");
+    let destination_link = f.path("destination-link.pcbk");
+    let orphan_destination = f.path("sidecar-link.pcbk");
+    let sidecar_link = f.path("sidecar-link.pcbk-journal");
+    for (dest, link) in [
+        (&destination_link, &destination_link),
+        (&orphan_destination, &sidecar_link),
+    ] {
+        std::os::unix::fs::symlink(&missing, link).unwrap();
+        let error = f.store.restore(Path::new(&backup.file), dest).unwrap_err();
+        assert_eq!(error.reason, Reason::Exists);
+        assert_eq!(fs::read_link(link).unwrap(), missing);
+        assert!(!dest.exists());
+    }
+    assert!(!missing.exists());
 }
 
 #[test]

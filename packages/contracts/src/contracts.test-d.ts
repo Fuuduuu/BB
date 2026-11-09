@@ -120,7 +120,14 @@ expectTypeOf<EngineError>().toEqualTypeOf<
   | { code: 'storage'; reason: StorageReason }
 >();
 expectTypeOf<StorageReason>().toEqualTypeOf<
-  'disk_full' | 'read_only' | 'missing' | 'locked' | 'not_project' | 'too_new' | 'unknown'
+  | 'disk_full'
+  | 'read_only'
+  | 'missing'
+  | 'locked'
+  | 'exists'
+  | 'not_project'
+  | 'too_new'
+  | 'unknown'
 >();
 
 const success: Result<number, EngineError> = ok(42);

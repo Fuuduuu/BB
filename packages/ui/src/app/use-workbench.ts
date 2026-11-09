@@ -164,20 +164,26 @@ export function useWorkbench(host: AppHost) {
 
   const loadBackups = useCallback((req: BackupsReq) => projects.backups(req), [projects]);
 
-  const restore = (backup: string) =>
-    run(async () => {
+  const restore = async (backup: string): Promise<boolean | 'exists'> => {
+    let destinationExists = false;
+    const restored = await run(async () => {
       if (!restoreSource) return false;
       try {
         const dest = await host.pickSavePath?.(et.project.restoreName(restoreSource.name));
         if (!dest) return true;
         const result = await projects.restore({ backup, dest });
-        if (!result.ok) return false;
+        if (!result.ok) {
+          destinationExists = result.error.code === 'storage' && result.error.reason === 'exists';
+          return false;
+        }
         activate(result.value);
         return true;
       } catch {
         return false;
       }
     });
+    return destinationExists ? 'exists' : restored;
+  };
 
   const removeRecent = (path: string) => {
     void run(async () => {

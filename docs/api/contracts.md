@@ -285,7 +285,7 @@ export interface Snapshot {
 
 ### `StorageReason`
 ```ts
-export type StorageReason = 'disk_full' | 'read_only' | 'missing' | 'locked' | 'not_project' | 'too_new' | 'unknown';
+export type StorageReason = 'disk_full' | 'read_only' | 'missing' | 'locked' | 'exists' | 'not_project' | 'too_new' | 'unknown';
 ```
 
 ### `Unsubscribe`

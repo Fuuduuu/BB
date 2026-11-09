@@ -49,6 +49,20 @@ test('maps StorageErrorDto to StorageError', async () => {
   await expect(repo.close('session')).rejects.toEqual(new StorageError('unknown'));
 });
 
+test('preserves an existing destination error when restoring a backup', async () => {
+  const { call, invoke } = mockInvoke();
+  const repo = createTauriRepository({ invoke });
+  const request = { backup: 'C:/Backups/board.pcbk', dest: dto.path };
+  call.mockRejectedValueOnce({ reason: 'exists', actual_rev: null });
+
+  await expect(repo.restore(request)).rejects.toMatchObject({
+    name: 'StorageError',
+    reason: 'exists',
+    actualRev: undefined,
+  });
+  expect(call).toHaveBeenCalledExactlyOnceWith('project_restore', request);
+});
+
 test('adds recent entry after open and copy', async () => {
   const copyDoc = newBoardDoc('Koopia');
   const copyDto = {

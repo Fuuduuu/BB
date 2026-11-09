@@ -10,7 +10,7 @@ import './project-screens.css';
 export interface RestoreDialogProps {
   project: RecentProjectCard;
   loadBackups(req: BackupsReq): ReturnType<ProjectService['backups']>;
-  onRestore(backup: string): Promise<boolean>;
+  onRestore(backup: string): Promise<boolean | 'exists'>;
   onClose(): void;
 }
 
@@ -19,7 +19,7 @@ export function RestoreDialog({ project, loadBackups, onRestore, onClose }: Rest
   const [reload, setReload] = useState(0);
   const [selection, setSelection] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [restoreFailed, setRestoreFailed] = useState(false);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
   const submitting = useRef(false);
   const radioGroup = useId();
 
@@ -48,17 +48,20 @@ export function RestoreDialog({ project, loadBackups, onRestore, onClose }: Rest
 
   const backups = Array.isArray(list) ? list : [];
   const selected = backups.find((backup) => backup.file === selection) ?? backups[0];
+  const error = list === 'failed' ? et.project.restoreFailed : restoreError;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected || submitting.current) return;
     submitting.current = true;
     setBusy(true);
-    setRestoreFailed(false);
+    setRestoreError(null);
     try {
-      setRestoreFailed(!(await onRestore(selected.file)));
+      const result = await onRestore(selected.file);
+      if (result === 'exists') setRestoreError(et.reason.exists);
+      else if (!result) setRestoreError(et.project.restoreFailed);
     } catch {
-      setRestoreFailed(true);
+      setRestoreError(et.project.restoreFailed);
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -100,9 +103,9 @@ export function RestoreDialog({ project, loadBackups, onRestore, onClose }: Rest
             ))}
           </ul>
         )}
-        {(list === 'failed' || restoreFailed) && (
+        {error && (
           <p className="pcbk-restore__error" role="alert">
-            {et.project.restoreFailed}
+            {error}
           </p>
         )}
         <div className="pcbk-restore__actions">

@@ -91,6 +91,7 @@ export const et: {
         read_only: string;
         missing: string;
         locked: string;
+        exists: string;
         not_project: string;
         too_new: string;
         unknown: string;

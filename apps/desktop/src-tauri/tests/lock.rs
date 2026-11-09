@@ -1,4 +1,5 @@
 use std::{
+    fs,
     io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
@@ -7,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-use pcbk_desktop::storage::{ProjectStore, Reason, SystemClock};
+use pcbk_desktop::storage::{BackupKind, ProjectStore, Reason, SystemClock};
 use rusqlite::Connection;
 use serde_json::{json, Value};
 use tempfile::TempDir;
@@ -244,4 +245,60 @@ fn killed_writer_leaves_consistent_file() {
         .query_row("SELECT count(*) FROM journal", [], |row| row.get(0))
         .expect("read rolled-back journal count");
     assert_eq!(journal_count, 0, "no half-committed journal row survives");
+}
+
+#[test]
+fn restore_rejects_target_with_hot_journal() {
+    let (_directory, path, _) = project();
+    let store = test_store(&path);
+    let source = store.open(&path).unwrap();
+    let backup = store
+        .backups(&source.project_id)
+        .unwrap()
+        .into_iter()
+        .find(|backup| backup.kind == BackupKind::Full)
+        .unwrap();
+    store.close(&source.session).unwrap();
+    let backup_before = fs::read(&backup.file).unwrap();
+
+    let mut writer = TestWriter::spawn("uncommitted", &path);
+    writer.expect_line("UNCOMMITTED");
+    writer.kill_and_wait();
+    let journal = path.with_file_name("native-process.pcbk-journal");
+    let journal_before = fs::read(&journal).unwrap();
+    assert!(
+        journal_before.len() > 512,
+        "interrupted transaction left a journal"
+    );
+    let dest_before = fs::read(&path).unwrap();
+
+    let error = store
+        .restore(Path::new(&backup.file), &path)
+        .expect_err("restore must leave a project and its hot journal untouched");
+    assert_eq!(error.reason, Reason::Exists);
+    assert!(
+        fs::read(&path).unwrap() == dest_before,
+        "existing project changed"
+    );
+    assert!(
+        fs::read(&journal).unwrap() == journal_before,
+        "hot journal changed"
+    );
+    assert!(
+        fs::read(&backup.file).unwrap() == backup_before,
+        "backup changed"
+    );
+
+    let orphan_dest = path.with_file_name("orphan.pcbk");
+    let orphan_journal = path.with_file_name("orphan.pcbk-journal");
+    fs::write(&orphan_journal, &journal_before).unwrap();
+    let error = store
+        .restore(Path::new(&backup.file), &orphan_dest)
+        .expect_err("restore must refuse a free name with an old journal");
+    assert_eq!(error.reason, Reason::Exists);
+    assert!(!orphan_dest.exists());
+    assert!(
+        fs::read(&orphan_journal).unwrap() == journal_before,
+        "old journal changed"
+    );
 }

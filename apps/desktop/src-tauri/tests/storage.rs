@@ -212,11 +212,14 @@ fn opened_path_has_no_verbatim_prefix() {
     use std::path::{Component, Prefix};
 
     let dir = tempfile::tempdir().unwrap();
-    let path = std::path::absolute(dir.path().join("Plaat õäöü (2).pcbk")).unwrap();
+    let filename = "Plaat õäöü (2).pcbk";
+    // Resolve the parent first because the file does not exist yet.
+    let path = dunce::canonicalize(dir.path()).unwrap().join(filename);
     let store = test_store(dir.path());
     let created = store.create(&path, "project_caller", &doc(0)).unwrap();
+    let expected = dunce::canonicalize(&path).unwrap();
     store.close(&created.session).unwrap();
-    let reopened = store.open(&path).unwrap();
+    let reopened = store.open(&dir.path().join(filename)).unwrap();
     store.close(&reopened.session).unwrap();
 
     for actual in [created.path, reopened.path] {
@@ -224,7 +227,7 @@ fn opened_path_has_no_verbatim_prefix() {
             matches!(Path::new(&actual).components().next(), Some(Component::Prefix(prefix)) if matches!(prefix.kind(), Prefix::Disk(_))),
             "expected a drive-letter path, got {actual}"
         );
-        assert_eq!(actual, path.to_str().unwrap());
+        assert_eq!(actual, expected.to_str().unwrap());
     }
 }
 #[test]

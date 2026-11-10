@@ -4,7 +4,7 @@ import type { BoardPlacement } from '@pcbk/domain';
 import { boardPads, bodyOutline } from '@pcbk/domain/geometry';
 import { SceneText } from '@pcbk/ui';
 import { componentLabelLayout, isComponentLabelVisible } from './hits';
-import { PinMarker, PinText } from './PinMarker';
+import { PinLabels, PinMarker } from './PinMarker';
 
 export type ComponentLayerKind = 'bodies' | 'pins' | 'labels';
 type PlacedComponent = Snapshot['doc']['components'][number] & { readonly board: BoardPlacement };
@@ -138,7 +138,7 @@ export const ComponentShape = memo(function ComponentShape({
         return kind === 'pins' ? (
           <PinMarker key={key} {...props} square={index === 0} selected={pinId === selectedPinId} />
         ) : (
-          <PinText key={key} {...props} />
+          <PinLabels key={key} {...props} />
         );
       })}
       {kind === 'labels' && (

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import type { BoardDoc } from '@pcbk/domain';
 import { expect, test } from 'vitest';
 import { mountMeasurements, pinRef, pointer } from '../__tests__/workspace';
@@ -45,6 +45,44 @@ test('reading_label_shown_on_pin', () => {
   expect(label.getAttribute('font-family')).toBe('var(--f-mono)');
 });
 
+test('reading_label_points_away_from_component_body', () => {
+  const { engine } = mountMeasurements({
+    seed(doc) {
+      seed(doc);
+      const component = doc.components[0]!;
+      component.board = { ...component.board!, footprint: 'soic', params: { pins: 8, body: 3.9 } };
+      component.pins.push(
+        ...['5', '6', '7', '8'].map((id) => ({ id, uid: pinRef(id).uid, nc: false })),
+      );
+      doc.measurements.push({
+        ...doc.measurements[0]!,
+        id: 'msr_other_voltage',
+        at: pinRef('5'),
+        atLabel: 'U1.5',
+        value: 3.3,
+      });
+    },
+  });
+
+  const expectDirection = (reading: string, anchor: 'start' | 'end') => {
+    const label = screen.getByText(reading);
+    expect(label.getAttribute('text-anchor')).toBe(anchor);
+    const dy = Number(label.getAttribute('dy'));
+    expect(dy).toBeLessThan(0);
+    expect(Number(label.getAttribute('dx'))).toBe(anchor === 'end' ? dy : -dy);
+  };
+
+  expectDirection('4,98 V', 'end');
+  expectDirection('3,3 V', 'start');
+
+  act(() => {
+    expect(engine.execute('components.rotate', { id: pinRef('1').c, deltaDeg: 90 }).ok).toBe(true);
+  });
+
+  expectDirection('4,98 V', 'start');
+  expectDirection('3,3 V', 'end');
+});
+
 test('reading_label_follows_drag_preview', () => {
   const { engine, host, svg, pinPoint } = mountMeasurements({ seed });
   const before = engine.snapshot();
@@ -58,10 +96,13 @@ test('reading_label_follows_drag_preview', () => {
       ringY: Number(ring.getAttribute('cy')),
       labelX: Number(label.getAttribute('x')),
       labelY: Number(label.getAttribute('y')),
+      labelDx: Number(label.getAttribute('dx')),
+      labelDy: Number(label.getAttribute('dy')),
+      labelAnchor: label.getAttribute('text-anchor'),
     };
   };
   const original = coordinates();
-  const dx = 23;
+  const dx = 50;
   const dy = -11;
   pointer(svg, 'pointerdown', pin.x, pin.y);
   pointer(svg, 'pointermove', pin.x + dx, pin.y + dy);
@@ -71,6 +112,9 @@ test('reading_label_follows_drag_preview', () => {
   expect(moved.ringY).toBeCloseTo(original.ringY + dy);
   expect(moved.labelX).toBeCloseTo(original.labelX + dx);
   expect(moved.labelY).toBeCloseTo(original.labelY + dy);
+  expect(moved.labelDx).toBe(original.labelDx);
+  expect(moved.labelDy).toBe(original.labelDy);
+  expect(moved.labelAnchor).toBe(original.labelAnchor);
   expect(engine.snapshot()).toBe(before);
   expect(host.drainJournal()).toEqual([]);
 

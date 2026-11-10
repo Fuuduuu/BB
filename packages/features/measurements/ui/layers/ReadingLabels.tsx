@@ -31,6 +31,7 @@ function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render
           return pads.map(({ pinId, at, radiusPx }, index) => {
             const x = at.x + (offset?.dx ?? 0);
             const y = at.y + (offset?.dy ?? 0);
+            const isLeft = at.x < board.center.x;
             const radius = Math.max(radiusPx, 5 / zoom) + 2 / zoom;
             const labelOffset = radius + 2 / zoom;
             return (
@@ -48,8 +49,9 @@ function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render
                   <SceneText
                     x={x}
                     y={y}
-                    dx={labelOffset}
+                    dx={isLeft ? -labelOffset : labelOffset}
                     dy={-labelOffset}
+                    textAnchor={isLeft ? 'end' : 'start'}
                     fontSize={textSize}
                     fontFamily="var(--f-mono)"
                     fill="var(--ink)"

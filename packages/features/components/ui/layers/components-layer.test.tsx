@@ -182,18 +182,38 @@ test('component_rerenders_only_on_own_change', () => {
   expect(renderPads.mock.calls.map(([board]) => board.center.x)).toEqual([100, 100]);
 });
 
-test('nc_pin_shows_cross', () => {
-  const { engine } = setup();
-  add(engine);
-  expect(engine.execute('components.setNc', { id: 'cmp_a', pinId: '1', nc: true }).ok).toBe(true);
-  const pins = mount(engine).group('pins');
-  const nc = pins?.querySelector('[data-pin="1"]');
-  const ordinary = pins?.querySelector('[data-pin="2"]');
-  expect(nc?.querySelector('path')).toBeTruthy();
+test('nc_cross_visible_beside_pin_number', () => {
+  const engine = circularPadsBoard();
+  expect(engine.execute('components.setNc', { id: 'cmp_a', pinId: '2', nc: true }).ok).toBe(true);
+  const { group, update } = mount(engine);
+  const pins = group('pins');
+  const nc = pins?.querySelector('[data-pin="2"]');
+  const ordinary = pins?.querySelector('[data-pin="GND"]');
+  const number = screen.getByText('2');
+  const halo = group('labels')?.querySelector('path[stroke="var(--halo)"]');
+  const cross = group('labels')?.querySelector('path[stroke="var(--ink-3)"]');
+  expect(cross).toBeTruthy();
+  expect(number.compareDocumentPosition(halo!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(halo!.compareDocumentPosition(cross!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(number.getAttribute('x')).toBe('120');
+  expect(number.getAttribute('y')).toBe('80');
+  expect(cross?.getAttribute('d')).toBe('M127,67 L133,73 M133,67 L127,73');
+  expect(halo?.getAttribute('d')).toBe(cross?.getAttribute('d'));
+  expect(halo?.getAttribute('stroke-width')).toBe('3.5');
+  expect(cross?.getAttribute('stroke-width')).toBe('1.5');
+  expect(halo?.getAttribute('vector-effect')).toBe('non-scaling-stroke');
+  expect(cross?.getAttribute('vector-effect')).toBe('non-scaling-stroke');
+  expect(group('labels')?.querySelectorAll('path')).toHaveLength(2);
+  expect(pins?.querySelector('path')).toBeNull();
   expect(nc?.querySelector('[stroke="var(--ink-3)"]')?.getAttribute('stroke-width')).toBe('1');
-  expect(ordinary?.querySelector('path')).toBeNull();
   expect(ordinary?.querySelector('[stroke="var(--ink-3)"]')?.getAttribute('stroke-width')).toBe(
     '1.5',
+  );
+
+  update(0.25);
+  expect(screen.queryByText('2')).toBeNull();
+  expect(group('labels')?.querySelector('path[stroke="var(--ink-3)"]')?.getAttribute('d')).toBe(
+    'M128,48 L152,72 M152,48 L128,72',
   );
 });
 

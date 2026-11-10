@@ -35,20 +35,10 @@ export const PinMarker = memo(function PinMarker({
 }: PinMarkerProps) {
   const outline = { x, y, radius, square };
   const strokeWidth = pin.nc ? 1 : 1.5;
-  const crossHalf = Math.min(radius * 0.45, 4 / zoom);
   return (
     <g data-pin={pin.id}>
       <PadOutline {...outline} stroke="var(--halo)" strokeWidth={strokeWidth + 3} />
       <PadOutline {...outline} stroke="var(--ink-3)" strokeWidth={strokeWidth} />
-      {pin.nc && (
-        <path
-          d={`M${x - crossHalf},${y - crossHalf} l${2 * crossHalf},${2 * crossHalf} M${x + crossHalf},${y - crossHalf} l${-2 * crossHalf},${2 * crossHalf}`}
-          fill="none"
-          stroke="var(--ink-3)"
-          strokeWidth={1}
-          vectorEffect="non-scaling-stroke"
-        />
-      )}
       {selected && (
         <PadOutline {...outline} radius={radius + 2 / zoom} stroke="var(--sel)" strokeWidth={2} />
       )}
@@ -56,7 +46,28 @@ export const PinMarker = memo(function PinMarker({
   );
 });
 
-export const PinText = memo(function PinText({
+function NcCross({ x, y, radius, zoom }: PinGeometry) {
+  const halfLength = 3 / zoom;
+  const centerX = x + radius;
+  const centerY = y - radius;
+  const left = centerX - halfLength;
+  const right = centerX + halfLength;
+  const top = centerY - halfLength;
+  const bottom = centerY + halfLength;
+  const geometry = {
+    d: `M${left},${top} L${right},${bottom} M${right},${top} L${left},${bottom}`,
+    fill: 'none',
+    vectorEffect: 'non-scaling-stroke',
+  };
+  return (
+    <>
+      <path {...geometry} stroke="var(--halo)" strokeWidth={3.5} />
+      <path {...geometry} stroke="var(--ink-3)" strokeWidth={1.5} />
+    </>
+  );
+}
+
+export const PinLabels = memo(function PinLabels({
   pin,
   x,
   y,
@@ -64,7 +75,8 @@ export const PinText = memo(function PinText({
   zoom,
 }: PinGeometry & { pin: Readonly<Pin> }) {
   const screenRadius = radius * zoom;
-  if (screenRadius < 7) return null;
+  const showNumber = screenRadius >= 7;
+  if (!showNumber && !pin.nc) return null;
   const textProps = {
     x,
     y,
@@ -80,14 +92,17 @@ export const PinText = memo(function PinText({
   };
   return (
     <>
-      <SceneText {...textProps} textAnchor="middle">
-        {pin.id}
-      </SceneText>
+      {showNumber && (
+        <SceneText {...textProps} textAnchor="middle">
+          {pin.id}
+        </SceneText>
+      )}
       {screenRadius >= 14 && pin.name && (
         <SceneText {...textProps} dx={radius + 2 / zoom}>
           {pin.name}
         </SceneText>
       )}
+      {pin.nc && <NcCross x={x} y={y} radius={radius} zoom={zoom} />}
     </>
   );
 });

@@ -18,6 +18,7 @@ export interface KeySpec {
   id: string;
   key: string;
   shift?: boolean;
+  repeat?: boolean;
   run(api: ToolApi, selection: Selection): boolean;
 }
 

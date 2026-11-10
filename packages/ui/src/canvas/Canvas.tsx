@@ -252,6 +252,10 @@ export function Canvas({
       const binding = keys?.find(
         (spec) => spec.key.toLowerCase() === key && (spec.shift ?? false) === event.shiftKey,
       );
+      if (binding && event.repeat && binding.repeat !== true) {
+        event.preventDefault();
+        return;
+      }
       if (binding?.run(api, getSession().selection)) {
         event.preventDefault();
         return;

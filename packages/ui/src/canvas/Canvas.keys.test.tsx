@@ -123,6 +123,31 @@ test('canvas module keys match Shift and yield to the active tool', () => {
   expect(getSession().selection.items).toEqual([pickedByTool]);
 });
 
+test('a matching module key consumes repeats even when the action would decline', () => {
+  const svg = setup({ keys: [{ id: 'decline', key: 'R', run: () => false }] });
+  expect(fireEvent.keyDown(svg, { key: 'r' })).toBe(true);
+  expect(fireEvent.keyDown(svg, { key: 'r', repeat: true })).toBe(false);
+  expect(fireEvent.keyDown(svg, { key: 'x', repeat: true })).toBe(true);
+});
+
+test('a module key with repeat enabled handles repeated keydowns', () => {
+  const svg = setup({
+    keys: [
+      {
+        id: 'clear',
+        key: 'R',
+        repeat: true,
+        run(api) {
+          api.select({ items: [] });
+          return true;
+        },
+      },
+    ],
+  });
+  expect(fireEvent.keyDown(svg, { key: 'r', repeat: true })).toBe(false);
+  expect(getSession().selection.items).toEqual([]);
+});
+
 test('escape cancels the outgoing tool once', () => {
   let cancellations = 0;
   const svg = setup({

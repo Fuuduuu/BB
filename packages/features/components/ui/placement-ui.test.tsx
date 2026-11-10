@@ -104,6 +104,17 @@ test('rotate_and_flip_keys_dispatch_commands', () => {
   ]);
 });
 
+test('held_rotate_key_rotates_once', () => {
+  const { canvas, engine, host } = mount();
+  select('R1');
+  expect(fireEvent.keyDown(canvas, { key: 'r' })).toBe(false);
+  expect(fireEvent.keyDown(canvas, { key: 'r', repeat: true })).toBe(false);
+  expect(fireEvent.keyDown(canvas, { key: 'r', repeat: true })).toBe(false);
+  fireEvent.keyUp(canvas, { key: 'r' });
+  expect(engine.snapshot().doc.components[0]?.board?.rotationDeg).toBe(90);
+  expect(host.drainJournal().map((row) => row.commandId)).toEqual(['components.rotate']);
+});
+
 test('placement_section_buttons_dispatch_commands', () => {
   const { engine, host } = mount();
   select('R1');

@@ -316,7 +316,7 @@ interface CanvasTool {
 
 Pan (keskmine nupp, tühik + lohistamine), suum (rullik kursori ümber), kahe sõrmega suum ja kontekstimenüü käsitleb lõuend ise, enne tööriista. Topeltklõps tuvastatakse aja ja kauguse järgi (380 ms, 7 px), mitte DOM-i `dblclick` sündmusega.
 
-`UiModule.keys` lisab mooduli klahvid. `UiRegistry.keys()` koondab need ning register lükkab korduva klahvikombinatsiooni või tööriista kiirklahviga kattuva kirje tagasi. Lõuend proovib esmalt aktiivse tööriista `onKey`-d ja seejärel sobivat mooduli klahvi. Sisestusväljad, dialoogid ning `Ctrl`- ja `Meta`-kombinatsioonid säilitavad oma käitumise. `R` ja `Shift+R` pööravad paigutatud valikut 90° võrra ning `F` viib teisele poolele.
+`UiModule.keys` lisab mooduli klahvid. `UiRegistry.keys()` koondab need ning register lükkab korduva klahvikombinatsiooni või tööriista kiirklahviga kattuva kirje tagasi. Lõuend proovib esmalt aktiivse tööriista `onKey`-d ja seejärel sobivat mooduli klahvi. Kui sobiva mooduli klahvi puhul pole määratud `repeat: true`, tõkestab lõuend korduvate `keydown`-sündmuste vaikekäitumise ja jätab käsu käivitamata. Sisestusväljad, dialoogid ning `Ctrl`- ja `Meta`-kombinatsioonid säilitavad oma käitumise. `R` ja `Shift+R` pööravad paigutatud valikut 90° võrra ning `F` viib teisele poolele.
 
 Komponentide moodul hoiab paigutuse režiimi oma seansihoidlas. Paigutustööriist näitab korpuse eelvaadet kursori all ja saadab klõpsul ühe `components.add` või `components.placeOnBoard` käsu. Õnnestumisel valib tööriist komponendi ja naaseb valikutööriista juurde. `Esc`, tööriista vahetus ja projekti vahetus lõpetavad paigutuse ning eemaldavad eelvaate.
 

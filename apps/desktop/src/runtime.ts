@@ -3,7 +3,7 @@ import { warn as logWarning } from '@tauri-apps/plugin-log';
 import { createTauriRepository } from '@pcbk/adapters';
 import { newId } from '@pcbk/domain';
 import { createEngine, createProjectService } from '@pcbk/engine';
-import { engineFeatures, RESERVED_FIELDS_M0 } from '@pcbk/features/engine';
+import { engineFeatures, RESERVED_FIELDS } from '@pcbk/features/engine';
 import { createDesktopHost } from './desktop-host';
 
 export function createRuntime() {
@@ -14,7 +14,7 @@ export function createRuntime() {
   };
   const { engine, host } = createEngine({
     modules: engineFeatures,
-    reserved: RESERVED_FIELDS_M0,
+    reserved: RESERVED_FIELDS,
     clock,
   });
   const repo = createTauriRepository({ invoke, warn });

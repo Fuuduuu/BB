@@ -13,6 +13,7 @@ export type AddComponentParams = {
     ref?: string | undefined;
     marking?: string | undefined;
     value?: string | undefined;
+    board?: BoardInput | undefined;
 };
 ```
 
@@ -34,9 +35,58 @@ export type AddPinParams = {
 export const AddPinSchema: ZodType<AddPinParams>;
 ```
 
+### `BoardInput`
+```ts
+export type BoardInput = {
+    footprint: string;
+    center: { x: number; y: number; };
+    params?: Record<string, string | number> | undefined;
+    rotationDeg?: number | undefined;
+    side?: "top" | "bottom" | undefined;
+};
+```
+
+### `BoardInputSchema`
+```ts
+export const BoardInputSchema: ZodType<BoardInput>;
+```
+
+### `COMPONENT_LIBRARY`
+```ts
+export const COMPONENT_LIBRARY: readonly LibraryEntry[];
+```
+
+### `ComponentTargetParams`
+```ts
+export type ComponentTargetParams = {
+    id: string;
+};
+```
+
+### `ComponentTargetSchema`
+```ts
+export const ComponentTargetSchema: ZodType<ComponentTargetParams>;
+```
+
+### `LibraryEntry`
+```ts
+export interface LibraryEntry {
+    id: string;
+    kind: ComponentKind;
+    footprint: string;
+    params: FootprintParams;
+    kw: string;
+}
+```
+
 ### `makeAddComponent`
 ```ts
 export function makeAddComponent(ids: IdGen, kind: ComponentKind, pinCount?: number): AddComponentParams;
+```
+
+### `makePlacedComponent`
+```ts
+export function makePlacedComponent(ids: IdGen, entry: LibraryEntry, params: FootprintParams, center: Vec2): AddComponentParams;
 ```
 
 ### `PinTargetParams`
@@ -50,6 +100,19 @@ export type PinTargetParams = {
 ### `PinTargetSchema`
 ```ts
 export const PinTargetSchema: ZodType<PinTargetParams>;
+```
+
+### `PlaceOnBoardParams`
+```ts
+export type PlaceOnBoardParams = {
+    id: string;
+    board: BoardInput;
+};
+```
+
+### `PlaceOnBoardSchema`
+```ts
+export const PlaceOnBoardSchema: ZodType<PlaceOnBoardParams>;
 ```
 
 ### `RenamePinParams`
@@ -66,9 +129,22 @@ export type RenamePinParams = {
 export const RenamePinSchema: ZodType<RenamePinParams>;
 ```
 
+### `RotateParams`
+```ts
+export type RotateParams = {
+    id: string;
+    deltaDeg: number;
+};
+```
+
+### `RotateSchema`
+```ts
+export const RotateSchema: ZodType<RotateParams>;
+```
+
 ### `selectComponent`
 ```ts
-export const selectComponent: (snapshot: Snapshot, id: string) => {
+export const selectComponent: (snapshot: Pick<Snapshot, "doc">, id: string) => {
     readonly id: string;
     readonly ref: string;
     readonly kind: "resistor" | "capacitor" | "capacitor_polarized" | "inductor" | "diode" | "led" | "zener" | "npn" | "pnp" | "nmos" | "pmos" | "regulator" | "ic" | "connector" | "crystal" | "switch" | "fuse" | "testpoint" | "via" | "pad" | "wire_point" | "hole" | "other";
@@ -137,7 +213,7 @@ export const selectComponent: (snapshot: Snapshot, id: string) => {
 
 ### `selectComponents`
 ```ts
-export const selectComponents: (snapshot: Snapshot) => readonly {
+export const selectComponents: (snapshot: Pick<Snapshot, "doc">) => readonly {
     readonly id: string;
     readonly ref: string;
     readonly kind: "resistor" | "capacitor" | "capacitor_polarized" | "inductor" | "diode" | "led" | "zener" | "npn" | "pnp" | "nmos" | "pmos" | "regulator" | "ic" | "connector" | "crystal" | "switch" | "fuse" | "testpoint" | "via" | "pad" | "wire_point" | "hole" | "other";
@@ -202,6 +278,19 @@ export const selectComponents: (snapshot: Snapshot) => readonly {
         } | undefined;
     } | undefined;
 }[];
+```
+
+### `SetLabelOffsetParams`
+```ts
+export type SetLabelOffsetParams = {
+    id: string;
+    offset: { x: number; y: number; } | null;
+};
+```
+
+### `SetLabelOffsetSchema`
+```ts
+export const SetLabelOffsetSchema: ZodType<SetLabelOffsetParams>;
 ```
 
 ### `SetNcParams`

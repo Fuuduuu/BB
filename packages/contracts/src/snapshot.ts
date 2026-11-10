@@ -10,6 +10,7 @@ export type DeepReadonly<T> = T extends (...args: never[]) => unknown
         ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
         : T;
 
+/** Feature contracts extend this interface with their registered derivation keys. */
 export interface Derived {
   unplacedBoard: string[];
   unplacedSchematic: string[];

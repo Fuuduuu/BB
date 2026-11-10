@@ -1,21 +1,30 @@
-import { nextRef } from '@pcbk/domain';
-import type { BoardDoc, Component } from '@pcbk/domain';
+import { FOOTPRINTS, footprintPinIds, nextRef } from '@pcbk/domain';
+import type { BoardDoc, BoardPlacement, Component, Pin } from '@pcbk/domain';
 import { CommandTargetNotFound } from '@pcbk/engine';
 import type { CommandSpec } from '@pcbk/engine';
 import {
   AddComponentSchema,
   UpdateComponentSchema,
   AddPinSchema,
+  ComponentTargetSchema,
   PinTargetSchema,
+  PlaceOnBoardSchema,
   RenamePinSchema,
+  RotateSchema,
+  SetLabelOffsetSchema,
   SetNcSchema,
 } from '../contract';
 import type {
   AddComponentParams,
   UpdateComponentParams,
   AddPinParams,
+  BoardInput,
+  ComponentTargetParams,
   PinTargetParams,
+  PlaceOnBoardParams,
   RenamePinParams,
+  RotateParams,
+  SetLabelOffsetParams,
   SetNcParams,
 } from '../contract';
 
@@ -29,11 +38,48 @@ function pin(doc: BoardDoc, params: PinTargetParams) {
   if (!found) throw new CommandTargetNotFound(`${params.id}:${params.pinId}`);
   return found;
 }
+
+function normalizeAngle(degrees: number): number {
+  const remainder = degrees % 360;
+  return (remainder < 0 ? (remainder + 360) % 360 : remainder) || 0;
+}
+
+function makeBoardPlacement(input: BoardInput, pins: readonly Pick<Pin, 'id'>[]): BoardPlacement {
+  const definition = FOOTPRINTS.find((entry) => entry.key === input.footprint);
+  if (!definition) throw new Error('invalid_footprint');
+  const params = { ...definition.defaults, ...input.params };
+  const padIds = footprintPinIds(input.footprint, params);
+  if (!padIds) throw new Error('invalid_footprint');
+  if (input.footprint !== 'area') {
+    const pinIds = new Set(pins.map((pin) => pin.id));
+    if (pins.length !== padIds.length || !padIds.every((id) => pinIds.has(id))) {
+      throw new Error('footprint_pins_mismatch');
+    }
+  }
+  return {
+    footprint: input.footprint,
+    params,
+    center: input.center,
+    rotationDeg: normalizeAngle(input.rotationDeg ?? 0),
+    side: input.side ?? 'top',
+    scaleX: 1,
+    scaleY: 1,
+    customPads: {},
+  };
+}
+
+function placedBoard(doc: BoardDoc, id: string): BoardPlacement {
+  const board = component(doc, id).board;
+  if (!board) throw new Error('component_not_placed');
+  return board;
+}
+
 const add: CommandSpec<AddComponentParams> = {
   id: 'components.add',
   title: 'components.add',
   params: AddComponentSchema,
   run(doc, params) {
+    const board = params.board ? makeBoardPlacement(params.board, params.pins) : undefined;
     doc.components.push({
       id: params.id,
       kind: params.kind,
@@ -44,6 +90,7 @@ const add: CommandSpec<AddComponentParams> = {
       dnp: false,
       note: '',
       pins: params.pins.map((item) => ({ ...item, nc: false })),
+      ...(board ? { board } : {}),
     });
   },
 };
@@ -99,4 +146,64 @@ const removePin: CommandSpec<PinTargetParams> = {
     target.pins.splice(index, 1);
   },
 };
-export const commands = [add, update, addPin, renamePin, setNc, removePin];
+const placeOnBoard: CommandSpec<PlaceOnBoardParams> = {
+  id: 'components.placeOnBoard',
+  title: 'components.placeOnBoard',
+  params: PlaceOnBoardSchema,
+  run(doc, params) {
+    const target = component(doc, params.id);
+    if (target.board) throw new Error('already_placed');
+    target.board = makeBoardPlacement(params.board, target.pins);
+  },
+};
+const removeFromBoard: CommandSpec<ComponentTargetParams> = {
+  id: 'components.removeFromBoard',
+  title: 'components.removeFromBoard',
+  params: ComponentTargetSchema,
+  run(doc, params) {
+    const target = component(doc, params.id);
+    if (target.board) delete target.board;
+  },
+};
+const rotate: CommandSpec<RotateParams> = {
+  id: 'components.rotate',
+  title: 'components.rotate',
+  params: RotateSchema,
+  run(doc, params) {
+    const board = placedBoard(doc, params.id);
+    board.rotationDeg = normalizeAngle((board.rotationDeg % 360) + (params.deltaDeg % 360));
+  },
+};
+const flipSide: CommandSpec<ComponentTargetParams> = {
+  id: 'components.flipSide',
+  title: 'components.flipSide',
+  params: ComponentTargetSchema,
+  run(doc, params) {
+    const board = placedBoard(doc, params.id);
+    board.side = board.side === 'top' ? 'bottom' : 'top';
+  },
+};
+const setLabelOffset: CommandSpec<SetLabelOffsetParams> = {
+  id: 'components.setLabelOffset',
+  title: 'components.setLabelOffset',
+  params: SetLabelOffsetSchema,
+  run(doc, params) {
+    const board = placedBoard(doc, params.id);
+    if (params.offset === null) delete board.labelOffset;
+    else board.labelOffset = params.offset;
+  },
+};
+
+export const commands = [
+  add,
+  update,
+  addPin,
+  renamePin,
+  setNc,
+  removePin,
+  placeOnBoard,
+  removeFromBoard,
+  rotate,
+  flipSide,
+  setLabelOffset,
+];

@@ -177,3 +177,152 @@ test('component commands cannot replace pins or placements through update', () =
   });
   expect(engine.snapshot()).toBe(before);
 });
+
+const chipBoard = { footprint: 'chip', center: { x: 20, y: 35 } };
+
+test('add_with_board_creates_pins_from_footprint', () => {
+  const { engine } = setup();
+  const entry = {
+    id: 'sot23',
+    kind: 'npn',
+    footprint: 'sot23',
+    params: { pins: 3 },
+    kw: 'transistor mosfet',
+  } as const;
+  expect(contract.makePlacedComponent).toBeTypeOf('function');
+  const params = contract.makePlacedComponent(idGenerator(), entry, { pins: 5 }, chipBoard.center);
+  expect(engine.execute('components.add', params).ok).toBe(true);
+  expect(engine.snapshot().doc.components[0]).toMatchObject({
+    id: 'cmp_1',
+    ref: 'Q1',
+    pins: [
+      { id: '1', uid: 'pin_2', nc: false },
+      { id: '2', uid: 'pin_3', nc: false },
+      { id: '3', uid: 'pin_4', nc: false },
+      { id: '4', uid: 'pin_5', nc: false },
+      { id: '5', uid: 'pin_6', nc: false },
+    ],
+    board: {
+      footprint: 'sot23',
+      params: { pins: 5 },
+      center: { x: 20, y: 35 },
+      rotationDeg: 0,
+      side: 'top',
+      scaleX: 1,
+      scaleY: 1,
+      customPads: {},
+    },
+  });
+  expect(engine.undo().ok).toBe(true);
+  expect(engine.snapshot().doc.components).toEqual([]);
+});
+
+test('library_has_seven_entries_with_empty_value_and_marking', () => {
+  const { engine } = setup();
+  expect(contract.COMPONENT_LIBRARY).toEqual([
+    {
+      id: 'r_smd',
+      kind: 'resistor',
+      footprint: 'chip',
+      params: { size: '0805' },
+      kw: 'resistor chip',
+    },
+    {
+      id: 'c_smd',
+      kind: 'capacitor',
+      footprint: 'chip',
+      params: { size: '0805' },
+      kw: 'capacitor mlcc',
+    },
+    { id: 'sot23', kind: 'npn', footprint: 'sot23', params: { pins: 3 }, kw: 'transistor mosfet' },
+    { id: 'soic', kind: 'ic', footprint: 'soic', params: { pins: 8, body: 3.9 }, kw: 'so ic' },
+    { id: 'to220', kind: 'regulator', footprint: 'to220', params: {}, kw: 'regulator mosfet' },
+    {
+      id: 'hdr1',
+      kind: 'connector',
+      footprint: 'header1',
+      params: { pins: 4, pitch: 2.54 },
+      kw: 'header pin',
+    },
+    {
+      id: 'unknown',
+      kind: 'other',
+      footprint: 'area',
+      params: { w: 8, h: 10 },
+      kw: 'unknown generic custom',
+    },
+  ]);
+  const ids = idGenerator();
+  for (const entry of contract.COMPONENT_LIBRARY) {
+    const params = contract.makePlacedComponent(ids, entry, {}, chipBoard.center);
+    expect(engine.execute('components.add', params).ok).toBe(true);
+  }
+  const components = engine.snapshot().doc.components;
+  expect(components.map(({ value, marking }) => [value, marking])).toEqual(
+    Array.from({ length: 7 }, () => ['', '']),
+  );
+  expect(components[6]!.pins).toEqual([]);
+});
+
+test.each([
+  { pins: [{ id: '1', uid: 'pin_1' }] },
+  {
+    pins: [
+      { id: '1', uid: 'pin_1' },
+      { id: '3', uid: 'pin_2' },
+    ],
+  },
+  { pins: [...add().pins, { id: '3', uid: 'pin_3' }] },
+])('add_with_board_rejects_pin_mismatch %#', ({ pins }) => {
+  const { engine } = setup();
+  const before = engine.snapshot();
+  expect(engine.execute('components.add', { ...add(), pins, board: chipBoard })).toMatchObject({
+    ok: false,
+    error: { code: 'validation', issues: [{ message: 'footprint_pins_mismatch' }] },
+  });
+  expect(engine.snapshot()).toBe(before);
+});
+
+test.each([
+  { ...chipBoard, footprint: 'unknown' },
+  { ...chipBoard, params: { size: '9999' } },
+  { ...chipBoard, params: { size: '0805', extra: 1 } },
+  { ...chipBoard, params: { size: true } },
+  { ...chipBoard, params: { size: Number.POSITIVE_INFINITY } },
+  { ...chipBoard, footprint: 'area', params: { w: 0 } },
+])('invalid_footprint_params_are_rejected %#', (board) => {
+  const { engine } = setup();
+  const before = engine.snapshot();
+  expect(engine.execute('components.add', { ...add(), board } as AddComponentParams)).toMatchObject(
+    {
+      ok: false,
+      error: { code: 'validation', issues: [{ message: 'invalid_footprint' }] },
+    },
+  );
+  expect(engine.snapshot()).toBe(before);
+});
+
+test('makePlacedComponent forwards invalid footprint params to command validation', () => {
+  const { engine } = setup();
+  expect(contract.COMPONENT_LIBRARY).toBeDefined();
+  const entry = contract.COMPONENT_LIBRARY[2]!;
+  const params = contract.makePlacedComponent(idGenerator(), entry, { pins: 4 }, chipBoard.center);
+  expect(engine.execute('components.add', params)).toMatchObject({
+    ok: false,
+    error: { code: 'validation', issues: [{ message: 'invalid_footprint' }] },
+  });
+});
+
+test.each([
+  {
+    board: { ...chipBoard, center: { x: Number.NEGATIVE_INFINITY, y: 0 } },
+    path: ['board', 'center', 'x'],
+  },
+  { board: { ...chipBoard, rotationDeg: Number.NaN }, path: ['board', 'rotationDeg'] },
+])('board placement rejects non-finite coordinates and angles %#', ({ board, path }) => {
+  const { engine } = setup();
+  expect(engine.execute('components.add', { ...add(), board })).toMatchObject({
+    ok: false,
+    error: { code: 'validation', issues: [{ path }] },
+  });
+});

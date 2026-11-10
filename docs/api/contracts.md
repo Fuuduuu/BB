@@ -51,6 +51,14 @@ export interface CommandMap {
     'items.delete': {
         ids: string[];
     };
+    'items.translate': {
+        items: {
+            kind: 'component';
+            id: string;
+        }[];
+        dx: number;
+        dy: number;
+    };
 }
 ```
 
@@ -92,6 +100,9 @@ export const DEFAULT_VIEW_STATE: Readonly<ViewState>;
 ```
 
 ### `Derived`
+
+Feature contracts extend this interface with their registered derivation keys.
+
 ```ts
 export interface Derived {
     unplacedBoard: string[];

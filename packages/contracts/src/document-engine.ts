@@ -5,6 +5,7 @@ import type { Snapshot } from './snapshot';
 // Feature contracts extend this interface through module augmentation.
 export interface CommandMap {
   'items.delete': { ids: string[] };
+  'items.translate': { items: { kind: 'component'; id: string }[]; dx: number; dy: number };
 }
 
 export type CommandId = Extract<keyof CommandMap, `${string}.${string}`>;

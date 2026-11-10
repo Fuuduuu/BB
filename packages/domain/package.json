@@ -5,7 +5,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./geometry": "./src/geometry/board.ts"
+    "./geometry": "./src/geometry/board.ts",
+    "./measure": "./src/measure/index.ts",
+    "./measure/reading": "./src/measure/reading.ts"
   },
   "dependencies": {
     "nanoid": "6.0.2",

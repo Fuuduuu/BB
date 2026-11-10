@@ -314,6 +314,13 @@ export function footprintPinIds(key: string, params: FootprintParams): string[] 
 export const FOOTPRINTS: readonly FootprintDef[];
 ```
 
+### `formatReading`
+```ts
+export function formatReading(reading: {
+    value: number;
+}, mode: ReadingMode): string;
+```
+
 ### `HISTORY_LIMIT`
 ```ts
 export const HISTORY_LIMIT: 200;
@@ -491,6 +498,13 @@ export interface PadGeom {
 export function padToBoard(p: Pick<BoardPlacement, 'center' | 'rotationDeg' | 'side' | 'scaleX' | 'scaleY'>, local: Vec2, pxPerMm: number): Vec2;
 ```
 
+### `parseReading`
+```ts
+export function parseReading(text: string, mode: ReadingMode): {
+    value: number;
+} | null;
+```
+
 ### `PhotoRef`
 ```ts
 export type PhotoRef = {
@@ -524,6 +538,37 @@ export type Pin = {
     nc: boolean;
     name?: string | undefined;
 };
+```
+
+### `PinReading`
+```ts
+export interface PinReading {
+    measurementId: string;
+    mode: 'voltage';
+    value: number;
+    takenAt: string;
+}
+```
+
+### `pinReadings`
+```ts
+export function pinReadings(doc: PinReadingSource): Record<string, PinReading>;
+```
+
+### `PinReadingSource`
+```ts
+export interface PinReadingSource {
+    readonly components: readonly {
+        readonly id: string;
+        readonly pins: readonly Readonly<Pick<Pin, 'id' | 'uid'>>[];
+    }[];
+    readonly measurements: readonly Readonly<Measurement>[];
+}
+```
+
+### `PinReadingsSchema`
+```ts
+export const PinReadingsSchema: ZodType<{ [x: string]: { measurementId: string; mode: "voltage"; value: number; takenAt: string; }; }>;
 ```
 
 ### `PinRef`
@@ -567,6 +612,11 @@ export type ProgressSnapshot = {
 ### `ProgressSnapshotSchema`
 ```ts
 export const ProgressSnapshotSchema: ZodType<ProgressSnapshot>;
+```
+
+### `ReadingMode`
+```ts
+export type ReadingMode = 'voltage';
 ```
 
 ### `refPrefix`

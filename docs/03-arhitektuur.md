@@ -320,11 +320,14 @@ Arvutatud andmed arvutab **mootor**:
 - ühenduse tasemed (`connectionLevels`) ja läbivuse vastuolud;
 - lühistatud kahejalgsed komponendid ja ajaloolised mõõtmised;
 - „Plaadile paigutamata“ ja „Skeemile paigutamata“ loendid;
+- iga jala viimane kehtiv pingenäit (`pinReadings`);
 - valmidus (`computeProgress`).
 
 Skeemi automaatne paigutus (M4) on eraldi abiline, mis pakub paigutust ainult paigutamata või valitud sümbolitele.
-- Need on `@pcbk/domain` puhtad funktsioonid. Mootor jätab tulemuse meelde dokumendi viite järgi ja annab selle hetktõmmises (`derived`) koos sama `rev`-iga. Mootori enda käsud kasutavad sama tulemust (nt `repair.add` vajab võrke).
-- Frontend arvutab ainult joonistusgeomeetriat (jala asukoht ekraanil, eelvaade) ja vormindab tekste.
+- Mootor avaldab arvutused hetktõmmise `derived` väljal koos sama `rev`-iga. Käsud saavad kasutada sama tulemust (nt `repair.add` vajab võrke).
+- `Derived` tuum sisaldab paigutamata komponentide loendeid. Moodul lisab oma võtme lepingus mooduliaugmentatsiooniga ja registreerib `DeriveSpec`-i koos dokumendiväljade `inputs`, skeemi, algväärtuse ja arvutusega. Tühi hetktõmmis kasutab algväärtusi. Register keelab korduvad võtmed.
+- Mootor taaskasutab sama seansi eelmist tulemust, kui ühegi `inputs` välja viide pole muutunud. `pinReadings` sõltub väljadest `components` ja `measurements`. Mootor valideerib uue tulemuse skeemiga. Vigane tuletis annab `validation` enne ajaloo ja hetktõmmise avaldamist.
+- Frontend arvutab joonistusgeomeetriat, loeb näidu sisendit ja vormindab tekste. Domeeni käituskoodi impordid on lubatud `geometry/`, `footprints/` ja `measure/reading.ts` kaudu. Jala viimase näidu saab frontend hetktõmmisest.
 - Kui kasutajale nähtav viivitus (käsk → uus pilt) ületab 100 ms või lohistamine langeb alla 45 fps, viiakse rasked **puhtad** arvutused Web Workerisse. Tulemust kontrollitakse `sessionId` ja `baseRev` vastu. Dokumendimootor jääb sünkroonseks; kogu mootori teise lõime viimine muudaks lepingut ja vajaks uut otsust.
 
 ## 8. Skeemivaade

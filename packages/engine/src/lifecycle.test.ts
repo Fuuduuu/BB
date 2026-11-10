@@ -2,6 +2,7 @@ import { newBoardDoc } from '@pcbk/domain';
 import type { BoardDoc } from '@pcbk/domain';
 import type { CommandId, DeepReadonly, DomainEvent, Snapshot } from '@pcbk/contracts';
 import { expect, test } from 'vitest';
+import { z } from 'zod';
 import * as api from './index';
 import { clock, component, demo, mutationModule, setup, withTestOwners } from './__tests__/helpers';
 
@@ -176,11 +177,14 @@ test('derived placement lists stay coherent across commands and undo', () => {
   expect(engine.snapshot().derived.unplacedBoard).toEqual(['cmp_a']);
 });
 test('failed derivations do not publish a half-committed document', () => {
-  const module = {
+  const module: api.EngineModule = {
     ...demo,
     derive: [
       {
-        key: 'unplacedBoard' as const,
+        key: 'unplacedBoard',
+        inputs: ['name'],
+        schema: z.array(z.string()),
+        initial: [],
         run(doc: DeepReadonly<BoardDoc>) {
           if (doc.name === 'Bad') throw new Error('derive');
           return [];

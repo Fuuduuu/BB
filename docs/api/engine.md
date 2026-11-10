@@ -99,10 +99,15 @@ export function createProjectService(opts: {
 
 ### `DeriveSpec`
 ```ts
-export interface DeriveSpec {
-    key: keyof Derived;
-    run(doc: DeepReadonly<BoardDoc>, derived: DeepReadonly<Derived>): string[];
-}
+export type DeriveSpec<K extends keyof Derived = keyof Derived> = {
+    [Key in K]: {
+        key: Key;
+        inputs: DocKey[];
+        schema: z.ZodType<Derived[Key]>;
+        initial: Derived[Key];
+        run(doc: DeepReadonly<BoardDoc>, derived: DeepReadonly<Derived>): Derived[Key];
+    };
+}[K];
 ```
 
 ### `EngineHost`

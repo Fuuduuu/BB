@@ -6,9 +6,9 @@ Uuendatud: **2026-11-10**. Hoia see fail lühikese hetkeseisuna, soovitatavalt k
 
 **Rollid.** Claude on arhitekt ja Codex on ehitaja. [Tööjaotus](07-teekaart.md#rollid)
 
-**M0 on valmis ja avaldatud** (`v0.1.0`). **M1.1 on valmis ja kasutaja poolt vastu võetud (2026-11-10)** ([plaan](plans/M1-1-louend-ja-mootmine.md), arhitekt kinnitas 2026-11-10): tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m1-1/BB`, haru `codex/m1-1` (pole pushitud). Vastu võetud: M1-1-1…2 (`406b3fa`), M1-1-3…5 (`3e794f9`) ja M1-1-6…9 (`6efa841`). [M1-1-6](tasks/M1-1-6.md) (lõuendi baas) [M1-1-7](tasks/M1-1-7.md) (komponentide kiht) [M1-1-8](tasks/M1-1-8.md) (teek ja paigutus) ja [M1-1-9](tasks/M1-1-9.md) (mõõtmise UI) on **vastu võetud** (`6efa841`; 2026-11-10: `pnpm check` 735/735, `format:check`, `api:check`, `e2e` 8/8).
+**M0 on valmis ja avaldatud** (`v0.1.0`). **M1.1 on valmis, kasutaja poolt vastu võetud ja liidetud `main`-i (2026-11-10), väljalase `v0.1.1`** ([plaan](plans/M1-1-louend-ja-mootmine.md), arhitekt kinnitas 2026-11-10): tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m1-1/BB`, haru `codex/m1-1` (pole pushitud). Vastu võetud: M1-1-1…2 (`406b3fa`), M1-1-3…5 (`3e794f9`) ja M1-1-6…9 (`6efa841`). [M1-1-6](tasks/M1-1-6.md) (lõuendi baas) [M1-1-7](tasks/M1-1-7.md) (komponentide kiht) [M1-1-8](tasks/M1-1-8.md) (teek ja paigutus) ja [M1-1-9](tasks/M1-1-9.md) (mõõtmise UI) on **vastu võetud** (`6efa841`; 2026-11-10: `pnpm check` 735/735, `format:check`, `api:check`, `e2e` 8/8).
 
-`origin/main` = `0e2cbee` (M0-15 ja AI stardifailid). Kohalik `main` on sellest kahe M1.1 dokumendicommitiga ees (pushimata). Silt `v0.1.0` on commit’il `7dacff8`.
+`main` sisaldab M1.1 liitmist (`8d1df37`) ja versioonitõstu `0.1.1`; silt `v0.1.1` (tag-jooks loob GitHubi Release'i koos `.msi`-ga, tulemus kasutaja kinnitada). Silt `v0.1.0` on commit’il `7dacff8`.
 
 ## Mis on olemas
 
@@ -23,8 +23,8 @@ Uuendatud: **2026-11-10**. Hoia see fail lühikese hetkeseisuna, soovitatavalt k
 
 - **M0-15** on vastu võetud (2026-11-10, `2f140f2`, juba `main`-is). Märkus: taastamise VFS-kaitse on kirjeldatud 03 §9-s; `storage/backup.rs` (419 rida) jagatakse M1 hoolduskaardis.
 - **Enne fotoimporti (arhitekti otsus enne M1.2).** Taastatud ja algne sama `project_id`-ga fail võivad eri radu edasi minna. Sünteetiline taastamiskatse ühendas ühe faili dokumendi teise faili päevikuga ja jättis simuleeritud fotoviite ilma pildibaidita. Dokumendikoopia alus tuleb siduda õige failiharuga. „Salvesta mujale…“ peab eristama täielikku koopiat meediata päästekoopiast.
-- **M1.1 on vastu võetud** (kasutaja suitsukontroll 11/11, 2026-11-10; `pnpm check` 739/739, e2e 15/15, `cargo test` 53/53, Tauri debug-ehitus, `v0.1.0` ühilduvus). Ootavad kasutaja otsused: M1-1-10 commit harus `codex/m1-1`, haru liitmine `main`-i, push ja `v0.1.1`. Seejärel M1 hoolduskaart (enne M1.2) ja M1.2 plaan (arhitekt). Lahtised M2.1-le: klõps rühma liikmel jätab rühma valituks, jala valik näitab ühte jalga komponendi kohta; nooled ja `R`/`F` toimivad ka külgpaneeli fookusega. M1.2-le: näidu sildi suund peegeldatud stseenis.
-- **Avaldamine.** Haru `codex/m1-1` (`6efa841`) pole pushitud; push ja `v0.1.1` ootavad kasutaja otsust.
+- **M1.1 on vastu võetud ja liidetud** (kasutaja suitsukontroll 11/11, 2026-11-10; liidetud `main`-is `pnpm check` sammud 739/739 (lint ilma kohaliku `.claude/worktrees` kaustata), e2e 15/15; Rust 53/53 identse koodiga harus). Järgmine: M1 hoolduskaart (enne M1.2) ja M1.2 plaan (arhitekt). Lahtised M2.1-le: klõps rühma liikmel jätab rühma valituks, jala valik näitab ühte jalga komponendi kohta; nooled ja `R`/`F` toimivad ka külgpaneeli fookusega. M1.2-le: näidu sildi suund peegeldatud stseenis. Hoolduskaardile: ESLint peab ignoreerima `.claude/worktrees/` (teise seansi tööpuu põhikaustas murrab `pnpm check`-i).
+- **Avaldamine.** `main` ja silt `v0.1.1` pushitud 2026-11-10; haru `codex/m1-1` on liidetud (eraldi pushimata). Koodiallkirjastamine ootab kasutaja otsust.
 - Enne M1.2 tuleb kinnitada `v0.1.0` failide vormingu ühilduvus ja mõõta SVG jõudlust päris Tauri aknas.
 - **M1 hoolduskaart** (pärast M1.1, enne M1.2; [plaani lõpus](plans/M1-1-louend-ja-mootmine.md#mis-jääb-järgmistesse-plaanidesse)): projekti vahetamine salvestusvea korral, `stale_rev` selge teade, `backup.rs` ja `workbench.test.tsx` jagamine, veebi `discard` koos e2e-tõendiga. Täisskeemi valideerimise optimeerimine pärast mõõtmist.
 - GitHub CLI oli üleandmisel kontole sisse logimata. CI jooksud ja väljalaske avaldamine on eraldi kohalikest kontrollidest.

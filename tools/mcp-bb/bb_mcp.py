@@ -42,9 +42,10 @@ VERDICTS = ["JAH", "JAH, PÄRAST PARANDUSI", "EI"]
 
 INSTRUCTIONS = (
     "BB is a local PCB mapping and repair desktop app (TypeScript + Tauri), currently in the "
-    "documentation stage. Documents are in Estonian. Start with bb_status, then bb_list_docs, and "
-    "read only the sections you need with bb_outline and bb_read_section. Run bb_check_docs after "
-    "editing docs. External reviewers file findings with bb_submit_review."
+    "documentation stage. Documents are in Estonian. Start with bb_status. For a build task with a "
+    "card, call bb_task with its id: the card and its listed sections are all you need to read. "
+    "Otherwise read only the sections you need with bb_outline and bb_read_section. Run "
+    "bb_check_docs after editing docs. External reviewers file findings with bb_submit_review."
 )
 
 
@@ -189,11 +190,15 @@ def tool_outline(args: dict[str, Any]) -> str:
 
 def tool_read_section(args: dict[str, Any]) -> str:
     path = resolve_doc(args["doc"])
-    text = read_text(path)
     limit = args.get("max_chars", 12_000)
     heading = (args.get("heading") or "").strip()
     if not heading:
-        return clip(f"# `{rel(path)}` (whole document)\n\n{text}", limit)
+        return clip(f"# `{rel(path)}` (whole document)\n\n{read_text(path)}", limit)
+    return clip(section_text(path, heading), limit)
+
+
+def section_text(path: Path, heading: str) -> str:
+    text = read_text(path)
     hs = headings(text)
     want = heading.lstrip("#").strip()
     exact = [h for h in hs if h["anchor"] == slug(want) or h["title"].lower() == want.lower()]
@@ -211,7 +216,62 @@ def tool_read_section(args: dict[str, Any]) -> str:
             end = other["line"] - 1
             break
     body = "\n".join(lines[h["line"] - 1:end]).rstrip()
-    return clip(f"`{rel(path)}` lines {h['line']}–{end}\n\n{body}", limit)
+    return f"`{rel(path)}` lines {h['line']}–{end}\n\n{body}"
+
+
+TASKS = ROOT / "docs" / "tasks"
+READ_REF = re.compile(r"^\s*[-*]\s+`([^`]+)`")
+
+
+def task_cards() -> list[Path]:
+    return sorted(p for p in TASKS.glob("*.md") if p.name.lower() != "readme.md") if TASKS.is_dir() else []
+
+
+def expand_ref(ref: str) -> str:
+    """Expand one 'Loe' reference: 'doc#anchor', 'doc', or 'path/to/file:12-40'."""
+    m = re.match(r"^(.+?):(\d+)-(\d+)$", ref)
+    if m:
+        target = (ROOT / m.group(1)).resolve()
+        if ROOT not in target.parents or not target.is_file():
+            return f"### `{ref}`\n\nNot in this checkout; read it in the branch worktree named on the card."
+        lines = read_text(target).splitlines()
+        start, end = int(m.group(2)), min(int(m.group(3)), len(lines))
+        body = "\n".join(lines[start - 1:end])
+        return f"### `{ref}`\n\n```\n{body}\n```"
+    doc, _, anchor = ref.partition("#")
+    try:
+        path = resolve_doc(doc)
+        return "### " + (section_text(path, anchor) if anchor else f"`{rel(path)}`\n\n{read_text(path)}")
+    except ToolError as error:
+        return f"### `{ref}`\n\n{error}"
+
+
+def tool_task(args: dict[str, Any]) -> str:
+    cards = task_cards()
+    wanted = (args.get("id") or "").strip().lower()
+    if not wanted:
+        rows = ["| Kaart | Pealkiri | Olek |", "|---|---|---|"]
+        for card in cards:
+            text = read_text(card)
+            title = next((l[2:].strip() for l in text.splitlines() if l.startswith("# ")), card.stem)
+            state = re.search(r"\*\*Olek:\*\*\s*([^·\n]+)", text)
+            rows.append(f"| `{card.stem}` | {title} | {state.group(1).strip() if state else '?'} |")
+        return "\n".join(rows) if cards else "No task cards in docs/tasks/."
+    hits = [c for c in cards if c.stem.lower() == wanted] or [c for c in cards if c.stem.lower().startswith(wanted)]
+    if len(hits) != 1:
+        names = ", ".join(c.stem for c in cards) or "none"
+        raise ToolError(f"No single task card matches '{args['id']}'. Cards: {names}.")
+    card = read_text(hits[0])
+    if not args.get("expand", True):
+        return clip(card)
+    refs, in_read = [], False
+    for line in card.splitlines():
+        if line.startswith("## "):
+            in_read = line[3:].strip().lower().startswith("loe")
+        elif in_read and (m := READ_REF.match(line)):
+            refs.append(m.group(1))
+    parts = [card] + (["\n---\n## Loe-loendi sisu\n"] + [expand_ref(r) for r in refs] if refs else [])
+    return clip("\n\n".join(parts))
 
 
 def tool_search(args: dict[str, Any]) -> str:
@@ -391,6 +451,14 @@ TOOLS: list[dict[str, Any]] = [
                                     "'#ühenduse-tase-connectionlevels', 'Piiks'."},
          "max_chars": {"type": "integer", "minimum": 500, "maximum": CHAR_LIMIT, "default": 12000,
                        "description": "Maximum characters to return."}}}},
+    {"name": "bb_task", "title": "Task card", "handler": tool_task, "annotations": RO,
+     "description": "Targeted task card from docs/tasks/ together with the sections listed under its "
+                    "'Loe' heading, in one call. This is everything a builder reads for the task; do not "
+                    "read the whole documentation. Without an id lists all cards with their state.",
+     "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
+         "id": {"type": "string", "maxLength": 60, "description": "Card id, e.g. 'M0-10' or 'TOOL-1'."},
+         "expand": {"type": "boolean", "default": True,
+                    "description": "Include the text of the 'Loe' references (default true)."}}}},
     {"name": "bb_search", "title": "Search documents", "handler": tool_search, "annotations": RO,
      "description": "Search Markdown documents line by line. Each hit shows path:line, the section "
                     "heading it is under, and the line.",

@@ -10,6 +10,7 @@ Väike MCP server, mille kaudu Claude Code, Codex (GPT) ja Gemini CLI näevad BB
 | `bb_list_docs` | kõigi Markdown-dokumentide tabel: tee, pealkiri, ridade arv, ADR-i staatus | ei |
 | `bb_outline` | ühe dokumendi pealkirjade puu koos ankrute ja reanumbritega | ei |
 | `bb_read_section` | ühe jaotise tekst (nt `03`, „9. Salvestus“); säästab konteksti | ei |
+| `bb_task` | [snaipriülesande](../../docs/tasks/README.md) kaart koos „Loe“-loendi jaotistega ühe päringuga; ilma id-ta kõigi kaartide loend koos olekuga | ei |
 | `bb_search` | otsing dokumentides; iga tulemuse juures on fail, rida ja jaotis | ei |
 | `bb_check_docs` | puuduvad lingid ja ankrud, paaritud koodiplokid, `;` Mermaidi järjestusdiagrammis, vanade lahenduste terminid | ei |
 | `bb_decisions` | ADR-id koos staatusega, kasutaja lahtised otsused ja ülevaatuste postkast | ei |

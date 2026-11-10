@@ -4,7 +4,17 @@
 
 Need dokumendid on ehituse alus. Kui kood ja dokumendid lähevad lahku, otsustab inimene, kumb muutub. Vaikimisi parandatakse koodi.
 
-## Lugemise järjekord
+## AI lühike stardikomplekt
+
+Alusta [AGENTS-ist](../AGENTS.md), seejärel loe [STATUS](STATUS.md), [WORKFLOW](WORKFLOW.md) ja [SKILLS](SKILLS.md). Need annavad jooksva seisu, töövõtted, mälu käsitluse ning enne töö alustamist vajalike oskuste valiku.
+
+[Rollijaotus ja töö üleandmise järjekord](07-teekaart.md#rollid) on teekaardil.
+
+Allolevad 01–08 on toote ja ehituse teemade omanikud. Loe neist ainult praeguse ülesandega seotud osi; arhitektuuri ADR-i või pika ülevaatuse lugemine on vajaduspõhine. Jooksev tööseis asub ainult STATUS-es.
+
+Kui BB MCP on seansis saadaval, kasuta jaotiste lugemiseks ja ühisteks kontrollideks [serveri tööriistu](../tools/mcp-bb/README.md); tööjärjekord ja piirangud on [WORKFLOW-s](WORKFLOW.md#bb-mcp-ühised-repo-tööriistad). Vajadusel saab samu faile lugeda otse.
+
+## Toote ja ehituse dokumendikaart
 
 | # | Dokument | Mida see otsustab |
 |---|---|---|
@@ -17,7 +27,18 @@ Need dokumendid on ehituse alus. Kui kood ja dokumendid lähevad lahku, otsustab
 | 07 | [Teekaart](07-teekaart.md) | Verstapostid M0–M6 ja iga verstaposti „valmis kui“ tingimused |
 | 08 | [BenchBeepi õppetunnid](08-benchbeepi-opetused.md) | Mis vanast projektist võetakse üle ja mida enam kunagi ei korrata |
 
+## Töö dokumendid
+
+| Kus | Mis | Kes kirjutab |
+|---|---|---|
+| [STATUS](STATUS.md) | jooksev seis ja järgmine samm | iga tegija töö lõpus |
+| [plans/](plans/) | verstaposti teostusplaan (ülesannete järjekord, ühised piirangud, vastuvõtt) | arhitekt |
+| [tasks/](tasks/README.md) | ühe ülesande kaart koos otsuste, testide ja üleandmisega | arhitekt kirjutab, ehitaja täidab üleandmise |
+| [api/](api/) | koodist genereeritud avalike liideste kokkuvõte (`pnpm api`), ära muuda käsitsi | tööriist |
+
 Otsused: [ADR-002 TypeScript + Tauri](adr/ADR-002-typescript-tauri.md) (kehtiv), [ADR-003 frontend ja backend eraldi](adr/ADR-003-frontend-backend.md) (kehtiv), [ADR-004 Plaat ja Skeem ühel mudelil](adr/ADR-004-kaks-vaadet-ja-uhendused.md) (kehtiv), [ADR-001 Flutter](adr/ADR-001-keel-ja-platvorm.md) (asendatud).
+
+Kasutaja tellitud [Codexi iseseisev tervikettepanek](review/2026-11-07-codex-tervikplaan.md): foto → komponendid → muudetav skeem → mõõtmised → märgistatud rajad. Uuring ja soovitus; ei asenda vastuvõetud otsuseid ega muuda 01–08 automaatselt.
 
 ## Lähtematerjal
 

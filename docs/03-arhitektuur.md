@@ -80,36 +80,29 @@ Kerge pnpm monorepo. Paketid on sisemised lähtekoodi paketid (`exports` viitab 
 pcb-kaardistaja/
   apps/
     desktop/                 # kompositsioonijuur: ainus koht, kus mootor ja UI kokku pannakse
-      src/main.tsx
-      src/engine.features.ts # mootori moodulid (rida mooduli kohta)
-      src/ui.features.ts     # UI moodulid (rida mooduli kohta)
+      src/main.tsx  src/runtime.ts  src/desktop-host.ts
       src-tauri/
-        src/ipc/             # Tauri käsud (tüübid genereeritakse TS-i)
-        src/storage/         # project_db.rs: lukk, CAS-salvestus, koopia, varukoopia, migratsiooni eelne koopia
-        src/photos/          # import failist või baitidest, EXIF, eelvaate variant, pcbk:// protokoll
-        src/ files.rs dialogs.rs recent.rs logging.rs
+        src/ipc.rs           # Tauri käsud (õhuke kiht); DTO-de TS tüübid genereeritakse (ts-rs)
+        src/storage/         # projektifail: lukk, CAS-salvestus, koopia, varukoopiad, taastamine, viimased
+        src/logging.rs  src/main.rs
+        tests/               # Rusti integratsioonitestid (päris protsessid ja failid)
         capabilities/        # failisüsteemi ulatus; võrguõigust v1 ei ole
-    web/                     # sama UI brauseris (storage-web): arendus ja Playwright
+    web/                     # sama UI brauseris (storage-web): arendus ja Playwright (e2e/)
   packages/
-    domain/                  # puhas: mudel + zod, geomeetria, korpused, võrgud, hindamine, skeem, valmidus, migratsioonid, import
-    contracts/               # DocumentEngine, ProjectService, Snapshot, käsud, sündmused, vead
-    engine/                  # CommandBus, History, OwnershipGuard, Derived, ProjectService, SaveCoordinator, Journal,
-                             # ModuleRegistry, üldkäsud (items.translate, items.delete), pordid
-    client/                  # hetktõmmise tellimine Reactile (useSnapshot, useDerived), sessionId filter
+    domain/                  # puhas: mudel + zod, geomeetria, korpused, mõõtmise lugemine, migratsioonid (hiljem võrgud, hindamine, skeem)
+    contracts/               # DocumentEngine, ProjectService, AppHost, Snapshot, laiendatavad CommandMap ja Derived, vead
+    engine/                  # mootor, ajalugu, omand, invariandid, tuletised, register, üldkäsud (items.*), ProjectService, SaveCoordinator, pordid
+    client/                  # hetktõmmise tellimine Reactile (useSnapshot), sessionId filter
     ui/
-      kit/                   # Button, Field, Segmented, Chip, Panel, Dialog, Toast, Slider, Tooltip
-      canvas/                # BoardCanvas, ViewTransform, LayerHost, ToolMachine, HitIndex, valik ja raamvalik
+      kit/                   # Button, Field, Panel, Dialog, Toast …
+      canvas/                # lõuend, vaate teisendus, tööriistad, üldine tabamus (M1.1)
       shell/                 # AppShell, StartScreen, UiRegistry, SessionStore, ViewStore, keymap, i18n/et.ts, ErrorBoundary
-    adapters/                # storage-tauri · storage-memory · storage-web
-    features/                # 11 moodulit, igaühel contract.ts · engine/ · ui/ (vt 05); kaust luuakse siis,
-                             # kui moodulit ehitatakse (M0: project, components; M1: photo, measurements;
-                             # M2: connections, nets, schematic; M3: repair; M4: dimensions, guide, export)
-      project/ photo/ components/ connections/ nets/ measurements/
-      repair/ dimensions/ schematic/ guide/ export/
-  tests/
-    fixtures/                # sünteetilised plaadid, prototüübi failid, vanad failivormingud
-    e2e/                     # Playwright (apps/web) + Tauri suitsutestid
-  tooling/                   # dependency-cruiser, eslint, tsconfig.base
+      app/                   # jagatud Workbench (AppHost kaudu nii veebis kui töölaual)
+    adapters/                # storage-tauri · storage-memory · storage-web; bindings/ (Rustist genereeritud)
+    features/                # moodulid, igaühel contract.ts · engine/ · ui/ (vt 05); kaust luuakse, kui moodulit ehitatakse
+      engine.ts  ui.ts       # moodulite register mõlemale rakendusele (rida mooduli kohta)
+      project/ components/ measurements/ …
+  tooling/                   # failipikkus, API kokkuvõte, sõltuvus- ja tüübikontrolli testid + testandmed
   docs/
 ```
 
@@ -412,6 +405,9 @@ Projekti faili kirjutab ainult `SaveCoordinator`, mis on mootoris `ProjectServic
   - Täiskoopiat ei kustutata enne, kui sellest sõltuvaid dokumendikoopiaid enam pole.
   - `ProjectService.backups({ projectId })` loetleb ka suletud projekti varukoopiad, argumendita `ProjectService.backups()` aga eeldab aktiivset projekti.
   - **Taastamine** käib alati uude faili: ajutine koopia valideeritakse ja saab siis lõpliku nime. Originaali ei kirjutata üle. Avalehel on projekti kaardil „Taasta varukoopiast…“. Taastatud fail kannab sama `project_id`-d.
+    - Sihtfail peab olema uus: kui lõplik nimi või selle `-journal`, `-wal` või `-shm` on olemas, tuleb viga `exists` ja dialoog laseb valida uue nime. Avaldamine ei asenda kunagi vahepeal tekkinud faili.
+    - **Faili tunnus (otsus 2026-11-10, teostus enne M1.2):** `project_id` tähistab projekti päritolu, `meta.file_id` füüsilist faili. Varukoopiad ja dokumendikoopia alus seotakse `file_id`-ga, et taastatud ja algne fail ei segaks teineteise varukoopiaid. Taastatud fail ja „Salvesta mujale…“ täielik koopia saavad uue `file_id`; meediata päästekoopia on kasutajale eraldi märgitud.
+    - Taastatud faili esimene avamine käib kitsa SQLite'i VFS-kaitse (`storage/restore/open_guard.rs`) kaudu. See keelab avamise ajal võõra päeviku rakendamise ja kustutamise. Kaitse on ainult taastamisel; tavaline avamine kasutab SQLite'i vaikimisi VFS-i. Uut kohandatud VFS-i ega `unsafe` FFI-d ei lisata ilma arhitekti otsuseta.
   - Kasutaja näeb varukoopiate asukohta ja nende kettakulu seadetes.
 
 ## 10. Pordid ja adapterid

@@ -8,9 +8,9 @@ Järjekord ([ADR-004](adr/ADR-004-kaks-vaadet-ja-uhendused.md)):
 |---|---|
 | M0 | projekti ja ühe komponendi, tagasivõtmise, sulgemise ja taasavamise |
 | M1 | foto, komponendid fotol ja esimese mõõtmise |
-| M2 | ühendused, võrgud ja muudetava skeemi |
+| M2 | ühendused, võrgud ja muudetava skeemi (neli osa: M2.1–M2.4) |
 | M3 | mõõtmise täisvoo ja remondi |
-| M4 | ekspordi, impordi, automaatpaigutuse abilise ja v1.0 väljalaske |
+| M4 | ekspordi, impordi, automaatpaigutuse abilise ja v1.0 väljalaske (kolm osa: M4.1–M4.3) |
 
 Kasutamise järjekord (foto → komponendid → skeem → mõõtmine → rajad) ei pea olema sama mis arendamise järjekord: parandaja saab mõõta juba M1-s ja kahe vaate koostöö kontrollitakse M2-s.
 
@@ -24,9 +24,11 @@ Kasutaja otsus 2026-11-07: **Codex ehitab, Claude on arhitekt.**
 | **Ehitaja** (Codex) | teeb plaani järgi koodi ja testid väikeste terviklike sammudena; jooksutab kontrollid (`pnpm check`, `cargo test`, Tauri suitsutest); kirjutab üleandmise: mis tehtud, millised kontrollid päriselt läbisid, mis jäi pooleli | ei muuda arhitektuuri, andmemudelit ega lepingut omal käel; kõrvalekalle või avastatud probleem tuleb arhitektile ettepanekuna |
 | **Kasutaja** | kinnitab ADR-id ja verstapostid, teeb visuaalse vastuvõtu ja kasutuskatse, annab loa commitiks ja pushiks | — |
 
-Töö käik: arhitekti plaan → ehitaja samm → ehitaja kontrollid ja üleandmine → arhitekti ülevaatus → parandused → kasutaja loal commit. Kaks AI-d ei kirjuta samal ajal samu faile.
+Töö käik: arhitekti plaan → arhitekti [ülesandekaart](tasks/README.md) → ehitaja samm → ehitaja kontrollid ja üleandmine → arhitekti ülevaatus → parandused → kasutaja loal commit. Kaks AI-d ei kirjuta samal ajal samu faile.
 
 ## M0 · Vundament ja esimene komponent
+
+**Olek: valmis ja avaldatud** versioonina `v0.1.0` (2026-11-09). Tõendid: [M0 kaardid](tasks/README.md), CI ja kasutaja suitsukontroll ([STATUS](STATUS.md)).
 
 **Eeltingimused arendusmasinas** (kõik olemas, kontrollitud 2026-11-07; täpsed versioonid on failis `docs/STATUS.md`):
 - Node.js LTS ja Corepack koos pnpm-iga;
@@ -48,18 +50,18 @@ Töö käik: arhitekti plaan → ehitaja samm → ehitaja kontrollid ja üleandm
 M0 ehitab **ühe päris mooduli**, `components`, läbi kõigi kolme osa: komponent ilma fotota (tähis, tüüp, märgistus, väärtus, jalad), nimetamine, tagasi/uuesti. Näidismoodulit ega teiste moodulite tühje kaustu ei tehta.
 
 **Valmis kui:**
-- [ ] `pnpm check` on roheline (tsc, eslint, dependency-cruiser, failipikkus, Vitest, Playwright, cargo test).
-- [ ] CI kukub, kui `features/*/ui` impordib `engine`-it; mootori testid jooksevad Node'is ilma DOM-ita.
-- [ ] Uus plaat → lisa komponent → nimeta → `Ctrl+Z` / `Ctrl+Y` → sulge → ava viimastest: komponent, nimi ja vaade on alles. Sama UI töötab nii `apps/web` kui ka `apps/desktop` all; erinev on ainult salvestuse adapter.
-- [ ] Fail `.pcbk` avaneb ka pärast äpi jõuga sulgemist (kirjutamise ajal tapetud protsess).
-- [ ] Kui projekti fail muutub kirjutuskaitstuks või ketas saab täis, tuleb punane riba. Akna sulgemine ei kaota muudatusi ilma „Sulge salvestamata“ kinnituseta ja „Salvesta mujale…“ loob koopia, kus on samad andmed ([03 § 9](03-arhitektuur.md#salvestuse-vastutaja-savecoordinator-moodul-project)).
-- [ ] Sama faili teine avamine toob ette olemasoleva akna. Teise protsessi poolt lukustatud fail annab teate „Fail on avatud mujal“ ega riku midagi (kaks päris protsessi).
-- [ ] `project_save` ei kirjuta, kui failis pole oodatud `base_rev` (`cargo test`). Vana `sessionId`-ga vastus ja sündmus jäetakse kõrvale (mootori test).
-- [ ] Käsk, mis muudab välja väljaspool oma `owns` ja `alsoWrites` loendit või rikub invarianti, lükatakse tagasi ka väljalaske ehituses. Dokument, ajalugu ja salvestusjärjekord jäävad muutmata.
-- [ ] Tagasivõtmine suurendab `rev`-i ja salvestus kirjutab taastatud sisu.
-- [ ] Ainult vaate muutus (M0-s paneelide laius ja avatus ning vahekaart; suum ja kihid lisanduvad lõuendiga M1-s) säilib sulgemisel ilma ühegi dokumendikäsuta. Pidev töö ei lükka salvestamist edasi kauem kui 10 s.
-- [ ] Täisvarukoopia tekib enne migratsiooni (testmigratsiooniga). Taastamine avalehelt uude faili on läbi proovitud.
-- [ ] CI ehitab `.msi` paigaldaja.
+- [x] `pnpm check` on roheline (tsc, eslint, dependency-cruiser, failipikkus, Vitest, Playwright, cargo test).
+- [x] CI kukub, kui `features/*/ui` impordib `engine`-it; mootori testid jooksevad Node'is ilma DOM-ita.
+- [x] Uus plaat → lisa komponent → nimeta → `Ctrl+Z` / `Ctrl+Y` → sulge → ava viimastest: komponent, nimi ja vaade on alles. Sama UI töötab nii `apps/web` kui ka `apps/desktop` all; erinev on ainult salvestuse adapter.
+- [x] Fail `.pcbk` avaneb ka pärast äpi jõuga sulgemist (kirjutamise ajal tapetud protsess).
+- [x] Kui projekti fail muutub kirjutuskaitstuks või ketas saab täis, tuleb punane riba. Akna sulgemine ei kaota muudatusi ilma „Sulge salvestamata“ kinnituseta ja „Salvesta mujale…“ loob koopia, kus on samad andmed ([03 § 9](03-arhitektuur.md#salvestuse-vastutaja-savecoordinator-moodul-project)).
+- [x] Sama faili teine avamine toob ette olemasoleva akna. Teise protsessi poolt lukustatud fail annab teate „Fail on avatud mujal“ ega riku midagi (kaks päris protsessi).
+- [x] `project_save` ei kirjuta, kui failis pole oodatud `base_rev` (`cargo test`). Vana `sessionId`-ga vastus ja sündmus jäetakse kõrvale (mootori test).
+- [x] Käsk, mis muudab välja väljaspool oma `owns` ja `alsoWrites` loendit või rikub invarianti, lükatakse tagasi ka väljalaske ehituses. Dokument, ajalugu ja salvestusjärjekord jäävad muutmata.
+- [x] Tagasivõtmine suurendab `rev`-i ja salvestus kirjutab taastatud sisu.
+- [x] Ainult vaate muutus (M0-s paneelide laius ja avatus ning vahekaart; suum ja kihid lisanduvad lõuendiga M1-s) säilib sulgemisel ilma ühegi dokumendikäsuta. Pidev töö ei lükka salvestamist edasi kauem kui 10 s.
+- [x] Täisvarukoopia tekib enne migratsiooni (testmigratsiooniga). Taastamine avalehelt uude faili on läbi proovitud.
+- [x] CI ehitab `.msi` paigaldaja.
 
 ## M1 · Foto, komponendid ja esimene mõõtmine
 
@@ -93,7 +95,10 @@ _M1.1 töötab virtuaalsel tööpinnal ilma fotota ([03 § 7.1](03-arhitektuur.m
 - nähtavus ja kontrast, pööramine ja peegeldamine kogu stseenile;
 - kalibreerimine;
 - **varajane jõudlusproov** päris Tauri aknas tiheda sünteetilise plaadiga (sildid, valik, foto);
-- **sünteetilise plaadi generaator** (`tooling/fixtures`): ehitab suure dokumendi tavaliste käskudega; seda kasutavad jõudlusproov ning M2–M3 testid.
+- **sünteetilise plaadi generaator** (`tooling/fixtures`): ehitab suure dokumendi tavaliste käskudega; seda kasutavad jõudlusproov ning M2–M3 testid;
+- foto lohistamine avalehele loob uue plaadi selle fotoga ([02 § 1](02-kasutaja-teekond.md#1-äpi-avamine-avaleht));
+- **faili tunnus `meta.file_id`**: varukoopiad seotakse failiga, taastatud fail ja täielik koopia saavad uue tunnuse ([03 § 9](03-arhitektuur.md#9-salvestus-ja-projekti-fail));
+- foto ekspordi proov PNG-sse (kuidas fotobaidid frontendini jõuavad) ja otsus, kas töölaua suitsukontrolli viis põhivoogu automatiseeritakse.
 
 **Valmis kui:**
 - [ ] Esimene komponent on paigas kõige rohkem 3 tegevusega pärast foto valimist.
@@ -102,12 +107,15 @@ _M1.1 töötab virtuaalsel tööpinnal ilma fotota ([03 § 7.1](03-arhitektuur.m
 - [ ] 48 MP foto avaneb ilma, et kuvatakse üle 12 MP pilti; „Salvesta mujale…“ koopia avaneb koos originaalfotoga.
 - [ ] Katkenud foto import ei jäta dokumenti viidet puuduvale fotole.
 - [ ] Jõudlusproovi tulemus on kirja pandud: kas SVG kannab välja või kavandatakse jalgadele Canvas-kiht.
+- [ ] Taastatud ja algne sama `project_id`-ga fail ei sega teineteise varukoopiaid (eri `file_id`); dokumendikoopia taastub ainult oma faili aluse peale.
+- [ ] Foto lohistamine avalehele avab uue plaadi selle fotoga.
 
 ### M1.3 · Korpuste teek
-**Sisu:** kõik ~40 korpust prototüübist (samad arvud) ja korpuse vahetus koos jalgade vastavusega ([04 › Kustutamise reeglid](04-andmemudel.md#kustutamise-reeglid)).
+**Sisu:** kõik ~40 korpust prototüübist (samad arvud), sh **punktkomponendid** (testpunkt, via, padjand, ava), ja korpuse vahetus koos jalgade vastavusega ([04 › Kustutamise reeglid](04-andmemudel.md#kustutamise-reeglid)). Via on vajalik M2.1 kihireegli jaoks.
 
 **Valmis kui:**
-- [ ] SOIC-8 jalg 1 on (−2,8; −1,905) mm ja jalg 8 (2,8; −1,905) mm; QFP-44 jalg 12 on alumisel küljel (ühiktest).
+- [ ] SOIC-8 jalg 1 on (−2,775; −1,905) mm ja jalg 8 (2,775; −1,905) mm. QFP-44 jalg 12 on alumisel küljel (ühiktest).
+  SOIC-8 x-koordinaadi absoluutväärtus 2,775 mm tuleb prototüübi `gSop` valemist `3,9 / 2 + 1,55 / 2 + 0,05`.
 - [ ] SOIC-8 → SOIC-14 vahetus hoiab jalad 1–8 seotuna (sama `uid`); SOIC-14 → SOIC-8 küsib kinnitust ja loetleb kaduvate jalgade mõju; nende jalgade mõõtmised muutuvad ajaloolisteks. SOIC-8 → SOIC-14 tagasi ei aktiveeri vanu mõõtmisi (uus `uid`), aga `Ctrl+Z` aktiveerib.
 
 ### M1.4 · Suurus ja joondus
@@ -121,7 +129,7 @@ _M1.1 töötab virtuaalsel tööpinnal ilma fotota ([03 § 7.1](03-arhitektuur.m
 
 ## M2 · Ühendused, võrgud ja muudetav skeem
 
-M2 jaguneb kolmeks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse järjest: võrgud plaadil, siis mõõtmisest tulenev tase, siis skeem.
+M2 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse järjest: võrgud plaadil, siis mõõtmisest tulenev tase, siis skeemi sümbolid ja paigutus, siis skeemi juhtmed ja sildid.
 
 ### M2.1 · Ühendused ja võrgud plaadil
 **Sisu:** moodulid `connections` ja `nets`.
@@ -132,13 +140,15 @@ M2 jaguneb kolmeks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse jär
   - „Eemalda joonistus“ vs „Kustuta ühendus“;
   - raja silt (võrgu nimi) koos lohistatava nihkega;
 - **võrgud** arvutatakse ainult ühendustest (ilma läheduseta) koos kihireegliga; rollid ja värvid, rollikonflikt, negatiivse läbivuse hoiatus, lühistatud komponendi hoiatus, „Ühenda võrguga…“, võrguloendi eksport;
-- paremklõpsu menüü laieneb ühenduse tegevustega (alusta rada jalalt, kustuta ühendus).
+- paremklõpsu menüü laieneb ühenduse tegevustega (alusta rada jalalt, kustuta ühendus);
+- **raamvalik ja mitmikvalik** (`Shift`+klõps), mida kiirühendus vajab ([02](02-kasutaja-teekond.md)).
 
 **Valmis kui:**
 - [ ] Kaks ristuvat rada ja raja ots 1 px kaugusel teisest rajast **ei** liitu. Haru tekib ainult liitepunktiga. Mõõtkava muutmine ei muuda ühtegi võrku. Pealmise ja alumise kihi rajad ühinevad ainult läbiva jala kaudu (ühiktestid).
 - [ ] Liitepunkti eemaldamine ei jäta võrgusildile katkist ankrut.
 - [ ] Kaks eraldi GND-nimega võrku jäävad eraldi; GND + 5V liitmine annab konflikti ja ei kirjuta rolli üle; tagasivõtmine taastab.
 - [ ] „Eemalda joonistus“ jätab ühenduse alles (õhujoonena); „Kustuta ühendus“ eemaldab selle; mõlemad on tagasivõetavad.
+- [ ] **Jõudlus:** sünteetiline plaat 300 komponendi, 3000 jala ja 1000 rajaga püsib [03 § 7.3](03-arhitektuur.md#73-kihid-ja-jõudlus) eelarves; võrkude arvutus käsu järel on mõõdetud ja kirja pandud.
 
 ### M2.2 · Piiksumisrežiim ja ühenduse tase
 **Sisu:** piiksumisrežiim moodulis `measurements` (`beep.record`) ja ühenduse tase (`connectionLevels`).
@@ -151,19 +161,28 @@ M2 jaguneb kolmeks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse jär
 - [ ] Mõõtmise kustutamine või remondist tulenev aegumine võtab ühenduselt ✓-märgi ära; uus tavaline läbivusmõõtmine samade jalgade vahel taastab selle ([04 › Ühenduse tase](04-andmemudel.md#ühenduse-tase-connectionlevels)).
 - [ ] 50 jala kaardistamine piiksumisrežiimis võtab alla 2 minuti **kasutuskatses**.
 
-### M2.3 · Muudetav skeem
-**Sisu:** moodul `schematic`.
+### M2.3 · Skeemi sümbolid ja paigutus
+**Sisu:** moodul `schematic`, esimene pool.
+- **algab lõuendi taaskasutuse prooviga:** sama lõuend teise koordinaadistikuga (skeemi ruudustik) ilma lõuendi koodi kopeerimata;
 - komponendi lisamine kummaski vaates ja „Plaadile/Skeemile paigutamata“ loendid;
 - **sümbolid kõigile `ComponentKind` tüüpidele** (~23: takisti, kondensaator, diood, transistorid, IC-kast jt; sümbol tuleb tüübist, mitte korpusest), käsitsi paigutus ja pööramine, nummerdatud kast tundmatule korpusele, jalgade funktsiooni määramine;
-- ühendusjooned ja liitepunktid skeemil, võrgusildid, toite- ja maandussümbolid;
-- ühine valik ja „Näita teises vaates“;
-- mõõtmine skeemilt.
-
-Tekstimärkused (`textNotes`) ei kuulu M2-sse: neid omab moodul `dimensions` ja need tulevad M4-s.
+- ühine valik ja „Näita teises vaates“.
 
 **Valmis kui:**
-- [ ] Stsenaariumi sammud 6–9 lähevad läbi (kogu M2: M2.1–M2.3 kokku).
-- [ ] Skeemil lisatud takisti paigutatakse hiljem fotole sama id-ga; ühes vaates loodud ühendus on teises vaates olemas; tähise ümbernimetamine ei muuda ühendusi ega mõõtmisi.
+- [ ] Skeemil lisatud takisti paigutatakse hiljem fotole sama id-ga; tähise ümbernimetamine ei muuda ühendusi ega mõõtmisi.
+- [ ] Skeem kasutab sama lõuendi baasi ja tabamust nagu plaat (ühiskood, mitte koopia).
+- [ ] **Jõudlus:** 300 sümboliga skeem püsib [03 § 7.3](03-arhitektuur.md#73-kihid-ja-jõudlus) eelarves.
+
+### M2.4 · Skeemi juhtmed, sildid ja mõõtmine skeemilt
+**Sisu:** moodul `schematic`, teine pool.
+- ühendusjooned ja liitepunktid skeemil, võrgusildid, toite- ja maandussümbolid;
+- mõõtmine skeemilt.
+
+Tekstimärkused (`textNotes`) ei kuulu M2-sse: neid omab moodul `dimensions` ja need tulevad M4.1-s.
+
+**Valmis kui:**
+- [ ] Stsenaariumi sammud 6–9 lähevad läbi (kogu M2: M2.1–M2.4 kokku).
+- [ ] Ühes vaates loodud ühendus on teises vaates olemas.
 - [ ] „Eemalda joonistus“ jätab ühenduse ja skeemi alles; „Kustuta ühendus“ eemaldab selle mõlemast vaatest; mõlemad on tagasivõetavad.
 
 ## M3 · Mõõtmise täisvoog ja remont
@@ -176,7 +195,8 @@ Tekstimärkused (`textNotes`) ei kuulu M2-sse: neid omab moodul `dimensions` ja 
 - mõõtmiste nimekiri ja filtrid, kahtlaste vaade;
 - kahjustatud alad;
 - remonditoimingud koos mõjuga (komponent, võrgud, kogu plaat, mitte midagi) ja aegumisega;
-- käsupalett `Ctrl+K`: otsing eesti keeles üle kõigi registreeritud käskude ja tööriistade ([01 › põhimõte 7](01-pohimotted.md)).
+- käsupalett `Ctrl+K`: otsing eesti keeles üle kõigi registreeritud käskude ja tööriistade ([01 › põhimõte 7](01-pohimotted.md));
+- kiirklahvide abi `?` (sama registri põhjal nagu käsupalett).
 
 **Valmis kui:**
 - [ ] Stsenaariumi sammud 10–11 lähevad läbi.
@@ -188,19 +208,27 @@ Tekstimärkused (`textNotes`) ei kuulu M2-sse: neid omab moodul `dimensions` ja 
 
 ## M4 · Eksport, import ja väljalase
 
+M4 jaguneb kolmeks osaks; iga osa võetakse eraldi vastu. **v1.0 on M4.3 lõpus.**
+
+### M4.1 · Mõõtjooned, juhend ja automaatpaigutus
 **Sisu:**
-- moodulid `dimensions`, `guide` ja `export`;
-- skeemi **automaatpaigutus abilisena** (ELK-i proov 20–50 komponendiga, ainult paigutamata või valitud sümbolid);
+- moodulid `dimensions` ja `guide`;
 - mõõtjooned ja kontuur, valmiduse näitajad ja „Märgi kaardistus valmis“;
 - tekstimärkused mõlemas vaates (`textNotes`, `notes.*`) koos mooduliga `dimensions`;
-- kõik ekspordid, remondiraport, kaardi ja skeemi printimine;
-- avalehe „Näidisprojekt“: avaneb kirjutuskaitstud koopia näidisplaadist, esimene muudatus pakub „Salvesta oma koopiana“ ([02 § 1](02-kasutaja-teekond.md));
-- prototüübi import koos kontrollnimekirjaga („Kontrolli neid ühenduskohti“);
-- paigaldus ja allkirjastamine ([03 § 14](03-arhitektuur.md#14-paigaldus-ja-väljalase)).
+- skeemi **automaatpaigutus abilisena** (ELK-i proov 20–50 komponendiga, ainult paigutamata või valitud sümbolid);
+- seadete vaade: teema, varukoopiate asukoht ja kettakulu ([03 § 9](03-arhitektuur.md#9-salvestus-ja-projekti-fail)).
 
 **Valmis kui:**
-- [ ] Terve [02 § 16](02-kasutaja-teekond.md#16-vastuvõtustsenaarium-e2e-test-plaat-algusest-lõpuni) läheb läbi (e2e `full-flow.spec.ts`).
 - [ ] Automaatpaigutus ei liiguta kasutaja paigutatud sümboleid; „Paiguta valik uuesti“ on tagasivõetav.
+- [ ] Seadetes on näha varukoopiate asukoht ja nende kettakulu.
+
+### M4.2 · Ekspordid, print ja import
+**Sisu:**
+- moodul `export`: kõik ekspordid, remondiraport, kaardi ja skeemi printimine;
+- uuema äpiga tehtud faili vaatamine kirjutuskaitstult ja eksport ([03 § 9](03-arhitektuur.md#9-salvestus-ja-projekti-fail));
+- prototüübi import koos kontrollnimekirjaga („Kontrolli neid ühenduskohti“).
+
+**Valmis kui:**
 - [ ] SVG eksport on 1:1 (kontuur 76 mm + 2 × 5 mm varu → `width="86mm"`); kalibreerimata plaadi ekspordil on märge.
 - [ ] CSV-d avanevad eestikeelses Excelis õigete veergudega.
 - [ ] Oma eksport imporditakse tagasi ka pärast komponentide kustutamist; vigase viitega fail lükatakse tagasi ilma avatud projekti puudutamata.
@@ -209,6 +237,16 @@ Tekstimärkused (`textNotes`) ei kuulu M2-sse: neid omab moodul `dimensions` ja 
   - sama kihi lähedane vaba ots ootab kinnitust;
   - eri kihtide kattumisest läbiviiku ei teki;
   - kasutaja näeb võrgu muutust enne lõpetamist.
+- [ ] Uuema vorminguga fail avaneb ainult vaatamiseks ja ekspordiks; sinna midagi ei kirjutata.
+
+### M4.3 · Näidisprojekt, avaleht ja väljalase v1.0
+**Sisu:**
+- avalehe „Näidisprojekt“: avaneb kirjutuskaitstud koopia näidisplaadist, esimene muudatus pakub „Salvesta oma koopiana“ ([02 § 1](02-kasutaja-teekond.md));
+- avalehe kaartidel pisipilt ja edenemisriba;
+- paigaldus ja allkirjastamine ([03 § 14](03-arhitektuur.md#14-paigaldus-ja-väljalase)).
+
+**Valmis kui:**
+- [ ] Terve [02 § 16](02-kasutaja-teekond.md#16-vastuvõtustsenaarium-e2e-test-plaat-algusest-lõpuni) läheb läbi (e2e `full-flow.spec.ts`).
 - [ ] `.msi` paigaldub võrguühenduseta masinasse; `.pcbk` topeltklõps avab äpi; uue versiooni paigaldamine säilitab projektid ja varukoopiad.
 - [ ] **v1.0 väljalase:** `.msi` GitHubi Release'is ja kasutaja visuaalne vastuvõtt. Allkirjastamine on kasutaja otsus: kui koodiallkirjastamise sertifikaat on seadistatud, on `.msi` allkirjastatud; muidu on Release'i märge „allkirjastamata“ ja SmartScreeni hoiatus on teada piirang.
 
@@ -231,4 +269,4 @@ Tekstimärkused (`textNotes`) ei kuulu M2-sse: neid omab moodul `dimensions` ja 
 
 ## Hiljem (pole ajastatud)
 
-Mõõteriista otseühendus (seriaal, Bluetooth), KiCadi netlist ja skeemi eksport, andmelehtede otsing, telefoni abirakendus pildistamiseks, mitme plaadi võrdlus (töötav ja vigane plaat), automaatne uuendaja, varundus või sünk (eraldi ADR), mitme joonistuse tugi ühele ühendusele.
+Mõõteriista otseühendus (seriaal, Bluetooth), KiCadi netlist ja skeemi eksport, andmelehtede otsing, telefoni abirakendus pildistamiseks, mitme plaadi võrdlus (töötav ja vigane plaat), automaatne uuendaja, varundus või sünk (eraldi ADR), mitme joonistuse tugi ühele ühendusele, manused (andmelehe joonis komponendile).

@@ -15,7 +15,7 @@ Kõik tüübid on failides `packages/domain/src/model/*.ts` koos zod-skeemidega.
   - Tähise, jala nime või asukoha muutmine viiteid ei muuda.
 - **Ühendatus on ainult ühendustes.** Võrk arvutatakse ainult `Connection`-itest. Kaugus, ristumine, mõõtkava, suum ega nimi ei liida võrke ([Võrkude arvutus](#võrkude-arvutus-resolvenets)).
 - **Teadmata jääb teadmata.** Väärtus, märgistus ja jala nimi on vaikimisi tühjad. Äpp ei pane nendesse oletusi.
-- **Projekti identiteet** (`project_id`, `copied_from_project_id`) on faili `meta` tabelis, mitte dokumendis, sest see ei ole tagasivõetav andmetükk ([03 § 9](03-arhitektuur.md#9-salvestus-ja-projekti-fail)).
+- **Projekti identiteet** (`project_id`, `copied_from_project_id`) on faili `meta` tabelis, mitte dokumendis, sest see ei ole tagasivõetav andmetükk ([03 § 9](03-arhitektuur.md#9-salvestus-ja-projekti-fail)). Enne M1.2 lisandub `meta.file_id` (füüsilise faili tunnus), millega seotakse varukoopiad; taastatud fail ja täielik koopia saavad uue `file_id`.
 - **Ühikud ja koordinaadid:**
   - plaadi asukohad on **plaadi tööpinna** pikslites; v1-s on need esimese foto originaalpikslid;
   - korpuse geomeetria on millimeetrites;

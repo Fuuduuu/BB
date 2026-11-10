@@ -10,22 +10,30 @@ beforeEach(() => {
 describe('session state', () => {
   test('selection belongs to the session and resets when another project is activated', () => {
     useSessionStore.getState().reset('session_a');
-    useSessionStore.getState().setSelection({ kind: 'component', id: 'cmp_1' });
-    expect(useSessionStore.getState().selection).toEqual({ kind: 'component', id: 'cmp_1' });
+    useSessionStore.getState().setSelection({ items: [{ kind: 'component', id: 'cmp_1' }] });
+    useSessionStore.getState().setToolId('pan');
+    useSessionStore.getState().setPreview({ owner: 'test', data: { x: 10 } });
+    expect(useSessionStore.getState().selection).toEqual({
+      items: [{ kind: 'component', id: 'cmp_1' }],
+    });
     useSessionStore.getState().reset('session_b');
-    expect(useSessionStore.getState().sessionId).toBe('session_b');
-    expect(useSessionStore.getState().selection).toEqual({ kind: 'none' });
+    expect(useSessionStore.getState()).toMatchObject({
+      sessionId: 'session_b',
+      selection: { items: [] },
+      toolId: 'select',
+      preview: null,
+    });
   });
 
   test('changing panels and appearance never changes the selected object', () => {
-    useSessionStore.getState().setSelection({ kind: 'pin', componentId: 'cmp_1', pinId: '7' });
+    useSessionStore
+      .getState()
+      .setSelection({ items: [{ kind: 'pin', componentId: 'cmp_1', id: '7' }] });
     useViewStore.getState().setNavigatorTab('log');
     useViewStore.getState().setContextOpen(false);
     useViewStore.getState().setTheme('dark');
     expect(useSessionStore.getState().selection).toEqual({
-      kind: 'pin',
-      componentId: 'cmp_1',
-      pinId: '7',
+      items: [{ kind: 'pin', componentId: 'cmp_1', id: '7' }],
     });
   });
 });
@@ -56,6 +64,7 @@ describe('view state', () => {
       navigatorTab: 'log',
       contextWidth: 390,
       contextOpen: false,
+      boardView: { zoom: 2, pan: { x: -4, y: 10 } },
     });
     const view = useViewStore.getState().getView();
     expect(view).toEqual({
@@ -63,6 +72,7 @@ describe('view state', () => {
       navigatorTab: 'log',
       contextWidth: 390,
       contextOpen: false,
+      boardView: { zoom: 2, pan: { x: -4, y: 10 } },
     });
     expect(useViewStore.getState()).toMatchObject({
       theme: 'dark',
@@ -71,14 +81,17 @@ describe('view state', () => {
     });
     view.navigatorWidth = 250;
     view.contextWidth = 280;
+    view.boardView.pan.x = 10;
     expect(useViewStore.getState().navigatorWidth).toBe(360);
     expect(useViewStore.getState().contextWidth).toBe(390);
+    expect(useViewStore.getState().boardView.pan.x).toBe(-4);
     useViewStore.getState().restore(null);
     expect(useViewStore.getState().getView()).toEqual({
       navigatorWidth: 300,
       navigatorTab: 'components',
       contextWidth: 340,
       contextOpen: true,
+      boardView: { zoom: 1, pan: { x: 0, y: 0 } },
     });
     expect(useViewStore.getState().theme).toBe('dark');
   });
@@ -95,6 +108,7 @@ describe('view state', () => {
       navigatorTab: 'components',
       contextWidth: 340,
       contextOpen: true,
+      boardView: { zoom: 1, pan: { x: 0, y: 0 } },
     });
     useViewStore.getState().restore({
       navigatorWidth: -100,

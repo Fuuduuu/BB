@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./footprints": "./src/footprints/index.ts",
     "./geometry": "./src/geometry/board.ts",
     "./measure": "./src/measure/index.ts",
     "./measure/reading": "./src/measure/reading.ts"

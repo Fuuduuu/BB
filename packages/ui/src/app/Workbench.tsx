@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
+import { useEngine, useSnapshot } from '@pcbk/client';
 import type { AppHost } from '@pcbk/contracts';
+import { Canvas } from '../canvas/Canvas';
 import { Button } from '../kit/Button';
 import { AppShell } from '../shell/AppShell';
 import { CloseDialog } from '../shell/CloseDialog';
@@ -10,8 +12,35 @@ import { StartScreen } from '../shell/StartScreen';
 import { UiRegistry, type UiModule } from '../shell/UiRegistry';
 import { et } from '../shell/i18n/et';
 import { useTheme } from '../shell/use-theme';
+import { useViewStore } from '../shell/view-store';
 import { useWorkbench } from './use-workbench';
 import './workbench.css';
+
+const boardSurface = { width: 2000, height: 1400 };
+
+function BoardCanvas({ registry }: { registry: UiRegistry }) {
+  const engine = useEngine();
+  const snapshot = useSnapshot((current) => current);
+  const execute = useMemo(() => engine.execute.bind(engine), [engine]);
+  const layers = useMemo(() => registry.canvasLayers(), [registry]);
+  const tools = useMemo(() => registry.tools(), [registry]);
+  const keys = useMemo(() => registry.keys(), [registry]);
+  const view = useViewStore((state) => state.boardView);
+  const setBoardView = useViewStore((state) => state.setBoardView);
+  return (
+    <Canvas
+      layers={layers}
+      tools={tools}
+      keys={keys}
+      snapshot={snapshot}
+      execute={execute}
+      sceneTransform="none"
+      surface={boardSurface}
+      view={view}
+      onViewChange={setBoardView}
+    />
+  );
+}
 
 export function Workbench({
   host,
@@ -37,6 +66,7 @@ export function Workbench({
         <AppShell
           manageTheme={false}
           registry={registry}
+          canvas={<BoardCanvas registry={registry} />}
           copyAvailable={copyAvailable}
           onRetrySave={workbench.retrySave}
           onSaveElsewhere={() => workbench.copy('stay')}

@@ -3,7 +3,7 @@ export interface HistoryActions {
   redo(): void;
 }
 
-function isEditing(event: KeyboardEvent): boolean {
+export function isEditing(event: KeyboardEvent): boolean {
   for (const node of event.composedPath()) {
     if (!(node instanceof Element)) continue;
     if (node.matches('dialog[open], [role="dialog"][aria-modal="true"]')) return true;

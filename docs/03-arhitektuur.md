@@ -135,10 +135,12 @@ export interface UiModule {
   id: string;
   title: string;                       // 'Mõõtmised'
   tools?: ToolSpec[];                  // lõuendi tööriistad
-  layers?: LayerSpec[];                // lõuendi kihid, z-järjekord
+  canvasLayers?: LayerSpec[];          // lõuendi kihid, z-järjekord
+  onSessionReset?(): void;             // mooduli seansi oleku lähtestamine
   schematicLayers?: LayerSpec[];
   navigatorTabs?: PanelSpec[];
   contextSections?: ContextSectionSpec[];
+  contextPinned?: PinnedSpec[];
   bottomBar?: SlotSpec[];
   topBar?: SlotSpec[];
   exporters?: ExporterSpec[];          // ekspordi akna valikud
@@ -150,16 +152,22 @@ export interface UiModule {
 
 export interface ContextSectionSpec {
   id: string; order: number;
-  appliesTo: SelectionKind[];          // 'component' | 'pin' | 'connection' | 'net' | 'measurement' | 'none'
+  appliesTo: string[];                 // kõik valitud elemendid peavad sobima
   render: (props: { selection: Selection }) => JSX.Element | null;
 }
+export interface PinnedSpec {
+  id: string; order: number;
+  useVisible(): boolean;
+  render(): ReactNode;
+}
 export interface ToolSpec {
-  id: string; label: string; icon: IconName; key?: string; group: 'select' | 'draw' | 'measure' | 'mechanical';
+  id: string; label: string; icon: string; key?: string; group: 'select' | 'draw' | 'measure' | 'mechanical';
   create: () => CanvasTool;            // olekumasin, vt § 7.2
 }
 export interface LayerSpec {
   id: string; z: number;               // 0 foto … 100 ülekate
-  render: (ctx: LayerContext) => JSX.Element | null;
+  render(props: { snapshot: Snapshot; preview: Preview | null; zoom: number }): ReactNode;
+  hits?(snapshot: Snapshot): HitItem[];
 }
 ```
 
@@ -170,7 +178,9 @@ export interface LayerSpec {
 - igal UI moodulil on samanimeline mootori moodul (erandid on ainult UI moodulid `guide` ja `export`);
 - igal `BoardDoc` väljal on täpselt üks omanik.
 
-Vea korral käivitub äpp veateatega, mitte vaikselt pooliku kujuga.
+Vea korral käivitub äpp veateatega. UI register sorteerib `canvasLayers` kihid `z` järgi ning kontrollib kihtide ja tööriistade ID-sid. Lõuend kasutab kihtide üldisi punkt-, lõigu- ja alakuju tabamusi. Valik ja vaate nihutamine kuuluvad lõuendi baasi.
+
+Kest joonistab nähtavad `contextPinned` sektsioonid kontekstipaneeli ülaossa `order` järjekorras. Iga sektsiooni `useVisible` loeb mooduli enda olekut. Valiku tühjendamisel jääb nähtav sektsioon alles. Kui kitsal ekraanil muutub sektsioon nähtavaks, avab kest kontekstipaneeli. Mõõda-plokk kasutab seda ühendust pärast mõõtmiskoha valimist.
 
 **Moodulitevaheline suhtlus:**
 - **Muutmine:** `engine.execute('connections.add', {...})`. Ükski UI osa ei muuda dokumenti.
@@ -190,7 +200,7 @@ Uue mooduli mall ja moodulite kirjeldused on failis [05-moodulid.md](05-moodulid
 | Hoidla | Kus | Sisu | Tagasivõetav | Salvestub |
 |---|---|---|---|---|
 | **Dokument** | mootor | `BoardDoc` (külmutatud), `rev`, ajalugu | jah | `document` tabel |
-| **SessionStore** | frontend | valik, hover, aktiivne tööriist, **eelvaade** (lohistamine, suurus, pööre, pooleli rada, raamvalik), mõõtmise mustandid jala kaupa, piiksu ankur | ei | ei |
+| **SessionStore** | frontend | valik, aktiivse tööriista `toolId` ja üks üldine `preview` pesa | ei | ei |
 | **ViewStore** | frontend | suum ja nihe (eraldi plaadi- ja skeemivaatele), kihid, foto nähtavus, kontrast, aktiivne vahekaart, paneelid | ei | `view` tabel (`ProjectService.saveView`) |
 
 **Hetktõmmis.** Frontend loeb dokumenti ainult hetktõmmisest `Snapshot { sessionId, rev, doc, derived, history }`, mille mootor avaldab pärast iga dokumenti muutvat käsku.
@@ -199,9 +209,13 @@ Uue mooduli mall ja moodulite kirjeldused on failis [05-moodulid.md](05-moodulid
 - React tellib hetktõmmist `useSyncExternalStore` kaudu ning viide muutub ainult käsu järel.
 - Klient eirab hetktõmmist ja sündmust, mille `sessionId` pole aktiivne, ning sama või väiksema `rev`-iga hetktõmmist.
 
-**Valik** on ainult `SessionStore`'is. Tööriista, vahekaardi või filtri vahetus ei muuda valikut; valikut muudab ainult kasutaja klõps (põhimõte 5 failis [01](01-pohimotted.md)).
+**Valik** on `SessionStore`-is kujul `{ items: SelectionItem[] }`. Igal elemendil on `kind` ja `id`. Jala puhul on `id` jala kohalik ID ning `componentId` määrab komponendi. M1.1 valib korraga ühe elemendi. Kontekstisektsioon sobib mittetühjale valikule, mille iga element on sektsiooni `appliesTo` loendis. Tühi klõps ja `Esc` tühjendavad valiku. Kadunud element eemaldatakse valikust.
 
-**Eelvaade ei ole dokument.** Lohistamise, suuruse muutmise, pööramise ja raja joonistamise ajal hoiab tööriist ajutist teisendust `SessionStore`'is. See kehtib plaadil ja skeemil ühtemoodi.
+**Mooduli seansi olek** kuulub mooduli enda hoidlasse. Projekti vahetusel lähtestab kest üldoleku ning kutsub iga registreeritud mooduli `onSessionReset` konksu.
+
+**Plaadivaade** salvestub `ViewState.boardView` väljal kujul `{ zoom, pan }`. Puuduv või vigane plaadivaade saab suumi 1 ja nihke `{ x: 0, y: 0 }`, kehtivad paneeliseaded säilivad. Vaate salvestus jätab dokumendi revisjoni ja ajaloo samaks.
+
+**Eelvaade ei ole dokument.** Tööriist hoiab oma ajutist olekut `SessionStore.preview` väljal kujul `{ owner: string; data: unknown } | null`. Liigutamisel on omanik `select` ja andmed `{ items, dx, dy }`. Sama pesa töötab plaadil ja skeemil.
 - Lõuendi kihid joonistavad valitud objektid koos teisendusega, ka nende külge kinnitatud joonistused.
 - Hiire vabastamisel läheb mootorisse üks käsk (nt `items.translate`) ja see on üks samm ajaloos.
 - `Esc`, `pointercancel`, tööriista vahetus ja projekti vahetus kustutavad eelvaate; dokument jääb muutmata.
@@ -302,12 +316,17 @@ interface CanvasTool {
 
 Pan (keskmine nupp, tühik + lohistamine), suum (rullik kursori ümber), kahe sõrmega suum ja kontekstimenüü käsitleb lõuend ise, enne tööriista. Topeltklõps tuvastatakse aja ja kauguse järgi (380 ms, 7 px), mitte DOM-i `dblclick` sündmusega.
 
+`UiModule.keys` lisab mooduli klahvid. `UiRegistry.keys()` koondab need ning register lükkab korduva klahvikombinatsiooni või tööriista kiirklahviga kattuva kirje tagasi. Lõuend proovib esmalt aktiivse tööriista `onKey`-d ja seejärel sobivat mooduli klahvi. Sisestusväljad, dialoogid ning `Ctrl`- ja `Meta`-kombinatsioonid säilitavad oma käitumise. `R` ja `Shift+R` pööravad paigutatud valikut 90° võrra ning `F` viib teisele poolele.
+
+Komponentide moodul hoiab paigutuse režiimi oma seansihoidlas. Paigutustööriist näitab korpuse eelvaadet kursori all ja saadab klõpsul ühe `components.add` või `components.placeOnBoard` käsu. Õnnestumisel valib tööriist komponendi ja naaseb valikutööriista juurde. `Esc`, tööriista vahetus ja projekti vahetus lõpetavad paigutuse ning eemaldavad eelvaate.
+
 ### 7.3 Kihid ja jõudlus
 - Kihid renderdatakse `z` järjekorras: foto (0) → alad (10) → kontuur (15) → alumised rajad (20) → komponentide kered (30) → pealmised rajad (40) → jalad (50) → juhtmed ja lingid (55) → sildid (60) → mõõtjooned (70) → hinnangute märgid (80) → valik ja käepidemed (90) → tööriista ülekate (100).
-- Iga komponent ja rada on `React.memo` komponent, mis renderdub uuesti ainult siis, kui tema andmed muutuvad.
-- **Pan ja suum** muudavad ainult ühe ümbrise teisendust ega renderda Reacti uuesti.
-- **Tabamuse test:** jalgadel ega radadel pole eraldi sündmusekuulareid. Lõuendi juurel on üks kuular ja ruumiindeks (`HitIndex`, ruudustik 32 px), mis leiab kursori alt jala, raja või komponendi. Sama indeksit kasutab haakumine. Indeks ehitatakse uuesti `rev`-i muutudes.
-- **Detailsus suumi järgi (LOD):** jalgade numbrid ja nimed renderdatakse [06 › Jalad](06-kasutajaliides.md#jalad) lävede järgi (number alates raadiusest 7 px, nimi alates 14 px). Komponentide tähised ja mõõteväärtuste sildid renderdatakse alles siis, kui tekst on ekraanil vähemalt 8 px. Kaugelt on näha ainult jala kuju ja olek. Läved arvutatakse uuesti suumi lõppedes (`requestAnimationFrame` + 120 ms).
+- Iga komponent ja rada on `React.memo` komponent. Komponendi renderdus sõltub tema andmetest, mõõtkavast, valikust, LOD-suumist ja tema enda eelvaate nihkest.
+- **Pan ja suum** muudavad vaate teisendust ühel SVG grupil. Kui suum muutub, uueneb kihtide `lodZoom` väärtus `requestAnimationFrame`-is 120 ms pärast vaate liikumise lõppu. Ainult vaate nihutamine kihte ega indeksit uuesti ei arvuta.
+- **Tabamuse test:** jalgadel ega radadel pole eraldi sündmusekuulareid. Lõuendi juurel on üks kuular ja ruumiindeks (`HitIndex`, ruudustik 32 px). Kihid annavad tabamused funktsiooniga `hits(snapshot, lodZoom)`. Indeks ehitatakse uuesti revisjoni, seansi, kihtide või LOD-suumi muutudes. Tabamuse ekraanilävi kasutab tegelikku suumi.
+- **Detailsus suumi järgi (LOD):** jalgade numbrid ja nimed renderdatakse [06 › Jalad](06-kasutajaliides.md#jalad) lävede järgi (number alates raadiusest 7 px, nimi alates 14 px). Komponentide tähised ja mõõteväärtuste sildid renderdatakse, kui tekst on ekraanil vähemalt 8 px. Peidetud komponenditähisel puudub tabamusala.
+- `HitItem.target` määrab klõpsuga valitava objekti. `HitItem.drag` määrab lohistamise eelvaate omaniku ja vabastamisel tehtava toimingu. Tähise lohistamine saadab ühe `components.setLabelOffset` käsu. Revisjoni muutus katkestab aktiivse žesti, eemaldab eelvaate ja jätab käsu saatmata.
 - **Jõudluseelarve** (keskmine sülearvuti, kuni 12 MP kuvatav foto): 300 komponenti, 3000 jalga ja 1000 rada; pan ja suum 60 fps; lohistamine ≥ 45 fps; projekti avamine < 1,5 s. Seda kontrollitakse kahel viisil:
   - **varajane proov päris Tauri aknas** tiheda sünteetilise plaadiga (siltide, valiku ja fotoga) M1.2-s;
   - e2e jõudlustest `tests/e2e/perf.spec.ts`.

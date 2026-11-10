@@ -8,10 +8,6 @@
 .pcbk-components__toolbar .bb-button {
   flex: 1;
 }
-.pcbk-components__count {
-  color: var(--ink-2);
-  font-size: 11px;
-}
 .pcbk-components__list {
   list-style: none;
   margin: 0;
@@ -32,7 +28,8 @@
 .pcbk-component-row:hover {
   background: var(--well);
 }
-.pcbk-component-row[aria-pressed='true'] {
+.pcbk-component-row[aria-pressed='true'],
+.pcbk-component-row[aria-expanded='true'] {
   background: var(--accent-soft);
   border-color: var(--accent);
 }
@@ -60,16 +57,48 @@
 .pcbk-component-row__value:empty {
   display: none;
 }
-.pcbk-component-row__unplaced {
-  margin-left: auto;
-  color: var(--ink-2);
-}
 .pcbk-components__empty {
   padding: 16px;
   margin: 0;
   color: var(--ink-2);
   font-size: 12px;
   line-height: 1.7;
+}
+.pcbk-library__search {
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.pcbk-library__params,
+.pcbk-unplaced__actions {
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px 12px;
+}
+.pcbk-unplaced__choices {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pcbk-unplaced__choices .bb-button {
+  justify-content: flex-start;
+  width: 100%;
+}
+.pcbk-unplaced__choices .bb-field__hint {
+  margin-top: 3px;
+}
+.pcbk-components__text-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.pcbk-components__error {
+  padding: 8px 16px 0;
 }
 .pcbk-component-details {
   padding: 16px;

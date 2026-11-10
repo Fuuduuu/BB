@@ -1,0 +1,41 @@
+.pcbk-measure-block,
+.pcbk-measure-block form {
+  display: grid;
+  gap: 10px;
+}
+
+.pcbk-measure-block {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pcbk-measure-block h2,
+.pcbk-measure-block dl,
+.pcbk-measure-block dd {
+  margin: 0;
+}
+
+.pcbk-measure-block h2 {
+  font-size: 14px;
+}
+
+.pcbk-measure-block dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 12px;
+  font-size: 13px;
+}
+
+.pcbk-measure-block dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  overflow-wrap: anywhere;
+}
+
+.pcbk-measure-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

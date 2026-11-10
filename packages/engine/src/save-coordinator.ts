@@ -17,6 +17,13 @@ export function storageFailure(error: unknown, expected?: number): EngineError {
 }
 type Outcome = Result<void, EngineError>;
 
+function copyView(view: ViewState): ViewState {
+  const { boardView } = view;
+  return boardView
+    ? { ...view, boardView: { zoom: boardView.zoom, pan: { ...boardView.pan } } }
+    : { ...view };
+}
+
 export function saveTiming(input?: { debounceMs: number; maxWaitMs: number }) {
   const timing = { ...(input ?? { debounceMs: SAVE_DEBOUNCE_MS, maxWaitMs: SAVE_MAX_WAIT_MS }) };
   if (![timing.debounceMs, timing.maxWaitMs].every((value) => Number.isFinite(value) && value > 0))
@@ -42,7 +49,7 @@ export function createSaveCoordinator(opts: {
   const timing = saveTiming(opts.timing);
   let baseRev = opts.baseRev;
   let force = opts.needsSave ?? false;
-  let view = opts.view ? { ...opts.view } : null;
+  let view = opts.view ? copyView(opts.view) : null;
   let viewVersion = 0;
   let savedViewVersion = 0;
   let disposed = false;
@@ -119,7 +126,7 @@ export function createSaveCoordinator(opts: {
       } else {
         const writingVersion = viewVersion;
         try {
-          await opts.repo.saveView(opts.session, { ...view! });
+          await opts.repo.saveView(opts.session, copyView(view!));
           savedViewVersion = writingVersion;
         } catch (error) {
           lastError = storageFailure(error);
@@ -177,16 +184,19 @@ export function createSaveCoordinator(opts: {
         view?.navigatorWidth === next.navigatorWidth &&
         view.navigatorTab === next.navigatorTab &&
         view.contextWidth === next.contextWidth &&
-        view.contextOpen === next.contextOpen
+        view.contextOpen === next.contextOpen &&
+        view.boardView?.zoom === next.boardView?.zoom &&
+        view.boardView?.pan.x === next.boardView?.pan.x &&
+        view.boardView?.pan.y === next.boardView?.pan.y
       )
         return;
-      view = { ...next };
+      view = copyView(next);
       // Read-only viewing remains local; a writable rescue copy can retain this view.
       if (opts.readOnly) return;
       viewVersion++;
       changed();
     },
-    currentView: () => (view ? { ...view } : null),
+    currentView: () => (view ? copyView(view) : null),
     async pause(): Promise<Outcome> {
       paused = true;
       cancelTimers();

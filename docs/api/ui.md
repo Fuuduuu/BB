@@ -36,6 +36,55 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 ```
 
+### `Canvas`
+```ts
+export function Canvas({ layers, tools, keys, sceneTransform, view, onViewChange, snapshot, execute, surface, }: CanvasProps): import("react").JSX.Element;
+```
+
+### `CanvasPointer`
+```ts
+export interface CanvasPointer {
+    world: Vec2;
+    screen: Vec2;
+    hit?: HitItem;
+    shift: boolean;
+    alt: boolean;
+    ctrl: boolean;
+}
+```
+
+### `CanvasProps`
+```ts
+export interface CanvasProps {
+    layers: readonly LayerSpec[];
+    tools: readonly ToolSpec[];
+    keys?: readonly KeySpec[];
+    sceneTransform: SceneTransform;
+    view: CanvasView;
+    onViewChange(view: CanvasView): void;
+    snapshot: Snapshot;
+    execute: DocumentEngine['execute'];
+    surface?: {
+        width: number;
+        height: number;
+    };
+}
+```
+
+### `CanvasTool`
+```ts
+export interface CanvasTool {
+    id: string;
+    cursor: string;
+    onPointerDown(event: CanvasPointer, api: ToolApi): void;
+    onPointerMove(event: CanvasPointer, api: ToolApi): void;
+    onPointerUp(event: CanvasPointer, api: ToolApi): void;
+    onKey?(event: KeyboardEvent, api: ToolApi): boolean;
+    overlay?(api: ToolApi): JSX.Element | null;
+    onCancel?(api: ToolApi): void;
+}
+```
+
 ### `CloseDialog`
 ```ts
 export function CloseDialog({ open, reason, busy, copyAvailable, onCancel, onDiscard, onRetrySave, onSaveElsewhere, }: SaveRecoveryActions & {
@@ -52,11 +101,16 @@ export function CloseDialog({ open, reason, busy, copyAvailable, onCancel, onDis
 export interface ContextSectionSpec {
     id: string;
     order: number;
-    appliesTo: SelectionKind[];
+    appliesTo: string[];
     render(props: {
         selection: Selection;
     }): ReactNode;
 }
+```
+
+### `createHitIndex`
+```ts
+export function createHitIndex(items: HitItem[], cellPx?: number): HitIndex;
 ```
 
 ### `Dialog`
@@ -121,6 +175,8 @@ export const et: {
         readonly resizeNavigator: "Navigaatori laius";
         readonly resizeContext: "Omaduste paneeli laius";
         readonly canvas: "Plaat";
+        readonly selectTool: "Vali";
+        readonly panTool: "Liiguta vaadet";
         readonly canvasEmpty: "Sinu plaadi tööala";
         readonly canvasHint: "Komponendid ja ühendused kuvatakse siin.";
         readonly bottomBar: "Plaadi olek";
@@ -269,6 +325,76 @@ export interface HistoryActions {
 }
 ```
 
+### `HitDrag`
+```ts
+export type HitDrag = {
+    owner: string;
+    commit(delta: Vec2, api: ToolApi): void;
+};
+```
+
+### `HitIndex`
+```ts
+export interface HitIndex {
+    query(world: Vec2, zoom: number): HitItem | undefined;
+}
+```
+
+### `HitItem`
+```ts
+export interface HitItem {
+    kind: string;
+    id: string;
+    componentId?: string;
+    shape: HitShape;
+    priority?: number;
+    data?: unknown;
+    target?: SelectionItem;
+    drag?: HitDrag;
+}
+```
+
+### `HitShape`
+```ts
+export type HitShape = {
+    type: 'point';
+    at: Vec2;
+    r: number;
+} | {
+    type: 'segment';
+    a: Vec2;
+    b: Vec2;
+    width: number;
+} | {
+    type: 'area';
+    polygon: Vec2[];
+};
+```
+
+### `KeySpec`
+```ts
+export interface KeySpec {
+    id: string;
+    key: string;
+    shift?: boolean;
+    run(api: ToolApi, selection: Selection): boolean;
+}
+```
+
+### `LayerSpec`
+```ts
+export type LayerSpec = {
+    id: string;
+    z: number;
+    render(props: {
+        snapshot: Snapshot;
+        preview: Preview | null;
+        zoom: number;
+    }): ReactNode;
+    hits?(snapshot: Snapshot, zoom: number): HitItem[];
+};
+```
+
 ### `NewBoardDialog`
 ```ts
 export function NewBoardDialog({ open, busy, error, onClose, onCreate, }: NewBoardDialogProps): import("react").JSX.Element;
@@ -296,7 +422,26 @@ export interface PanelProps extends HTMLAttributes<HTMLElement> {
 ```ts
 export interface PanelSpec extends SlotSpec {
     title: string;
+    count?(snapshot: Snapshot): number;
 }
+```
+
+### `PinnedSpec`
+```ts
+export interface PinnedSpec {
+    id: string;
+    order: number;
+    useVisible(): boolean;
+    render(): ReactNode;
+}
+```
+
+### `Preview`
+```ts
+export type Preview = {
+    owner: string;
+    data: unknown;
+};
 ```
 
 ### `RecentProjectCard`
@@ -334,26 +479,30 @@ export function SaveStatus({ status }: {
 }): import("react").JSX.Element | null;
 ```
 
+### `SceneText`
+```ts
+export function SceneText({ x, y, sceneTransform, transform, ...props }: SceneTextProps): import("react").JSX.Element;
+```
+
+### `SceneTransform`
+```ts
+export type SceneTransform = PhotoRef['transform'];
+```
+
 ### `Selection`
 ```ts
 export type Selection = {
-    kind: 'none';
-} | {
-    kind: 'component';
-    id: string;
-} | {
-    kind: 'pin';
-    componentId: string;
-    pinId: string;
-} | {
-    kind: 'connection' | 'net' | 'measurement';
-    id: string;
+    items: SelectionItem[];
 };
 ```
 
-### `SelectionKind`
+### `SelectionItem`
 ```ts
-export type SelectionKind = Selection['kind'];
+export type SelectionItem = {
+    kind: string;
+    id: string;
+    componentId?: string;
+};
 ```
 
 ### `SlotSpec`
@@ -397,6 +546,29 @@ export interface ToastProps {
 }
 ```
 
+### `ToolApi`
+```ts
+export interface ToolApi {
+    execute: DocumentEngine['execute'];
+    select(selection: Selection): void;
+    setPreview(preview: Preview | null): void;
+    hitIndex: HitIndex;
+    snapshot(): Snapshot;
+}
+```
+
+### `ToolSpec`
+```ts
+export interface ToolSpec {
+    id: string;
+    label: string;
+    icon: string;
+    key?: string;
+    group: 'select' | 'draw' | 'measure' | 'mechanical';
+    create(): CanvasTool;
+}
+```
+
 ### `TopBar`
 ```ts
 export function TopBar({ name, status, canUndo, canRedo, onUndo, onRedo, children, }: HistoryActions & {
@@ -406,6 +578,15 @@ export function TopBar({ name, status, canUndo, canRedo, onUndo, onRedo, childre
 }): import("react").JSX.Element;
 ```
 
+### `TranslatePreviewData`
+```ts
+export type TranslatePreviewData = {
+    items: SelectionItem[];
+    dx: number;
+    dy: number;
+};
+```
+
 ### `UiModule`
 ```ts
 export interface UiModule {
@@ -413,8 +594,13 @@ export interface UiModule {
     title: string;
     navigatorTabs?: PanelSpec[];
     contextSections?: ContextSectionSpec[];
+    contextPinned?: PinnedSpec[];
     topBar?: SlotSpec[];
     bottomBar?: SlotSpec[];
+    canvasLayers?: LayerSpec[];
+    tools?: ToolSpec[];
+    keys?: KeySpec[];
+    onSessionReset?(): void;
 }
 ```
 
@@ -426,8 +612,13 @@ export class UiRegistry {
     modules(): UiModule[];
     navigatorTabs(): PanelSpec[];
     contextSections(selection: Selection): ContextSectionSpec[];
+    contextPinned(): PinnedSpec[];
     topBar(): SlotSpec[];
     bottomBar(): SlotSpec[];
+    canvasLayers(): LayerSpec[];
+    tools(): ToolSpec[];
+    keys(): KeySpec[];
+    resetSession(): void;
 }
 ```
 

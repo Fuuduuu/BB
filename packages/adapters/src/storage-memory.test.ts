@@ -26,7 +26,13 @@ test('memory view writes normalize legacy fields and exclude theme without chang
   } as unknown as ViewState);
   const expected = {
     ...before,
-    view: { navigatorWidth: 420, navigatorTab: 'log', contextWidth: 340, contextOpen: true },
+    view: {
+      navigatorWidth: 420,
+      navigatorTab: 'log',
+      contextWidth: 340,
+      contextOpen: true,
+      boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    },
   };
   expect(store.files.get(opened.path)).toEqual(expected);
   await expect(

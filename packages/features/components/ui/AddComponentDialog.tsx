@@ -46,7 +46,9 @@ export function AddComponentDialog({ ids, onClose }: { ids: IdGen; onClose(): vo
             setError(commandError(result.error));
             return;
           }
-          useSessionStore.getState().setSelection({ kind: 'component', id: params.id });
+          useSessionStore
+            .getState()
+            .setSelection({ items: [{ kind: 'component', id: params.id }] });
           onClose();
         }}
       >

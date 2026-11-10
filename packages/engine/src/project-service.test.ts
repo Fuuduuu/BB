@@ -243,6 +243,7 @@ test('copy rescues unsaved data after a storage failure without changing the ori
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
   });
   expect(store.files.get('Rescue.pcbk')!.journal).toHaveLength(1);
   expect(store.files.get(path)!.doc).toMatchObject({ name: 'Board', rev: 0 });
@@ -283,6 +284,7 @@ test('commands during copy are retained and saved into the new file', async () =
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
   });
   expect(store.files.get('New.pcbk')!.journal).toHaveLength(2);
   expect(store.files.get('New.pcbk')!.projectId).not.toBe(store.files.get(path)!.projectId);

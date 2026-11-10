@@ -74,6 +74,42 @@ test('open returns null for a file without a saved view', async () => {
   seed(store, path, newBoardDoc('No view'));
   expect(await projects.open({ path })).toMatchObject({ ok: true, value: { view: null } });
 });
+test('changing only the board view writes metadata and leaves the document and history unchanged', async () => {
+  const { engine, projects, memory, store, path } = await projectSetup();
+  const panels = {
+    navigatorWidth: 380,
+    navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
+  };
+  projects.saveView(panels);
+  expect((await projects.flush()).ok).toBe(true);
+  const before = engine.snapshot();
+  projects.saveView({ ...panels, boardView: { zoom: 2, pan: { x: -10, y: 11 } } });
+  expect((await projects.flush()).ok).toBe(true);
+  expect(store.files.get(path)!.view?.boardView).toEqual({ zoom: 2, pan: { x: -10, y: 11 } });
+  expect(engine.snapshot()).toMatchObject({ rev: before.rev, history: before.history });
+  expect(memory.documentWrites).toBe(0);
+});
+
+test('mutating the returned board view cannot alter the current project view', async () => {
+  const { projects, path } = await projectSetup();
+  projects.saveView({
+    navigatorWidth: 380,
+    navigatorTab: 'log',
+    contextWidth: 340,
+    contextOpen: true,
+    boardView: { zoom: 2, pan: { x: -10, y: 11 } },
+  });
+  const first = await projects.open({ path });
+  if (!first.ok || !first.value.view?.boardView) throw new Error('Expected saved board view');
+  first.value.view.boardView.pan.x = 500;
+  expect(await projects.open({ path })).toMatchObject({
+    ok: true,
+    value: { view: { boardView: { zoom: 2, pan: { x: -10, y: 11 } } } },
+  });
+});
+
 test('opening the already active path returns the current in-memory view', async () => {
   const { projects, path } = await projectSetup();
   projects.saveView({
@@ -132,6 +168,7 @@ test('copy returns the newest unsaved in-memory view without sharing its referen
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
   });
 });
 test('copy response includes a view changed while the copy was awaiting storage', async () => {
@@ -179,6 +216,7 @@ test('copy response includes a view changed while the copy was awaiting storage'
     navigatorTab: 'latest',
     contextWidth: 340,
     contextOpen: true,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
   });
 });
 test('copy activation cannot overwrite a newer view supplied by a status observer', async () => {
@@ -217,5 +255,6 @@ test('copy activation cannot overwrite a newer view supplied by a status observe
     navigatorTab: 'observer',
     contextWidth: 340,
     contextOpen: true,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
   });
 });

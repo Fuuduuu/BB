@@ -36,6 +36,8 @@ export const et = {
     resizeNavigator: 'Navigaatori laius',
     resizeContext: 'Omaduste paneeli laius',
     canvas: 'Plaat',
+    selectTool: 'Vali',
+    panTool: 'Liiguta vaadet',
     canvasEmpty: 'Sinu plaadi tööala',
     canvasHint: 'Komponendid ja ühendused kuvatakse siin.',
     bottomBar: 'Plaadi olek',

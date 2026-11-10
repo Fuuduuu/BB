@@ -1,3 +1,4 @@
+import type { Vec2 } from '@pcbk/domain';
 import type { Unsubscribe } from './document-engine';
 import type { EngineError, StorageReason } from './errors';
 import type { Result } from './result';
@@ -8,11 +9,14 @@ export type SaveStatus =
   | { state: 'saving' }
   | { state: 'error'; reason: StorageReason };
 
+export type BoardView = { zoom: number; pan: Vec2 };
+
 export type ViewState = {
   navigatorWidth: number;
   navigatorTab: string;
   contextWidth: number;
   contextOpen: boolean;
+  boardView?: BoardView;
 };
 
 export type ProjectInfo = {

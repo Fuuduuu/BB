@@ -67,6 +67,44 @@ async function seedProject(runtime: Runtime, name: string) {
   return created.value;
 }
 
+test('view_only_change_leaves_document_rev_unchanged', async () => {
+  const runtime = createRuntime();
+  const project = await seedProject(runtime, 'Lõuendi vaate proov');
+  const { host } = fakeHost();
+  const app = mount(runtime, host);
+  const openPath = host.onOpenPath.mock.lastCall?.[0];
+  if (!openPath) throw new Error('Workbench did not register an open-path handler');
+  await act(async () => openPath(project.path));
+  expect(await screen.findByText(project.name)).toBeTruthy();
+
+  try {
+    const before = runtime.engine.snapshot();
+    const canvas = screen.getByRole('main', { name: et.shell.canvas }).querySelector('svg')!;
+    Object.defineProperty(canvas, 'getScreenCTM', {
+      value: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }),
+    });
+    fireEvent.wheel(canvas, { clientX: 120, clientY: 18, deltaY: -Math.log(2) / 0.002 });
+    expect(canvas.querySelector('[data-view]')?.getAttribute('transform')).toBe(
+      'matrix(2 0 0 2 -120 -18)',
+    );
+    expect(useViewStore.getState().boardView).toEqual({ zoom: 2, pan: { x: -120, y: -18 } });
+    await act(async () => expect((await runtime.projects.flush()).ok).toBe(true));
+    expect(runtime.engine.snapshot()).toMatchObject({ rev: before.rev, history: before.history });
+  } finally {
+    app.unmount();
+    await runtime.projects.close();
+  }
+  const reopened = await runtime.projects.open({ path: project.path });
+  try {
+    expect(reopened).toMatchObject({
+      ok: true,
+      value: { view: { boardView: { zoom: 2, pan: { x: -120, y: -18 } } } },
+    });
+  } finally {
+    await runtime.projects.close();
+  }
+});
+
 test('workbench uses only AppHost for recents, open list and close', async () => {
   const runtime = createRuntime();
   const project = await seedProject(runtime, 'Prooviplaat');
@@ -350,6 +388,7 @@ async function mountWithComponent(name: string) {
   await act(async () => openPath(project.path));
   expect(await screen.findByText(project.name)).toBeTruthy();
 
+  fireEvent.click(screen.getByRole('tab', { name: 'Plaadile paigutamata' }));
   fireEvent.click(screen.getByRole('button', { name: et.component.add }));
   const dialog = within(screen.getByRole('dialog', { name: et.component.addTitle }));
   fireEvent.click(dialog.getByRole('button', { name: et.component.add }));
@@ -357,7 +396,9 @@ async function mountWithComponent(name: string) {
   if (!component) throw new Error('Could not add a test component');
   const context = within(screen.getByRole('complementary', { name: et.shell.context }));
   expect(context.getByLabelText(et.component.ref)).toBeTruthy();
-  expect(useSessionStore.getState().selection).toEqual({ kind: 'component', id: component.id });
+  expect(useSessionStore.getState().selection).toEqual({
+    items: [{ kind: 'component', id: component.id }],
+  });
   return { app, runtime, component, context };
 }
 
@@ -366,12 +407,12 @@ test('undo clears a deleted component selection and redo leaves the context empt
   try {
     fireEvent.click(screen.getByRole('button', { name: et.shell.undo }));
     expect(runtime.engine.snapshot().doc.components).toHaveLength(0);
-    expect.soft(useSessionStore.getState().selection).toEqual({ kind: 'none' });
+    expect.soft(useSessionStore.getState().selection).toEqual({ items: [] });
     expect.soft(context.queryByText(et.shell.contextEmpty)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: et.shell.redo }));
     expect(runtime.engine.snapshot().doc.components[0]?.id).toBe(component.id);
-    expect.soft(useSessionStore.getState().selection).toEqual({ kind: 'none' });
+    expect.soft(useSessionStore.getState().selection).toEqual({ items: [] });
     expect.soft(context.queryByText(et.shell.contextEmpty)).toBeTruthy();
   } finally {
     app.unmount();
@@ -386,9 +427,7 @@ test('removing the selected pin clears the selection while its component remains
     if (!pin) throw new Error('Test component has no pin');
     act(() =>
       useSessionStore.getState().setSelection({
-        kind: 'pin',
-        componentId: component.id,
-        pinId: pin.id,
+        items: [{ kind: 'pin', componentId: component.id, id: pin.id }],
       }),
     );
     expect(context.getByLabelText(et.component.namePin(pin.id))).toBeTruthy();
@@ -400,8 +439,9 @@ test('removing the selected pin clears the selection while its component remains
     expect(remaining?.pins.map(({ id }) => id)).toEqual(
       component.pins.filter(({ id }) => id !== pin.id).map(({ id }) => id),
     );
-    expect.soft(useSessionStore.getState().selection).toEqual({ kind: 'none' });
-    expect.soft(context.queryByText(et.shell.contextEmpty)).toBeTruthy();
+    expect.soft(useSessionStore.getState().selection).toEqual({ items: [] });
+    expect(context.getByText('Mõõtmiskoha jalg on kustutatud. Vali uus jalg.')).toBeTruthy();
+    expect(context.queryByText(et.shell.contextEmpty)).toBeNull();
   } finally {
     app.unmount();
     await runtime.projects.close();

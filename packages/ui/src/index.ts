@@ -1,4 +1,5 @@
 export * from './kit';
+export * from './canvas';
 export { AppShell } from './shell/AppShell';
 export type { AppShellProps } from './shell/AppShell';
 export { TopBar } from './shell/TopBar';
@@ -11,7 +12,7 @@ export { PanelErrorBoundary, RootErrorBoundary } from './shell/ErrorBoundary';
 export type { RootRecoveryActions } from './shell/ErrorBoundary';
 export * from './shell/UiRegistry';
 export { useSessionStore } from './shell/session-store';
-export type { Selection, SelectionKind } from './shell/session-store';
+export type { Preview, Selection, SelectionItem } from './shell/session-store';
 export { useViewStore } from './shell/view-store';
 export type { Theme } from './shell/view-store';
 export { bindHistoryKeys } from './shell/keymap';

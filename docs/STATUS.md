@@ -6,7 +6,7 @@ Uuendatud: **2026-11-10**. Hoia see fail lühikese hetkeseisuna, soovitatavalt k
 
 **Rollid.** Claude on arhitekt ja Codex on ehitaja. [Tööjaotus](07-teekaart.md#rollid)
 
-**M0 on valmis ja avaldatud** (`v0.1.0`). **Käimas on M1.1** ([plaan](plans/M1-1-louend-ja-mootmine.md), arhitekt kinnitas 2026-11-10): Codex teeb kaarti [M1-1-3](tasks/M1-1-3.md) tööpuus `C:/Users/TRUMPIT/.codex/worktrees/bb-m1-1/BB`, haru `codex/m1-1`. [M1-1-1](tasks/M1-1-1.md) ja [M1-1-2](tasks/M1-1-2.md) on vastu võetud (`406b3fa`, haru pole veel pushitud).
+**M0 on valmis ja avaldatud** (`v0.1.0`). **Käimas on M1.1** ([plaan](plans/M1-1-louend-ja-mootmine.md), arhitekt kinnitas 2026-11-10): tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m1-1/BB`, haru `codex/m1-1` (pole pushitud). Vastu võetud: M1-1-1…2 (`406b3fa`), M1-1-3…5 (`3e794f9`) ja M1-1-6…9 (`6efa841`). [M1-1-6](tasks/M1-1-6.md) (lõuendi baas) [M1-1-7](tasks/M1-1-7.md) (komponentide kiht) [M1-1-8](tasks/M1-1-8.md) (teek ja paigutus) ja [M1-1-9](tasks/M1-1-9.md) (mõõtmise UI) on **vastu võetud** (`6efa841`; 2026-11-10: `pnpm check` 735/735, `format:check`, `api:check`, `e2e` 8/8).
 
 `main` = `origin/main` = `2f140f2` (sisaldab M0-15). Silt `v0.1.0` on commit’il `7dacff8`.
 
@@ -23,10 +23,10 @@ Uuendatud: **2026-11-10**. Hoia see fail lühikese hetkeseisuna, soovitatavalt k
 
 - **M0-15** on vastu võetud (2026-11-10, `2f140f2`, juba `main`-is). Märkus: taastamise VFS-kaitse on kirjeldatud 03 §9-s; `storage/backup.rs` (419 rida) jagatakse M1 hoolduskaardis.
 - **Enne fotoimporti (arhitekti otsus enne M1.2).** Taastatud ja algne sama `project_id`-ga fail võivad eri radu edasi minna. Sünteetiline taastamiskatse ühendas ühe faili dokumendi teise faili päevikuga ja jättis simuleeritud fotoviite ilma pildibaidita. Dokumendikoopia alus tuleb siduda õige failiharuga. „Salvesta mujale…“ peab eristama täielikku koopiat meediata päästekoopiast.
-- **M1.1 järgmine töö.** Pärast M1-1-3 ülevaatust kirjutab arhitekt kaardi M1-1-4 (komponendikäsud ja `items.translate`).
-- **Avaldamine.** Push ja `v0.1.1` ootavad kasutaja otsust.
+- **M1.1 järgmine töö.** Arhitekt kirjutab kaardi M1-1-10 (läbiv töövoog, e2e, `cargo test`, `tauri build --debug`, Windowsi suitsukontroll ja kasutaja vastuvõtt). Lahtised: nooled ja `R`/`F` toimivad ka külgpaneeli fookusega, `R`/`F` kordub klahvi all hoides; klõps rühma liikmel jätab rühma valituks ja jala valik näitab ühte jalga komponendi kohta (M2.1).
+- **Avaldamine.** Haru `codex/m1-1` (`6efa841`) pole pushitud; push ja `v0.1.1` ootavad kasutaja otsust.
 - Enne M1.2 tuleb kinnitada `v0.1.0` failide vormingu ühilduvus ja mõõta SVG jõudlust päris Tauri aknas.
-- **Säilita pooleliolev töö.** Põhikaustas on commit’imata AI stardifailid, ülesandekaardid, mõlema README täiendused ning `tools/mcp-bb/README.md` ja `bb_mcp.py` muudatused. `m0` tööpuus on stardifailide koopiad. Stardifailide commitimine ja koodiallkirjastamine ootavad kasutaja otsust.
+- **Commitimata põhikaustas:** M1.1 ülesandekaardid (M1-1-3…9), STATUS ja 06 tühjade olekute tekstid. AI stardifailid ja `bb_task` on `main`-is (`0e2cbee`). Koodiallkirjastamine ootab kasutaja otsust.
 - **M1 hoolduskaart** (pärast M1.1, enne M1.2; [plaani lõpus](plans/M1-1-louend-ja-mootmine.md#mis-jääb-järgmistesse-plaanidesse)): projekti vahetamine salvestusvea korral, `stale_rev` selge teade, `backup.rs` ja `workbench.test.tsx` jagamine, veebi `discard` koos e2e-tõendiga. Täisskeemi valideerimise optimeerimine pärast mõõtmist.
 - GitHub CLI oli üleandmisel kontole sisse logimata. CI jooksud ja väljalaske avaldamine on eraldi kohalikest kontrollidest.
 

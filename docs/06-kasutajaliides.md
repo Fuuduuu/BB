@@ -133,11 +133,11 @@ Klahvid on registreeritud moodulite kaudu (`keymap`). Topeltregistreerimine on k
 | Koht | Tekst ja tegevus |
 |---|---|
 | Lõuend ilma fotota | „Lohista plaadi foto siia või kleebi Ctrl+V“ · [Vali foto] · [Jätka ilma fotota] |
-| Plaadil (tühi) | „Plaadil pole veel midagi. Ava **Teek** ja lohista esimene komponent foto peale.“ |
+| Plaadil (tühi) | „Plaadil pole veel midagi. Ava **Teek** ja paiguta esimene komponent plaadile.“ |
 | Võrgud (tühi) | „Võrgud tekivad ühendustest. Kasuta tööriista **Rada** (T) või **Piiks** (B).“ |
 | Mõõtmised (tühi) | „Vali jalg ja sisesta väärtus. Esimene mõõtmine on tavaliselt toitesisend GND suhtes.“ |
 | Skeem (komponente pole) | „Lisa komponent teegist või lohista see loendist **Skeemile paigutamata**. Skeemil lisatud komponendi saad hiljem fotole paigutada.“ |
-| Plaadile paigutamata (tühi) | „Kõik komponendid on fotol.“ |
+| Plaadile paigutamata (tühi) | „Kõik komponendid on plaadil.“ |
 | Otsing ei leidnud | „Sellist korpust ei leitud. Proovi **Kohandatud**: sellele saad ise jalad lisada.“ |
 
 ## Ligipääsetavus

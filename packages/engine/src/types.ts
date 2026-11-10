@@ -19,10 +19,15 @@ export interface CommandSpec<P> {
   alsoWrites?: DocKey[];
   summary?(params: P, doc: BoardDoc): string;
 }
-export interface DeriveSpec {
-  key: keyof Derived;
-  run(doc: DeepReadonly<BoardDoc>, derived: DeepReadonly<Derived>): string[];
-}
+export type DeriveSpec<K extends keyof Derived = keyof Derived> = {
+  [Key in K]: {
+    key: Key;
+    inputs: DocKey[];
+    schema: z.ZodType<Derived[Key]>;
+    initial: Derived[Key];
+    run(doc: DeepReadonly<BoardDoc>, derived: DeepReadonly<Derived>): Derived[Key];
+  };
+}[K];
 export interface EngineModule {
   id: string;
   dependsOn?: string[];

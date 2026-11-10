@@ -11,7 +11,7 @@ export function buildRegistry(modules: EngineModule[], reserved: DocKey[] = []) 
   const commands = new Map<string, RegisteredCommand>();
   const byId = new Map<string, EngineModule>();
   const derive: DeriveSpec[] = [];
-  const deriveKeys = new Set<string>();
+  const deriveKeys = new Set<DeriveSpec['key']>();
   const owners = new Map<DocKey, string>([
     ['rev', 'core'],
     ['format_version', 'core'],
@@ -63,8 +63,9 @@ export function buildRegistry(modules: EngineModule[], reserved: DocKey[] = []) 
     }
     for (const spec of module.derive ?? []) {
       if (deriveKeys.has(spec.key)) throw new RegistryError(`Duplicate derivation: ${spec.key}`);
+      for (const field of spec.inputs) checkField(field);
       deriveKeys.add(spec.key);
-      derive.push({ ...spec });
+      derive.push({ ...spec, inputs: [...spec.inputs] });
     }
   }
   return { commands, derive, reserved: new Set(reserved) };

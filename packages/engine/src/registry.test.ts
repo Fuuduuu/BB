@@ -90,9 +90,28 @@ test('dependent derivations see the dependency result regardless of registration
       {
         ...owner(),
         dependsOn: ['provider'],
-        derive: [{ key: 'unplacedSchematic', run: (_doc, derived) => [...derived.unplacedBoard] }],
+        derive: [
+          {
+            key: 'unplacedSchematic',
+            inputs: [],
+            schema: z.array(z.string()),
+            initial: [],
+            run: (_doc, derived) => [...derived.unplacedBoard],
+          },
+        ],
       },
-      { id: 'provider', derive: [{ key: 'unplacedBoard', run: () => ['cmp_dependency'] }] },
+      {
+        id: 'provider',
+        derive: [
+          {
+            key: 'unplacedBoard',
+            inputs: [],
+            schema: z.array(z.string()),
+            initial: [],
+            run: () => ['cmp_dependency'],
+          },
+        ],
+      },
     ],
   });
   host.load('registry', newBoardDoc('Plaat'), false);

@@ -40,6 +40,14 @@ export type BackupsReq = {
 };
 ```
 
+### `BoardView`
+```ts
+export type BoardView = {
+    zoom: number;
+    pan: Vec2;
+};
+```
+
 ### `CommandId`
 ```ts
 export type CommandId = Extract<keyof CommandMap, `${string}.${string}`>;
@@ -50,6 +58,14 @@ export type CommandId = Extract<keyof CommandMap, `${string}.${string}`>;
 export interface CommandMap {
     'items.delete': {
         ids: string[];
+    };
+    'items.translate': {
+        items: {
+            kind: 'component';
+            id: string;
+        }[];
+        dx: number;
+        dy: number;
     };
 }
 ```
@@ -88,10 +104,13 @@ export type DeepReadonly<T> = T extends (...args: never[]) => unknown ? T : T ex
 
 ### `DEFAULT_VIEW_STATE`
 ```ts
-export const DEFAULT_VIEW_STATE: Readonly<ViewState>;
+export const DEFAULT_VIEW_STATE: Readonly<Required<ViewState>>;
 ```
 
 ### `Derived`
+
+Feature contracts extend this interface with their registered derivation keys.
+
 ```ts
 export interface Derived {
     unplacedBoard: string[];
@@ -164,6 +183,11 @@ export interface IdGen {
 }
 ```
 
+### `normalizeBoardView`
+```ts
+export function normalizeBoardView(input: unknown): BoardView;
+```
+
 ### `ok`
 ```ts
 export function ok<T>(value: T): {
@@ -189,7 +213,7 @@ export type ParamsOf<C extends CommandId> = CommandMap[C];
 Optional view metadata must never make an otherwise valid project unreadable.
 
 ```ts
-export function parseViewState(input: unknown): ViewState | null;
+export function parseViewState(input: unknown): Required<ViewState> | null;
 ```
 
 ### `ProjectInfo`
@@ -300,5 +324,6 @@ export type ViewState = {
     navigatorTab: string;
     contextWidth: number;
     contextOpen: boolean;
+    boardView?: BoardView;
 };
 ```

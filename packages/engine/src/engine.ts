@@ -1,4 +1,3 @@
-import { newBoardDoc } from '@pcbk/domain';
 import type { BoardDoc, DocKey } from '@pcbk/domain';
 import { err, ok } from '@pcbk/contracts';
 import type {
@@ -11,7 +10,7 @@ import type {
 } from '@pcbk/contracts';
 import { enablePatches, Immer } from 'immer';
 import { z, ZodError } from 'zod';
-import { makeSnapshot } from './derivation';
+import { createSnapshotBuilder } from './derivation';
 import { capturePayload, notify } from './events';
 import { CommandTargetNotFound } from './errors';
 import { createHistory } from './history';
@@ -56,7 +55,7 @@ export function createEngine(opts: {
   reserved?: DocKey[];
 }): { engine: DocumentEngine; host: EngineHost } {
   const registry = buildRegistry([...opts.modules, coreItems], opts.reserved);
-  const empty = makeSnapshot('', sealTree(newBoardDoc('')), [], createHistory().status());
+  const { empty, makeSnapshot } = createSnapshotBuilder(registry.derive, createHistory().status());
   let snapshot = empty;
   let active: Active | null = null;
   let busy = false;
@@ -95,8 +94,8 @@ export function createEngine(opts: {
     const prepared = makeSnapshot(
       state.sessionId,
       doc,
-      registry.derive,
       state.history.projectedStatus(kind),
+      snapshot,
     );
     const at = z.iso.datetime().parse(opts.clock.now());
     const summary = z.string().parse(entry.summary);
@@ -208,7 +207,7 @@ export function createEngine(opts: {
         z.string().min(1).parse(sessionId);
         const doc = sealTree(validateDocument(input));
         const history = createHistory();
-        const prepared = makeSnapshot(sessionId, doc, registry.derive, history.status());
+        const prepared = makeSnapshot(sessionId, doc, history.status());
         active = { sessionId, doc, readOnly, history, journal: createJournal() };
         snapshot = prepared;
         notify(subscribers, snapshot);

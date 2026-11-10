@@ -13,7 +13,7 @@ export function snapshot(sessionId = 'session-a', rev = 0, name = 'Board'): Snap
     sessionId,
     rev,
     doc: Object.freeze({ ...newBoardDoc(name), rev }),
-    derived: Object.freeze({ unplacedBoard: [], unplacedSchematic: [] }),
+    derived: Object.freeze({ unplacedBoard: [], unplacedSchematic: [], pinReadings: {} }),
     history: Object.freeze({ canUndo: false, canRedo: false }),
   });
 }

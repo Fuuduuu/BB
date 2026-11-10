@@ -158,6 +158,7 @@ test('an ephemeral read-only view is kept in a new writable rescue copy', async 
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
   });
   expect(engine.execute('demo.rename', { name: 'Editable' }).ok).toBe(true);
   expect((await projects.flush()).ok).toBe(true);

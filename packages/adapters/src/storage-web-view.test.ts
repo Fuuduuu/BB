@@ -30,11 +30,13 @@ test('view writes capture caller data and preserve document revision, metadata a
     navigatorTab: 'components',
     contextWidth: 460,
     contextOpen: false,
+    boardView: { zoom: 1.5, pan: { x: -20, y: 34 } },
   };
   const saving = repo.saveView(opened.session, view);
   view.navigatorWidth = 999;
   view.contextWidth = 999;
   view.contextOpen = true;
+  view.boardView.pan.x = 700;
   await saving;
   expect(await get(`project:${opened.path}`, store)).toEqual({
     ...before,
@@ -43,6 +45,7 @@ test('view writes capture caller data and preserve document revision, metadata a
       navigatorTab: 'components',
       contextWidth: 460,
       contextOpen: false,
+      boardView: { zoom: 1.5, pan: { x: -20, y: 34 } },
     },
   });
 });
@@ -65,7 +68,13 @@ test('web view writes normalize legacy fields and exclude theme without changing
   } as unknown as ViewState);
   const expected = {
     ...before,
-    view: { navigatorWidth: 420, navigatorTab: 'log', contextWidth: 340, contextOpen: true },
+    view: {
+      navigatorWidth: 420,
+      navigatorTab: 'log',
+      contextWidth: 340,
+      contextOpen: true,
+      boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    },
   };
   expect(await get(key, store)).toEqual(expected);
   await expect(
@@ -110,7 +119,9 @@ test.each([
     const value = await get<Record<string, unknown>>(key, store);
     const stored = { ...value, view: raw };
     await set(key, stored, store);
-    expect((await repo.open(opened.path)).view).toEqual(expected);
+    expect((await repo.open(opened.path)).view).toEqual(
+      expected && { ...expected, boardView: { zoom: 1, pan: { x: 0, y: 0 } } },
+    );
     expect((await repo.listProjects()).map((item) => item.path)).toEqual([opened.path]);
     expect(await get(key, store)).toEqual(stored);
   },

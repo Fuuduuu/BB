@@ -133,7 +133,8 @@ export function useWorkbench(host: AppHost) {
         next.navigatorWidth !== previous.navigatorWidth ||
         next.navigatorTab !== previous.navigatorTab ||
         next.contextWidth !== previous.contextWidth ||
-        next.contextOpen !== previous.contextOpen
+        next.contextOpen !== previous.contextOpen ||
+        next.boardView !== previous.boardView
       ) {
         projects.saveView(next.getView());
       }

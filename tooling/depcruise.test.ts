@@ -82,14 +82,13 @@ test('all eight layer boundaries reject forbidden imports', async () => {
 
 test.each([
   ['contracts-domain-types-only', '/contracts/src/bad-runtime-model.ts'],
-  ['ui-domain-types-or-geometry', '/ui/src/bad-domain-runtime.ts'],
+  ['ui-domain-runtime-allowlist', '/ui/src/bad-domain-runtime.ts'],
   ['feature-private-api', '/features/demo/ui/bad-private.ts'],
   ['feature-private-api', '/features/demo/engine/bad-private.ts'],
   ['shared-code-no-node', '/engine/src/bad-host.ts'],
   ['domain-pure', '/domain/src/bad-third-party.ts'],
   ['engine-public-api-only', '/features/demo/engine/bad-engine-internal.ts'],
   ['engine-public-api-only', '/adapters/src/bad-engine-internal.ts'],
-  ['ui-domain-types-or-geometry', '/ui/src/bad-footprints.ts'],
 ])('%s blocks %s', async (rule, from) => {
   const result = await cruiseFixture();
   expect(
@@ -99,11 +98,44 @@ test.each([
   ).toBe(true);
 });
 
-test('allowed public APIs, geometry, type imports and nanoid stay valid', async () => {
+test('allowed public APIs, geometry, footprints, type imports and nanoid stay valid', async () => {
   const result = await cruiseFixture();
   expect(
     result.summary.violations.filter((violation) => violation.from.endsWith('/good.ts')),
   ).toEqual([]);
+});
+
+test('ui_may_import_reading_but_not_pin_readings', async () => {
+  const { modules, summary } = await cruiseFixture();
+  const expectedImports = [
+    ['good.ts', 'footprints/index.ts'],
+    ['good.ts', 'measure/reading.ts'],
+    ['bad-pin-readings.ts', 'measure/pin-readings.ts'],
+    ['bad-measure-barrel.ts', 'measure/index.ts'],
+  ];
+  for (const [filename, target] of expectedImports) {
+    const source = modules.find(({ source }) => source === `packages/ui/src/${filename}`);
+    expect(source?.dependencies.map(({ resolved }) => resolved)).toContain(
+      `packages/domain/src/${target}`,
+    );
+  }
+  const domainViolations = summary.violations.filter(
+    ({ rule }) => rule.name === 'ui-domain-runtime-allowlist',
+  );
+  expect(domainViolations.map(({ from, to }) => [from, to])).toEqual(
+    expect.arrayContaining([
+      ['packages/ui/src/bad-pin-readings.ts', 'packages/domain/src/measure/pin-readings.ts'],
+      ['packages/ui/src/bad-measure-barrel.ts', 'packages/domain/src/measure/index.ts'],
+    ]),
+  );
+  expect(domainViolations.some(({ from }) => from === 'packages/ui/src/good.ts')).toBe(false);
+});
+
+test('the domain exports reading directly to feature packages', () => {
+  const fromFeatures = createRequire(new URL('../packages/features/package.json', import.meta.url));
+  expect(fromFeatures.resolve('@pcbk/domain/measure/reading')).toBe(
+    fileURLToPath(new URL('../packages/domain/src/measure/reading.ts', import.meta.url)),
+  );
 });
 
 test('the dependency CLI fails for forbidden imports', () => {

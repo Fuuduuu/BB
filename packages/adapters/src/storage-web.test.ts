@@ -80,6 +80,7 @@ test('create and open persist a detached document, revision, journal, metadata a
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
   });
   expect(await get(`project:${opened.path}`, store)).toMatchObject({
     meta: { format_version: 1, project_id: 'project_a', created_at: at, app_version: '0.0.0' },

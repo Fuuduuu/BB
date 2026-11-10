@@ -61,6 +61,15 @@ export type BoardOutline = {
 export const BoardOutlineSchema: ZodType<BoardOutline>;
 ```
 
+### `boardPads`
+```ts
+export function boardPads(placement: BoardPlacement, pinIds: readonly string[], pxPerMm: number): {
+    pinId: string;
+    at: Vec2;
+    radiusPx: number;
+}[];
+```
+
 ### `BoardPlacement`
 ```ts
 export type BoardPlacement = {
@@ -80,6 +89,11 @@ export type BoardPlacement = {
 ### `BoardPlacementSchema`
 ```ts
 export const BoardPlacementSchema: ZodType<BoardPlacement>;
+```
+
+### `bodyOutline`
+```ts
+export function bodyOutline(placement: BoardPlacement, pxPerMm: number): Vec2[];
 ```
 
 ### `Component`
@@ -256,6 +270,57 @@ export type EndRef = { pin: PinRef; } | { junction: string; };
 export const EndRefSchema: ZodType<EndRef>;
 ```
 
+### `FootprintDef`
+```ts
+export interface FootprintDef {
+    key: string;
+    name: string;
+    defaults: FootprintParams;
+    gen(p: FootprintParams): FootprintGeom | undefined;
+}
+```
+
+### `FootprintGeom`
+```ts
+export interface FootprintGeom {
+    pads: PadGeom[];
+    body: {
+        w: number;
+        h: number;
+        pin1?: Vec2;
+    };
+}
+```
+
+### `footprintGeometry`
+```ts
+export function footprintGeometry(key: string, params: FootprintParams): FootprintGeom | undefined;
+```
+
+### `FootprintParams`
+```ts
+export interface FootprintParams {
+    [key: string]: string | number;
+}
+```
+
+### `footprintPinIds`
+```ts
+export function footprintPinIds(key: string, params: FootprintParams): string[] | undefined;
+```
+
+### `FOOTPRINTS`
+```ts
+export const FOOTPRINTS: readonly FootprintDef[];
+```
+
+### `formatReading`
+```ts
+export function formatReading(reading: {
+    value: number;
+}, mode: ReadingMode): string;
+```
+
 ### `HISTORY_LIMIT`
 ```ts
 export const HISTORY_LIMIT: 200;
@@ -415,6 +480,31 @@ export function newId(prefix: IdPrefix): string;
 export function nextRef(doc: BoardDoc, kind: ComponentKind): string;
 ```
 
+### `PadGeom`
+```ts
+export interface PadGeom {
+    id: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    shape: 'rect' | 'circle';
+    through: boolean;
+}
+```
+
+### `padToBoard`
+```ts
+export function padToBoard(p: Pick<BoardPlacement, 'center' | 'rotationDeg' | 'side' | 'scaleX' | 'scaleY'>, local: Vec2, pxPerMm: number): Vec2;
+```
+
+### `parseReading`
+```ts
+export function parseReading(text: string, mode: ReadingMode): {
+    value: number;
+} | null;
+```
+
 ### `PhotoRef`
 ```ts
 export type PhotoRef = {
@@ -448,6 +538,37 @@ export type Pin = {
     nc: boolean;
     name?: string | undefined;
 };
+```
+
+### `PinReading`
+```ts
+export interface PinReading {
+    measurementId: string;
+    mode: 'voltage';
+    value: number;
+    takenAt: string;
+}
+```
+
+### `pinReadings`
+```ts
+export function pinReadings(doc: PinReadingSource): Record<string, PinReading>;
+```
+
+### `PinReadingSource`
+```ts
+export interface PinReadingSource {
+    readonly components: readonly {
+        readonly id: string;
+        readonly pins: readonly Readonly<Pick<Pin, 'id' | 'uid'>>[];
+    }[];
+    readonly measurements: readonly Readonly<Measurement>[];
+}
+```
+
+### `PinReadingsSchema`
+```ts
+export const PinReadingsSchema: ZodType<{ [x: string]: { measurementId: string; mode: "voltage"; value: number; takenAt: string; }; }>;
 ```
 
 ### `PinRef`
@@ -491,6 +612,11 @@ export type ProgressSnapshot = {
 ### `ProgressSnapshotSchema`
 ```ts
 export const ProgressSnapshotSchema: ZodType<ProgressSnapshot>;
+```
+
+### `ReadingMode`
+```ts
+export type ReadingMode = 'voltage';
 ```
 
 ### `refPrefix`

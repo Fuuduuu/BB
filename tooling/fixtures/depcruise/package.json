@@ -1,0 +1,8 @@
+{
+  "name": "@pcbk/domain",
+  "private": true,
+  "exports": {
+    "./measure": "./packages/domain/src/measure/index.ts",
+    "./measure/reading": "./packages/domain/src/measure/reading.ts"
+  }
+}

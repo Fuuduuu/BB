@@ -59,7 +59,10 @@ test.each([
   expect(await projects.open({ path })).toMatchObject({ ok: true, value: { view: expected } });
   const opened = await projects.open({ path });
   if (!opened.ok) throw new Error('Expected an opened project');
-  expect(opened.value.view).toEqual(expected);
+  expect(opened.value.view).toEqual({
+    ...expected,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+  });
   expect(engine.snapshot().doc.name).toBe('Saved board');
   expect(store.files.get(path)!.view).toEqual(raw);
   expect(memory.documentWrites).toBe(0);
@@ -109,6 +112,7 @@ test('saveView normalizes legacy fields and discards theme and unknown propertie
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
   });
   projects.saveView({ navigatorWidth: 0 } as ViewState);
   expect((await projects.flush()).ok).toBe(true);

@@ -1,4 +1,6 @@
+import type { ParamsOf } from '@pcbk/contracts';
 import { z } from 'zod';
+import { CommandTargetNotFound } from './errors';
 import type { CommandSpec, EngineModule } from './types';
 
 const remove: CommandSpec<{ ids: string[] }> = {
@@ -12,4 +14,28 @@ const remove: CommandSpec<{ ids: string[] }> = {
     if (remaining.length !== doc.components.length) doc.components = remaining;
   },
 };
-export const coreItems: EngineModule = { id: 'core', commands: [remove] };
+
+const translate: CommandSpec<ParamsOf<'items.translate'>> = {
+  id: 'items.translate',
+  title: 'items.translate',
+  params: z.strictObject({
+    items: z.array(z.strictObject({ kind: z.literal('component'), id: z.string() })),
+    dx: z.number(),
+    dy: z.number(),
+  }),
+  alsoWrites: ['components'],
+  run(doc, { items, dx, dy }) {
+    const selected = new Set(items.map((item) => item.id));
+    const components = new Map(doc.components.map((component) => [component.id, component]));
+    for (const id of selected) {
+      const component = components.get(id);
+      if (!component) throw new CommandTargetNotFound(id);
+      const { board } = component;
+      if (!board) throw new Error('component_not_placed');
+      if (dx !== 0) board.center.x += dx;
+      if (dy !== 0) board.center.y += dy;
+    }
+  },
+};
+
+export const coreItems: EngineModule = { id: 'core', commands: [remove, translate] };

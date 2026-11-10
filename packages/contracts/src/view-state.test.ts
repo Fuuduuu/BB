@@ -2,6 +2,39 @@ import { expect, test } from 'vitest';
 import { parseViewState } from './view-state';
 
 test.each([
+  undefined,
+  null,
+  { zoom: 0, pan: { x: 20, y: 30 } },
+  { zoom: Infinity, pan: { x: 20, y: 30 } },
+  { zoom: 2, pan: { x: NaN, y: 30 } },
+  { zoom: 2, pan: { x: 20, y: -Infinity } },
+])('m0_view_defaults_board_transform_and_preserves_panels (%j)', (boardView) => {
+  expect(
+    parseViewState({
+      navigatorWidth: 400,
+      navigatorTab: 'log',
+      contextWidth: 380,
+      contextOpen: false,
+      ...(boardView !== undefined && { boardView }),
+    }),
+  ).toEqual({
+    navigatorWidth: 400,
+    navigatorTab: 'log',
+    contextWidth: 380,
+    contextOpen: false,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+  });
+});
+
+test('preserves a valid board view and detaches its nested coordinates', () => {
+  const input = { boardView: { zoom: 1.5, pan: { x: -40, y: 70 }, unused: true } };
+  const parsed = parseViewState(input)!;
+  expect(parsed.boardView).toEqual({ zoom: 1.5, pan: { x: -40, y: 70 } });
+  parsed.boardView!.pan.x = 20;
+  expect(input.boardView.pan.x).toBe(-40);
+});
+
+test.each([
   {
     raw: {},
     expected: {
@@ -26,7 +59,10 @@ test.each([
     expected: { navigatorWidth: 1, navigatorTab: 'future', contextWidth: 9000, contextOpen: false },
   },
 ])('normalizes optional view fields and strips unrelated values: %j', ({ raw, expected }) => {
-  expect(parseViewState(raw)).toEqual(expected);
+  expect(parseViewState(raw)).toEqual({
+    ...expected,
+    boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+  });
 });
 
 test.each(

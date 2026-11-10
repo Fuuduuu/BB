@@ -41,7 +41,7 @@ function mount() {
     const selection = useSessionStore((s) => s.selection);
     return (
       <>
-        {module.navigatorTabs![0]!.render()}
+        {module.navigatorTabs?.find((tab) => tab.id === 'unplaced')?.render()}
         {module.contextSections![0]!.render({ selection })}
       </>
     );
@@ -81,7 +81,9 @@ test('adding a resistor selects it with two stable pin identities and empty fact
       { id: '2', uid: 'pin_3', nc: false },
     ],
   });
-  expect(useSessionStore.getState().selection).toEqual({ kind: 'component', id: 'cmp_1' });
+  expect(useSessionStore.getState().selection).toEqual({
+    items: [{ kind: 'component', id: 'cmp_1' }],
+  });
   expect(screen.getByRole('button', { name: et.component.select('R1') }).textContent).toContain(
     'Takisti',
   );
@@ -260,7 +262,9 @@ test('a mechanical hole has no pins and selecting an earlier component shows its
   fireEvent.click(screen.getByRole('button', { name: et.component.select('R1') }));
   expect((screen.getByLabelText(et.component.ref) as HTMLInputElement).value).toBe('R1');
   act(() => {
-    useSessionStore.getState().setSelection({ kind: 'pin', componentId: 'cmp_1', pinId: '1' });
+    useSessionStore
+      .getState()
+      .setSelection({ items: [{ kind: 'pin', componentId: 'cmp_1', id: '1' }] });
   });
   expect(screen.getByLabelText(et.component.namePin('1'))).toBeTruthy();
 });

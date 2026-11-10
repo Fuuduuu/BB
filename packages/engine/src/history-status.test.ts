@@ -1,6 +1,7 @@
 import { newBoardDoc } from '@pcbk/domain';
 import type { CommandId, Snapshot } from '@pcbk/contracts';
 import { expect, test } from 'vitest';
+import { z } from 'zod';
 import { createEngine } from './index';
 import { clock, demo, setup, withTestOwners } from './__tests__/helpers';
 
@@ -152,6 +153,9 @@ test.each([
           derive: [
             {
               key: 'unplacedBoard',
+              inputs: ['name'],
+              schema: z.array(z.string()),
+              initial: [],
               run() {
                 fail('derive');
                 return [];

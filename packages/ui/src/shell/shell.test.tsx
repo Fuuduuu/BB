@@ -241,8 +241,8 @@ test('switching projects never renders the previous selection in the new project
   const restore = silenceExpectedCrash();
   function Selected({ selection }: { selection: Selection }) {
     const sid = useSnapshot((s) => s.sessionId);
-    if (sid === 'session-b' && selection.kind !== 'none') throw new Error('stale selection');
-    return <p>{selection.kind === 'none' ? 'Valik puudub' : 'Valitud'}</p>;
+    if (sid === 'session-b' && selection.items.length) throw new Error('stale selection');
+    return <p>Valitud</p>;
   }
   const registry = new UiRegistry([
     {
@@ -252,7 +252,7 @@ test('switching projects never renders the previous selection in the new project
         {
           id: 'selection',
           order: 0,
-          appliesTo: ['none', 'component'],
+          appliesTo: ['component'],
           render: ({ selection }) => <Selected selection={selection} />,
         },
       ],
@@ -265,11 +265,13 @@ test('switching projects never renders the previous selection in the new project
         <AppShell {...actions()} registry={registry} />
       </EngineProvider>,
     );
-    act(() => useSessionStore.getState().setSelection({ kind: 'component', id: 'cmp_old' }));
+    act(() =>
+      useSessionStore.getState().setSelection({ items: [{ kind: 'component', id: 'cmp_old' }] }),
+    );
     expect(screen.getByText('Valitud')).toBeTruthy();
     act(() => engine.replace(snapshot('session-b', 0, 'Teine plaat')));
     expect(screen.queryByText(et.error.panel)).toBeNull();
-    expect(screen.getByText('Valik puudub')).toBeTruthy();
+    expect(screen.getByText(et.shell.contextEmpty)).toBeTruthy();
   } finally {
     restore();
   }
@@ -293,10 +295,76 @@ test('navigator tabs support arrows without changing the selected component', ()
       <AppShell {...actions()} registry={registry} />
     </EngineProvider>,
   );
-  act(() => useSessionStore.getState().setSelection({ kind: 'component', id: 'cmp_kept' }));
+  act(() =>
+    useSessionStore.getState().setSelection({ items: [{ kind: 'component', id: 'cmp_kept' }] }),
+  );
   fireEvent.keyDown(screen.getByRole('tab', { name: 'Komponendid' }), { key: 'ArrowRight' });
   const log = screen.getByRole('tab', { name: 'Logi' });
   expect(log.getAttribute('aria-selected')).toBe('true');
   expect(document.activeElement).toBe(log);
-  expect(useSessionStore.getState().selection).toEqual({ kind: 'component', id: 'cmp_kept' });
+  expect(useSessionStore.getState().selection).toEqual({
+    items: [{ kind: 'component', id: 'cmp_kept' }],
+  });
+});
+
+test('navigator tab shows its current count only when positive', () => {
+  const registry = new UiRegistry([
+    {
+      id: 'test',
+      title: 'Test',
+      navigatorTabs: [
+        {
+          id: 'unplaced',
+          title: 'Plaadile paigutamata',
+          count: (current) => current.doc.components.length,
+          render: () => null,
+        },
+      ],
+    },
+  ]);
+  const engine = new FakeEngine(snapshotWithComponent('cmp_1'));
+  render(
+    <EngineProvider engine={engine} projects={new FakeProjects()}>
+      <AppShell {...actions()} registry={registry} />
+    </EngineProvider>,
+  );
+  expect(screen.getByRole('tab').textContent).toBe('Plaadile paigutamata (1)');
+  act(() => engine.replace(snapshot('session-a', 1)));
+  expect(screen.getByRole('tab').textContent).toBe('Plaadile paigutamata');
+});
+
+test('session_reset_hook_called_on_project_switch', () => {
+  const sessionChanges: string[] = [];
+  const registry = new UiRegistry([
+    {
+      id: 'test',
+      title: 'Test',
+      onSessionReset: () => sessionChanges.push(useSessionStore.getState().sessionId),
+    },
+  ]);
+  const engine = new FakeEngine(snapshot('session-a', 0));
+  render(
+    <EngineProvider engine={engine} projects={new FakeProjects()}>
+      <AppShell {...actions()} registry={registry} />
+    </EngineProvider>,
+  );
+  expect(sessionChanges).toEqual(['session-a']);
+  act(() => engine.replace(snapshot('session-a', 1)));
+  expect(sessionChanges).toEqual(['session-a']);
+  act(() => engine.replace(snapshot('session-b', 0)));
+  expect(sessionChanges).toEqual(['session-a', 'session-b']);
+});
+
+test('selection_cleared_when_selected_item_disappears', () => {
+  const engine = new FakeEngine(snapshotWithComponent('cmp_present'));
+  render(
+    <EngineProvider engine={engine} projects={new FakeProjects()}>
+      <AppShell {...actions()} />
+    </EngineProvider>,
+  );
+  act(() =>
+    useSessionStore.getState().setSelection({ items: [{ kind: 'component', id: 'cmp_present' }] }),
+  );
+  act(() => engine.replace(snapshot('session-a', 1)));
+  expect(useSessionStore.getState().selection).toEqual({ items: [] });
 });

@@ -1,6 +1,6 @@
 const path = require('node:path');
 
-const tests = '(?:[.](?:test|spec)[.][cm]?[jt]sx?$|/(?:__tests__|tests)/)';
+const tests = '(?:[.](?:test|spec)(?:-d)?[.][cm]?[jt]sx?$|/(?:__tests__|tests)/)';
 const react = '(?:^|/)node_modules/(?:@types/)?react(?:-dom)?(?:/|$)|^react(?:-dom)?(?:/|$)';
 const tauri = '(?:^|/)node_modules/@tauri-apps/|^@tauri-apps/';
 
@@ -66,12 +66,12 @@ module.exports = {
       to: { path: '^packages/domain/', dependencyTypesNot: ['type-only'] },
     },
     {
-      name: 'ui-domain-types-or-geometry',
+      name: 'ui-domain-runtime-allowlist',
       severity: 'error',
       from: { path: '^packages/(?:ui/|client/|features/[^/]+/ui/)', pathNot: tests },
       to: {
         path: '^packages/domain/',
-        pathNot: '^packages/domain/(?:src/)?geometry(?:/|[.])',
+        pathNot: '^packages/domain/src/(?:geometry/|footprints/|measure/reading[.]ts$)',
         dependencyTypesNot: ['type-only'],
       },
     },
@@ -84,7 +84,7 @@ module.exports = {
     {
       name: 'features-registry-apps-only',
       severity: 'error',
-      from: { pathNot: '^apps/' },
+      from: { pathNot: ['^apps/', tests] },
       to: { path: '^packages/features/(?:engine|ui)[.]ts$' },
     },
     {
@@ -116,5 +116,9 @@ module.exports = {
     exclude: '(^|/)(?:dist|coverage|[.]superpowers)/',
     tsPreCompilationDeps: true,
     tsConfig: { fileName: path.join(__dirname, 'tsconfig.base.json') },
+    enhancedResolveOptions: {
+      exportsFields: ['exports'],
+      conditionNames: ['import', 'require', 'node', 'default', 'types'],
+    },
   },
 };

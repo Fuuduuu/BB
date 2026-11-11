@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { componentEt } from './i18n/et';
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { useSyncExternalStore } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { newBoardDoc } from '@pcbk/domain';
-import { Canvas, et, useSessionStore } from '@pcbk/ui';
+import { Canvas, useSessionStore } from '@pcbk/ui';
 import type { ToolApi } from '@pcbk/ui';
 import { idGenerator, setup } from '../../__tests__/helpers';
 import { COMPONENTS_LAYERS } from './layers';
@@ -247,6 +248,6 @@ test('a rejected placement displays the command error and leaves placement activ
   click();
 
   expect(engine.snapshot()).toBe(before);
-  expect(usePlaceStore.getState().error).toBe(et.component.missing);
+  expect(usePlaceStore.getState().error).toBe(componentEt.missing);
   expect(useSessionStore.getState().toolId).toBe('components.place');
 });

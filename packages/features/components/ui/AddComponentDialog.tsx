@@ -1,3 +1,4 @@
+import { componentEt } from './i18n/et';
 import { useState } from 'react';
 import type { ComponentKind } from '@pcbk/domain';
 import type { IdGen } from '@pcbk/contracts';
@@ -24,7 +25,7 @@ export function AddComponentDialog({ ids, onClose }: { ids: IdGen; onClose(): vo
   const [countError, setCountError] = useState<string>();
   const [error, setError] = useState<string>();
   return (
-    <Dialog open title={et.component.addTitle} onClose={onClose}>
+    <Dialog open title={componentEt.addTitle} onClose={onClose}>
       <form
         className="pcbk-component-form"
         noValidate
@@ -37,7 +38,7 @@ export function AddComponentDialog({ ids, onClose }: { ids: IdGen; onClose(): vo
             pinCount < 0 ||
             pinCount > maxPinCount
           ) {
-            setCountError(et.component.pinCountInvalid);
+            setCountError(componentEt.pinCountInvalid);
             return;
           }
           const params = makeAddComponent(ids, kind, kind === 'hole' ? 0 : pinCount);
@@ -62,7 +63,7 @@ export function AddComponentDialog({ ids, onClose }: { ids: IdGen; onClose(): vo
           }}
         />
         <Field
-          label={et.component.pinCount}
+          label={componentEt.pinCount}
           type="number"
           inputMode="numeric"
           min={0}
@@ -84,7 +85,7 @@ export function AddComponentDialog({ ids, onClose }: { ids: IdGen; onClose(): vo
         <div className="pcbk-component-actions">
           <Button onClick={onClose}>{et.common.cancel}</Button>
           <Button type="submit" variant="primary">
-            {et.component.add}
+            {componentEt.add}
           </Button>
         </div>
       </form>

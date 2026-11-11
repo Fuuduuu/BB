@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { SAVE_MAX_WAIT_MS } from '../../../packages/domain/src/constants';
 
 async function createBoard(page: Page, name: string) {
   await page.goto('/');
@@ -71,6 +72,12 @@ test('explicit discard after a storage error does not ask twice or silently save
 }) => {
   await createBoard(page, 'Tõrke katse');
   await page.evaluate(() => {
+    const state = window as typeof window & {
+      __bbMarker: number;
+      __bbPut: typeof IDBObjectStore.prototype.put;
+    };
+    state.__bbMarker = 1;
+    state.__bbPut = IDBObjectStore.prototype.put;
     IDBObjectStore.prototype.put = function () {
       throw new DOMException('Synthetic quota error', 'QuotaExceededError');
     };
@@ -86,9 +93,21 @@ test('explicit discard after a storage error does not ask twice or silently save
   });
   await close.getByRole('button', { name: 'Sulge salvestamata', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Uus plaat', exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(() => (window as typeof window & { __bbMarker?: number }).__bbMarker),
+  ).toBe(1);
   expect(prompts).toBe(0);
+  await page.waitForTimeout(SAVE_MAX_WAIT_MS + 500);
+  await page.evaluate(() => {
+    IDBObjectStore.prototype.put = (
+      window as typeof window & { __bbPut: typeof IDBObjectStore.prototype.put }
+    ).__bbPut;
+  });
+  await page.reload();
   await page.getByRole('button', { name: 'Ava Tõrke katse', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Tõrke katse', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Vali R1', exact: true })).toHaveCount(0);
+  expect(prompts).toBe(0);
 });
 test('stored projects remain discoverable when the recent index is absent', async ({ page }) => {
   await createBoard(page, 'Leitav plaat');

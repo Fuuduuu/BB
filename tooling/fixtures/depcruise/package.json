@@ -2,6 +2,12 @@
   "name": "@pcbk/domain",
   "private": true,
   "exports": {
+    "./model": "./packages/domain/src/model/index.ts",
+    "./components": "./packages/domain/src/components/index.ts",
+    "./migrations": "./packages/domain/src/migrations/index.ts",
+    "./ids": "./packages/domain/src/ids.ts",
+    "./doc": "./packages/domain/src/doc.ts",
+    "./constants": "./packages/domain/src/constants.ts",
     "./measure": "./packages/domain/src/measure/index.ts",
     "./measure/reading": "./packages/domain/src/measure/reading.ts"
   }

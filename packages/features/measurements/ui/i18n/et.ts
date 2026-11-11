@@ -39,6 +39,8 @@ export const measureEt = {
 
 export function commandError(error: EngineError): string {
   switch (error.code) {
+    case 'internal':
+      return 'Sisemine viga, muudatust ei tehtud. Salvesta diagnostika ja anna veast teada.';
     case 'validation':
       if (error.issues.some(({ message }) => message === 'same_probe_twice')) {
         return measureEt.errors.sameProbe;

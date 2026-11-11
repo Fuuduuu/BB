@@ -14,18 +14,19 @@ import { useViewStore } from '../shell/view-store';
 import { useProjectLists } from './use-project-lists';
 import { sameProjectPath, useWorkbenchAction, useWorkbenchHost } from './use-workbench-host';
 
-type CloseIntent = 'home' | 'host' | 'reload';
+type CloseIntent = 'home' | 'host' | 'reload' | { open: string };
 type CopyIntent = 'stay' | 'reload' | 'close';
 
 function errorText(error: EngineError) {
   if (error.code === 'storage') return et.reason[error.reason];
   if (error.code === 'read_only') return et.reason.read_only;
-  if (error.code === 'stale_rev') return et.project.changedElsewhere;
-  return et.component.failed;
+  if (error.code === 'stale_rev') return et.reason.stale_rev;
+  return et.common.actionFailed;
 }
 
 function closeReason(error: EngineError): StorageReason {
   if (error.code === 'storage') return error.reason;
+  if (error.code === 'stale_rev') return 'stale_rev';
   return error.code === 'read_only' ? 'read_only' : 'unknown';
 }
 
@@ -99,6 +100,14 @@ export function useWorkbench(host: AppHost) {
     async (path: string) => {
       if (activePath.current && sameProjectPath(activePath.current, path)) return;
       setLaunchError(null);
+      if (activePath.current) {
+        const saved = await projects.flush();
+        if (!saved.ok) {
+          setCloseError({ reason: closeReason(saved.error), intent: { open: path } });
+          return;
+        }
+      }
+      setCloseError(null);
       const result = await projects.open({ path });
       if (result.ok) activate(result.value);
       else {
@@ -215,7 +224,8 @@ export function useWorkbench(host: AppHost) {
       }
       if (intent === 'close') {
         const closeIntent = closeError?.intent ?? 'home';
-        if (await finishClose(closeIntent)) leaveWorkbench(closeIntent);
+        if (typeof closeIntent === 'object') await openProject(closeIntent.open);
+        else if (await finishClose(closeIntent)) leaveWorkbench(closeIntent);
       }
     });
   };
@@ -258,7 +268,8 @@ export function useWorkbench(host: AppHost) {
     retryClose: () => {
       const intent = closeError?.intent ?? 'home';
       void run(async () => {
-        if (await finishClose(intent)) leaveWorkbench(intent);
+        if (typeof intent === 'object') await openProject(intent.open);
+        else if (await finishClose(intent)) leaveWorkbench(intent);
       });
     },
     discard: () => {
@@ -270,7 +281,8 @@ export function useWorkbench(host: AppHost) {
           return;
         }
         deactivate();
-        leaveWorkbench(host.kind === 'web' && intent === 'home' ? 'host' : intent);
+        if (typeof intent === 'object') await openProject(intent.open);
+        else leaveWorkbench(intent);
       });
     },
   };

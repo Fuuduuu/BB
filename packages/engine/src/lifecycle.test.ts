@@ -85,7 +85,7 @@ test('runner, summary and clock failures are atomic', () => {
     const before = engine.snapshot();
     expect(engine.execute('test.mutate', {})).toMatchObject({
       ok: false,
-      error: { code: 'validation' },
+      error: { code: 'internal' },
     });
     expect(engine.snapshot()).toBe(before);
     expect(host.drainJournal()).toEqual([]);
@@ -102,7 +102,7 @@ test('async command runners are rejected without a partial commit', async () => 
   const before = engine.snapshot();
   expect(engine.execute('test.mutate', {})).toMatchObject({
     ok: false,
-    error: { code: 'validation' },
+    error: { code: 'internal' },
   });
   await Promise.resolve();
   expect(engine.snapshot()).toBe(before);
@@ -196,7 +196,7 @@ test('failed derivations do not publish a half-committed document', () => {
   const before = engine.snapshot();
   expect(engine.execute('demo.rename', { name: 'Bad' })).toMatchObject({
     ok: false,
-    error: { code: 'validation' },
+    error: { code: 'internal' },
   });
   expect(engine.snapshot()).toBe(before);
   expect(host.drainJournal()).toEqual([]);
@@ -213,7 +213,7 @@ test('unknown commands and revision overflow do not modify the document', () => 
   });
   expect(engine.execute('demo.rename', { name: 'Too late' })).toMatchObject({
     ok: false,
-    error: { code: 'validation' },
+    error: { code: 'internal' },
   });
   expect(engine.snapshot()).toBe(before);
   expect(host.drainJournal()).toEqual([]);

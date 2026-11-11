@@ -15,6 +15,7 @@ export default defineConfig([
       '**/coverage/**',
       '**/target/**',
       '.superpowers/**',
+      '.claude/worktrees/**',
       'prototype/**',
       'tools/**',
       'tooling/fixtures/**',

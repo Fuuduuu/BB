@@ -3,6 +3,13 @@ import { act, fireEvent, screen } from '@testing-library/react';
 import { expect, test } from 'vitest';
 import { useSessionStore } from '@pcbk/ui';
 import { measurementDoc, mountMeasurements } from '../__tests__/workspace';
+import { commandError } from './i18n/et';
+
+test('ui_shows_internal_error_text', () => {
+  expect(commandError({ code: 'internal', message: 'private implementation detail' })).toBe(
+    'Sisemine viga, muudatust ei tehtud. Salvesta diagnostika ja anna veast teada.',
+  );
+});
 
 const value = () => screen.getByRole<HTMLInputElement>('textbox', { name: 'Pinge' });
 const pickRef = () => fireEvent.click(screen.getByRole('button', { name: 'Vali jalg' }));

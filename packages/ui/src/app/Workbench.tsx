@@ -104,6 +104,7 @@ export function Workbench({
       <CloseDialog
         open={workbench.closeError !== null}
         reason={workbench.closeError?.reason ?? 'unknown'}
+        opening={typeof workbench.closeError?.intent === 'object'}
         busy={workbench.busy}
         copyAvailable={copyAvailable}
         onCancel={workbench.cancelClose}

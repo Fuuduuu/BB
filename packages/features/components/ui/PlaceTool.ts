@@ -1,10 +1,10 @@
 import type { IdGen } from '@pcbk/contracts';
 import type { FootprintParams, Vec2 } from '@pcbk/domain';
-import { et, useSessionStore } from '@pcbk/ui';
+import { useSessionStore } from '@pcbk/ui';
 import type { CanvasTool, ToolApi, ToolSpec } from '@pcbk/ui';
 import { COMPONENT_LIBRARY, makePlacedComponent } from '../contract';
 import { commandError } from './errors';
-import { placementEt } from './i18n/et';
+import { componentEt, placementEt } from './i18n/et';
 import { PLACE_TOOL_ID, usePlaceStore } from './place-store';
 import type { PlacementRequest } from './place-store';
 
@@ -72,7 +72,7 @@ function createPlaceTool(ids: IdGen): CanvasTool {
       if (request.mode === 'new') {
         const entry = entries.get(request.entryId);
         if (!entry) {
-          usePlaceStore.setState({ error: et.component.invalid });
+          usePlaceStore.setState({ error: componentEt.invalid });
           return;
         }
         const params = makePlacedComponent(ids, entry, request.params, center);

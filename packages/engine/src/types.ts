@@ -1,4 +1,4 @@
-import type { BoardDoc, DocKey, Migration } from '@pcbk/domain';
+import type { BoardDoc, DocKey } from '@pcbk/domain';
 import type { DeepReadonly, Derived, DomainEvent } from '@pcbk/contracts';
 import type { Draft } from 'immer';
 import type { z } from 'zod';
@@ -36,7 +36,6 @@ export interface EngineModule {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   commands?: CommandSpec<any>[];
   derive?: DeriveSpec[];
-  migrations?: Migration[];
 }
 export type JournalEntry = {
   at: string;

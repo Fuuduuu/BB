@@ -69,3 +69,21 @@ test('Escape cancels the close request without discarding changes; busy actions 
   expect(actions.onRetrySave).not.toHaveBeenCalled();
   expect(actions.onSaveElsewhere).not.toHaveBeenCalled();
 });
+
+test('close_dialog_hides_retry_for_stale_rev', () => {
+  const actions = {
+    onRetrySave: vi.fn(),
+    onSaveElsewhere: vi.fn(),
+    onDiscard: vi.fn(),
+    onCancel: vi.fn(),
+  };
+  render(<CloseDialog open reason="stale_rev" {...actions} />);
+  expect(screen.getByRole('dialog').textContent).toContain(
+    'Projekti muudeti teises aknas. Sinu muudatused on alles ainult selles aknas; salvesta need mujale.',
+  );
+  expect(screen.queryByRole('button', { name: et.common.retry })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: et.common.saveElsewhere }));
+  fireEvent.click(screen.getByRole('button', { name: et.save.discard }));
+  expect(actions.onSaveElsewhere).toHaveBeenCalledOnce();
+  expect(actions.onDiscard).toHaveBeenCalledOnce();
+});

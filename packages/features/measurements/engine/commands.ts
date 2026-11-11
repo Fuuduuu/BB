@@ -1,5 +1,5 @@
 import type { BoardDoc, MeasuredPin } from '@pcbk/domain';
-import { CommandTargetNotFound } from '@pcbk/engine';
+import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec } from '@pcbk/engine';
 import { selectComponent } from '../../components/contract';
 import { AddMeasurementSchema, RemoveMeasurementSchema } from '../contract';
@@ -8,7 +8,7 @@ import type { AddMeasurementParams, RemoveMeasurementParams } from '../contract'
 function pinLabel(doc: BoardDoc, { c, p, uid }: MeasuredPin): string {
   const component = selectComponent({ doc }, c);
   if (!component || !component.pins.some((pin) => pin.id === p && pin.uid === uid)) {
-    throw new Error('pin_not_active');
+    reject('pin_not_active');
   }
   return `${component.ref}.${p}`;
 }
@@ -20,7 +20,7 @@ const add: CommandSpec<AddMeasurementParams> = {
   run(doc, params) {
     const atLabel = pinLabel(doc, params.at);
     const refLabel = params.ref ? pinLabel(doc, params.ref) : undefined;
-    if (params.at.uid === params.ref?.uid) throw new Error('same_probe_twice');
+    if (params.at.uid === params.ref?.uid) reject('same_probe_twice');
 
     doc.measurements.push({
       ...params,

@@ -1,11 +1,11 @@
 import { useId, useState } from 'react';
 import { useSnapshot } from '@pcbk/client';
 import type { IdGen, Snapshot } from '@pcbk/contracts';
-import { Button, et } from '@pcbk/ui';
+import { Button } from '@pcbk/ui';
 import { COMPONENT_LIBRARY, selectComponents } from '../contract';
 import { AddComponentDialog } from './AddComponentDialog';
 import { ComponentList } from './ComponentList';
-import { placementEt } from './i18n/et';
+import { componentEt, placementEt } from './i18n/et';
 import { beginPlacement, usePlaceStore } from './place-store';
 import { compatiblePlacement, libraryName } from './placement';
 
@@ -64,7 +64,7 @@ export function UnplacedList({ ids }: { ids: IdGen }) {
     <div className="pcbk-components">
       <div className="pcbk-components__toolbar">
         <Button variant="primary" onClick={() => setAdding(true)}>
-          {et.component.add}
+          {componentEt.add}
         </Button>
       </div>
       {error && (

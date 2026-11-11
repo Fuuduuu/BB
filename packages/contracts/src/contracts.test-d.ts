@@ -112,6 +112,7 @@ engine.events((event) => {
 
 expectTypeOf<EngineError>().toEqualTypeOf<
   | { code: 'validation'; issues: ZodIssue[] }
+  | { code: 'internal'; message: string }
   | { code: 'ownership'; field: DocKey; command: CommandId }
   | { code: 'not_found'; id: string }
   | { code: 'read_only' }
@@ -127,6 +128,7 @@ expectTypeOf<StorageReason>().toEqualTypeOf<
   | 'exists'
   | 'not_project'
   | 'too_new'
+  | 'stale_rev'
   | 'unknown'
 >();
 

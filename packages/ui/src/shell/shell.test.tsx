@@ -139,6 +139,8 @@ test('every StorageReason has an Estonian text', () => {
     exists: 'See failinimi on juba kasutusel. Vali uus failinimi.',
     not_project: 'see fail ei ole PCB Kaardistaja projekt',
     too_new: 'fail on tehtud uuema äpiga',
+    stale_rev:
+      'Projekti muudeti teises aknas. Sinu muudatused on alles ainult selles aknas; salvesta need mujale.',
     unknown: 'tundmatu viga',
   };
   expect(et.reason).toEqual(expected);
@@ -163,6 +165,17 @@ test('save errors keep retry and rescue actions visible', () => {
   fireEvent.click(screen.getByRole('button', { name: et.common.retry }));
   fireEvent.click(screen.getByRole('button', { name: et.common.saveElsewhere }));
   expect(app.onRetrySave).toHaveBeenCalledOnce();
+  expect(app.onSaveElsewhere).toHaveBeenCalledOnce();
+});
+
+test('stale_rev_status_shows_changed_elsewhere_without_retry', () => {
+  const app = setup();
+  act(() => app.projects.emit({ sessionId: 'session-a', state: 'error', reason: 'stale_rev' }));
+  expect(screen.getByRole('alert').textContent).toContain(
+    'Projekti muudeti teises aknas. Sinu muudatused on alles ainult selles aknas; salvesta need mujale.',
+  );
+  expect(screen.queryByRole('button', { name: et.common.retry })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: et.common.saveElsewhere }));
   expect(app.onSaveElsewhere).toHaveBeenCalledOnce();
 });
 test('Ctrl+Z inside a text field does not trigger engine undo', () => {

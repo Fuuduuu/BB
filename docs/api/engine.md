@@ -28,6 +28,15 @@ export interface CommandCtx {
 }
 ```
 
+### `CommandRejected`
+```ts
+export class CommandRejected extends Error {
+    readonly reason: string;
+    name: string;
+    constructor(reason: string);
+}
+```
+
 ### `CommandSpec`
 ```ts
 export interface CommandSpec<P> {
@@ -68,6 +77,7 @@ export function createEngine(opts: {
     modules: EngineModule[];
     clock: Clock;
     reserved?: DocKey[];
+    onInternalError?(error: unknown, commandId: string): void;
 }): {
     engine: DocumentEngine;
     host: EngineHost;
@@ -133,7 +143,6 @@ export interface EngineModule {
     owns?: DocKey[];
     commands?: CommandSpec<any>[];
     derive?: DeriveSpec[];
-    migrations?: Migration[];
 }
 ```
 
@@ -204,6 +213,11 @@ export interface ProjectRepository {
 export class RegistryError extends Error {
     name: string;
 }
+```
+
+### `reject`
+```ts
+export function reject(reason: string): never;
 ```
 
 ### `SaveReq`

@@ -1,5 +1,4 @@
 import type { IdGen } from '@pcbk/contracts';
-import { et } from '@pcbk/ui';
 import type { UiModule } from '@pcbk/ui';
 import { ComponentDetails } from './ComponentDetails';
 import { Library } from './Library';
@@ -7,7 +6,7 @@ import { createPlaceToolSpec } from './PlaceTool';
 import { PlacementSection, placementKeys } from './PlacementSection';
 import { PlacedList } from './PlacedList';
 import { UnplacedList } from './UnplacedList';
-import { placementEt } from './i18n/et';
+import { componentEt, placementEt } from './i18n/et';
 import { COMPONENTS_LAYERS } from './layers';
 import { usePlaceStore } from './place-store';
 import './components.css';
@@ -15,7 +14,7 @@ import './components.css';
 export function createComponentsUi(ids: IdGen): UiModule {
   return {
     id: 'components',
-    title: et.component.title,
+    title: componentEt.title,
     canvasLayers: COMPONENTS_LAYERS,
     tools: [createPlaceToolSpec(ids)],
     keys: placementKeys,

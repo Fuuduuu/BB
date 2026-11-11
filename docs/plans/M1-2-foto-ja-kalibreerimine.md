@@ -1,6 +1,6 @@
 # M1.2 · Foto ja kalibreerimine: teostusplaan
 
-**Olek:** kavand (arhitekt 2026-11-11), ootab kasutaja otsuseid [O1–O3](#kasutaja-otsused-enne-ehitust). Kaardid kirjutatakse vahetult enne iga ülesannet ([snaipriülesanded](../tasks/README.md)); hetkeseis on [STATUS-es](../STATUS.md).
+**Olek:** kinnitatud 2026-11-11 (kasutaja: O1 jah, O2 jah; O3 otsustatakse Ül. 9-s). Kaardid kirjutatakse vahetult enne iga ülesannet ([snaipriülesanded](../tasks/README.md)); hetkeseis on [STATUS-es](../STATUS.md).
 
 **Eesmärk** ([07 › M1.2](../07-teekaart.md#m12--foto-ja-kalibreerimine)): kasutaja lohistab plaadi foto avalehele, saab kohe töölaua fotoga, pöörab või peegeldab selle õigeks, kalibreerib mõõtkava ja paigutab esimese komponendi kõige rohkem 3 tegevusega. Foto ja kaardistus liiguvad koos, failid jäävad terviklikuks.
 

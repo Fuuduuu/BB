@@ -128,6 +128,7 @@ expectTypeOf<StorageReason>().toEqualTypeOf<
   | 'exists'
   | 'not_project'
   | 'too_new'
+  | 'stale_rev'
   | 'unknown'
 >();
 

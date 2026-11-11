@@ -1,5 +1,5 @@
+import { componentEt } from './i18n/et';
 import type { EngineError } from '@pcbk/contracts';
-import { et } from '@pcbk/ui';
 
 export function commandError(error: EngineError): string {
   switch (error.code) {
@@ -9,13 +9,13 @@ export function commandError(error: EngineError): string {
       return error.issues.some(
         (issue) => issue.code === 'custom' && issue.message === 'invalid_or_duplicate_ref',
       )
-        ? et.component.duplicateRef
-        : et.component.invalid;
+        ? componentEt.duplicateRef
+        : componentEt.invalid;
     case 'not_found':
-      return et.component.missing;
+      return componentEt.missing;
     case 'read_only':
-      return et.component.readOnly;
+      return componentEt.readOnly;
     default:
-      return et.component.failed;
+      return componentEt.failed;
   }
 }

@@ -17,7 +17,7 @@ export function ErrorBar({
     <div role="alert" className="pcbk-error-bar">
       <strong>{et.save.failed(et.reason[reason])}</strong>
       <div className="pcbk-inline-actions">
-        <Button onClick={onRetrySave}>{et.common.retry}</Button>
+        {reason !== 'stale_rev' && <Button onClick={onRetrySave}>{et.common.retry}</Button>}
         <Button
           onClick={onSaveElsewhere}
           disabled={!copyAvailable}

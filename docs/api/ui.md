@@ -87,9 +87,10 @@ export interface CanvasTool {
 
 ### `CloseDialog`
 ```ts
-export function CloseDialog({ open, reason, busy, copyAvailable, onCancel, onDiscard, onRetrySave, onSaveElsewhere, }: SaveRecoveryActions & {
+export function CloseDialog({ open, reason, opening, busy, copyAvailable, onCancel, onDiscard, onRetrySave, onSaveElsewhere, }: SaveRecoveryActions & {
     open: boolean;
     reason: StorageReason;
+    opening?: boolean;
     busy?: boolean;
     onCancel(): void;
     onDiscard(): void;
@@ -148,6 +149,7 @@ export const et: {
         exists: string;
         not_project: string;
         too_new: string;
+        stale_rev: string;
         unknown: string;
     };
     readonly appName: "PCB Kaardistaja";
@@ -161,6 +163,7 @@ export const et: {
         readonly retry: "Proovi uuesti";
         readonly saveElsewhere: "Salvesta mujale…";
         readonly cancel: "Katkesta";
+        readonly actionFailed: "Muudatust ei saanud teha. Proovi uuesti.";
     };
     readonly shell: {
         readonly projectName: "Projekti nimi";
@@ -194,6 +197,7 @@ export const et: {
         readonly failed: (why: string) => string;
         readonly closeTitle: (why: string) => string;
         readonly discard: "Sulge salvestamata";
+        readonly openDiscard: "Ava salvestamata";
         readonly discardHint: "Viimased muudatused kaovad";
     };
     readonly error: {
@@ -237,66 +241,6 @@ export const et: {
         readonly changedElsewhere: "Projekti muudeti teises aknas. Sinu muudatused on mälus alles.";
         readonly recentFailed: "Viimaste projektide loendit ei saanud salvestada. Projekt on alles.";
         readonly defaultName: (date: string) => string;
-    };
-    readonly component: {
-        readonly title: "Komponendid";
-        readonly add: "Lisa komponent";
-        readonly addTitle: "Lisa komponent";
-        readonly type: "Tüüp";
-        readonly pinCount: "Jalgade arv";
-        readonly ref: "Tähis";
-        readonly marking: "Korpuse märgistus";
-        readonly value: "Väärtus või mudel";
-        readonly note: "Märkused";
-        readonly identified: "Tuvastatud";
-        readonly dnp: "DNP";
-        readonly pins: "Jalad";
-        readonly pinId: "Jalg";
-        readonly pinName: "Nimi";
-        readonly nc: "NC";
-        readonly addPin: "Lisa jalg";
-        readonly remove: "Eemalda";
-        readonly noPins: "Jalgu pole veel lisatud.";
-        readonly empty: "Lisa esimene komponent, et alustada plaadi kirjeldamist.";
-        readonly unplaced: "Plaadile paigutamata";
-        readonly select: (ref: string) => string;
-        readonly removePin: (id: string) => string;
-        readonly namePin: (id: string) => string;
-        readonly ncPin: (id: string) => string;
-        readonly invalid: "Kontrolli sisestatud väärtust.";
-        readonly duplicateRef: "See tähis on juba kasutusel.";
-        readonly missing: "Komponenti või jalga ei leitud (võib-olla kustutati).";
-        readonly readOnly: "Projekt on kirjutuskaitstud.";
-        readonly failed: "Muudatust ei saanud teha. Proovi uuesti.";
-        readonly valueHint: "nt väärtus või mudeli nimi";
-        readonly resistorHint: "nt 10 kΩ";
-        readonly markingHint: "nt 103 või A7W";
-        readonly pinCountInvalid: "Sisesta sobiv täisarv.";
-        readonly kinds: {
-            resistor: string;
-            capacitor: string;
-            capacitor_polarized: string;
-            inductor: string;
-            diode: string;
-            led: string;
-            zener: string;
-            npn: string;
-            pnp: string;
-            nmos: string;
-            pmos: string;
-            regulator: string;
-            ic: string;
-            connector: string;
-            crystal: string;
-            switch: string;
-            fuse: string;
-            testpoint: string;
-            via: string;
-            pad: string;
-            wire_point: string;
-            hole: string;
-            other: string;
-        };
     };
 };
 ```

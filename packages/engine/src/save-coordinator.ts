@@ -119,7 +119,12 @@ export function createSaveCoordinator(opts: {
           failureVersion = attemptedChanges;
           publish({
             state: 'error',
-            reason: lastError.code === 'storage' ? lastError.reason : 'unknown',
+            reason:
+              lastError.code === 'stale_rev'
+                ? 'stale_rev'
+                : lastError.code === 'storage'
+                  ? lastError.reason
+                  : 'unknown',
           });
           return err(lastError);
         }

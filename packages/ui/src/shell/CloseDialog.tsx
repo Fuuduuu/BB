@@ -7,6 +7,7 @@ import { et } from './i18n/et';
 export function CloseDialog({
   open,
   reason,
+  opening = false,
   busy = false,
   copyAvailable = true,
   onCancel,
@@ -16,6 +17,7 @@ export function CloseDialog({
 }: SaveRecoveryActions & {
   open: boolean;
   reason: StorageReason;
+  opening?: boolean;
   busy?: boolean;
   onCancel(): void;
   onDiscard(): void;
@@ -28,9 +30,11 @@ export function CloseDialog({
       closeDisabled={busy}
     >
       <div className="pcbk-close-actions" aria-busy={busy}>
-        <Button variant="primary" disabled={busy} onClick={onRetrySave}>
-          {et.common.retry}
-        </Button>
+        {reason !== 'stale_rev' && (
+          <Button variant="primary" disabled={busy} onClick={onRetrySave}>
+            {et.common.retry}
+          </Button>
+        )}
         <Button
           disabled={busy || !copyAvailable}
           onClick={onSaveElsewhere}
@@ -45,10 +49,13 @@ export function CloseDialog({
             onClick={onDiscard}
             aria-describedby="pcbk-discard-hint"
           >
-            {et.save.discard}
+            {opening ? et.save.openDiscard : et.save.discard}
           </Button>
           <p id="pcbk-discard-hint">{et.save.discardHint}</p>
         </div>
+        <Button disabled={busy} onClick={onCancel}>
+          {et.common.cancel}
+        </Button>
       </div>
     </Dialog>
   );

@@ -102,9 +102,9 @@ test('stale base_rev reports an error, retains the journal and retries on the ne
     error: { code: 'stale_rev', expected: 0, actual: 7 },
   });
   expect(memory.documentWrites).toBe(0);
-  expect(statuses.at(-1)).toMatchObject({ state: 'error' });
+  expect(statuses.at(-1)).toMatchObject({ state: 'error', reason: 'stale_rev' });
   engine.execute('demo.rename', { name: 'Retry' });
-  expect(statuses.at(-1)).toMatchObject({ state: 'error' });
+  expect(statuses.at(-1)).toMatchObject({ state: 'error', reason: 'stale_rev' });
   await vi.advanceTimersByTimeAsync(1500);
   expect(requests.map((req) => req.baseRev)).toEqual([0, 0]);
   expect(store.files.get(path)!.journal).toHaveLength(2);

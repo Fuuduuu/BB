@@ -1,6 +1,6 @@
+import { componentEt } from './i18n/et';
 import { useId } from 'react';
 import type { ComponentKind } from '@pcbk/domain';
-import { et } from '@pcbk/ui';
 
 export function KindField({
   value,
@@ -15,7 +15,7 @@ export function KindField({
   return (
     <div className="bb-field">
       <label className="bb-field__label" htmlFor={id}>
-        {et.component.type}
+        {componentEt.type}
       </label>
       <select
         id={id}
@@ -24,9 +24,9 @@ export function KindField({
         disabled={disabled}
         onChange={(event) => onChange(event.target.value as ComponentKind)}
       >
-        {(Object.keys(et.component.kinds) as ComponentKind[]).map((kind) => (
+        {(Object.keys(componentEt.kinds) as ComponentKind[]).map((kind) => (
           <option key={kind} value={kind}>
-            {et.component.kinds[kind]}
+            {componentEt.kinds[kind]}
           </option>
         ))}
       </select>

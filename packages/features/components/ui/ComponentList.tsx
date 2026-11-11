@@ -1,6 +1,7 @@
+import { componentEt } from './i18n/et';
 import type { ReactNode } from 'react';
 import type { Snapshot } from '@pcbk/contracts';
-import { et, useSessionStore } from '@pcbk/ui';
+import { useSessionStore } from '@pcbk/ui';
 
 type ListedComponent = Snapshot['doc']['components'][number];
 
@@ -19,7 +20,7 @@ export function ComponentList({
           <button
             type="button"
             className="pcbk-component-row"
-            aria-label={et.component.select(component.ref)}
+            aria-label={componentEt.select(component.ref)}
             aria-pressed={selection.items.some(
               (item) =>
                 (item.kind === 'component' && item.id === component.id) ||
@@ -33,7 +34,7 @@ export function ComponentList({
           >
             <span className="pcbk-component-row__ref bb-mono">{component.ref}</span>
             <span className="pcbk-component-row__body">
-              <span>{et.component.kinds[component.kind]}</span>
+              <span>{componentEt.kinds[component.kind]}</span>
               <span className="pcbk-component-row__value bb-mono">{component.value}</span>
             </span>
           </button>

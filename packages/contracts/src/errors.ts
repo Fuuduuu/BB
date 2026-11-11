@@ -10,6 +10,7 @@ export type StorageReason =
   | 'exists'
   | 'not_project'
   | 'too_new'
+  | 'stale_rev'
   | 'unknown';
 
 export type EngineError =

@@ -1,8 +1,9 @@
+import { componentEt } from './i18n/et';
 import { useId, useState } from 'react';
 import type { IdGen } from '@pcbk/contracts';
 import type { Snapshot } from '@pcbk/contracts';
 import { useEngine } from '@pcbk/client';
-import { Button, et } from '@pcbk/ui';
+import { Button } from '@pcbk/ui';
 import { DraftField } from './DraftField';
 import { commandError } from './errors';
 
@@ -15,7 +16,7 @@ export function PinTable({ component, ids }: { component: ReadonlyComponent; ids
   return (
     <section className="pcbk-component-pins" aria-labelledby={headingId}>
       <div className="pcbk-component-pins__heading">
-        <h3 id={headingId}>{et.component.pins}</h3>
+        <h3 id={headingId}>{componentEt.pins}</h3>
         <Button
           onClick={() => {
             const used = new Set(component.pins.map((pin) => pin.id));
@@ -28,17 +29,17 @@ export function PinTable({ component, ids }: { component: ReadonlyComponent; ids
             setError(result.ok ? undefined : commandError(result.error));
           }}
         >
-          {et.component.addPin}
+          {componentEt.addPin}
         </Button>
       </div>
       {component.pins.length ? (
         <table className="pcbk-pin-table">
           <thead>
             <tr>
-              <th scope="col">{et.component.pinId}</th>
-              <th scope="col">{et.component.pinName}</th>
-              <th scope="col">{et.component.nc}</th>
-              <th scope="col">{et.component.remove}</th>
+              <th scope="col">{componentEt.pinId}</th>
+              <th scope="col">{componentEt.pinName}</th>
+              <th scope="col">{componentEt.nc}</th>
+              <th scope="col">{componentEt.remove}</th>
             </tr>
           </thead>
           <tbody>
@@ -49,7 +50,7 @@ export function PinTable({ component, ids }: { component: ReadonlyComponent; ids
                 </th>
                 <td>
                   <DraftField
-                    label={et.component.namePin(pin.id)}
+                    label={componentEt.namePin(pin.id)}
                     value={pin.name ?? ''}
                     commit={(name) => {
                       const result = engine.execute('components.renamePin', {
@@ -64,7 +65,7 @@ export function PinTable({ component, ids }: { component: ReadonlyComponent; ids
                 <td>
                   <input
                     type="checkbox"
-                    aria-label={et.component.ncPin(pin.id)}
+                    aria-label={componentEt.ncPin(pin.id)}
                     checked={pin.nc}
                     onChange={(event) => {
                       const result = engine.execute('components.setNc', {
@@ -79,7 +80,7 @@ export function PinTable({ component, ids }: { component: ReadonlyComponent; ids
                 <td>
                   <Button
                     variant="ghost"
-                    aria-label={et.component.removePin(pin.id)}
+                    aria-label={componentEt.removePin(pin.id)}
                     onClick={() => {
                       const result = engine.execute('components.removePin', { id, pinId: pin.id });
                       setError(result.ok ? undefined : commandError(result.error));
@@ -93,7 +94,7 @@ export function PinTable({ component, ids }: { component: ReadonlyComponent; ids
           </tbody>
         </table>
       ) : (
-        <p className="pcbk-components__empty">{et.component.noPins}</p>
+        <p className="pcbk-components__empty">{componentEt.noPins}</p>
       )}
       {error && (
         <p className="bb-field__error" role="alert">

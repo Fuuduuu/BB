@@ -19,6 +19,27 @@ Iga ehitusülesande jaoks kirjutab arhitekt vahetult enne algust [snaipriülesan
 
 Arhitekt kirjutab enne iga verstaposti teostusplaani `docs/plans/Mx-*.md`. Ehitaja kontrollib selle vastavust kehtivatele ADR-idele ja tegelikule repole ning alustab kasutaja ülesande alusel. Iga pisimuudatuse jaoks ei tehta uut plaani, auditipaketti ega registrikirjet. Kontrollid, tööpuu eraldamine ja ülevaatuse ulatus tulenevad tegelikust muutusest.
 
+## Kaks rada: tavaline ja kaitstud töö
+
+Töö kaal sõltub sellest, mida muudatus tegelikult puudutab, mitte faili laiendist. Kaardi päises on **Rada: A** või **Rada: B**.
+
+- **A, tavaline:** kasutajaliides, tekstid, lõuendi kuvamine, tööriistad ja moodulid olemasolevate käskude peal, dokumendid, tööriistad. Kontroll: kaardi testid, `pnpm check`, vajadusel e2e ja inimese visuaalne vastuvõtt. Üks ülevaatus.
+- **B, kaitstud:** puudutab allolevaid kaitstud pindu. Lisaks raja A kontrollile: sihitud regressiooni- või taastetest, `cargo test`, e2e ning ülevaatusel tegelik koodikontroll, mitte ainult kokkuvõte. Lepingu või vormingu muutus vajab enne ehitamist arhitekti otsust kaardil.
+
+Väike UI-käsitleja, mis kutsub dokumenti muutvat käsku, on rada A. Uus või muudetud käsk, mis muudab andmete tähendust, on rada B.
+
+**Kaitstud pinnad:**
+- failivorming: `BoardDoc` skeem, `format_version`, migratsioonid, väljalaske näidisfailid ([03 §9](03-arhitektuur.md#9-salvestus-ja-projekti-fail));
+- salvestus: `.pcbk` SQLite, `base_rev`, lukk, varukoopiad, taastamine, „Salvesta mujale…“;
+- ajalugu ja päevik: üks käsk = üks samm, eelvaade ei jõua dokumenti;
+- identiteet: jala `uid`, komponendi `id`, mõõtmise viited;
+- mõõtmise tõde: must sond ja väärtus tulevad ainult kasutajalt, ajaloolist mõõtmist ei kustutata vaikselt;
+- moodulite omand (`ownership`) ja sõltuvusreegel.
+
+## Lugemise piir
+
+Loe täpset sümbolit, veakoodi või jaotist (`rg`, `bb_outline`/`bb_read_section`), mitte terveid faile ega dokumente. Laienda üks sõltuvushüpe ainult konkreetse lahtise riski korral. Mooduliga töös piisab mooduli kaustast, selle testidest ja genereeritud `docs/api/features-<moodul>-*.md`-st: sõltuvusreegel tagab, et teised moodulid ei sõltu selle sisemusest. Rohelist kontrolli ei korrata, kui pärast seda pole muutust ega uut kahtlust.
+
 ## BB MCP: ühised repo tööriistad
 
 Kui BB MCP on aktiivse AI seansi tööriistaloendis, kasuta seda repo lugemiseks ja ühisteks dokumendikontrollideks. Ühendamise juhis ja tööriistade loend on [serveri README-s](../tools/mcp-bb/README.md); kliendiseadistusi siin ei dubleerita.
@@ -67,4 +88,4 @@ Enne pikema töö katkestamist pane see seis kirja; vestluse mahu täitumine ei 
 
 AGENTS on sisenemine, STATUS on hetkeseis, see fail on töövõte ja SKILLS on oskuste suunaja. Toote sisu jääb olemasolevatesse dokumentidesse. Asendatud otsus või plaan märgitakse asendatuks koos viitega; seda ei loeta enam vaikimisi. Korduv selgitus asenda lingiga ja lõpule jõudnud üksikasjad jäta Git-i.
 
-Vanast BenchBeepist võeti üle lühike sisenemine, selged allikaomanikud ja tõenditega üleandmine. Eraldi passijärjekorra, ulatusluku, koodikaartide ja auditiregistrite süsteemi siia vaikimisi ei lisata. Käsitsi peetavat koodikaarti ei tehta: avaliku liidese ülevaade genereeritakse koodist ja kontroll kukub, kui see on aegunud ([TOOL-1](tasks/TOOL-1.md)).
+Vanast BenchBeepist võeti üle lühike sisenemine, selged allikaomanikud, tõenditega üleandmine, kaks raja (tavaline/kaitstud) koos kaitstud pindade loendiga ja lugemise piir (täpne sümbol, üks sõltuvushüpe). Eraldi passijärjekorra, ulatusluku, koodikaartide ja auditiregistrite süsteemi siia vaikimisi ei lisata. Käsitsi peetavat koodikaarti ei tehta: avaliku liidese ülevaade genereeritakse koodist ja kontroll kukub, kui see on aegunud ([TOOL-1](tasks/TOOL-1.md)).

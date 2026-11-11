@@ -25,14 +25,14 @@ Kaarte on kõige lihtsam lugeda MCP tööriistaga `bb_task`. See tagastab kaardi
 5. **Kaardi ja kehtiva dokumendi vastuolu korral kehtib dokument.** Ehitaja nimetab vastuolu ja arhitekt parandab kaardi või dokumendi.
 6. **Olemasolevaid liideseid ei loeta lähtekoodist.** Allikas on kaardi plokk „Otsused ja liidesed“ või genereeritud liideste kokkuvõte `docs/api/` (kaart [TOOL-1](TOOL-1.md)). Kokkuvõte tehakse koodist automaatselt ja kontroll kukub, kui see on aegunud. Seepärast ei ole see käsitsi peetav koodikaart, mis võiks vananeda.
 7. **Üleandmine on kaardi lõpus jaotises „Üleandmine“, kuni 25 rida.** Pikk tõend (logid, ekraanipildid) jääb faili ja sellele viidatakse.
-8. **Olek kaardi päises:** `kavand` → `ehitamiseks` → `ülevaatusel` → `parandamisel` → `vastu võetud <commit>`.
+8. **Olek kaardi päises:** `kavand` → `ehitamiseks` → `ülevaatusel` → `parandamisel` → `vastu võetud <commit>`. Päises on ka **Rada: A/B** ([WORKFLOW › Kaks rada](../WORKFLOW.md#kaks-rada-tavaline-ja-kaitstud-töö)); see määrab kontrolli ja ülevaatuse mahu.
 
 ## Mall
 
 ```markdown
 # <ID> · <pealkiri>
 
-**Olek:** ehitamiseks · **Haru:** m0 · **Alus:** <commit> · **Plaan:** [Mx › Ülesanne N](../plans/…)
+**Olek:** ehitamiseks · **Rada:** A | B · **Haru:** <haru> · **Alus:** <commit> · **Plaan:** [Mx › Ülesanne N](../plans/…)
 
 ## Eesmärk
 <1–2 lauset: mis on pärast seda olemas ja kuidas seda märgata>

@@ -6,7 +6,7 @@ Need dokumendid on ehituse alus. Kui kood ja dokumendid lähevad lahku, otsustab
 
 ## AI lühike stardikomplekt
 
-Alusta [AGENTS-ist](../AGENTS.md), seejärel loe [STATUS](STATUS.md), [WORKFLOW](WORKFLOW.md) ja [SKILLS](SKILLS.md). Need annavad jooksva seisu, töövõtted, mälu käsitluse ning enne töö alustamist vajalike oskuste valiku.
+Alusta [AGENTS-ist](../AGENTS.md), seejärel loe [STATUS](STATUS.md), [WORKFLOW](WORKFLOW.md) ja [SKILLS](SKILLS.md). Claude-arhitekt loeb enne neid [ARHITEKT](ARHITEKT.md)-i. Need annavad jooksva seisu, töövõtted, mälu käsitluse ning enne töö alustamist vajalike oskuste valiku.
 
 [Rollijaotus ja töö üleandmise järjekord](07-teekaart.md#rollid) on teekaardil.
 

@@ -8,6 +8,8 @@ Claude loeb selle faili **iga vastuse alguses esimesena**. Fail on lühike ja ai
 2. Määra töö liik: **kaart**, **ülevaatus**, **commit/väljalase** või **küsimus**. Iga liigi käik on allpool.
 3. Määra rada ([WORKFLOW › Kaks rada](WORKFLOW.md#kaks-rada-tavaline-ja-kaitstud-töö)): **A** tavaline või **B** kaitstud. Rada määrab lugemise ja kontrolli mahu.
 
+**Toode ees.** Eesmärk on kasutajale nähtav töövõime, mitte testide ega hoolduse ring. Hooldus- või testikaart tuleb ainult siis, kui see blokeerib järgmist verstaposti või kaitseb andmeid. Muul juhul pane see märkusena järgmise ehituskaardi juurde. Ühele verstapostile on kuni üks hooldusvoor. Kontroll on raja suurune: rada A puhul piisab kaardi testidest ja `pnpm check`-ist, täisring tehakse ainult rajal B ja enne liitmist. Ülevaatus ei lisa uusi teste, mida kaart ei nõudnud, välja arvatud leitud vea jaoks.
+
 STATUS-e ja vestluse kokkuvõtte väited kontrolli Git-i vastu. Ära kanna commit'e, testide arve ega haru seisu mälust.
 
 ## 2. Lugemise eelarve

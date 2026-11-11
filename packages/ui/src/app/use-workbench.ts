@@ -39,6 +39,7 @@ export function useWorkbench(host: AppHost) {
   const [createError, setCreateError] = useState<string | null>(null);
   const [restoreSource, setRestoreSource] = useState<RecentProject | null>(null);
   const [launchError, setLaunchError] = useState<string | null>(null);
+  const [rescueNotice, setRescueNotice] = useState<string | null>(null);
   const { recent, available, refreshRecent } = useProjectLists(host, info === null, setLaunchError);
   const [closeError, setCloseError] = useState<{
     reason: StorageReason;
@@ -47,6 +48,7 @@ export function useWorkbench(host: AppHost) {
   const { busy, run, runClose, finishHostAction } = useWorkbenchAction(setLaunchError);
   const activePath = useRef<string | null>(null);
   const discarding = useRef(false);
+  const rescueExit = useRef<'host' | 'reload' | null>(null);
 
   const activate = useCallback(
     (next: ProjectInfo) => {
@@ -151,7 +153,7 @@ export function useWorkbench(host: AppHost) {
   }, [engine, projects, info]);
 
   const requestClose = useCallback(
-    () => runClose(() => finishClose('host')),
+    () => runClose(async () => !rescueExit.current && (await finishClose('host'))),
     [runClose, finishClose],
   );
   const diagnose = useWorkbenchHost(host, openFromHost, requestClose, discarding, setLaunchError);
@@ -204,6 +206,7 @@ export function useWorkbench(host: AppHost) {
 
   const copy = (intent: CopyIntent) => {
     void run(async () => {
+      if (rescueExit.current) return;
       if (!info || (!host.pickSavePath && !(intent === 'reload' && host.recoveryCopyPath))) {
         setLaunchError(et.project.copyUnavailable);
         return;
@@ -218,12 +221,20 @@ export function useWorkbench(host: AppHost) {
         setLaunchError(errorText(result.error));
         return;
       }
+      const closeIntent = closeError?.intent ?? 'home';
       activate(result.value);
+      if (result.value.fromMemory) {
+        setRescueNotice(et.project.rescueCopy);
+        const exit = intent === 'reload' ? 'reload' : intent === 'close' ? closeIntent : null;
+        if (exit === 'host' || exit === 'reload') {
+          rescueExit.current = exit;
+          return;
+        }
+      }
       if (intent === 'reload') {
         if (await finishClose('reload')) leaveWorkbench('reload');
       }
       if (intent === 'close') {
-        const closeIntent = closeError?.intent ?? 'home';
         if (typeof closeIntent === 'object') await openProject(closeIntent.open);
         else if (await finishClose(closeIntent)) leaveWorkbench(closeIntent);
       }
@@ -242,6 +253,7 @@ export function useWorkbench(host: AppHost) {
     createError,
     restoreSource,
     launchError,
+    rescueNotice,
     closeError,
     busy,
     goHome,
@@ -260,7 +272,17 @@ export function useWorkbench(host: AppHost) {
     closeCreate: () => setCreateOpen(false),
     openRestore: setRestoreSource,
     closeRestore: () => setRestoreSource(null),
-    dismissError: () => setLaunchError(null),
+    dismissError: () => {
+      if (launchError) setLaunchError(null);
+      else {
+        void run(async () => {
+          const intent = rescueExit.current;
+          rescueExit.current = null;
+          setRescueNotice(null);
+          if (intent && (await finishClose(intent))) leaveWorkbench(intent);
+        });
+      }
+    },
     cancelClose: () => setCloseError(null),
     retrySave: () => {
       void projects.flush();

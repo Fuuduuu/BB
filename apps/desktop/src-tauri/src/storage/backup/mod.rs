@@ -1,6 +1,6 @@
 mod inventory;
 
-use self::inventory::{full_name, inventory, project_dir, prune, restorable};
+use self::inventory::{file_dir, full_name, inventory, project_dir, prune, restorable};
 use super::copy::vacuum_into;
 use super::db::ProjectDb;
 use super::{PendingFile, Reason, StorageErrorDto, StorageResult};
@@ -27,6 +27,7 @@ pub enum BackupKind {
 #[ts(export, export_to = "../../../../packages/adapters/src/bindings/")]
 pub struct BackupInfoDto {
     pub file: String,
+    pub file_id: Option<String>,
     pub kind: BackupKind,
     pub at: String,
     pub base: Option<String>,
@@ -56,11 +57,14 @@ fn meta(db: &ProjectDb, key: &str) -> StorageResult<String> {
 }
 
 fn context(app_data: &Path, db: &ProjectDb) -> StorageResult<(PathBuf, u32)> {
+    if db.read_only {
+        return Err(StorageErrorDto::new(Reason::ReadOnly));
+    }
     let project_id = meta(db, "project_id")?;
     let format = meta(db, "format_version")?
         .parse()
         .map_err(|_| StorageErrorDto::new(Reason::Unknown))?;
-    let dir = project_dir(app_data, &project_id, true)?
+    let dir = file_dir(app_data, &project_id, &db.file_id, true)?
         .ok_or_else(|| StorageErrorDto::new(Reason::Missing))?;
     Ok((dir, format))
 }
@@ -246,7 +250,29 @@ pub(super) fn list(app_data: &Path, project_id: &str) -> StorageResult<Vec<Backu
     let Some(dir) = project_dir(app_data, project_id, false)? else {
         return Ok(Vec::new());
     };
-    restorable(&inventory(&dir)?)?
+    let mut groups = vec![(dir.clone(), None)];
+    for entry in fs::read_dir(&dir)? {
+        let entry = entry?;
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+        let Ok(id) = entry.file_name().into_string() else {
+            continue;
+        };
+        if let Some(group) = file_dir(app_data, project_id, &id, false)? {
+            groups.push((group, Some(id)));
+        }
+    }
+    let mut result = Vec::new();
+    for (dir, file_id) in groups {
+        result.extend(list_group(&dir, file_id)?);
+    }
+    result.sort_by(|a, b| b.at.cmp(&a.at).then_with(|| b.file.cmp(&a.file)));
+    Ok(result)
+}
+
+fn list_group(dir: &Path, file_id: Option<String>) -> StorageResult<Vec<BackupInfoDto>> {
+    restorable(&inventory(dir)?)?
         .into_iter()
         .map(|(file, base)| {
             let path = file
@@ -255,6 +281,7 @@ pub(super) fn list(app_data: &Path, project_id: &str) -> StorageResult<Vec<Backu
                 .ok_or_else(|| StorageErrorDto::new(Reason::Unknown))?;
             Ok(BackupInfoDto {
                 file: path.to_owned(),
+                file_id: file_id.clone(),
                 kind: file.kind,
                 at: DateTime::<Utc>::from(file.at).to_rfc3339_opts(SecondsFormat::Millis, true),
                 base,

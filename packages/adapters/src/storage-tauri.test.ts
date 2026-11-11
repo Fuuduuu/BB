@@ -14,6 +14,7 @@ const view = {
 const dto: OpenedProjectDto = {
   session: 'opened',
   project_id: 'project-open',
+  file_id: 'file-open',
   path: 'C:/Projects/Board.pcbk',
   doc_json: JSON.stringify(doc),
   view_json: JSON.stringify(view),
@@ -85,6 +86,7 @@ test('adds recent entry after open and copy', async () => {
     session: dto.session,
     path: dto.path,
     projectId: dto.project_id,
+    fileId: dto.file_id,
     doc,
     view: { ...view, boardView: { zoom: 1, pan: { x: 0, y: 0 } } },
     formatVersion: dto.format_version,
@@ -115,6 +117,8 @@ test('adds recent entry after open and copy', async () => {
   ).resolves.toMatchObject({
     session: copyDto.session,
     projectId: copyDto.project_id,
+    fileId: copyDto.file_id,
+    fromMemory: true,
     doc: copyDoc,
     view: null,
   });
@@ -146,6 +150,31 @@ test('adds recent entry after open and copy', async () => {
     ['recent_add', { path: copyDto.path, project_id: copyDto.project_id, name: copyDoc.name }],
   ]);
   expect(warn).toHaveBeenCalledOnce();
+});
+
+test('normal copy exposes false and backups retain file groups including legacy entries', async () => {
+  const { call, invoke } = mockInvoke();
+  const repo = createTauriRepository({ invoke });
+  call.mockResolvedValueOnce({ opened: dto, from_memory: false }).mockResolvedValueOnce(undefined);
+  const result = await repo.copy({
+    session: dto.session,
+    dest: dto.path,
+    identity: 'same',
+    projectId: dto.project_id,
+    doc,
+    rev: doc.rev,
+    view: null,
+    journal: [],
+  });
+  expect(result).toMatchObject({ fileId: 'file-open', fromMemory: false });
+  call.mockResolvedValueOnce([
+    { file: 'group/full.pcbk', kind: 'full', at: 'now', base: null, file_id: 'file-open' },
+    { file: 'legacy.doc.json', kind: 'doc', at: 'before', base: 'legacy.pcbk', file_id: null },
+  ]);
+  await expect(repo.backups(dto.project_id)).resolves.toEqual([
+    { file: 'group/full.pcbk', kind: 'full', at: 'now', fileId: 'file-open' },
+    { file: 'legacy.doc.json', kind: 'doc', at: 'before', base: 'legacy.pcbk' },
+  ]);
 });
 
 test('a recent index write failure keeps the opened session usable', async () => {

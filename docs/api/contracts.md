@@ -27,6 +27,7 @@ export interface AppHost {
 ```ts
 export type BackupInfo = {
     file: string;
+    fileId?: string;
     kind: 'full' | 'doc';
     at: string;
     base?: string;
@@ -223,6 +224,7 @@ export function parseViewState(input: unknown): Required<ViewState> | null;
 ```ts
 export type ProjectInfo = {
     projectId: string;
+    readonly fileId: string;
     sessionId: string;
     name: string;
     path: string;
@@ -240,7 +242,9 @@ export interface ProjectService {
     discard(): Promise<Result<void, EngineError>>;
     flush(): Promise<Result<void, EngineError>>;
     saveView(view: ViewState): void;
-    copy(req: CopyReq): Promise<Result<ProjectInfo, EngineError>>;
+    copy(req: CopyReq): Promise<Result<ProjectInfo & {
+        fromMemory: boolean;
+    }, EngineError>>;
     backups(req?: BackupsReq): Promise<Result<BackupInfo[], EngineError>>;
     restore(req: RestoreReq): Promise<Result<ProjectInfo, EngineError>>;
     status(fn: (s: SaveStatus & {

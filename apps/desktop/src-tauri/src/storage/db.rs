@@ -83,6 +83,7 @@ pub(super) struct ProjectDb {
     pub conn: Connection,
     pub path: PathBuf,
     pub(super) read_only: bool,
+    pub(super) file_id: String,
 }
 
 impl ProjectDb {
@@ -124,20 +125,44 @@ impl ProjectDb {
             let conn = connect(OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX)?;
             conn.busy_timeout(std::time::Duration::ZERO)?;
             project_meta(&conn)?;
+            let file_id = conn
+                .query_row("SELECT value FROM meta WHERE key='file_id'", [], |r| {
+                    r.get(0)
+                })
+                .optional()?
+                .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
             return Ok(Self {
                 conn,
                 path: path.to_owned(),
                 read_only: true,
+                file_id,
             });
         }
         let conn = connect(OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX)?;
         schema::configure(&conn)?;
-        project_meta(&conn)?;
-        Ok(Self {
+        let mut db = Self {
             conn,
             path: path.to_owned(),
             read_only: false,
-        })
+            file_id: String::new(),
+        };
+        // Validate and add legacy metadata within the same opening transaction.
+        // A failed validation drops the connection and rolls the transaction back.
+        db.conn.execute_batch("BEGIN EXCLUSIVE")?;
+        db.describe(String::new())?;
+        db.file_id = db
+            .conn
+            .query_row("SELECT value FROM meta WHERE key='file_id'", [], |r| {
+                r.get(0)
+            })
+            .optional()?
+            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+        db.conn.execute(
+            "INSERT OR IGNORE INTO meta(key,value) VALUES('file_id',?1)",
+            [&db.file_id],
+        )?;
+        db.conn.execute_batch("COMMIT")?;
+        Ok(db)
     }
 
     pub fn describe(&self, session: String) -> StorageResult<OpenedProjectDto> {
@@ -162,6 +187,7 @@ impl ProjectDb {
         Ok(OpenedProjectDto {
             session,
             project_id,
+            file_id: self.file_id.clone(),
             path: self
                 .path
                 .to_str()

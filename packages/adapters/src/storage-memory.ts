@@ -6,6 +6,7 @@ import type { JournalEntry } from '@pcbk/engine';
 
 export type MemoryProject = {
   projectId: string;
+  fileId?: string;
   copiedFromProjectId?: string;
   doc: unknown;
   rev: number;
@@ -56,6 +57,8 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
     if (store.locks.has(path)) throw new StorageError('locked');
     const current = store.files.get(path);
     if (!current) throw new StorageError('missing');
+    const fileId = current.fileId ?? crypto.randomUUID();
+    if (!current.readOnly) current.fileId = fileId;
     const session = `memory-session-${++store.sequence}`;
     store.locks.set(path, session);
     sessions.set(session, path);
@@ -63,6 +66,7 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
       session,
       path,
       projectId: current.projectId,
+      fileId,
       doc: clone(current.doc),
       view: clone(current.view),
       formatVersion: current.formatVersion,
@@ -80,6 +84,7 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
       checkFailure();
       return install(req.path ?? `memory://${req.projectId}.pcbk`, {
         projectId: req.projectId,
+        fileId: crypto.randomUUID(),
         doc: req.doc,
         rev: req.doc.rev,
         view: null,
@@ -117,24 +122,29 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
       const source = sessions.get(req.session);
       if (!source) throw new StorageError('missing');
       const original = store.files.get(source);
-      return install(req.dest, {
-        projectId: req.projectId,
-        copiedFromProjectId: req.copiedFromProjectId ?? original?.copiedFromProjectId,
-        doc: req.doc,
-        rev: req.rev,
-        view: req.view,
-        formatVersion: req.doc.format_version,
-        journal: [...(original?.journal ?? []), ...req.journal],
-        readOnly: false,
-        savedAt: new Date().toISOString(),
-      });
+      return {
+        ...install(req.dest, {
+          projectId: req.projectId,
+          fileId: crypto.randomUUID(),
+          copiedFromProjectId: req.copiedFromProjectId ?? original?.copiedFromProjectId,
+          doc: req.doc,
+          rev: req.rev,
+          view: req.view,
+          formatVersion: req.doc.format_version,
+          journal: [...(original?.journal ?? []), ...req.journal],
+          readOnly: false,
+          savedAt: new Date().toISOString(),
+        }),
+        fromMemory: !original,
+      };
     },
     async backupFull(session) {
       checkFailure();
       const current = file(session);
-      const path = `${current.projectId}/backup-${++store.sequence}.pcbk`;
+      if (current.readOnly) throw new StorageError('read_only');
+      const path = `${current.projectId}/${current.fileId}/backup-${++store.sequence}.pcbk`;
       store.backups.set(path, {
-        info: { file: path, kind: 'full', at: new Date().toISOString() },
+        info: { file: path, fileId: current.fileId, kind: 'full', at: new Date().toISOString() },
         file: clone(current),
       });
     },
@@ -148,7 +158,11 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
       checkFailure();
       const backup = store.backups.get(req.backup);
       if (!backup) throw new StorageError('missing');
-      return install(req.dest, { ...clone(backup.file), readOnly: false });
+      return install(req.dest, {
+        ...clone(backup.file),
+        fileId: crypto.randomUUID(),
+        readOnly: false,
+      });
     },
     async close(session) {
       const path = sessions.get(session);

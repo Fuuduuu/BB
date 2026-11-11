@@ -230,6 +230,7 @@ export const et: {
         readonly restoreConfirm: "Taasta";
         readonly restoreName: (name: string) => string;
         readonly copyUnavailable: "Koopia salvestamine on saadaval töölauarakenduses.";
+        readonly rescueCopy: "Koopia tehti mälus olevast seisust, sest algset faili ei saanud lugeda. Fotod ja manused jäid algsesse faili.";
         readonly diagnosticsSaved: "Diagnostika salvestatud";
         readonly returnHome: "Tagasi avalehele";
         readonly closeProject: "Sulge projekt";

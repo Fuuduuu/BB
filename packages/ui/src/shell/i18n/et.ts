@@ -91,6 +91,8 @@ export const et = {
     restoreConfirm: 'Taasta',
     restoreName: (name: string) => `${name} (taastatud)`,
     copyUnavailable: 'Koopia salvestamine on saadaval töölauarakenduses.',
+    rescueCopy:
+      'Koopia tehti mälus olevast seisust, sest algset faili ei saanud lugeda. Fotod ja manused jäid algsesse faili.',
     diagnosticsSaved: 'Diagnostika salvestatud',
     returnHome: 'Tagasi avalehele',
     closeProject: 'Sulge projekt',

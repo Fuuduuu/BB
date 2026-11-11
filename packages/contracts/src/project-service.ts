@@ -21,6 +21,7 @@ export type ViewState = {
 
 export type ProjectInfo = {
   projectId: string;
+  readonly fileId: string;
   sessionId: string;
   name: string;
   path: string;
@@ -32,7 +33,13 @@ export type CreateReq = { name: string; device?: string; problem?: string; path?
 export type OpenReq = { path: string };
 export type CopyReq = { dest: string; identity: 'same' | 'new' };
 export type BackupsReq = { projectId: string };
-export type BackupInfo = { file: string; kind: 'full' | 'doc'; at: string; base?: string };
+export type BackupInfo = {
+  file: string;
+  fileId?: string;
+  kind: 'full' | 'doc';
+  at: string;
+  base?: string;
+};
 export type RestoreReq = { backup: string; dest: string };
 
 export interface ProjectService {
@@ -42,7 +49,7 @@ export interface ProjectService {
   discard(): Promise<Result<void, EngineError>>;
   flush(): Promise<Result<void, EngineError>>;
   saveView(view: ViewState): void;
-  copy(req: CopyReq): Promise<Result<ProjectInfo, EngineError>>;
+  copy(req: CopyReq): Promise<Result<ProjectInfo & { fromMemory: boolean }, EngineError>>;
   backups(req?: BackupsReq): Promise<Result<BackupInfo[], EngineError>>;
   restore(req: RestoreReq): Promise<Result<ProjectInfo, EngineError>>;
   status(fn: (s: SaveStatus & { sessionId: string }) => void): Unsubscribe;

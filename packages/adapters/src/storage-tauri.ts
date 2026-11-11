@@ -102,6 +102,7 @@ export function createTauriRepository({
     return {
       session: dto.session,
       projectId: dto.project_id,
+      fileId: dto.file_id,
       path: dto.path,
       doc,
       view: viewState(dto.view_json),
@@ -149,15 +150,16 @@ export function createTauriRepository({
         journal: req.journal.map(journalDto),
       });
       if (result.from_memory) report('Projektikoopia loodi mälus olevatest andmetest.');
-      return opened(result.opened);
+      return { ...(await opened(result.opened)), fromMemory: result.from_memory };
     },
     backupFull(session, reason) {
       return call('project_backup_full', { session, reason });
     },
     async backups(projectId) {
       const items = await call<BackupInfoDto[]>('project_backups', { project_id: projectId });
-      return items.map(({ file, kind, at, base }) => ({
+      return items.map(({ file, file_id, kind, at, base }) => ({
         file,
+        ...(file_id === null ? {} : { fileId: file_id }),
         kind,
         at,
         ...(base === null ? {} : { base }),

@@ -170,6 +170,7 @@ export type JournalEntry = {
 export type OpenedProject = {
     session: string;
     projectId: string;
+    fileId: string;
     path: string;
     doc: unknown;
     view: ViewState | null;
@@ -200,7 +201,9 @@ export interface ProjectRepository {
     open(path: string): Promise<OpenedProject>;
     save(req: SaveReq): Promise<void>;
     saveView(session: string, view: ViewState): Promise<void>;
-    copy(req: CopyProjectReq): Promise<OpenedProject>;
+    copy(req: CopyProjectReq): Promise<OpenedProject & {
+        fromMemory: boolean;
+    }>;
     backupFull(session: string, reason: 'migration'): Promise<void>;
     backups(projectId: string): Promise<BackupInfo[]>;
     restore(req: RestoreReq): Promise<OpenedProject>;

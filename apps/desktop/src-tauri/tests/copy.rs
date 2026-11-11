@@ -76,7 +76,7 @@ fn copy_new_identity_sets_copied_from() {
     fs::set_permissions(&original, read_only).unwrap();
     let source = f.store.open(&original).unwrap();
     assert!(source.read_only);
-    assert_eq!(f.backups(BackupKind::Full).len(), 1);
+    assert!(f.backups(BackupKind::Full).is_empty());
     let dest = f.path("copy.pcbk");
     let copied = f
         .store

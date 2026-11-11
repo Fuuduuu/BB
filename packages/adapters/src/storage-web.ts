@@ -9,6 +9,7 @@ type WebProject = {
   meta: {
     format_version: number;
     project_id: string;
+    file_id?: string;
     created_at: string;
     updated_at?: string;
     app_version: string;
@@ -46,6 +47,8 @@ function project(value: unknown, path: string): WebProject {
     !revision(value.meta.format_version) ||
     typeof value.meta.project_id !== 'string' ||
     !value.meta.project_id ||
+    (value.meta.file_id !== undefined &&
+      (typeof value.meta.file_id !== 'string' || !value.meta.file_id)) ||
     path !== `web://${value.meta.project_id}` ||
     typeof value.meta.created_at !== 'string' ||
     (value.meta.updated_at !== undefined && typeof value.meta.updated_at !== 'string') ||
@@ -169,12 +172,14 @@ export function createWebRepository(
     return path;
   };
   const opened = (path: string, value: WebProject): OpenedProject => {
+    if (!value.meta.file_id) throw new StorageError('not_project');
     const session = `web-session-${++sessionSequence}`;
     sessions.set(session, path);
     return {
       session,
       path,
       projectId: value.meta.project_id,
+      fileId: value.meta.file_id,
       doc: clone(value.doc),
       view: parseViewState(value.view),
       formatVersion: value.meta.format_version,
@@ -197,6 +202,7 @@ export function createWebRepository(
           meta: {
             format_version: captured.doc.format_version,
             project_id: captured.projectId,
+            file_id: crypto.randomUUID(),
             created_at: at,
             updated_at: at,
             app_version: '0.0.0',
@@ -221,7 +227,19 @@ export function createWebRepository(
     },
     open(path) {
       return guard(async () => {
-        const value = project(await get<unknown>(`project:${path}`, store), path);
+        let value = project(await get<unknown>(`project:${path}`, store), path);
+        if (value.meta.file_id === undefined) {
+          await update<unknown>(
+            `project:${path}`,
+            (current) => {
+              value = project(current, path);
+              if (value.meta.file_id === undefined)
+                value = { ...value, meta: { ...value.meta, file_id: crypto.randomUUID() } };
+              return value;
+            },
+            store,
+          );
+        }
         remember(path, value);
         return opened(path, value);
       });

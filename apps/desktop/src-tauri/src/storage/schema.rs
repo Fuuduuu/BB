@@ -38,6 +38,7 @@ pub(super) fn initialize(conn: &mut Connection, project_id: &str, doc: &str) -> 
         ("app_version", env!("CARGO_PKG_VERSION").to_owned()),
         ("created_at", now.clone()),
         ("project_id", project_id.to_owned()),
+        ("file_id", uuid::Uuid::new_v4().to_string()),
         ("copied_from_project_id", String::new()),
         ("media_dirty", "0".to_owned()),
     ] {

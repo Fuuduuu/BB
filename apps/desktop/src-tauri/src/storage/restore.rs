@@ -131,6 +131,7 @@ pub(super) fn write(app_data: &Path, backup: &Path, dest: &Path) -> StorageResul
 
     let mut db = ProjectDb::open(pending.path())?;
     let original = db.describe(String::new())?;
+    db.conn.execute("INSERT INTO meta(key,value) VALUES('file_id',?1) ON CONFLICT(key) DO UPDATE SET value=excluded.value", [uuid::Uuid::new_v4().to_string()])?;
     if let Some(doc) = doc {
         let doc_json = doc.doc.to_string();
         let view_json = doc.view.map(|view| view.to_string());

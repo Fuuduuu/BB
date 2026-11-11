@@ -157,11 +157,18 @@ const view: ViewState = {
   contextOpen: true,
 };
 expectTypeOf<ProjectInfo['view']>().toEqualTypeOf<ViewState | null>();
+expectTypeOf<ProjectInfo['fileId']>().toEqualTypeOf<string>();
+expectTypeOf<BackupInfo['fileId']>().toEqualTypeOf<string | undefined>();
+declare const projectInfo: ProjectInfo;
+// @ts-expect-error physical file identity is owned by storage
+projectInfo.fileId = 'replacement';
 expectTypeOf(projects.create(create)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
 expectTypeOf(projects.open(open)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
 expectTypeOf(projects.close()).toEqualTypeOf<Promise<Result<void, EngineError>>>();
 expectTypeOf(projects.flush()).toEqualTypeOf<Promise<Result<void, EngineError>>>();
-expectTypeOf(projects.copy(copy)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
+expectTypeOf(projects.copy(copy)).toEqualTypeOf<
+  Promise<Result<ProjectInfo & { fromMemory: boolean }, EngineError>>
+>();
 expectTypeOf(projects.backups()).toEqualTypeOf<Promise<Result<BackupInfo[], EngineError>>>();
 expectTypeOf(projects.restore(restore)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
 expectTypeOf(projects.saveView(view)).toBeVoid();

@@ -13,16 +13,31 @@ pub(super) fn project_dir(
     project_id: &str,
     create: bool,
 ) -> StorageResult<Option<PathBuf>> {
-    let mut parts = Path::new(project_id).components();
+    child_dir(&app_data.join("backups"), project_id, create)
+}
+
+pub(super) fn file_dir(
+    app_data: &Path,
+    project_id: &str,
+    file_id: &str,
+    create: bool,
+) -> StorageResult<Option<PathBuf>> {
+    let Some(project) = project_dir(app_data, project_id, create)? else {
+        return Ok(None);
+    };
+    child_dir(&project, file_id, create)
+}
+
+fn child_dir(root: &Path, id: &str, create: bool) -> StorageResult<Option<PathBuf>> {
+    let mut parts = Path::new(id).components();
     if !matches!(parts.next(), Some(Component::Normal(_)))
         || parts.next().is_some()
-        || project_id.contains(['/', '\\', ':'])
-        || project_id.ends_with(['.', ' '])
+        || id.contains(['/', '\\', ':'])
+        || id.ends_with(['.', ' '])
     {
         return Err(StorageErrorDto::new(Reason::Unknown));
     }
-    let root = app_data.join("backups");
-    let dir = root.join(project_id);
+    let dir = root.join(id);
     if create {
         fs::create_dir_all(&dir)?;
     }
@@ -32,7 +47,7 @@ pub(super) fn project_dir(
         Err(error) => return Err(error.into()),
     };
     let root = dunce::canonicalize(root)?;
-    if dir != root.join(project_id) {
+    if dir != root.join(id) {
         return Err(StorageErrorDto::new(Reason::Unknown));
     }
     Ok(Some(dir))

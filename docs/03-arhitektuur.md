@@ -360,7 +360,7 @@ Skeem on sama projekti **teine tööpind**, mitte tuletatud pilt ([ADR-004](adr/
 **Üks fail `<nimi>.pcbk` = SQLite andmebaas:**
 
 ```sql
-CREATE TABLE meta      (key TEXT PRIMARY KEY, value TEXT NOT NULL);   -- format_version, app_version, created_at, project_id, copied_from_project_id
+CREATE TABLE meta      (key TEXT PRIMARY KEY, value TEXT NOT NULL);   -- format_version, app_version, created_at, project_id, file_id, copied_from_project_id
 CREATE TABLE document  (id INTEGER PRIMARY KEY CHECK (id = 1), json TEXT NOT NULL, rev INTEGER NOT NULL, updated_at TEXT NOT NULL);
 CREATE TABLE view      (id INTEGER PRIMARY KEY CHECK (id = 1), json TEXT NOT NULL);
 CREATE TABLE photos    (id TEXT NOT NULL, variant TEXT NOT NULL CHECK (variant IN ('original', 'display')),
@@ -425,20 +425,26 @@ Projekti faili kirjutab ainult `SaveCoordinator`, mis on mootoris `ProjectServic
   - Veebis viib avalehele suunatud **Sulge salvestamata** ainult projekti deaktiveerimiseni, ilma lehe taaslaadimise ja `beforeunload`-küsimuseta. Salvestusjärjekord peatatakse; mahajäetud muudatus ei salvestu ka hilisema ootamise jooksul.
 - **Koopia:** `project_copy` teeb `VACUUM INTO <dest>.tmp` (terviklik koopia koos fotode, manuste, logi ja pisipildiga), kirjutab sinna uusima oleku ühe tehinguna ja **alles seejärel** nimetab faili ümber lõplikuks. Pooleli jäänud koopiat lõpliku nime all ei teki.
   - „Salvesta mujale…“ (`identity: 'same'`) jätkab sama projektiga uues failis.
+  - Iga koopia saab uue `file_id`; `identity: 'new'` loob lisaks uue `project_id`. `ProjectService.copy` tagastab `ProjectInfo & { fromMemory: boolean }` ning `ProjectInfo.fileId` on ainult loetav failitunnus.
   - „Salvesta oma koopiana“ (näidisprojekt) ja „Tee koopia“ (`identity: 'new'`) annavad uue `project_id` ja salvestavad `copied_from_project_id`.
   - Pärast õnnestumist jätkab äpp uues failis ja see lisatakse viimaste projektide hulka.
   - Kui algne fail pole loetav (nt mälupulk eemaldati), luuakse uus fail mälus olevast dokumendist, vaatest ja logist ning äpp ütleb selgelt, et fotod jäid algsesse faili.
-- **Varukoopiad** (kaust `%APPDATA%\PCB Kaardistaja\backups\<project_id>\`, sama ajutise faili ja ümbernimetamise võttega):
+  - Mälust päästekoopia (`fromMemory: true`) järel jääb ekraanile teade „Koopia tehti mälus olevast seisust, sest algset faili ei saanud lugeda. Fotod ja manused jäid algsesse faili.“ Teade säilib ka koopia järel sihtprojekti avamisel, kuni kasutaja selle sulgeb. Kui koopia järel pidi aken sulguma või leht taaslaaditama, oodatakse esmalt teate sulgemist ning jätkatakse seejärel algset tegevust. Tavaline koopia seda teadet ei tekita ega vaja lisakinnitust.
+- **Varukoopiad** (kaust `%APPDATA%\PCB Kaardistaja\backups\<project_id>\<file_id>\`, sama ajutise faili ja ümbernimetamise võttega):
   - **Täiskoopia** koos fotode ja manustega (`<kuupäev>-v<format_version>.pcbk`) tehakse **enne iga migratsiooni** ja **iga päeva esimesel avamisel**. Alles hoitakse 5 viimast päevakoopiat.
   - **Dokumendikoopia** ilma fotodeta (`<aeg>.doc.json`) tehakse pideva töö ajal kõige rohkem kord 30 minuti jooksul. Alles hoitakse 5 viimast. See viitab täpselt oma täiskoopiale.
   - Kui pärast viimast täiskoopiat on lisandunud foto või manus, tehakse järgmine taastepunkt täiskoopiana.
-  - Täiskoopiat ei kustutata enne, kui sellest sõltuvaid dokumendikoopiaid enam pole.
+  - Täiskoopiat ei kustutata enne, kui sellest sõltuvaid dokumendikoopiaid enam pole. Dokumendikoopia `base` peab olema samas failikaustas; teise faili või rühma täiskoopiale taastamist ei lubata. Säilitus käib iga `file_id` kausta piires eraldi.
+  - Vanad `backups/<project_id>/` otsekausta koopiad jäävad loetavaks ühe vanema faili rühmana. Neid ei liigutata, sinna uusi koopiaid ei kirjutata ega kustutata neid uue säilituse käigus.
   - `ProjectService.backups({ projectId })` loetleb ka suletud projekti varukoopiad, argumendita `ProjectService.backups()` aga eeldab aktiivset projekti.
+    Loend hõlmab kõiki projekti failirühmi; `BackupInfoDto.file_id` on vanal otsekaustal `None`, lepingus puudub siis valikuline `BackupInfo.fileId`. Taastamisdialoogi kuupäeva ja liigi kuvamine säilib.
   - **Taastamine** käib alati uude faili: ajutine koopia valideeritakse ja saab siis lõpliku nime. Originaali ei kirjutata üle. Avalehel on projekti kaardil „Taasta varukoopiast…“. Taastatud fail kannab sama `project_id`-d.
     - Sihtfail peab olema uus: kui lõplik nimi või selle `-journal`, `-wal` või `-shm` on olemas, tuleb viga `exists` ja dialoog laseb valida uue nime. Avaldamine ei asenda kunagi vahepeal tekkinud faili.
-    - **Faili tunnus (otsus 2026-11-10, teostus enne M1.2):** `project_id` tähistab projekti päritolu, `meta.file_id` füüsilist faili. Varukoopiad ja dokumendikoopia alus seotakse `file_id`-ga, et taastatud ja algne fail ei segaks teineteise varukoopiaid. Taastatud fail ja „Salvesta mujale…“ täielik koopia saavad uue `file_id`; meediata päästekoopia on kasutajale eraldi märgitud.
+    - **Faili tunnus:** `project_id` tähistab projekti päritolu, `meta.file_id` füüsilist faili. Loomine, taastamine ja kopeerimine annavad uue `file_id`. Vanal kirjutataval failil lisatakse puuduv tunnus samas avamise tehingus. Kirjutuskaitstud avamine ei kirjuta midagi: puuduv tunnus on ainult mälus ajutine ning varukoopiaid ei tehta. Varukoopiad ja dokumendikoopia alus on seotud oma `file_id`-ga, et taastatud ja algne fail ei segaks teineteise varukoopiaid.
     - Taastatud faili esimene avamine käib kitsa SQLite'i VFS-kaitse (`storage/restore/open_guard.rs`) kaudu. See keelab avamise ajal võõra päeviku rakendamise ja kustutamise. Kaitse on ainult taastamisel; tavaline avamine kasutab SQLite'i vaikimisi VFS-i. Uut kohandatud VFS-i ega `unsafe` FFI-d ei lisata ilma arhitekti otsuseta.
   - Kasutaja näeb varukoopiate asukohta ja nende kettakulu seadetes.
+
+Veebiadapteri IndexedDB kirje saab `meta.file_id` loomisel või vana kirje esimesel kirjutataval avamisel; adapter tagastab selle `fileId` väljana. Võti säilib kujul `web://<project_id>`; veebikoopia jääb toetamata ja „Salvesta mujale…“ keelatuks. Tunnus ei kuulu `BoardDoc`-i ning dokumendi skeem ja vorminguversioon ei muutu.
 
 ## 10. Pordid ja adapterid
 

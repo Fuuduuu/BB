@@ -95,7 +95,10 @@ export async function mountWithComponent(name: string) {
   return { app, runtime, component, context };
 }
 
-export async function mountFailedSwitch(error = new StorageError('disk_full')) {
+export async function mountFailedSwitch(
+  error = new StorageError('disk_full'),
+  uiModules?: ComponentProps<typeof Workbench>['uiModules'],
+) {
   const clock = { now: () => new Date().toISOString() };
   const ids = { newId };
   const { engine, host: engineHost } = createEngine({
@@ -111,8 +114,10 @@ export async function mountFailedSwitch(error = new StorageError('disk_full')) {
   const target = await seedProject(runtime, 'Teine plaat');
   const { host } = fakeHost();
   const pickSavePath = vi.fn().mockResolvedValue('rescue.pcbk');
-  const app = mount(runtime, { ...host, kind: 'desktop', pickSavePath }, (onHome) =>
-    uiFeatures(ids, onHome),
+  const app = mount(
+    runtime,
+    { ...host, kind: 'desktop', pickSavePath },
+    uiModules ?? ((onHome) => uiFeatures(ids, onHome)),
   );
   const openPath = host.onOpenPath.mock.lastCall![0];
   await act(async () => openPath(current.path));

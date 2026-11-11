@@ -101,6 +101,7 @@ export function createProjectService(opts: {
   }
   const info = (context: Context): ProjectInfo => ({
     projectId: context.opened.projectId,
+    fileId: context.opened.fileId,
     path: context.opened.path,
     sessionId: context.sessionId,
     name: opts.host.current()!.doc.name,
@@ -272,7 +273,7 @@ export function createProjectService(opts: {
         const current = opts.host.current()!;
         const journal = opts.host.drainJournal();
         const copiedView = before.saver.currentView();
-        let opened: OpenedProject;
+        let opened: Awaited<ReturnType<ProjectRepository['copy']>>;
         try {
           opened = await opts.repo.copy({
             ...params,
@@ -300,7 +301,7 @@ export function createProjectService(opts: {
         // Keep the live document/history: commands made during copy are still pending.
         const context = coordinate(opened, sessionId, current.rev, false, latestView);
         await retire(before.opened.session);
-        return ok(info(context));
+        return ok({ ...info(context), fromMemory: opened.fromMemory });
       });
     },
     backups(req) {

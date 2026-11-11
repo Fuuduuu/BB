@@ -26,6 +26,7 @@ use ts_rs::TS;
 pub struct OpenedProjectDto {
     pub session: String,
     pub project_id: String,
+    pub file_id: String,
     pub path: String,
     pub doc_json: String,
     pub view_json: Option<String>,
@@ -180,7 +181,7 @@ impl ProjectStore {
     ) -> StorageResult<OpenedProjectDto> {
         let session = uuid::Uuid::new_v4().to_string();
         let opened = db.describe(session.clone())?;
-        if daily_backup {
+        if daily_backup && !db.read_only {
             if let Err(error) = backup::daily(&self.app_data, &db, self.clock.now()) {
                 log::warn!("Project backup after open failed: {error:?}");
             }
@@ -314,6 +315,7 @@ impl ProjectStore {
             conn,
             path,
             read_only,
+            file_id,
         } = db;
         if let Err((conn, error)) = conn.close() {
             sessions.insert(
@@ -322,6 +324,7 @@ impl ProjectStore {
                     conn,
                     path,
                     read_only,
+                    file_id,
                 },
             );
             return Err(error.into());

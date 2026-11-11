@@ -138,6 +138,49 @@ test('the domain exports reading directly to feature packages', () => {
   );
 });
 
+test.each([
+  ['model', 'model/index.ts'],
+  ['components', 'components/index.ts'],
+  ['footprints', 'footprints/index.ts'],
+  ['geometry', 'geometry/board.ts'],
+  ['measure', 'measure/index.ts'],
+  ['measure/reading', 'measure/reading.ts'],
+  ['migrations', 'migrations/index.ts'],
+  ['ids', 'ids.ts'],
+  ['doc', 'doc.ts'],
+  ['constants', 'constants.ts'],
+])('feature consumers can resolve the domain %s subpath', (subpath, target) => {
+  const fromFeatures = createRequire(new URL('../packages/features/package.json', import.meta.url));
+  const resolved = fromFeatures.resolve(`@pcbk/domain/${subpath}`);
+  expect(resolved).toBe(
+    fileURLToPath(new URL(`../packages/domain/src/${target}`, import.meta.url)),
+  );
+  expect(existsSync(resolved)).toBe(true);
+});
+
+test('new domain subpaths cannot expose runtime imports to UI', async () => {
+  const { modules, summary } = await cruiseFixture();
+  const source = 'packages/ui/src/bad-domain-subpaths.ts';
+  const targets = [
+    'model/index.ts',
+    'components/index.ts',
+    'migrations/index.ts',
+    'ids.ts',
+    'doc.ts',
+    'constants.ts',
+  ].map((target) => `packages/domain/src/${target}`);
+  expect(
+    modules
+      .find(({ source: path }) => path === source)
+      ?.dependencies.map(({ resolved }) => resolved),
+  ).toEqual(expect.arrayContaining(targets));
+  expect(
+    summary.violations
+      .filter(({ rule, from }) => rule.name === 'ui-domain-runtime-allowlist' && from === source)
+      .map(({ to }) => to),
+  ).toEqual(expect.arrayContaining(targets));
+});
+
 test('the dependency CLI fails for forbidden imports', () => {
   const dependencyRoot = new URL('../node_modules/dependency-cruiser/', import.meta.url);
   const manifest = JSON.parse(readFileSync(new URL('package.json', dependencyRoot), 'utf8')) as {

@@ -6,12 +6,12 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { renderDigest } from './api-digest/render.mjs';
 
-/** @typedef {{ name: string, path: string }} Entrypoint */
+/** @typedef {{ name: string, path: string, publicName?: string, sources?: Entrypoint[] }} Entrypoint */
 /** @typedef {Map<string, ts.SourceFile>} DeclarationFiles */
 
 /** @param {string} path */
@@ -24,13 +24,67 @@ function directories(path) {
     : [];
 }
 
+/** @param {Entrypoint} entry @returns {Entrypoint[] | undefined} */
+function reexportedSources(entry) {
+  if (basename(entry.path) !== 'index.ts' || !existsSync(entry.path)) return undefined;
+  const file = ts.createSourceFile(
+    entry.path,
+    readFileSync(entry.path, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  if (!file.statements.length) return undefined;
+  const sources = [];
+  for (const statement of file.statements) {
+    if (
+      !ts.isExportDeclaration(statement) ||
+      statement.exportClause ||
+      statement.isTypeOnly ||
+      !statement.moduleSpecifier ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      !/^\.\/[^/]+$/u.test(statement.moduleSpecifier.text)
+    ) {
+      return undefined;
+    }
+    const specifier = statement.moduleSpecifier.text;
+    const resolved = ts.resolveModuleName(specifier, entry.path, {}, ts.sys).resolvedModule;
+    if (!resolved)
+      throw new Error(`Re-eksporditud faili ei saa lugeda: ${entry.path}: ${specifier}`);
+    const name = basename(resolved.resolvedFileName).replace(/\.tsx?$/u, '');
+    sources.push({
+      name: `${entry.name}/${name}`,
+      publicName: entry.name,
+      path: resolved.resolvedFileName,
+    });
+  }
+  return sources.sort((a, b) => a.name.localeCompare(b.name, 'en'));
+}
+
 /** @param {string} root @returns {Entrypoint[]} */
 function entrypoints(root) {
   const packages = join(root, 'packages');
-  const entries = directories(packages).map((name) => ({
-    name,
-    path: join(packages, name, 'src', 'index.ts'),
-  }));
+  /** @type {Entrypoint[]} */
+  const entries = directories(packages)
+    .filter((name) => name !== 'domain')
+    .map((name) => ({
+      name,
+      path: join(packages, name, 'src', 'index.ts'),
+    }));
+  const domain = join(packages, 'domain');
+  const manifest = join(domain, 'package.json');
+  if (existsSync(manifest)) {
+    const { exports } = JSON.parse(readFileSync(manifest, 'utf8'));
+    for (const [subpath, target] of Object.entries(exports).sort(([a], [b]) =>
+      a.localeCompare(b, 'en'),
+    )) {
+      if (subpath === '.') continue;
+      if (!subpath.startsWith('./') || typeof target !== 'string') {
+        throw new Error(`Vigane domeeni alamtee: ${subpath}`);
+      }
+      const entry = { name: `domain/${subpath.slice(2)}`, path: join(domain, target) };
+      entries.push({ ...entry, sources: reexportedSources(entry) });
+    }
+  }
   const parts = /** @type {const} */ ([
     ['contract', 'contract.ts'],
     ['engine', 'engine/index.ts'],
@@ -45,6 +99,31 @@ function entrypoints(root) {
     }
   }
   return entries.filter(({ path }) => existsSync(path));
+}
+
+/** @param {Entrypoint[]} entries */
+function domainContents(entries) {
+  const lines = [
+    '<!-- Genereeritud: pnpm api. Ära muuda käsitsi. -->',
+    '',
+    '# @pcbk/domain',
+    '',
+    'Avalik liides alamteede kaupa:',
+  ];
+  for (const { name, sources } of entries) {
+    const subpath = name.slice('domain/'.length);
+    lines.push('', `### \`./${subpath}\``, '');
+    if (sources) {
+      for (const source of sources) {
+        lines.push(
+          `- [${source.name.slice(name.length + 1)}](${source.name.replaceAll('/', '-')}.md)`,
+        );
+      }
+    } else {
+      lines.push(`- [${subpath}](${name.replaceAll('/', '-')}.md)`);
+    }
+  }
+  return `${lines.join('\n')}\n`;
 }
 
 /** @param {readonly ts.Diagnostic[]} diagnostics */
@@ -101,21 +180,31 @@ function declarationFiles(program) {
 
 /** @param {string} root @param {boolean} check */
 function apiDigest(root, check) {
-  const entries = entrypoints(root);
+  const declared = entrypoints(root);
+  const entries = [
+    ...new Map(
+      declared.flatMap((entry) => entry.sources ?? [entry]).map((entry) => [entry.name, entry]),
+    ).values(),
+  ];
   if (!entries.length) throw new Error('API sisenemispunkte ei leitud.');
-  const program = createProgram(
-    root,
-    entries.map(({ path }) => path),
-  );
+  const program = createProgram(root, [...new Set(entries.map(({ path }) => path))]);
   const checker = program.getTypeChecker();
   const files = declarationFiles(program);
   const output = join(root, 'docs', 'api');
   const generated = new Map(
     entries.map((entry) => [
-      `${entry.name}.md`,
-      renderDigest(root, entry, program, checker, files),
+      `${entry.name.replaceAll('/', '-')}.md`,
+      renderDigest(
+        root,
+        { ...entry, name: entry.publicName ?? entry.name },
+        program,
+        checker,
+        files,
+      ),
     ]),
   );
+  const domain = declared.filter(({ name }) => name.startsWith('domain/'));
+  if (domain.length) generated.set('domain.md', domainContents(domain));
   const extras = existsSync(output)
     ? readdirSync(output, { withFileTypes: true })
         .filter(

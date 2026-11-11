@@ -47,6 +47,7 @@ jobs:
       - run: pnpm.cmd install --frozen-lockfile
 
       - run: pnpm.cmd check
+      - run: pnpm.cmd coverage
       - run: pnpm.cmd format:check
       - run: pnpm.cmd exec playwright install chromium
 

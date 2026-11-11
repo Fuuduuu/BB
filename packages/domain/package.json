@@ -5,10 +5,16 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./model": "./src/model/index.ts",
+    "./components": "./src/components/index.ts",
     "./footprints": "./src/footprints/index.ts",
     "./geometry": "./src/geometry/board.ts",
     "./measure": "./src/measure/index.ts",
-    "./measure/reading": "./src/measure/reading.ts"
+    "./measure/reading": "./src/measure/reading.ts",
+    "./migrations": "./src/migrations/index.ts",
+    "./ids": "./src/ids.ts",
+    "./doc": "./src/doc.ts",
+    "./constants": "./src/constants.ts"
   },
   "dependencies": {
     "nanoid": "6.0.2",

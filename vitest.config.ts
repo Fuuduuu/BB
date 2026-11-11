@@ -10,5 +10,11 @@ export default defineConfig({
       'apps/web/src/**/*.test.{ts,tsx}',
     ],
     exclude: ['**/node_modules/**', 'tooling/fixtures/**'],
+    coverage: {
+      provider: 'v8',
+      include: ['packages/domain/src/**/*.ts'],
+      exclude: ['**/*.test.ts', '**/__fixtures__/**', '**/index.ts'],
+      thresholds: { lines: 90, functions: 90, branches: 85, statements: 90 },
+    },
   },
 });

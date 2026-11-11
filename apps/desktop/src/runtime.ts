@@ -16,6 +16,7 @@ export function createRuntime() {
     modules: engineFeatures,
     reserved: RESERVED_FIELDS,
     clock,
+    onInternalError: (error, commandId) => console.error('[engine] internal', commandId, error),
   });
   const repo = createTauriRepository({ invoke, warn });
   const projects = createProjectService({ engine, host, repo, clock, ids });

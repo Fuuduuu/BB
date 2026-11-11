@@ -148,6 +148,9 @@ export type EngineError = {
     code: 'validation';
     issues: ZodIssue[];
 } | {
+    code: 'internal';
+    message: string;
+} | {
     code: 'ownership';
     field: DocKey;
     command: CommandId;

@@ -1,0 +1,146 @@
+{
+  "format_version": 1,
+  "rev": 4,
+  "name": "Ühilduvus 0.1.0",
+  "status": "mapping",
+  "scale": {
+    "pxPerMm": 10,
+    "calibrated": false
+  },
+  "photos": [],
+  "components": [
+    {
+      "id": "cmp_FAUEe7arFG",
+      "kind": "resistor",
+      "ref": "R1",
+      "marking": "",
+      "value": "",
+      "identified": false,
+      "dnp": false,
+      "note": "",
+      "pins": [
+        {
+          "id": "1",
+          "uid": "pin_JRuIIvDPda",
+          "nc": false
+        },
+        {
+          "id": "2",
+          "uid": "pin__ZUmxyN8Je",
+          "nc": false
+        }
+      ]
+    },
+    {
+      "id": "cmp_kdO-Y8gu2o",
+      "kind": "ic",
+      "ref": "U1",
+      "marking": "",
+      "value": "",
+      "identified": false,
+      "dnp": false,
+      "note": "",
+      "pins": [
+        {
+          "id": "1",
+          "uid": "pin_CZx3tmt6GT",
+          "nc": false
+        },
+        {
+          "id": "2",
+          "uid": "pin_1oB7zN3DJC",
+          "nc": false
+        },
+        {
+          "id": "3",
+          "uid": "pin_w6LRcsn5OB",
+          "nc": false,
+          "name": "FB"
+        },
+        {
+          "id": "4",
+          "uid": "pin_7xDci9kDmB",
+          "nc": false
+        },
+        {
+          "id": "5",
+          "uid": "pin_djXtNlnTLS",
+          "nc": false
+        },
+        {
+          "id": "6",
+          "uid": "pin_98QJrWLyD4",
+          "nc": false
+        },
+        {
+          "id": "7",
+          "uid": "pin_PDtz06SuI8",
+          "nc": false
+        },
+        {
+          "id": "8",
+          "uid": "pin_Lz-98GKI4h",
+          "nc": true
+        }
+      ]
+    }
+  ],
+  "junctions": [],
+  "connections": [],
+  "netLabels": [],
+  "roles": [
+    {
+      "id": "rol_gnd",
+      "label": "GND",
+      "kind": "ground",
+      "nominalV": 0,
+      "color": "#1f2523"
+    },
+    {
+      "id": "rol_3v3",
+      "label": "3V3",
+      "kind": "power",
+      "nominalV": 3.3,
+      "color": "#e8891c"
+    },
+    {
+      "id": "rol_5v",
+      "label": "5V",
+      "kind": "power",
+      "nominalV": 5,
+      "color": "#d9342b"
+    },
+    {
+      "id": "rol_12v",
+      "label": "12V",
+      "kind": "power",
+      "nominalV": 12,
+      "color": "#2a64d6"
+    },
+    {
+      "id": "rol_sig",
+      "label": "Signaal",
+      "kind": "signal",
+      "color": "#8a4fd3"
+    },
+    {
+      "id": "rol_unk",
+      "label": "Teadmata",
+      "kind": "unknown",
+      "color": "#8c9692"
+    }
+  ],
+  "measurements": [],
+  "measureSettings": {
+    "voltageTolerancePct": 10,
+    "voltageToleranceMinV": 0.1
+  },
+  "repairs": [],
+  "areas": [],
+  "dimensions": [],
+  "textNotes": [],
+  "importChecks": [],
+  "guide": {
+    "skipped": []
+  }
+}

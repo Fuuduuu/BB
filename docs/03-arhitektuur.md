@@ -267,6 +267,8 @@ export interface Snapshot {
 9. teavitab tellijaid uue hetktõmmisega, mille arvutatud andmed on § 7.4 järgi värsked;
 10. avaldab sündmused.
 
+**Käsuvead ja sisemised vead.** Tahtliku käsuvea jaoks kasutab moodul `@pcbk/engine`-i `reject(reason)` abifunktsiooni, mis viskab `CommandRejected`-i. Mootor tagastab selle `validation`-ina ühe `custom` issue'ga (`message = reason`); `ZodError` säilitab oma issue'd ja `CommandTargetNotFound` annab `not_found`-i. Hõivatud mootori `engine_busy` jääb samuti `validation`-iks. Muu erind (nt `async_command`, `revision_overflow` või vigane dokumendiväärtus) annab `{ code: 'internal', message }`, kus sõnum on vea tekst või `unknown`. Dokument, ajalugu ja päevik jäävad muutmata. `createEngine`-i `onInternalError(error, commandId)` saab algse vea ning käsu id (tagasivõtmisel `undo`, taastamisel `redo`); mõlemad rakendused logivad selle konsooli (`console.error`). UI näitab: „Sisemine viga, muudatust ei tehtud. Salvesta diagnostika ja anna veast teada.“
+
 **Tühi käsk ei loo versiooni.** Kui õnnestunud käsu Immeri paigad on tühjad, tagastatakse `ok({ rev: senine })`. Ajalukku ega päevikusse sammu ei lisata, tellijaid ei teavitata ja redo-haru säilib. Puhverdatud sündmused visatakse ära.
 
 `undo` ja `redo` taastavad sisu pöördpaikadega. **`rev` kasvab iga dokumenti muutva käsuga, ka tagasivõtmisel**. `rev` on dokumendi versioon salvestuse jaoks, mitte ajaloo kursor.
@@ -380,6 +382,9 @@ CREATE TABLE thumbnail (id INTEGER PRIMARY KEY CHECK (id = 1), png BLOB NOT NULL
   - Kui lukku ei saa (fail on avatud teises programmis või arvutis), ütleb äpp ausalt „Fail on avatud mujal“ ja pakub kaht võimalust: proovi uuesti või ava viimane varukoopia uue failina. Kirjutuskaitstud avamist ei lubata, sest lukustatud faili ei pruugi saada isegi lugeda.
   - V1 toetab kohalikku faili. Võrguketta või sünkroonkausta samaaegse kasutamise töökindlust ei lubata ilma eraldi kontrollita.
 - **Dokumendi JSON** valideeritakse zod-skeemiga `BoardDocSchema`.
+  - Failivormingu valvur võrdleb `z.toJSONSchema(BoardDocSchema)` tulemust versiooni `CURRENT_FORMAT_VERSION` skeemifailiga `packages/domain/src/__fixtures__/board-doc.v<N>.schema.json`. Skeemimuutus nõuab vorminguversiooni tõstmist, migratsiooni ja uut skeemifaili; teadlikult ühilduva muutuse korral uuendatakse skeem käsuga `pnpm schema:update` ning põhjendatakse seda commit'is.
+  - Migratsioonide ainus register on domeeni `MIGRATIONS`; `EngineModule` migratsioone ei registreeri.
+  - Iga väljalase lisab sünteetilise näidisfaili `apps/desktop/src-tauri/tests/fixtures/v<väljalase>.pcbk` ning sellest võetud dokumendi `packages/domain/src/__fixtures__/releases/v<väljalase>.document.json`. Rusti test avab iga näidisfaili ajutises koopias ja kontrollib algfaili baitide säilimist; TypeScripti test migreerib ja valideerib iga dokumendi ning kontrollib näidisandmete säilimist.
   - Avamisel käivitatakse vajadusel järjestikused migratsioonid. Enne migratsiooni tehakse täisvarukoopia (vt allpool).
   - Fail, mis on uuem kui äpp, ei avane muutmiseks. Äpp näitab versiooniviga ning pakub ainult tõendatult toetatud vaatamist ja eksporti; vana skeemi sisse midagi ei kirjutata.
   - Viitamata fotod kustutatakse failist projekti avamisel, sest tagasivõtmise ajalugu algab siis uuesti. Kirjutuskaitstud failis ei tehta avamisel ühtegi kõrvalmuudatust (koristus, migratsioon).

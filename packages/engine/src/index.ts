@@ -1,5 +1,5 @@
 export { createEngine } from './engine';
-export { CommandTargetNotFound } from './errors';
+export { CommandRejected, CommandTargetNotFound, reject } from './errors';
 export * from './ports';
 export { createProjectService } from './project-service';
 export { buildRegistry, RegistryError } from './registry';

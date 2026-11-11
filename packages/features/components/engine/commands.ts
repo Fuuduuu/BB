@@ -1,6 +1,6 @@
 import { FOOTPRINTS, footprintPinIds, nextRef } from '@pcbk/domain';
 import type { BoardDoc, BoardPlacement, Component, Pin } from '@pcbk/domain';
-import { CommandTargetNotFound } from '@pcbk/engine';
+import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec } from '@pcbk/engine';
 import {
   AddComponentSchema,
@@ -46,14 +46,14 @@ function normalizeAngle(degrees: number): number {
 
 function makeBoardPlacement(input: BoardInput, pins: readonly Pick<Pin, 'id'>[]): BoardPlacement {
   const definition = FOOTPRINTS.find((entry) => entry.key === input.footprint);
-  if (!definition) throw new Error('invalid_footprint');
+  if (!definition) reject('invalid_footprint');
   const params = { ...definition.defaults, ...input.params };
   const padIds = footprintPinIds(input.footprint, params);
-  if (!padIds) throw new Error('invalid_footprint');
+  if (!padIds) reject('invalid_footprint');
   if (input.footprint !== 'area') {
     const pinIds = new Set(pins.map((pin) => pin.id));
     if (pins.length !== padIds.length || !padIds.every((id) => pinIds.has(id))) {
-      throw new Error('footprint_pins_mismatch');
+      reject('footprint_pins_mismatch');
     }
   }
   return {
@@ -70,7 +70,7 @@ function makeBoardPlacement(input: BoardInput, pins: readonly Pick<Pin, 'id'>[])
 
 function placedBoard(doc: BoardDoc, id: string): BoardPlacement {
   const board = component(doc, id).board;
-  if (!board) throw new Error('component_not_placed');
+  if (!board) reject('component_not_placed');
   return board;
 }
 
@@ -152,7 +152,7 @@ const placeOnBoard: CommandSpec<PlaceOnBoardParams> = {
   params: PlaceOnBoardSchema,
   run(doc, params) {
     const target = component(doc, params.id);
-    if (target.board) throw new Error('already_placed');
+    if (target.board) reject('already_placed');
     target.board = makeBoardPlacement(params.board, target.pins);
   },
 };

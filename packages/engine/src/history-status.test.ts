@@ -188,7 +188,7 @@ test.each([
         action === 'command'
           ? engine.execute('demo.rename', { name: 'Rejected' })
           : engine[action]();
-      expect(result).toMatchObject({ ok: false, error: { code: 'validation' } });
+      expect(result).toMatchObject({ ok: false, error: { code: 'internal', message: stage } });
     }
     expect(engine.snapshot()).toBe(before);
     expect(host.current()!.doc).toBe(before.doc);

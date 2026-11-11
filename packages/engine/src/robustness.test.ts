@@ -50,12 +50,13 @@ test('a shallow-frozen external object cannot leave mutable descendants or histo
 });
 
 test.each([
-  ['custom prototype', () => Object.setPrototypeOf(component(), { custom: true })],
+  ['custom prototype', () => Object.setPrototypeOf(component(), { custom: true }), 'validation'],
   [
     'accessor data',
     () => Object.defineProperty(component(), 'value', { enumerable: true, get: () => 'dynamic' }),
+    'internal',
   ],
-] as const)('%s cannot become an externally mutable document', (_name, make) => {
+] as const)('%s cannot become an externally mutable document', (_name, make, code) => {
   const external = make();
   const { engine, host } = setup({
     modules: [
@@ -67,7 +68,7 @@ test.each([
   const before = engine.snapshot();
   expect(engine.execute('test.mutate', {})).toMatchObject({
     ok: false,
-    error: { code: 'validation' },
+    error: { code },
   });
   expect(engine.snapshot()).toBe(before);
   expect(host.drainJournal()).toEqual([]);

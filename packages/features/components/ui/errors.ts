@@ -3,6 +3,8 @@ import { et } from '@pcbk/ui';
 
 export function commandError(error: EngineError): string {
   switch (error.code) {
+    case 'internal':
+      return 'Sisemine viga, muudatust ei tehtud. Salvesta diagnostika ja anna veast teada.';
     case 'validation':
       return error.issues.some(
         (issue) => issue.code === 'custom' && issue.message === 'invalid_or_duplicate_ref',

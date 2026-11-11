@@ -12,7 +12,7 @@ import { enablePatches, Immer } from 'immer';
 import { z, ZodError } from 'zod';
 import { createSnapshotBuilder } from './derivation';
 import { capturePayload, notify } from './events';
-import { CommandTargetNotFound } from './errors';
+import { CommandRejected, CommandTargetNotFound } from './errors';
 import { createHistory } from './history';
 import { sealTree } from './immutability';
 import type { HistoryEntry } from './history';
@@ -34,7 +34,7 @@ type Active = {
   history: ReturnType<typeof createHistory>;
   journal: ReturnType<typeof createJournal>;
 };
-const validation = (error: unknown): CommandResult =>
+const validation = (error: ZodError | CommandRejected): CommandResult =>
   err({
     code: 'validation',
     issues:
@@ -44,7 +44,7 @@ const validation = (error: unknown): CommandResult =>
             {
               code: 'custom',
               path: [],
-              message: error instanceof Error ? error.message : 'command_failed',
+              message: error.reason,
             },
           ],
   });
@@ -53,6 +53,7 @@ export function createEngine(opts: {
   modules: EngineModule[];
   clock: Clock;
   reserved?: DocKey[];
+  onInternalError?(error: unknown, commandId: string): void;
 }): { engine: DocumentEngine; host: EngineHost } {
   const registry = buildRegistry([...opts.modules, coreItems], opts.reserved);
   const { empty, makeSnapshot } = createSnapshotBuilder(registry.derive, createHistory().status());
@@ -62,15 +63,21 @@ export function createEngine(opts: {
   const subscribers = new Set<(value: Snapshot) => void>();
   const events = new Set<(value: DomainEvent) => void>();
 
-  function locked(action: (state: Active) => CommandResult): CommandResult {
-    if (busy) return validation(new Error('engine_busy'));
+  function locked(commandId: string, action: (state: Active) => CommandResult): CommandResult {
+    if (busy) return validation(new CommandRejected('engine_busy'));
     if (!active) return err({ code: 'stale_session' });
     busy = true;
     try {
       return action(active);
     } catch (error) {
       if (error instanceof CommandTargetNotFound) return err({ code: 'not_found', id: error.id });
-      return validation(error);
+      if (error instanceof ZodError || error instanceof CommandRejected) return validation(error);
+      try {
+        opts.onInternalError?.(error, commandId);
+      } catch {
+        // A diagnostic callback must not replace the command's original failure.
+      }
+      return err({ code: 'internal', message: error instanceof Error ? error.message : 'unknown' });
     } finally {
       busy = false;
     }
@@ -123,7 +130,7 @@ export function createEngine(opts: {
 
   const engine: DocumentEngine = {
     execute(id, params, options) {
-      return locked((state) => {
+      return locked(id, (state) => {
         const registered = registry.commands.get(id);
         if (!registered) return err({ code: 'not_found', id });
         const { spec } = registered;
@@ -186,7 +193,7 @@ export function createEngine(opts: {
   };
 
   function travel(kind: 'undo' | 'redo'): CommandResult {
-    return locked((state) => {
+    return locked(kind, (state) => {
       if (state.readOnly) return err({ code: 'read_only' });
       const entry = kind === 'undo' ? state.history.undoEntry() : state.history.redoEntry();
       if (!entry) return err({ code: 'not_found', id: kind });

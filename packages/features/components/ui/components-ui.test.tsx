@@ -6,6 +6,13 @@ import { et, useSessionStore } from '@pcbk/ui';
 import { FakeProjects } from '../../../client/src/__tests__/fakes';
 import { idGenerator, setup } from '../../__tests__/helpers';
 import { createComponentsUi } from './index';
+import { commandError } from './errors';
+
+test('ui_shows_internal_error_text', () => {
+  expect(commandError({ code: 'internal', message: 'private implementation detail' })).toBe(
+    'Sisemine viga, muudatust ei tehtud. Salvesta diagnostika ja anna veast teada.',
+  );
+});
 
 const dialogMethods = {
   showModal: Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'showModal'),

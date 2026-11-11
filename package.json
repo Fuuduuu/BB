@@ -11,6 +11,7 @@
     "check": "pnpm run typecheck && pnpm run lint && pnpm run depcruise && pnpm run filelength && pnpm run test && pnpm run api:check",
     "api": "node tooling/api-digest.mjs",
     "api:check": "node tooling/api-digest.mjs --check",
+    "schema:update": "node tooling/update-schema.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.backend.json",
     "lint": "eslint . --max-warnings 0",
     "depcruise": "depcruise --config .dependency-cruiser.cjs --output-type err packages apps",

@@ -98,6 +98,7 @@ export function createProjectService(opts: {
     engine: DocumentEngine;
     host: EngineHost;
     repo: ProjectRepository;
+    photos: Pick<PhotoStore, 'prune'>;
     clock: Clock;
     ids: IdGen;
     timing?: {
@@ -188,9 +189,10 @@ export type PendingEvent = Pick<DomainEvent, 'type' | 'payload'>;
 ### `PhotoStore`
 ```ts
 export interface PhotoStore {
-    importPath(session: string, path: string): Promise<PhotoRef>;
-    importBytes(session: string, bytes: ArrayBuffer): Promise<PhotoRef>;
-    url(id: string, variant: 'display' | 'original'): string;
+    importPath(session: string, path: string, id: string): Promise<PhotoRef>;
+    importBytes(session: string, bytes: ArrayBuffer, id: string, name: string): Promise<PhotoRef>;
+    prune(session: string, keep: string[]): Promise<void>;
+    url(session: string, id: string, variant: 'display' | 'original'): string;
 }
 ```
 

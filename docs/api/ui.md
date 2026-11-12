@@ -149,6 +149,9 @@ export const et: {
         exists: string;
         not_project: string;
         too_new: string;
+        unsupported_image: string;
+        image_too_large: string;
+        corrupt_image: string;
         stale_rev: string;
         unknown: string;
     };

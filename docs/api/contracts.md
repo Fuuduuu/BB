@@ -316,7 +316,7 @@ export interface Snapshot {
 
 ### `StorageReason`
 ```ts
-export type StorageReason = 'disk_full' | 'read_only' | 'missing' | 'locked' | 'exists' | 'not_project' | 'too_new' | 'stale_rev' | 'unknown';
+export type StorageReason = 'disk_full' | 'read_only' | 'missing' | 'locked' | 'exists' | 'not_project' | 'too_new' | 'stale_rev' | 'unsupported_image' | 'image_too_large' | 'corrupt_image' | 'unknown';
 ```
 
 ### `Unsubscribe`

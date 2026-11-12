@@ -108,7 +108,14 @@ export async function mountFailedSwitch(
   });
   const store = createMemoryStore();
   const repo = createMemoryRepository(store);
-  const projects = createProjectService({ engine, host: engineHost, repo, clock, ids });
+  const projects = createProjectService({
+    engine,
+    host: engineHost,
+    repo,
+    clock,
+    ids,
+    photos: { prune: async () => undefined },
+  });
   const runtime = { engine, projects };
   const current = await seedProject(runtime, 'Praegune plaat');
   const target = await seedProject(runtime, 'Teine plaat');

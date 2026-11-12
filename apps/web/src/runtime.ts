@@ -1,6 +1,6 @@
 import { createEngine, createProjectService } from '@pcbk/engine';
 import { newId } from '@pcbk/domain';
-import { createWebRepository } from '@pcbk/adapters';
+import { createWebPhotoStore, createWebRepository } from '@pcbk/adapters';
 import { engineFeatures, RESERVED_FIELDS } from '@pcbk/features/engine';
 export function createRuntime() {
   const clock = { now: () => new Date().toISOString() };
@@ -11,8 +11,10 @@ export function createRuntime() {
     clock,
     onInternalError: (error, commandId) => console.error('[engine] internal', commandId, error),
   });
-  const repo = createWebRepository();
-  const projects = createProjectService({ engine, host, repo, clock, ids });
-  return { engine, projects, repo, ids };
+  const photoStore = createWebPhotoStore();
+  const photos = photoStore.photos;
+  const repo = createWebRepository({ photoLifecycle: photoStore });
+  const projects = createProjectService({ engine, host, repo, photos, clock, ids });
+  return { engine, projects, repo, photos, ids };
 }
 export type Runtime = ReturnType<typeof createRuntime>;

@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { warn as logWarning } from '@tauri-apps/plugin-log';
-import { createTauriRepository } from '@pcbk/adapters';
+import { createTauriPhotoStore, createTauriRepository } from '@pcbk/adapters';
 import { newId } from '@pcbk/domain';
 import { createEngine, createProjectService } from '@pcbk/engine';
 import { engineFeatures, RESERVED_FIELDS } from '@pcbk/features/engine';
@@ -19,6 +19,7 @@ export function createRuntime() {
     onInternalError: (error, commandId) => console.error('[engine] internal', commandId, error),
   });
   const repo = createTauriRepository({ invoke, warn });
-  const projects = createProjectService({ engine, host, repo, clock, ids });
-  return { engine, projects, ids, appHost: createDesktopHost(warn) };
+  const photos = createTauriPhotoStore({ invoke });
+  const projects = createProjectService({ engine, host, repo, photos, clock, ids });
+  return { engine, projects, photos, ids, appHost: createDesktopHost(warn) };
 }

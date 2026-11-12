@@ -2,8 +2,9 @@ import type { JournalEntry, OpenedProject, ProjectRepository } from '@pcbk/engin
 import { StorageError } from '@pcbk/engine';
 import type { RecentProject, ViewState } from '@pcbk/contracts';
 import { parseViewState } from '@pcbk/contracts';
-import { createStore, entries, get, update } from 'idb-keyval';
+import { entries, get, update } from 'idb-keyval';
 import type { UseStore } from 'idb-keyval';
+import { createWebStore } from './web-db';
 
 type WebProject = {
   meta: {
@@ -104,13 +105,17 @@ export function createWebRepository(
     store?: UseStore;
     recentStorage?: Storage;
     now?: () => string;
+    photoLifecycle?: {
+      prepare(session: string, projectId: string): Promise<void>;
+      release(session: string): void;
+    };
   } = {},
 ): ProjectRepository & {
   recents(): RecentProject[];
   removeRecent(path: string): void;
   listProjects(): Promise<RecentProject[]>;
 } {
-  const store = options.store ?? createStore('bb-projects', 'projects');
+  const store = options.store ?? createWebStore('projects');
   const recentStorage = options.recentStorage ?? browserStorage();
   const now = options.now ?? (() => new Date().toISOString());
   const sessions = new Map<string, string>();
@@ -171,10 +176,17 @@ export function createWebRepository(
     if (!path) throw new StorageError('missing');
     return path;
   };
-  const opened = (path: string, value: WebProject): OpenedProject => {
+  const opened = async (path: string, value: WebProject): Promise<OpenedProject> => {
     if (!value.meta.file_id) throw new StorageError('not_project');
     const session = `web-session-${++sessionSequence}`;
     sessions.set(session, path);
+    try {
+      await options.photoLifecycle?.prepare(session, value.meta.project_id);
+    } catch (error) {
+      sessions.delete(session);
+      options.photoLifecycle?.release(session);
+      throw error;
+    }
     return {
       session,
       path,
@@ -302,6 +314,7 @@ export function createWebRepository(
     restore: unsupported,
     async close(session) {
       sessions.delete(session);
+      options.photoLifecycle?.release(session);
     },
   };
   return {

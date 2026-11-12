@@ -59,7 +59,8 @@ export interface ProjectRepository {
   close(session: string): Promise<void>;
 }
 export interface PhotoStore {
-  importPath(session: string, path: string): Promise<PhotoRef>;
-  importBytes(session: string, bytes: ArrayBuffer): Promise<PhotoRef>;
-  url(id: string, variant: 'display' | 'original'): string;
+  importPath(session: string, path: string, id: string): Promise<PhotoRef>;
+  importBytes(session: string, bytes: ArrayBuffer, id: string, name: string): Promise<PhotoRef>;
+  prune(session: string, keep: string[]): Promise<void>;
+  url(session: string, id: string, variant: 'display' | 'original'): string;
 }

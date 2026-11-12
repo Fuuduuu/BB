@@ -30,6 +30,14 @@ export function createMemoryRepository(store?: MemoryStore): {
 export function createMemoryStore(): MemoryStore;
 ```
 
+### `createTauriPhotoStore`
+```ts
+export function createTauriPhotoStore({ invoke, platform, }: {
+    invoke: PhotoInvoke;
+    platform?: string;
+}): PhotoStore;
+```
+
 ### `createTauriRepository`
 ```ts
 export function createTauriRepository({ invoke, warn, }: {
@@ -38,12 +46,27 @@ export function createTauriRepository({ invoke, warn, }: {
 }): ProjectRepository;
 ```
 
+### `createWebPhotoStore`
+```ts
+export function createWebPhotoStore(options?: {
+    store?: UseStore;
+}): {
+    photos: PhotoStore;
+    prepare(session: string, projectId: string): Promise<void>;
+    release(session: string): void;
+};
+```
+
 ### `createWebRepository`
 ```ts
 export function createWebRepository(options?: {
     store?: UseStore;
     recentStorage?: Storage;
     now?: () => string;
+    photoLifecycle?: {
+        prepare(session: string, projectId: string): Promise<void>;
+        release(session: string): void;
+    };
 }): ProjectRepository & {
     recents(): RecentProject[];
     removeRecent(path: string): void;

@@ -21,10 +21,13 @@ const reasons: ReadonlySet<unknown> = new Set<StorageReason>([
   'exists',
   'not_project',
   'too_new',
+  'unsupported_image',
+  'image_too_large',
+  'corrupt_image',
   'unknown',
 ]);
 
-function storageError(error: unknown): StorageError {
+export function storageError(error: unknown): StorageError {
   if (error instanceof StorageError) return error;
   if (typeof error !== 'object' || error === null || !('reason' in error))
     return new StorageError('unknown');

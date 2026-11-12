@@ -1,6 +1,6 @@
 import type { BoardDoc } from '@pcbk/domain';
 import type { SaveStatus } from '@pcbk/contracts';
-import type { ProjectRepository, SaveReq } from '../ports';
+import type { PhotoStore, ProjectRepository, SaveReq } from '../ports';
 import * as api from '../index';
 import * as storage from '../../../adapters/src/storage-memory';
 import { expect } from 'vitest';
@@ -59,6 +59,7 @@ export async function projectSetup(
     create?: boolean;
     wrap?: (repo: ProjectRepository) => ProjectRepository;
     timing?: { debounceMs: number; maxWaitMs: number };
+    photos?: Pick<PhotoStore, 'prune'>;
   } = {},
 ) {
   expect(api.createProjectService).toBeTypeOf('function');
@@ -73,6 +74,7 @@ export async function projectSetup(
     engine,
     host,
     repo,
+    photos: options.photos ?? { prune: async () => undefined },
     clock,
     ids: { newId: (prefix) => `${prefix}_${instance}_${++id}` },
     timing: options.timing,

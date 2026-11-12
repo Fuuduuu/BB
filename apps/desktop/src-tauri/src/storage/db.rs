@@ -201,7 +201,7 @@ impl ProjectDb {
         })
     }
 
-    fn writable(&self) -> StorageResult<()> {
+    pub(super) fn writable(&self) -> StorageResult<()> {
         if self.read_only || fs::metadata(&self.path)?.permissions().readonly() {
             return Err(StorageErrorDto::new(Reason::ReadOnly));
         }

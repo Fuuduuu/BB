@@ -11,7 +11,7 @@ import type {
 } from '@pcbk/contracts';
 import { z } from 'zod';
 import { StorageError } from './ports';
-import type { OpenedProject, ProjectRepository } from './ports';
+import type { OpenedProject, PhotoStore, ProjectRepository } from './ports';
 import type { Clock, EngineHost } from './types';
 import { createSaveCoordinator, saveTiming, storageFailure } from './save-coordinator';
 import type { SaveCoordinator, SaveNotice } from './save-coordinator';
@@ -34,6 +34,7 @@ export function createProjectService(opts: {
   engine: DocumentEngine;
   host: EngineHost;
   repo: ProjectRepository;
+  photos: Pick<PhotoStore, 'prune'>;
   clock: Clock;
   ids: IdGen;
   timing?: { debounceMs: number; maxWaitMs: number };
@@ -177,6 +178,12 @@ export function createProjectService(opts: {
     const opened = await open();
     try {
       const prepared = await prepare(opened);
+      if (!opened.readOnly) {
+        await opts.photos.prune(
+          opened.session,
+          prepared.doc.photos.map((photo) => photo.id),
+        );
+      }
       // Input may continue during open/migration: flush the previous project's newest state.
       if (before) {
         do {

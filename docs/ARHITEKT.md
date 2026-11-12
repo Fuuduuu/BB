@@ -49,7 +49,7 @@ cargo test --locked --offline 2>&1 | Select-String "^test result" | ForEach-Obje
 
 ## 6. Commit, liitmine, väljalase
 
-- Iga commit, push, silt ja liitmine vajab kasutaja luba sellele sammule. Autor: `git -c user.name="Fuuduuu" -c user.email="elarvaltri@gmail.com" commit …` (Giti identiteeti pole seadistatud).
+- Iga commit, silt ja liitmine vajab kasutaja luba sellele sammule. **Push käib commit'iga kaasas** (kasutaja otsus 2026-11-12): pärast kokkulepitud commit'i push'i kohe sama haru (`main` või `codex/*`). Silt ja `main`-i liitmine vajavad endiselt eraldi luba. Autor: `git -c user.name="Fuuduuu" -c user.email="elarvaltri@gmail.com" commit …` (Giti identiteeti pole seadistatud).
 - Kood: Codexi harus (`git add -A` ainult siis, kui tööpuus pole võõraid faile — vaata enne `git status --untracked-files=all`). Dokumendid: otse `main`-i, nimeliselt lisatud failid.
 - Pärast commit'i: kaardi päisesse `vastu võetud <hash>`, STATUS-esse sama.
 - Liitmine: `git merge-tree --write-tree main <haru>` (konfliktide eelkontroll) → `merge --no-ff` → kontrollid `main`-is → versioon `tauri.conf.json`-is → push `main` → annoteeritud silt → push silt. CI tulemust `gh` puudumisel ei näe; ütle seda.

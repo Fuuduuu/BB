@@ -43,8 +43,12 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
    - `sceneMatrix` on ilma nihketa, seega pööratud foto jääb negatiivsetesse koordinaatidesse. Vaade peab arvestama pööratud piirkasti (`photo_stays_in_view_after_rotation`).
    - Komponendi sildi tabamusala (`hits.ts` `component-label`) on maailma telgede järgi, aga `SceneText` hoiab teksti ekraanil püsti. Pööratud stseenis tuleb ala pöörata ekraani järgi, mistõttu `LayerSpec.hits` vajab `sceneTransform`-i (`label_hit_area_matches_screen_text_under_all_8_transforms`).
    - `ReadingLabels` otsustab sildi poole ekraanisuunalise vektori `at − center` järgi, mitte maailma `x` järgi.
+   - Töövoo ülevaatus 2026-11-12: alumise riba staatiline „Valmis“ (`et.shell.ready`) kaob. Riba jaguneb kaheks: vasakul fototööriistad, paremal mõõtkava kiip, suum ja kursori asukoht mm-des.
 5. **Kalibreerimine:** tööriist `K`, kaks punkti + mm, üks käsk, riba näit. Testid: `calibration_sets_px_per_mm_in_one_undoable_step`, `calibration_keeps_component_centers`.
-6. **Uus plaat fotost ja „Lisa foto“:** avalehe lohistamine/kleepimine, töölaua nupp ja lohistamine. Test: `first_component_within_three_actions_after_photo` (e2e).
+6. **Uus plaat fotost ja „Lisa foto“:** avalehe lohistamine/kleepimine, töölaua nupp ja lohistamine. Test: `first_component_within_three_actions_after_photo` (e2e). Töövoo ülevaatus 2026-11-12:
+   - Avalehel on suur lohistusala.
+   - „Uus plaat“ dialoog jääb fotota alustamiseks.
+   - Teema valik („Välimus“) liigub ülaribalt avalehele.
 
 **Osa C · Proovid ja vastuvõtt**
 
@@ -68,4 +72,11 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
 ## Mis jääb järgmistesse plaanidesse
 
 - **Pärast Ül. 7 mõõtmist:** `validateDocument` jagamine (`parseDocument` + muudetud väljade invariandid, A3), kui proov näitab vajadust.
+- **M1.3 töövoo lihtsustus** (töövoo ülevaatus 2026-11-12, koodis kontrollitud):
+  - Jala valimisel näitab kontekstipaneel Mõõda-plokki ja ainult selle jala kaarti: nimi, NC, mõõtmised ja „← Komponent“. Komponendi täisvormi ja jalgade tabelit näidatakse ainult komponendi valimisel. Praegu näidatakse jala valimisel kogu `ComponentDetails`.
+  - Vahekaart „Paigutamata“ ühendatakse „Plaadil“ vahekaardiga ülemiseks rühmaks, mis on nähtav ainult siis, kui paigutamata komponente on.
+  - Ülevaates tagasi lükatud, sest kood juba töötab nii:
+    - lõuendil pole 12–14 nupuga tööriistariba (tööriistad käivituvad teegist ja klahvidega);
+    - must sond püsib valituna, kuni kasutaja selle eemaldab, nii et eraldi lukku pole vaja;
+    - väärtuse väli saab fookuse ainult `M` klahvist ja pärast salvestamist, mitte jala klõpsust.
 - **M1.3 ja hiljem:** foto vahetus, teine foto ja joondus (`toBoard`), korpuse joondus fotol, foto ekspordi funktsioon (M4).

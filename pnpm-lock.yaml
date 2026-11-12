@@ -402,6 +402,9 @@ importers:
       '@pcbk/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@pcbk/domain':
+        specifier: workspace:*
+        version: link:../domain
       zustand:
         specifier: 5.1.0
         version: 5.1.0(@types/react@18.3.31)(immer@11.2.9)(react@18.3.1)

@@ -13,6 +13,14 @@ export function boardPads(placement: BoardPlacement, pinIds: readonly string[], 
 }[];
 ```
 
+### `boardSurface`
+```ts
+export function boardSurface(doc: SurfaceSource): {
+    width: number;
+    height: number;
+};
+```
+
 ### `bodyOutline`
 ```ts
 export function bodyOutline(placement: BoardPlacement, pxPerMm: number): Vec2[];
@@ -21,4 +29,16 @@ export function bodyOutline(placement: BoardPlacement, pxPerMm: number): Vec2[];
 ### `padToBoard`
 ```ts
 export function padToBoard(p: Pick<BoardPlacement, 'center' | 'rotationDeg' | 'side' | 'scaleX' | 'scaleY'>, local: Vec2, pxPerMm: number): Vec2;
+```
+
+### `SurfaceSource`
+```ts
+export type SurfaceSource = {
+    readonly photos: readonly {
+        readonly id: string;
+        readonly widthPx: number;
+        readonly heightPx: number;
+    }[];
+    readonly activePhotoId?: string | undefined;
+};
 ```

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
 import type { AppHost } from '@pcbk/contracts';
+import { boardSurface } from '@pcbk/domain/geometry';
 import { Canvas } from '../canvas/Canvas';
 import { Button } from '../kit/Button';
 import { AppShell } from '../shell/AppShell';
@@ -15,8 +16,6 @@ import { useTheme } from '../shell/use-theme';
 import { useViewStore } from '../shell/view-store';
 import { useWorkbench } from './use-workbench';
 import './workbench.css';
-
-const boardSurface = { width: 2000, height: 1400 };
 
 function BoardCanvas({ registry }: { registry: UiRegistry }) {
   const engine = useEngine();
@@ -35,7 +34,7 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
       snapshot={snapshot}
       execute={execute}
       sceneTransform="none"
-      surface={boardSurface}
+      surface={boardSurface(snapshot.doc)}
       view={view}
       onViewChange={setBoardView}
     />

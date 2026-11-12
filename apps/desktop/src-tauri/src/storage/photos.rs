@@ -255,12 +255,19 @@ impl ProjectStore {
         if id.is_empty() || name.is_empty() {
             return Err(StorageErrorDto::new(Reason::Unknown));
         }
+        {
+            let sessions = self.sessions()?;
+            let db = sessions
+                .get(session)
+                .ok_or_else(|| StorageErrorDto::new(Reason::Unknown))?;
+            db.writable()?;
+        }
+        let photo = prepare(bytes)?;
         let mut sessions = self.sessions()?;
         let db = sessions
             .get_mut(session)
             .ok_or_else(|| StorageErrorDto::new(Reason::Unknown))?;
         db.writable()?;
-        let photo = prepare(bytes)?;
         let tx = db
             .conn
             .transaction_with_behavior(TransactionBehavior::Immediate)?;

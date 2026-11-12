@@ -13,6 +13,7 @@
     "@fontsource/martian-mono": "5.3.0",
     "@pcbk/client": "workspace:*",
     "@pcbk/contracts": "workspace:*",
+    "@pcbk/domain": "workspace:*",
     "zustand": "5.1.0"
   },
   "devDependencies": {

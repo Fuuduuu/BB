@@ -2,6 +2,9 @@ import { footprintGeometry } from '../footprints';
 import type { BoardPlacement } from '../model/component';
 import type { Vec2 } from '../model/primitives';
 
+export { boardSurface } from './surface';
+export type { SurfaceSource } from './surface';
+
 export function padToBoard(
   p: Pick<BoardPlacement, 'center' | 'rotationDeg' | 'side' | 'scaleX' | 'scaleY'>,
   local: Vec2,

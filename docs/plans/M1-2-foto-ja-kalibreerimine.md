@@ -39,7 +39,10 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
 **Osa B · Moodul `photo` ja lõuend (rada A)**
 
 3. **Moodul `photo` (mootor):** käsud, omand, `activePhotoId`, lepingutestid; tööpinna mõõdud fotost.
-4. **Fotokiht ja stseen:** kiht z 0, `sceneTransform` aktiivsest fotost, alumine riba (nähtavus, kontrast, hall, pööra, peegelda), `ViewState.modules`; `PlaceTool` püstine paigutus ja näidu sildi suund pööratud/peegeldatud stseenis. Testid: `pins_stay_on_photo_under_all_8_transforms`, `new_component_upright_on_screen_under_all_8_transforms`, `photo_view_settings_survive_reopen_without_rev`.
+4. **Fotokiht ja stseen:** kiht z 0, `sceneTransform` aktiivsest fotost, alumine riba (nähtavus, kontrast, hall, pööra, peegelda), `ViewState.modules`; `PlaceTool` püstine paigutus ja näidu sildi suund pööratud/peegeldatud stseenis. Testid: `pins_stay_on_photo_under_all_8_transforms`, `new_component_upright_on_screen_under_all_8_transforms`, `photo_view_settings_survive_reopen_without_rev`. Ülevaatuse leiud 2026-11-12 (koodis kontrollitud):
+   - `sceneMatrix` on ilma nihketa, seega pööratud foto jääb negatiivsetesse koordinaatidesse. Vaade peab arvestama pööratud piirkasti (`photo_stays_in_view_after_rotation`).
+   - Komponendi sildi tabamusala (`hits.ts` `component-label`) on maailma telgede järgi, aga `SceneText` hoiab teksti ekraanil püsti. Pööratud stseenis tuleb ala pöörata ekraani järgi, mistõttu `LayerSpec.hits` vajab `sceneTransform`-i (`label_hit_area_matches_screen_text_under_all_8_transforms`).
+   - `ReadingLabels` otsustab sildi poole ekraanisuunalise vektori `at − center` järgi, mitte maailma `x` järgi.
 5. **Kalibreerimine:** tööriist `K`, kaks punkti + mm, üks käsk, riba näit. Testid: `calibration_sets_px_per_mm_in_one_undoable_step`, `calibration_keeps_component_centers`.
 6. **Uus plaat fotost ja „Lisa foto“:** avalehe lohistamine/kleepimine, töölaua nupp ja lohistamine. Test: `first_component_within_three_actions_after_photo` (e2e).
 

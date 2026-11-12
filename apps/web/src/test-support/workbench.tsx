@@ -71,14 +71,32 @@ export async function seedProject(runtime: Pick<Runtime, 'projects'>, name: stri
   return created.value;
 }
 
+export async function openWorkbenchProject(
+  runtime: Pick<Runtime, 'projects'>,
+  host: ReturnType<typeof fakeHost>['host'],
+  path: string,
+) {
+  const openPath = host.onOpenPath.mock.lastCall?.[0];
+  if (!openPath) throw new Error('Workbench did not register an open-path handler');
+  const opening = vi.spyOn(runtime.projects, 'open');
+  try {
+    await act(async () => {
+      // The host callback returns void; keep the real asynchronous open inside act.
+      openPath(path);
+      expect(opening).toHaveBeenCalledExactlyOnceWith({ path });
+      await opening.mock.results[0]!.value;
+    });
+  } finally {
+    opening.mockRestore();
+  }
+}
+
 export async function mountWithComponent(name: string) {
   const runtime = createRuntime();
   const project = await seedProject(runtime, name);
   const { host } = fakeHost();
   const app = mount(runtime, host, (onHome) => uiFeatures(runtime.ids, onHome));
-  const openPath = host.onOpenPath.mock.lastCall?.[0];
-  if (!openPath) throw new Error('Workbench did not register an open-path handler');
-  await act(async () => openPath(project.path));
+  await openWorkbenchProject(runtime, host, project.path);
   expect(await screen.findByText(project.name)).toBeTruthy();
 
   fireEvent.click(screen.getByRole('tab', { name: 'Plaadile paigutamata' }));
@@ -114,7 +132,7 @@ export async function mountFailedSwitch(
     repo,
     clock,
     ids,
-    photos: { prune: async () => undefined },
+    photos: { prune: async () => undefined, url: () => '' },
   });
   const runtime = { engine, projects };
   const current = await seedProject(runtime, 'Praegune plaat');

@@ -31,6 +31,20 @@ export function bodyOutline(placement: BoardPlacement, pxPerMm: number): Vec2[];
 export function padToBoard(p: Pick<BoardPlacement, 'center' | 'rotationDeg' | 'side' | 'scaleX' | 'scaleY'>, local: Vec2, pxPerMm: number): Vec2;
 ```
 
+### `SceneSource`
+```ts
+export type SceneSource = Omit<SurfaceSource, 'photos'> & {
+    readonly photos: readonly (SurfaceSource['photos'][number] & {
+        readonly transform: PhotoRef['transform'];
+    })[];
+};
+```
+
+### `sceneTransformOf`
+```ts
+export function sceneTransformOf(doc: SceneSource): PhotoRef['transform'];
+```
+
 ### `SurfaceSource`
 ```ts
 export type SurfaceSource = {

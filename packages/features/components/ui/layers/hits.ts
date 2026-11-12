@@ -1,7 +1,8 @@
 import type { Snapshot } from '@pcbk/contracts';
 import type { BoardPlacement, Vec2 } from '@pcbk/domain';
 import { boardPads, bodyOutline } from '@pcbk/domain/geometry';
-import type { HitItem } from '@pcbk/ui';
+import { screenToSceneVector } from '@pcbk/ui';
+import type { HitItem, SceneTransform } from '@pcbk/ui';
 
 export const LABEL_DRAG_OWNER = 'components.label';
 
@@ -54,7 +55,11 @@ export function componentPinHits({ doc }: Snapshot): HitItem[] {
   });
 }
 
-export function componentLabelHits({ doc }: Snapshot, zoom: number): HitItem[] {
+export function componentLabelHits(
+  { doc }: Snapshot,
+  zoom: number,
+  transform: SceneTransform,
+): HitItem[] {
   return doc.components.flatMap<HitItem>(({ id, board, ref, value, identified }) => {
     if (!board) return [];
     const { at, offset, textSize, valueY } = componentLabelLayout(board, doc.scale.pxPerMm);
@@ -65,14 +70,17 @@ export function componentLabelHits({ doc }: Snapshot, zoom: number): HitItem[] {
     const refWidth = Array.from(ref).length + (identified ? 0 : 2);
     const valueWidth = Array.from(value).length;
     const halfWidth = (Math.max(refWidth, valueWidth) * 0.7 * textSize) / 2 + padding;
-    const top = at.y - textSize / 2 - padding;
-    const bottom = (value ? valueY : at.y) + textSize / 2 + padding;
+    const top = -textSize / 2 - padding;
+    const bottom = (value ? valueY - at.y : 0) + textSize / 2 + padding;
     const polygon = [
-      { x: at.x - halfWidth, y: top },
-      { x: at.x + halfWidth, y: top },
-      { x: at.x + halfWidth, y: bottom },
-      { x: at.x - halfWidth, y: bottom },
-    ];
+      { x: -halfWidth, y: top },
+      { x: halfWidth, y: top },
+      { x: halfWidth, y: bottom },
+      { x: -halfWidth, y: bottom },
+    ].map((corner) => {
+      const delta = screenToSceneVector(transform, corner);
+      return { x: at.x + delta.x, y: at.y + delta.y };
+    });
     return [
       {
         kind: 'component-label',

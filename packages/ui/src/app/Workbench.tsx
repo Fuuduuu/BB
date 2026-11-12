@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
 import type { AppHost } from '@pcbk/contracts';
-import { boardSurface } from '@pcbk/domain/geometry';
+import { boardSurface, sceneTransformOf } from '@pcbk/domain/geometry';
 import { Canvas } from '../canvas/Canvas';
 import { Button } from '../kit/Button';
 import { AppShell } from '../shell/AppShell';
@@ -33,7 +33,7 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
       keys={keys}
       snapshot={snapshot}
       execute={execute}
-      sceneTransform="none"
+      sceneTransform={sceneTransformOf(snapshot.doc)}
       surface={boardSurface(snapshot.doc)}
       view={view}
       onViewChange={setBoardView}

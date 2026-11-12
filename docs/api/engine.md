@@ -98,7 +98,7 @@ export function createProjectService(opts: {
     engine: DocumentEngine;
     host: EngineHost;
     repo: ProjectRepository;
-    photos: Pick<PhotoStore, 'prune'>;
+    photos: Pick<PhotoStore, 'prune' | 'url'>;
     clock: Clock;
     ids: IdGen;
     timing?: {

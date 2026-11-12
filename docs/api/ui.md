@@ -340,7 +340,7 @@ export type LayerSpec = {
         preview: Preview | null;
         zoom: number;
     }): ReactNode;
-    hits?(snapshot: Snapshot, zoom: number): HitItem[];
+    hits?(snapshot: Snapshot, zoom: number, sceneTransform: SceneTransform): HitItem[];
 };
 ```
 
@@ -433,9 +433,19 @@ export function SaveStatus({ status }: {
 export function SceneText({ x, y, sceneTransform, transform, ...props }: SceneTextProps): import("react").JSX.Element;
 ```
 
+### `sceneToScreenVector`
+```ts
+export function sceneToScreenVector(transform: SceneTransform, { x, y }: Vec2): Vec2;
+```
+
 ### `SceneTransform`
 ```ts
 export type SceneTransform = PhotoRef['transform'];
+```
+
+### `screenToSceneVector`
+```ts
+export function screenToSceneVector(transform: SceneTransform, { x, y }: Vec2): Vec2;
 ```
 
 ### `Selection`
@@ -503,6 +513,7 @@ export interface ToolApi {
     setPreview(preview: Preview | null): void;
     hitIndex: HitIndex;
     snapshot(): Snapshot;
+    sceneTransform(): SceneTransform;
 }
 ```
 
@@ -569,6 +580,11 @@ export class UiRegistry {
     keys(): KeySpec[];
     resetSession(): void;
 }
+```
+
+### `useSceneTransform`
+```ts
+export function useSceneTransform(): SceneTransform;
 ```
 
 ### `useSessionStore`

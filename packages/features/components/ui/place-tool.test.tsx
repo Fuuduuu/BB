@@ -5,7 +5,7 @@ import { useSyncExternalStore } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { newBoardDoc } from '@pcbk/domain';
 import { Canvas, useSessionStore } from '@pcbk/ui';
-import type { ToolApi } from '@pcbk/ui';
+import type { SceneTransform, ToolApi } from '@pcbk/ui';
 import { idGenerator, setup } from '../../__tests__/helpers';
 import { COMPONENTS_LAYERS } from './layers';
 import { createPlaceToolSpec } from './PlaceTool';
@@ -21,7 +21,7 @@ afterEach(() => {
   useSessionStore.getState().reset('');
 });
 
-function mount() {
+function mount(sceneTransform: SceneTransform = 'none') {
   const doc = newBoardDoc('Paigutuse proov');
   doc.scale.pxPerMm = 10;
   const { engine } = setup(doc);
@@ -38,7 +38,7 @@ function mount() {
         tools={tools}
         snapshot={snapshot}
         execute={execute}
-        sceneTransform="none"
+        sceneTransform={sceneTransform}
         view={view}
         onViewChange={() => {}}
       />
@@ -87,7 +87,7 @@ test('place_tool_adds_placed_component_in_one_command', () => {
       { id: '1', uid: 'pin_2' },
       { id: '2', uid: 'pin_3' },
     ],
-    board: { footprint: 'chip', params: { size: '0805' }, center },
+    board: { footprint: 'chip', params: { size: '0805' }, center, rotationDeg: 0 },
   });
   expect(engine.snapshot().doc.components[0]).toMatchObject({ ref: 'R1', board: { center } });
   act(() => engine.undo());
@@ -196,7 +196,10 @@ test.each<{ footprint: string; params: PlacementRequest['params']; pinIds: strin
   start({ mode: 'existing', componentId: id, footprint, params });
   click();
 
-  expect(execute).toHaveBeenCalledExactlyOnceWith('components.placeOnBoard', { id, board });
+  expect(execute).toHaveBeenCalledExactlyOnceWith('components.placeOnBoard', {
+    id,
+    board: { ...board, rotationDeg: 0 },
+  });
   expect(engine.snapshot().doc.components[0]).toMatchObject({ id, board, pins: before });
   expect(useSessionStore.getState().selection.items).toEqual([{ kind: 'component', id }]);
 });
@@ -250,4 +253,67 @@ test('a rejected placement displays the command error and leaves placement activ
   expect(engine.snapshot()).toBe(before);
   expect(usePlaceStore.getState().error).toBe(componentEt.missing);
   expect(useSessionStore.getState().toolId).toBe('components.place');
+});
+
+// Literal scene matrices keep the orientation expectation independent of the helpers.
+const transforms = {
+  none: [1, 0, 0, 1],
+  rot90: [0, 1, -1, 0],
+  rot180: [-1, 0, 0, -1],
+  rot270: [0, -1, 1, 0],
+  mirror: [-1, 0, 0, 1],
+  mirror_rot90: [0, -1, -1, 0],
+  mirror_rot180: [1, 0, 0, -1],
+  mirror_rot270: [0, 1, 1, 0],
+} as const;
+
+test('new_component_upright_on_screen_under_all_8_transforms', () => {
+  for (const transform of Object.keys(transforms) as SceneTransform[]) {
+    for (const mode of ['new', 'existing'] as const) {
+      const { engine, svg, pointer, click, start } = mount(transform);
+      if (mode === 'existing')
+        act(() => {
+          engine.execute('components.add', {
+            id: 'cmp_existing',
+            kind: 'resistor',
+            pins: [
+              { id: '1', uid: 'pin_existing1' },
+              { id: '2', uid: 'pin_existing2' },
+            ],
+          });
+        });
+      start(
+        mode === 'new'
+          ? resistor
+          : {
+              mode,
+              componentId: 'cmp_existing',
+              footprint: 'chip',
+              params: { size: '0805' },
+            },
+      );
+      pointer('pointermove');
+      const preview = svg
+        .querySelector('[data-layer="components.bodies"] polygon')!
+        .getAttribute('points');
+      click();
+      expect(
+        engine.snapshot().doc.components,
+        `${transform}/${mode}: ${usePlaceStore.getState().error}`,
+      ).toHaveLength(1);
+      const board = engine.snapshot().doc.components[0]!.board!;
+      expect(board, `${transform}/${mode}: ${usePlaceStore.getState().error}`).toBeDefined();
+      const angle = (board.rotationDeg * Math.PI) / 180;
+      const [a, b, c, d] = transforms[transform];
+      const up = { x: Math.sin(angle), y: -Math.cos(angle) };
+      expect(a * up.x + c * up.y, `${transform}/${mode}: screen up x`).toBeCloseTo(0);
+      expect(b * up.x + d * up.y, `${transform}/${mode}: screen up y`).toBeCloseTo(-1);
+      expect(board.side).toBe('top');
+      expect(
+        svg.querySelector('[data-layer="components.bodies"] polygon')!.getAttribute('points'),
+      ).toBe(preview);
+      cleanup();
+      useSessionStore.getState().reset('');
+    }
+  }
 });

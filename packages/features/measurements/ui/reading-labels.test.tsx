@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
+import type { SceneTransform } from '@pcbk/ui';
 import type { BoardDoc } from '@pcbk/domain';
 import { expect, test } from 'vitest';
 import { mountMeasurements, pinRef, pointer } from '../__tests__/workspace';
@@ -120,4 +121,43 @@ test('reading_label_follows_drag_preview', () => {
 
   fireEvent.keyDown(svg, { key: 'Escape' });
   expect(coordinates()).toEqual(original);
+});
+
+test('reading_label_side_follows_screen_under_all_8_transforms', () => {
+  const cases = {
+    none: 'end',
+    rot90: 'start',
+    rot180: 'start',
+    rot270: 'end',
+    mirror: 'start',
+    mirror_rot90: 'start',
+    mirror_rot180: 'end',
+    mirror_rot270: 'end',
+  } as const;
+  for (const transform of Object.keys(cases) as SceneTransform[]) {
+    mountMeasurements({
+      sceneTransform: transform,
+      seed(doc) {
+        seed(doc);
+        const component = doc.components[0]!;
+        component.board = {
+          ...component.board!,
+          footprint: 'soic',
+          params: { pins: 8, body: 3.9 },
+        };
+        component.pins.push(
+          ...['5', '6', '7', '8'].map((id) => ({ id, uid: pinRef(id).uid, nc: false })),
+        );
+      },
+    });
+    const label = screen.getByText('4,98 V');
+    expect(label.getAttribute('text-anchor'), transform).toBe(cases[transform]);
+    expect(Number(label.getAttribute('dy'))).toBeLessThan(0);
+    expect(Number(label.getAttribute('dx'))).toBe(
+      cases[transform] === 'end'
+        ? Number(label.getAttribute('dy'))
+        : -Number(label.getAttribute('dy')),
+    );
+    cleanup();
+  }
 });

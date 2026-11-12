@@ -3,6 +3,7 @@ import type { Vec2 } from '@pcbk/domain';
 import type { JSX, ReactNode } from 'react';
 import type { Preview, Selection } from '../shell/session-store';
 import type { HitIndex, HitItem } from './hit-index';
+import type { SceneTransform } from './stage';
 
 export interface CanvasPointer {
   world: Vec2;
@@ -39,11 +40,12 @@ export interface ToolApi {
   setPreview(preview: Preview | null): void;
   hitIndex: HitIndex;
   snapshot(): Snapshot;
+  sceneTransform(): SceneTransform;
 }
 
 export type LayerSpec = {
   id: string;
   z: number;
   render(props: { snapshot: Snapshot; preview: Preview | null; zoom: number }): ReactNode;
-  hits?(snapshot: Snapshot, zoom: number): HitItem[];
+  hits?(snapshot: Snapshot, zoom: number, sceneTransform: SceneTransform): HitItem[];
 };

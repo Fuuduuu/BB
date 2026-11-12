@@ -8,7 +8,7 @@ import type { BoardDoc, MeasuredPin } from '@pcbk/domain';
 import { boardPads } from '@pcbk/domain/geometry';
 import { createEngine } from '@pcbk/engine';
 import { AppShell, Canvas, UiRegistry, useSessionStore, useViewStore } from '@pcbk/ui';
-import type { UiModule } from '@pcbk/ui';
+import type { SceneTransform, UiModule } from '@pcbk/ui';
 import { FakeProjects } from '../../../client/src/__tests__/fakes';
 import { idGenerator } from '../../__tests__/helpers';
 import { engineFeatures, RESERVED_FIELDS } from '../../engine';
@@ -56,6 +56,7 @@ export function measurementDoc(): BoardDoc {
 
 type Options = {
   readOnly?: boolean;
+  sceneTransform?: SceneTransform;
   seed?: (doc: BoardDoc) => void;
   pinnedRender?: (ids: IdGen) => ReactNode;
 };
@@ -72,7 +73,12 @@ export function pointer(svg: SVGSVGElement, type: string, x: number, y: number) 
   fireEvent(svg, event);
 }
 
-export function mountMeasurements({ readOnly, seed, pinnedRender }: Options = {}) {
+export function mountMeasurements({
+  readOnly,
+  seed,
+  pinnedRender,
+  sceneTransform = 'none',
+}: Options = {}) {
   const { engine, host } = createEngine({
     modules: engineFeatures,
     reserved: RESERVED_FIELDS,
@@ -101,7 +107,7 @@ export function mountMeasurements({ readOnly, seed, pinnedRender }: Options = {}
         layers={layers}
         tools={tools}
         keys={keys}
-        sceneTransform="none"
+        sceneTransform={sceneTransform}
         view={view}
         onViewChange={noop}
         snapshot={snapshot}

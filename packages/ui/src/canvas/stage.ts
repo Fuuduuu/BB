@@ -15,8 +15,34 @@ const sceneTransforms: Record<SceneTransform, LinearMatrix> = {
   mirror_rot270: [0, 1, 1, 0],
 };
 
-export function sceneMatrix(transform: SceneTransform): string {
-  return `matrix(${sceneTransforms[transform].join(' ')} 0 0)`;
+export function sceneMatrix(
+  transform: SceneTransform,
+  surface: { width: number; height: number } = { width: 0, height: 0 },
+): string {
+  const [a, b, c, d] = sceneTransforms[transform];
+  const x = -Math.min(
+    0,
+    a * surface.width,
+    c * surface.height,
+    a * surface.width + c * surface.height,
+  );
+  const y = -Math.min(
+    0,
+    b * surface.width,
+    d * surface.height,
+    b * surface.width + d * surface.height,
+  );
+  return `matrix(${a} ${b} ${c} ${d} ${x} ${y})`;
+}
+
+export function sceneToScreenVector(transform: SceneTransform, { x, y }: Vec2): Vec2 {
+  const [a, b, c, d] = sceneTransforms[transform];
+  return { x: a * x + c * y, y: b * x + d * y };
+}
+
+export function screenToSceneVector(transform: SceneTransform, { x, y }: Vec2): Vec2 {
+  const [a, b, c, d] = sceneTransforms[transform];
+  return { x: a * x + b * y, y: c * x + d * y };
 }
 
 /** Keep the text anchor in the scene while cancelling its rotation and reflection. */

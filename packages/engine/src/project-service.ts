@@ -34,7 +34,7 @@ export function createProjectService(opts: {
   engine: DocumentEngine;
   host: EngineHost;
   repo: ProjectRepository;
-  photos: Pick<PhotoStore, 'prune'>;
+  photos: Pick<PhotoStore, 'prune' | 'url'>;
   clock: Clock;
   ids: IdGen;
   timing?: { debounceMs: number; maxWaitMs: number };
@@ -263,6 +263,9 @@ export function createProjectService(opts: {
     saveView(view) {
       const parsed = parseViewState(view);
       if (parsed) active?.saver.saveView(parsed);
+    },
+    photoUrl(id, variant) {
+      return active ? opts.photos.url(active.opened.session, id, variant) : null;
     },
     status(listener) {
       listeners.add(listener);

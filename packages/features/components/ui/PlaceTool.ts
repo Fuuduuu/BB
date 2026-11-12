@@ -5,6 +5,7 @@ import type { CanvasTool, ToolApi, ToolSpec } from '@pcbk/ui';
 import { COMPONENT_LIBRARY, makePlacedComponent } from '../contract';
 import { commandError } from './errors';
 import { componentEt, placementEt } from './i18n/et';
+import { placementRotation } from './placement-rotation';
 import { PLACE_TOOL_ID, usePlaceStore } from './place-store';
 import type { PlacementRequest } from './place-store';
 
@@ -67,6 +68,7 @@ function createPlaceTool(ids: IdGen): CanvasTool {
         return;
       }
 
+      const rotationDeg = placementRotation(api.sceneTransform());
       let id: string;
       let result: ReturnType<ToolApi['execute']>;
       if (request.mode === 'new') {
@@ -76,6 +78,7 @@ function createPlaceTool(ids: IdGen): CanvasTool {
           return;
         }
         const params = makePlacedComponent(ids, entry, request.params, center);
+        params.board = { ...params.board!, rotationDeg };
         id = params.id;
         result = api.execute('components.add', params);
       } else {
@@ -83,7 +86,7 @@ function createPlaceTool(ids: IdGen): CanvasTool {
         const { footprint, params } = request;
         result = api.execute('components.placeOnBoard', {
           id,
-          board: { footprint, params, center },
+          board: { footprint, params, center, rotationDeg },
         });
       }
       if (!result.ok) {

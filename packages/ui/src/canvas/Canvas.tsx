@@ -72,6 +72,7 @@ export function Canvas({
     rev: number;
     sessionId: string;
     lodZoom: number;
+    sceneTransform: SceneTransform;
     index: ReturnType<typeof createHitIndex>;
   }>();
   const gesture = useRef<{ pointerId: number; tool: CanvasTool } | null>(null);
@@ -148,8 +149,9 @@ export function Canvas({
         return cache.current?.index ?? emptyHits;
       },
       snapshot: () => current.current.snapshot,
+      sceneTransform: () => sceneTransform,
     }),
-    [emptyHits],
+    [emptyHits, sceneTransform],
   );
 
   const cancel = useCallback(
@@ -178,17 +180,21 @@ export function Canvas({
       previous?.layers !== layers ||
       previous.rev !== snapshot.rev ||
       previous.sessionId !== snapshot.sessionId ||
-      previous.lodZoom !== lodZoom
+      previous.lodZoom !== lodZoom ||
+      previous.sceneTransform !== sceneTransform
     ) {
       cache.current = {
         layers,
         rev: snapshot.rev,
         sessionId: snapshot.sessionId,
         lodZoom,
-        index: createHitIndex(layers.flatMap((layer) => layer.hits?.(snapshot, lodZoom) ?? [])),
+        sceneTransform,
+        index: createHitIndex(
+          layers.flatMap((layer) => layer.hits?.(snapshot, lodZoom, sceneTransform) ?? []),
+        ),
       };
     }
-  }, [active, cancel, layers, snapshot, execute, onViewChange, lodZoom]);
+  }, [active, cancel, layers, snapshot, execute, onViewChange, lodZoom, sceneTransform]);
   useLayoutEffect(() => cancelLod, [cancelLod]);
   useLayoutEffect(() => applyView(view), [applyView, view]);
   useLayoutEffect(
@@ -344,7 +350,7 @@ export function Canvas({
       }}
     >
       <g ref={viewGroup} data-view="">
-        <g ref={scene} data-scene="" transform={sceneMatrix(sceneTransform)}>
+        <g ref={scene} data-scene="" transform={sceneMatrix(sceneTransform, surface)}>
           {surface && (
             <rect
               width={surface.width}

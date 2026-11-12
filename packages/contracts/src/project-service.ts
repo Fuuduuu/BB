@@ -49,6 +49,7 @@ export interface ProjectService {
   discard(): Promise<Result<void, EngineError>>;
   flush(): Promise<Result<void, EngineError>>;
   saveView(view: ViewState): void;
+  photoUrl(id: string, variant: 'display' | 'original'): string | null;
   copy(req: CopyReq): Promise<Result<ProjectInfo & { fromMemory: boolean }, EngineError>>;
   backups(req?: BackupsReq): Promise<Result<BackupInfo[], EngineError>>;
   restore(req: RestoreReq): Promise<Result<ProjectInfo, EngineError>>;

@@ -1,7 +1,8 @@
 import { bodyOutline } from '@pcbk/domain/geometry';
-import { useSessionStore } from '@pcbk/ui';
+import { useSceneTransform, useSessionStore } from '@pcbk/ui';
 import type { LayerSpec, TranslatePreviewData } from '@pcbk/ui';
 import type { PlacePreviewData } from '../PlaceTool';
+import { placementRotation } from '../placement-rotation';
 import { PLACE_TOOL_ID } from '../place-store';
 import { ComponentShape } from './ComponentShape';
 import type { ComponentLayerKind } from './ComponentShape';
@@ -11,8 +12,9 @@ type ComponentsLayerProps = Parameters<LayerSpec['render']>[0] & { kind: Compone
 type LabelPreview = { id: string; dx: number; dy: number };
 
 function PlacementOutline({ data, pxPerMm }: { data: PlacePreviewData; pxPerMm: number }) {
+  const rotationDeg = placementRotation(useSceneTransform());
   const outline = bodyOutline(
-    { ...data, rotationDeg: 0, side: 'top', scaleX: 1, scaleY: 1, customPads: {} },
+    { ...data, rotationDeg, side: 'top', scaleX: 1, scaleY: 1, customPads: {} },
     pxPerMm,
   );
   if (outline.length === 0) return null;

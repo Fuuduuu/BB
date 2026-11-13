@@ -38,7 +38,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 ### `Canvas`
 ```ts
-export function Canvas({ layers, tools, keys, sceneTransform, view, onViewChange, snapshot, execute, surface, }: CanvasProps): import("react").JSX.Element;
+export function Canvas({ layers, tools, keys, sceneTransform, view, onViewChange, snapshot, execute, surface, fitInsets, }: CanvasProps): import("react").JSX.Element;
 ```
 
 ### `CanvasPointer`
@@ -67,6 +67,12 @@ export interface CanvasProps {
     surface?: {
         width: number;
         height: number;
+    };
+    fitInsets?: {
+        left?: number;
+        right?: number;
+        top?: number;
+        bottom?: number;
     };
 }
 ```
@@ -186,7 +192,14 @@ export const et: {
         readonly canvasEmpty: "Sinu plaadi tööala";
         readonly canvasHint: "Komponendid ja ühendused kuvatakse siin.";
         readonly bottomBar: "Plaadi olek";
-        readonly ready: "Valmis";
+        readonly zoomOut: "Vähenda";
+        readonly zoomIn: "Suurenda";
+        readonly fit: "Sobita";
+        readonly zoomPercent: (zoom: number) => string;
+        readonly cursor: (point: {
+            x: number;
+            y: number;
+        } | null) => string;
         readonly undo: "Võta tagasi";
         readonly redo: "Tee uuesti";
         readonly appearance: "Välimus";

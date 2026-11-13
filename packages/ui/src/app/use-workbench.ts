@@ -145,7 +145,8 @@ export function useWorkbench(host: AppHost) {
         next.navigatorTab !== previous.navigatorTab ||
         next.contextWidth !== previous.contextWidth ||
         next.contextOpen !== previous.contextOpen ||
-        next.boardView !== previous.boardView
+        next.boardView !== previous.boardView ||
+        next.modules !== previous.modules
       ) {
         projects.saveView(next.getView());
       }

@@ -18,5 +18,5 @@ export function photoUiFixture() {
     ids: idGenerator(),
     timing: { debounceMs: 60_000, maxWaitMs: 120_000 },
   });
-  return { engine, projects, url };
+  return { engine, host, projects, url };
 }

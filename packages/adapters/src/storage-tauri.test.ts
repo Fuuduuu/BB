@@ -88,7 +88,7 @@ test('adds recent entry after open and copy', async () => {
     projectId: dto.project_id,
     fileId: dto.file_id,
     doc,
-    view: { ...view, boardView: { zoom: 1, pan: { x: 0, y: 0 } } },
+    view: { ...view, boardView: { zoom: 1, pan: { x: 0, y: 0 } }, modules: {} },
     formatVersion: dto.format_version,
     readOnly: false,
     savedAt: dto.saved_at,

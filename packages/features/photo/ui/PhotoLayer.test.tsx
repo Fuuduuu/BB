@@ -2,6 +2,7 @@
 import { cleanup, render, act } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { EngineProvider } from '@pcbk/client';
+import { useViewStore } from '@pcbk/ui';
 import type { ProjectService } from '@pcbk/contracts';
 import { idGenerator } from '../../__tests__/helpers';
 import { uiFeatures } from '../../ui';
@@ -11,6 +12,7 @@ import { createPhotoUi } from './index';
 const open: ProjectService[] = [];
 afterEach(async () => {
   cleanup();
+  useViewStore.getState().reset();
   for (const projects of open.splice(0)) await projects.discard();
 });
 
@@ -65,6 +67,27 @@ test('photo_layer_renders_nothing_without_photo', async () => {
   const { view, url } = await fixture(false);
   expect(view.container.querySelector('image')).toBeNull();
   expect(url).not.toHaveBeenCalled();
+});
+
+test('photo_layer_applies_visibility_opacity_contrast_gray', async () => {
+  const { view, engine } = await fixture();
+  const rev = engine.snapshot().rev;
+  act(() =>
+    useViewStore.getState().setModuleView('photo', {
+      visible: true,
+      opacity: 0.35,
+      contrast: 1.4,
+      gray: true,
+    }),
+  );
+  const image = view.container.querySelector('image')!;
+  expect(image.style.opacity).toBe('0.35');
+  expect(image.style.filter).toBe('contrast(1.4) grayscale(1)');
+  act(() => useViewStore.getState().setModuleView('photo', { visible: false }));
+  expect(view.container.querySelector('image')).toBeNull();
+  act(() => useViewStore.getState().setModuleView('photo', { gray: false }));
+  expect(view.container.querySelector('image')!.style.filter).toBe('contrast(1) grayscale(0)');
+  expect(engine.snapshot().rev).toBe(rev);
 });
 
 test('photo_layer_renders_nothing_with_null_url', async () => {

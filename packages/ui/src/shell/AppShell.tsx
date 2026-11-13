@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useEngine, useSaveStatus, useSnapshot } from '@pcbk/client';
 import type { Snapshot } from '@pcbk/contracts';
 import { useShallow } from 'zustand/react/shallow';
 import { TopBar } from './TopBar';
+import { ViewControls } from './ViewControls';
 import { ErrorBar } from './ErrorBar';
 import type { SaveRecoveryActions } from './ErrorBar';
 import { PanelErrorBoundary, RootErrorBoundary } from './ErrorBoundary';
@@ -15,6 +16,7 @@ import { useSessionStore } from './session-store';
 import type { Selection } from './session-store';
 import { useViewStore } from './view-store';
 import { useTheme } from './use-theme';
+import { useWideLayout } from './use-wide-layout';
 import { et } from './i18n/et';
 
 const emptyRegistry = new UiRegistry();
@@ -41,14 +43,6 @@ function useSelection(sessionId: string, components: Snapshot['doc']['components
   }, [selected, sessionId, valid]);
   return valid;
 }
-const wideQuery = '(min-width: 1280px)';
-function subscribeWidth(notify: () => void) {
-  const media = window.matchMedia?.(wideQuery);
-  media?.addEventListener('change', notify);
-  return () => media?.removeEventListener('change', notify);
-}
-const isWide = () => window.matchMedia?.(wideQuery).matches ?? true;
-
 export interface AppShellProps extends SaveRecoveryActions, RootRecoveryActions {
   registry?: UiRegistry;
   canvas?: ReactNode;
@@ -223,7 +217,7 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
   );
   useTheme(props.manageTheme !== false);
   const selection = useSelection(sessionId, components);
-  const wide = useSyncExternalStore(subscribeWidth, isWide, () => true);
+  const wide = useWideLayout();
   const PinnedContextPane = useMemo(() => createPinnedContextPane(registry), [registry]);
   const activeSession = useRef<string>();
   useLayoutEffect(() => {
@@ -318,12 +312,13 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
         />
       </div>
       <footer className="pcbk-bottom-bar" aria-label={et.shell.bottomBar}>
-        <span className="pcbk-ready">
-          <i aria-hidden="true" />
-          {et.shell.ready}
-        </span>
         <PanelErrorBoundary>
-          <ExtraSlots registry={registry} slot="bottomBar" />
+          <div className="pcbk-bottom-modules">
+            <ExtraSlots registry={registry} slot="bottomBar" />
+          </div>
+        </PanelErrorBoundary>
+        <PanelErrorBoundary>
+          <ViewControls />
         </PanelErrorBoundary>
       </footer>
     </div>

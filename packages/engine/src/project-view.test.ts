@@ -14,6 +14,44 @@ test('create returns null when the new file has no saved view', async () => {
   const { projects } = await projectSetup({ create: false });
   expect(await projects.create({ name: 'New' })).toMatchObject({ ok: true, value: { view: null } });
 });
+
+test('module_only_changes_save_metadata_without_document_revision_or_shared_references', async () => {
+  const { engine, projects, memory, store, path } = await projectSetup();
+  const panels = {
+    navigatorWidth: 300,
+    navigatorTab: 'components',
+    contextWidth: 340,
+    contextOpen: true,
+  };
+  projects.saveView({ ...panels, modules: { photo: { visible: true, opacity: 1 } } });
+  expect((await projects.flush()).ok).toBe(true);
+  const before = engine.snapshot();
+  const modules = { photo: { visible: false, opacity: 0.4 }, future: { keep: [1] } };
+  projects.saveView({ ...panels, modules });
+  modules.photo.opacity = 0.9;
+  modules.future.keep.push(2);
+  expect((await projects.flush()).ok).toBe(true);
+  expect(store.files.get(path)!.view?.modules).toEqual({
+    photo: { visible: false, opacity: 0.4 },
+    future: { keep: [1] },
+  });
+  expect(engine.snapshot()).toMatchObject({ rev: before.rev, history: before.history });
+  expect(memory.documentWrites).toBe(0);
+  const viewWrites = memory.viewWrites;
+  projects.saveView({
+    ...panels,
+    modules: { photo: { visible: false, opacity: 0.4 }, future: { keep: [1] } },
+  });
+  expect((await projects.flush()).ok).toBe(true);
+  expect(memory.viewWrites).toBe(viewWrites);
+  const current = await projects.open({ path });
+  if (!current.ok || !current.value.view?.modules) throw new Error('Expected module view');
+  (current.value.view.modules.photo as { opacity: number }).opacity = 0.7;
+  expect(await projects.open({ path })).toMatchObject({
+    ok: true,
+    value: { view: { modules: { photo: { visible: false, opacity: 0.4 } } } },
+  });
+});
 test.each(['open', 'restore'] as const)(
   '%s returns the saved view as a detached value',
   async (operation) => {
@@ -169,6 +207,7 @@ test('copy returns the newest unsaved in-memory view without sharing its referen
     contextWidth: 340,
     contextOpen: true,
     boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    modules: {},
   });
 });
 test('copy response includes a view changed while the copy was awaiting storage', async () => {
@@ -217,6 +256,7 @@ test('copy response includes a view changed while the copy was awaiting storage'
     contextWidth: 340,
     contextOpen: true,
     boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    modules: {},
   });
 });
 test('copy activation cannot overwrite a newer view supplied by a status observer', async () => {
@@ -256,5 +296,6 @@ test('copy activation cannot overwrite a newer view supplied by a status observe
     contextWidth: 340,
     contextOpen: true,
     boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    modules: {},
   });
 });

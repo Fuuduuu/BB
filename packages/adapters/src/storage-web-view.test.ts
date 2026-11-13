@@ -46,6 +46,7 @@ test('view writes capture caller data and preserve document revision, metadata a
       contextWidth: 460,
       contextOpen: false,
       boardView: { zoom: 1.5, pan: { x: -20, y: 34 } },
+      modules: {},
     },
   });
 });
@@ -74,6 +75,7 @@ test('web view writes normalize legacy fields and exclude theme without changing
       contextWidth: 340,
       contextOpen: true,
       boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+      modules: {},
     },
   };
   expect(await get(key, store)).toEqual(expected);
@@ -120,7 +122,7 @@ test.each([
     const stored = { ...value, view: raw };
     await set(key, stored, store);
     expect((await repo.open(opened.path)).view).toEqual(
-      expected && { ...expected, boardView: { zoom: 1, pan: { x: 0, y: 0 } } },
+      expected && { ...expected, boardView: { zoom: 1, pan: { x: 0, y: 0 } }, modules: {} },
     );
     expect((await repo.listProjects()).map((item) => item.path)).toEqual([opened.path]);
     expect(await get(key, store)).toEqual(stored);

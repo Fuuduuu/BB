@@ -73,6 +73,7 @@ describe('view state', () => {
       contextWidth: 390,
       contextOpen: false,
       boardView: { zoom: 2, pan: { x: -4, y: 10 } },
+      modules: {},
     });
     expect(useViewStore.getState()).toMatchObject({
       theme: 'dark',
@@ -92,6 +93,7 @@ describe('view state', () => {
       contextWidth: 340,
       contextOpen: true,
       boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+      modules: {},
     });
     expect(useViewStore.getState().theme).toBe('dark');
   });
@@ -109,6 +111,7 @@ describe('view state', () => {
       contextWidth: 340,
       contextOpen: true,
       boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+      modules: {},
     });
     useViewStore.getState().restore({
       navigatorWidth: -100,
@@ -122,4 +125,40 @@ describe('view state', () => {
     useViewStore.getState().setContextWidth(Number.POSITIVE_INFINITY);
     expect(useViewStore.getState().contextWidth).toBe(340);
   });
+});
+
+test('module views round trip independently and are detached from callers', () => {
+  const photo = { opacity: 0.4, visible: false };
+  useViewStore.getState().setModuleView('photo', photo);
+  useViewStore.getState().setModuleView('other', { enabled: true });
+  photo.opacity = 1;
+  const saved = useViewStore.getState().getView();
+  expect(saved.modules).toEqual({
+    photo: { opacity: 0.4, visible: false },
+    other: { enabled: true },
+  });
+  (saved.modules.photo as { opacity: number }).opacity = 0;
+  expect(useViewStore.getState().modules.photo).toEqual({ opacity: 0.4, visible: false });
+  useViewStore.getState().restore(saved);
+  (saved.modules.other as { enabled: boolean }).enabled = false;
+  expect(useViewStore.getState().modules.other).toEqual({ enabled: true });
+  useViewStore.getState().reset();
+  expect(useViewStore.getState().modules).toEqual({});
+});
+
+test('fit and zoom requests are transient and restore/reset discard them', () => {
+  const store = useViewStore.getState();
+  store.requestFit();
+  store.requestZoom(1.25);
+  expect(useViewStore.getState().fitRequest).toBe(1);
+  expect(useViewStore.getState().zoomRequest).toEqual({ sequence: 1, factor: 1.25 });
+  const saved = store.getView();
+  expect(saved).not.toHaveProperty('fitRequest');
+  expect(saved).not.toHaveProperty('zoomRequest');
+  store.restore(saved);
+  expect(useViewStore.getState().fitRequest).toBe(0);
+  expect(useViewStore.getState().zoomRequest).toEqual({ sequence: 0, factor: 1 });
+  store.requestFit();
+  store.reset();
+  expect(useViewStore.getState().fitRequest).toBe(0);
 });

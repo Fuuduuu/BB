@@ -213,7 +213,12 @@ fn legacy_backup_folder_stays_listed_and_untouched() {
     let all = f.store.backups(PROJECT_ID).unwrap();
     for (file, before) in legacy_files {
         assert_eq!(fs::read(&file).unwrap(), before);
-        let listed = all.iter().find(|b| Path::new(&b.file) == file).unwrap();
+        // The inventory canonicalizes paths, including Windows short-name aliases.
+        let canonical_file = dunce::canonicalize(&file).unwrap();
+        let listed = all
+            .iter()
+            .find(|b| Path::new(&b.file) == canonical_file)
+            .unwrap();
         assert!(serde_json::to_value(listed).unwrap()["file_id"].is_null());
     }
     assert_eq!(all.len(), 13); // Eight legacy entries, five retained modern full copies.

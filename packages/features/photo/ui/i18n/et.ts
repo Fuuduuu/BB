@@ -1,0 +1,15 @@
+export const photoEt = {
+  title: 'Foto',
+  hide: 'Peida foto',
+  show: 'Näita fotot',
+  opacity: 'Läbipaistvus',
+  contrast: 'Kontrast',
+  gray: 'Hall',
+  rotate: 'Pööra 90°',
+  mirror: 'Peegelda',
+  uncalibrated: 'Kalibreerimata',
+  scale: (pxPerMm: number) => `${pxPerMm.toFixed(2).replace('.', ',')} px/mm`,
+  percent: (value: number) => `${Math.round(value * 100)}%`,
+  readOnly: 'Projekt on kirjutuskaitstud.',
+  transformFailed: 'Foto teisendamine ebaõnnestus.',
+};

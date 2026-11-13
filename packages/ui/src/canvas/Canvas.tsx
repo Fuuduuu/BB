@@ -8,6 +8,7 @@ import { useSessionStore } from '../shell/session-store';
 import type { Preview } from '../shell/session-store';
 import type { KeySpec } from '../shell/UiRegistry';
 import { createHitIndex } from './hit-index';
+import { useCanvasControls } from './use-canvas-controls';
 import { createPanToolSpec } from './PanTool';
 import { createSelectToolSpec } from './SelectTool';
 import { SceneTransformContext } from './scene-text';
@@ -27,6 +28,7 @@ export interface CanvasProps {
   snapshot: Snapshot;
   execute: DocumentEngine['execute'];
   surface?: { width: number; height: number };
+  fitInsets?: { left?: number; right?: number; top?: number; bottom?: number };
 }
 
 const Layers = memo(
@@ -58,6 +60,7 @@ export function Canvas({
   snapshot,
   execute,
   surface,
+  fitInsets,
 }: CanvasProps) {
   const svg = useRef<SVGSVGElement>(null);
   const viewGroup = useRef<SVGGElement>(null);
@@ -118,6 +121,17 @@ export function Canvas({
     },
     [applyView],
   );
+  useCanvasControls({
+    svg,
+    scene,
+    viewRef,
+    changeView,
+    surface,
+    fitInsets,
+    sceneTransform,
+    sessionId: snapshot.sessionId,
+    isGesturing: () => gesture.current !== null,
+  });
   const panByScreen = useCallback(
     (delta: Vec2) => {
       if (!svg.current) return;

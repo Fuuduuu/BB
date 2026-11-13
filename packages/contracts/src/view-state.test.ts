@@ -1,6 +1,34 @@
 import { expect, test } from 'vitest';
 import { parseViewState } from './view-state';
 
+test.each([undefined, null, [], 'broken', 7, true])(
+  'invalid_module_view_falls_back_without_losing_view (%j)',
+  (modules) => {
+    expect(
+      parseViewState({
+        navigatorWidth: 400,
+        navigatorTab: 'log',
+        contextWidth: 380,
+        contextOpen: false,
+        boardView: { zoom: 2, pan: { x: -20, y: 30 } },
+        modules,
+      }),
+    ).toEqual({
+      navigatorWidth: 400,
+      navigatorTab: 'log',
+      contextWidth: 380,
+      contextOpen: false,
+      boardView: { zoom: 2, pan: { x: -20, y: 30 } },
+      modules: {},
+    });
+  },
+);
+
+test('keeps opaque module records without interpreting their fields', () => {
+  const modules = { photo: { opacity: 'bad', extra: [7] }, future: { enabled: true } };
+  expect(parseViewState({ modules })?.modules).toEqual(modules);
+});
+
 test.each([
   undefined,
   null,
@@ -23,6 +51,7 @@ test.each([
     contextWidth: 380,
     contextOpen: false,
     boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    modules: {},
   });
 });
 
@@ -62,6 +91,7 @@ test.each([
   expect(parseViewState(raw)).toEqual({
     ...expected,
     boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    modules: {},
   });
 });
 

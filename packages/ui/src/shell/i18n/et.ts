@@ -47,7 +47,14 @@ export const et = {
     canvasEmpty: 'Sinu plaadi tööala',
     canvasHint: 'Komponendid ja ühendused kuvatakse siin.',
     bottomBar: 'Plaadi olek',
-    ready: 'Valmis',
+    zoomOut: 'Vähenda',
+    zoomIn: 'Suurenda',
+    fit: 'Sobita',
+    zoomPercent: (zoom: number) => `${Math.round(zoom * 100)} %`,
+    cursor: (point: { x: number; y: number } | null) =>
+      point
+        ? `X ${point.x.toFixed(1).replace('.', ',')} mm · Y ${point.y.toFixed(1).replace('.', ',')} mm`
+        : 'X — · Y —',
     undo: 'Võta tagasi',
     redo: 'Tee uuesti',
     appearance: 'Välimus',

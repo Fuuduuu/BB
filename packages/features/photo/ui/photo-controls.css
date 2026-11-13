@@ -1,0 +1,41 @@
+.pcbk-photo-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.pcbk-photo-controls .bb-button {
+  min-height: 24px;
+  padding: 2px 5px;
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+.pcbk-photo-controls .bb-button[aria-pressed='true'] {
+  background: var(--accent-soft);
+}
+
+.pcbk-photo-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.pcbk-photo-range input {
+  width: 52px;
+  margin: 0;
+}
+
+.pcbk-photo-range > span:last-child {
+  min-width: 4ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcbk-photo-scale {
+  padding: 2px 5px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

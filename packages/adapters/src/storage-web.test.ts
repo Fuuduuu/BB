@@ -6,7 +6,6 @@ import { StorageError } from '@pcbk/engine';
 import type { JournalEntry } from '@pcbk/engine';
 import { afterEach, expect, test, vi } from 'vitest';
 import { createWebRepository } from './storage-web';
-
 let sequence = 0;
 const at = '2026-11-08T12:00:00.000Z';
 const recentKey = 'bb:recent-projects';
@@ -81,6 +80,7 @@ test('create and open persist a detached document, revision, journal, metadata a
     contextWidth: 340,
     contextOpen: true,
     boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    modules: {},
   });
   expect(await get(`project:${opened.path}`, store)).toMatchObject({
     meta: { format_version: 1, project_id: 'project_a', created_at: at, app_version: '0.0.0' },

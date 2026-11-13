@@ -211,17 +211,21 @@
   font-size: 12px;
   color: var(--ink-2);
 }
-.pcbk-ready {
+.pcbk-bottom-modules,
+.pcbk-view-controls {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.pcbk-ready i {
-  display: block;
-  height: 6px;
-  width: 6px;
-  background: var(--ok);
-  border-radius: 50%;
+.pcbk-view-controls {
+  margin-left: auto;
+  flex: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.pcbk-cursor-readout {
+  min-width: 164px;
+  text-align: right;
 }
 .pcbk-error-bar {
   display: flex;

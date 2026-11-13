@@ -171,6 +171,7 @@ test('context panel width and collapsed state survive reopening', async ({ page 
       contextWidth: 360,
       contextOpen: false,
       boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+      modules: {},
     },
   ]);
   await page.reload();

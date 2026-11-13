@@ -333,5 +333,6 @@ export type ViewState = {
     contextWidth: number;
     contextOpen: boolean;
     boardView?: BoardView;
+    modules?: Record<string, unknown>;
 };
 ```

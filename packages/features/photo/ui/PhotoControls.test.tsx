@@ -4,7 +4,7 @@ import { afterEach, expect, test } from 'vitest';
 import { EngineProvider } from '@pcbk/client';
 import type { ProjectService } from '@pcbk/contracts';
 import type { BoardDoc } from '@pcbk/domain';
-import { useViewStore } from '@pcbk/ui';
+import { useSessionStore, useViewStore } from '@pcbk/ui';
 import { photoUiFixture } from '../__tests__/ui-fixture';
 import { createPhotoUi } from './index';
 
@@ -12,6 +12,7 @@ const open: ProjectService[] = [];
 afterEach(async () => {
   cleanup();
   useViewStore.getState().reset();
+  useSessionStore.getState().setToolId('select');
   for (const projects of open.splice(0)) await projects.discard();
 });
 
@@ -93,7 +94,7 @@ test('rotate_and_mirror_are_single_undoable_steps', async () => {
 test('scale_chip_shows_uncalibrated_or_px_per_mm', async () => {
   const { engine } = await fixture(false);
   const chip = screen.getByText('Kalibreerimata');
-  expect(chip.closest('button, a, [role="button"]')).toBeNull();
+  expect(chip.closest('button')?.getAttribute('aria-label')).toBe('Kalibreeri mõõtkava (K)');
   expect(screen.queryByRole('button', { name: 'Pööra 90°' })).toBeNull();
   expect(screen.queryByRole('slider')).toBeNull();
   act(() => {
@@ -105,7 +106,17 @@ test('scale_chip_shows_uncalibrated_or_px_per_mm', async () => {
       }).ok,
     ).toBe(true);
   });
-  expect(screen.getByText('14,05 px/mm').closest('button, a, [role="button"]')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Kalibreeri mõõtkava (K)' }).textContent).toBe(
+    '14,05 px/mm',
+  );
+});
+
+test('scale_chip_starts_calibration_tool', async () => {
+  const { engine } = await fixture(false);
+  const before = engine.snapshot();
+  fireEvent.click(screen.getByRole('button', { name: 'Kalibreeri mõõtkava (K)' }));
+  expect(useSessionStore.getState().toolId).toBe('photo.calibrate');
+  expect(engine.snapshot()).toBe(before);
 });
 
 test('read_only_photo_blocks_transform_but_allows_view_controls', async () => {

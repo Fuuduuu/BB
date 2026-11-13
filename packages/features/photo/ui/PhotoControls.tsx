@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
-import { Button, useViewStore } from '@pcbk/ui';
+import { Button, useSessionStore, useViewStore } from '@pcbk/ui';
 import { mirrorHorizontal, rotateClockwise } from '../transform';
 import { photoEt as text } from './i18n/et';
 import { readPhotoView } from './photo-view';
 import type { PhotoView } from './photo-view';
+import { CALIBRATE_TOOL_ID } from './CalibrateTool';
 import './photo-controls.css';
 
 export function PhotoControls() {
@@ -91,9 +92,14 @@ export function PhotoControls() {
           </Button>
         </>
       )}
-      <span className="pcbk-photo-scale">
+      <Button
+        variant="ghost"
+        className="pcbk-photo-scale"
+        aria-label={text.calibration.shortcut}
+        onClick={() => useSessionStore.getState().setToolId(CALIBRATE_TOOL_ID)}
+      >
         {doc.scale.calibrated === false ? text.uncalibrated : text.scale(doc.scale.pxPerMm)}
-      </span>
+      </Button>
       {error?.sessionId === sessionId && <span role="alert">{error.message}</span>}
     </div>
   );

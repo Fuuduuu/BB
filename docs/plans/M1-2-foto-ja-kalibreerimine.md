@@ -79,4 +79,12 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
     - lõuendil pole 12–14 nupuga tööriistariba (tööriistad käivituvad teegist ja klahvidega);
     - must sond püsib valituna, kuni kasutaja selle eemaldab, nii et eraldi lukku pole vaja;
     - väärtuse väli saab fookuse ainult `M` klahvist ja pärast salvestamist, mitte jala klõpsust.
+  - Paigutuse ülevaatusest (2026-11-13, koodis kontrollitud) lisandub:
+    - **Templirežiim:** `PlaceTool` jääb pärast paigutust aktiivseks samale korpusele, nii et tehnik saab paigutada mitu komponenti järjest; `Escape` lõpetab. Praegu läheb tööriist pärast ühte paigutust tagasi `select`-ile.
+    - **Tab järgmisele jalale:** mõõtmisel viib `Tab` sama komponendi järgmisele jalale, väärtuse väli jääb fookusesse.
+    - **Paneelide tihedus** (fondi, nuppude ja vahede suurus) vaadatakse üle pärast kasutaja enda fototööd.
+  - Paigutuse ülevaatusest lükati tagasi või lükati edasi:
+    - Väide „dialoog enne lõuendit“ ei pea paika: teegist valitud korpus läheb kohe kursori külge ja üks klõps paigutab selle. `AddComponentDialog` on eraldi, mittekohustuslik tee.
+    - Kitsas aknas on kontekstipaneel juba ujuv ja „Sobita“ arvestab sellega.
+    - Ujuvad paneelid (HUD) püsivate külgpaneelide asemel on suur tooteotsus. See otsustatakse pärast M1.2 suitsukontrolli, kui on näha, kas ruumist jääb päriselt puudu.
 - **M1.3 ja hiljem:** foto vahetus, teine foto ja joondus (`toBoard`), korpuse joondus fotol, foto ekspordi funktsioon (M4).

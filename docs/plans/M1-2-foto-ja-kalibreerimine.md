@@ -52,6 +52,13 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
 
 **Osa C · Proovid ja vastuvõtt**
 
+6b. **Tööpind suuremaks** (kasutaja otsus 2026-11-13: tööpind peab olema võimalikult suur; BenchBeepis võtsid menüüd liiga palju ruumi). Teha enne Ül. 7 jõudlusproovi, et lõuendit mõõdetaks õiges suuruses. Koodis on praegu: vasak paneel 300 px ja seda ei saa peita; parempoolse paneeli saab peita ainult ülariba nupust ja valik avab selle uuesti; ülariba 52 px. Sisu:
+   - vasak paneel on peidetav ja seis jääb vaatesse meelde;
+   - parempoolne paneel on kinni, kui midagi pole valitud;
+   - ülariba ja alumine riba on madalamad;
+   - mõlemal paneelil on kiirklahv.
+
+   Ujuvad paneelid (HUD) jäävad eraldi otsuseks (vt „Mis jääb järgmistesse plaanidesse“).
 7. **Sünteetilise plaadi generaator** (`tooling/fixtures`, tavaliste käskudega: 300 komponenti, 3000 jalga, mõõtmised, 12 MP foto) ja **jõudlusproov päris Tauri aknas**: pan/suum fps, lohistamine fps, avamise aeg. Tulemus ja SVG/Canvas otsus `M1-2-uleandmine.md`-sse.
 8. **PNG-ekspordi proov:** kas `pcbk://` foto ja SVG kihid saab ühte PNG-sse (lõuendi „tainted“ oht) või peab Rust komponeerima; otsus kirja, funktsiooni ei ehitata.
 9. **E2e, suitsukontroll ja väljalase:** M1.2 e2e, Windowsi eelkontroll (portreefoto EXIF-iga, 48 MP, „Salvesta mujale…“ koos fotoga, katkenud import), kasutaja suitsukontroll, `v0.1.1` näidisfail testandmetesse, O3 otsus.

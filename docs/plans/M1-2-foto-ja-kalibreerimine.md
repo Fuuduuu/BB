@@ -98,6 +98,15 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
     - **Templirežiim:** `PlaceTool` jääb pärast paigutust aktiivseks samale korpusele, nii et tehnik saab paigutada mitu komponenti järjest; `Escape` lõpetab. Praegu läheb tööriist pärast ühte paigutust tagasi `select`-ile.
     - **Tab järgmisele jalale:** mõõtmisel viib `Tab` sama komponendi järgmisele jalale, väärtuse väli jääb fookusesse.
     - **Paneelide tihedus** (fondi, nuppude ja vahede suurus) vaadatakse üle pärast kasutaja enda fototööd.
+  - Mõõda-ploki ülevaatusest (2026-11-14, koodis kontrollitud `MeasureBlock.tsx`) lisandub:
+    - **Sondid nimega:** sildid „Koht“ ja „Vastaspunkt“ asenduvad ridadega „Punane sond · U1.3“ ja „Must sond · U1.4“. Kui musta sondi pole valitud, on real „Must sond · määramata“. Iga rea ees on väike värvimärk, aga tekst on loetav ka ilma värvita.
+    - **Viimati salvestatud** näit on püsivalt pingevälja juures, näiteks „Viimati salvestatud 4,98 V“ ja selle all `U1.3 → U1.4`. Kontaktipaar on salvestatud näidu tegelik paar.
+      - Rida loetakse dokumendist viimati lisatud mõõtmise tunnuse järgi.
+      - Kui see mõõtmine on tagasi võetud või kustutatud, rida kaob.
+      - Sisestusväli jääb pärast salvestamist tühjaks nagu praegu.
+    - **Musta sondi valik real:** „Vali jalg“ liigub musta sondi reale ja selle nimi on „Vali musta sondi jalg“.
+      - Kui `PickRefTool` on aktiivne, on rida esile tõstetud tekstiga „Klõpsa plaadil musta sondi jalal“.
+      - Pärast valikut asendub juhis kontaktitähisega.
   - Paigutuse ülevaatusest lükati tagasi või lükati edasi:
     - Väide „dialoog enne lõuendit“ ei pea paika: teegist valitud korpus läheb kohe kursori külge ja üks klõps paigutab selle. `AddComponentDialog` on eraldi, mittekohustuslik tee.
     - Kitsas aknas on kontekstipaneel juba ujuv ja „Sobita“ arvestab sellega.

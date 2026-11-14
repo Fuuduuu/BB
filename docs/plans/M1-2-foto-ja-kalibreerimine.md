@@ -78,7 +78,15 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
 
 ## Mis jääb järgmistesse plaanidesse
 
-- **Pärast Ül. 7 mõõtmist:** `validateDocument` jagamine (`parseDocument` + muudetud väljade invariandid, A3), kui proov näitab vajadust.
+- **Pärast Ül. 7 mõõtmist** ([M1-2-7](../tasks/M1-2-7.md#arhitekti-ülevaatus-2026-11-14)): `validateDocument` jagamist pole vaja, sest avamine võtab 590 ms ja käsk umbes 5 ms.
+  - Pan (50 fps), suum (7,5 fps) ja lohistus (22 fps) ei pea eelarvet. Kulu on brauseri ümberjoonistus, mitte React.
+  - Enne M1.4 lõppu tuleb renderduskaart:
+    1. profiil;
+    2. žesti ajal bitmap-teisendus;
+    3. foto eraldi kiht SVG all;
+    4. lohistuse eelvaade ainult lohistatavale grupile;
+    5. kordusmõõtmine ja `perf.spec.ts`.
+  - Jalad Canvas'ele ainult siis, kui pärast seda eelarve ikka ei pea.
 - **M1.3 töövoo lihtsustus** (töövoo ülevaatus 2026-11-12, koodis kontrollitud):
   - Jala valimisel näitab kontekstipaneel Mõõda-plokki ja ainult selle jala kaarti: nimi, NC, mõõtmised ja „← Komponent“. Komponendi täisvormi ja jalgade tabelit näidatakse ainult komponendi valimisel. Praegu näidatakse jala valimisel kogu `ComponentDetails`.
   - Vahekaart „Paigutamata“ ühendatakse „Plaadil“ vahekaardiga ülemiseks rühmaks, mis on nähtav ainult siis, kui paigutamata komponente on.

@@ -70,6 +70,12 @@
   width: 32px;
   padding: 5px;
 }
+.pcbk-panel-toggle[aria-expanded='true'],
+.pcbk-panel-toggle[aria-expanded='true']:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
 .pcbk-theme-select {
   color: var(--ink-2);
   background: var(--panel);
@@ -114,6 +120,11 @@
 .pcbk-pane-content {
   padding: 16px;
   overflow: auto;
+}
+.pcbk-context-close {
+  margin-left: auto;
+  width: 32px;
+  padding: 0;
 }
 .pcbk-empty-pane {
   font-size: 13px;

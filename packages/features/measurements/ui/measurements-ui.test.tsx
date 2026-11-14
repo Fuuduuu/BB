@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { expect, test } from 'vitest';
-import { useSessionStore } from '@pcbk/ui';
+import { useSessionStore, useViewStore } from '@pcbk/ui';
 import { measurementDoc, mountMeasurements } from '../__tests__/workspace';
 import { commandError } from './i18n/et';
 
@@ -54,10 +54,57 @@ test('m_key_focuses_value_field', () => {
   clickPin('2');
   clickBlank();
   expect(document.activeElement).not.toBe(value());
-  fireEvent.click(screen.getByRole('button', { name: 'Peida omadused' }));
+  fireEvent.click(
+    within(document.querySelector<HTMLElement>('.pcbk-topbar')!).getByRole('button', {
+      name: 'Peida omadused',
+    }),
+  );
   expect(screen.queryByRole('complementary', { name: 'Omadused' })).toBeNull();
   fireEvent.keyDown(svg, { key: 'm' });
   expect(screen.getByRole('complementary', { name: 'Omadused' }).contains(value())).toBe(true);
+  expect(document.activeElement).toBe(value());
+});
+
+test('o_key_topbar_and_m_on_pin_open_context', () => {
+  const { clickPin, svg, engine } = mountMeasurements();
+  act(() => useViewStore.getState().setContextOpen(false));
+  clickPin('2');
+  expect(screen.queryByRole('complementary', { name: 'Omadused' })).toBeNull();
+  fireEvent.keyDown(svg, { key: 'o' });
+  expect(screen.getByRole('heading', { name: 'Mõõda' })).toBeTruthy();
+  const toggle = within(document.querySelector<HTMLElement>('.pcbk-topbar')!).getByRole('button', {
+    name: 'Peida omadused',
+  });
+  fireEvent.click(toggle);
+  expect(screen.queryByRole('complementary', { name: 'Omadused' })).toBeNull();
+  fireEvent.click(toggle);
+  expect(screen.getByRole('complementary', { name: 'Omadused' })).toBeTruthy();
+  fireEvent.keyDown(svg, { key: 'o' });
+  fireEvent.keyDown(svg, { key: 'm' });
+  expect(screen.getByRole('complementary', { name: 'Omadused' })).toBeTruthy();
+  expect(document.activeElement).toBe(value());
+  expect(engine.snapshot().rev).toBe(0);
+});
+
+test('pinned_measure_section_does_not_reopen_hidden_context', () => {
+  const { clickPin, clickBlank, svg } = mountMeasurements();
+  act(() => useViewStore.getState().setContextOpen(false));
+  clickPin('1');
+  expect(screen.queryByRole('complementary', { name: 'Omadused' })).toBeNull();
+  clickBlank();
+  expect(useSessionStore.getState().selection.items).toEqual([]);
+  const toggle = within(
+    document.querySelector<HTMLElement>('.pcbk-topbar')!,
+  ).getByRole<HTMLButtonElement>('button', { name: 'Näita omadusi' });
+  expect(toggle.disabled).toBe(false);
+  fireEvent.keyDown(svg, { key: 'o' });
+  expect(screen.getByText('U1.1')).toBeTruthy();
+  fireEvent.change(value(), { target: { value: '4,98' } });
+  fireEvent.keyDown(svg, { key: 'o' });
+  clickPin('2');
+  expect(screen.queryByRole('complementary', { name: 'Omadused' })).toBeNull();
+  fireEvent.keyDown(svg, { key: 'm' });
+  expect(screen.getByText('U1.2')).toBeTruthy();
   expect(document.activeElement).toBe(value());
 });
 

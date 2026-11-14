@@ -9,11 +9,13 @@ Visuaalne keel tuleb prototüübist ([prototype/src/app.css](../prototype/src/ap
 | Ülariba | 40 px | navigaatori ja omaduste lülitid (`N`, `O`), projekti nimi ja salvestuse olek, edenemine, **Plaat \| Skeem**, ↶ ↷, `Ctrl+K`, Ekspordi |
 | Navigaator (vasak) | 300 px, muudetav 240–420, peidetav (`N`) | Teek · Plaadil · Paigutamata (plaadile / skeemile) · Võrgud · Mõõtmised · Logi |
 | Lõuend (kesk) | ülejäänu | tööriistariba vasakus servas (40 px nupud), ankru- ja abisildid |
-| Kontekstipaneel (parem) | 340 px, muudetav 280–460, alati ülekattena (`O`) | valitud objekti sektsioonid või nähtav kinnitatud sektsioon; tühja valiku korral peidetud |
-| Paneeli pealkiri | 36 px | paneeli nimi |
+| Kontekstipaneel (parem) | 340 px, muudetav 280–460, alati ülekattena (`O`) | valitud objekti sektsioonid või nähtav kinnitatud sektsioon; peidetud, kui mõlemad puuduvad |
+| Paneeli pealkiri | 36 px | paneeli nimi; omaduste paneelil paremal sulgemisnupp (`O`) |
 | Mõõteriba (all) | 36 px | foto nähtavus (kohe foto all), kontrast, ⟳, ⇋, poole valik, kihid, „Näita kahtlaseid“, suum, mõõtkava, koordinaadid |
 
-- Minimaalne akna suurus on 1100 × 700. Kontekstipaneel on igal laiusel ülekattena ja avaneb valikul või kinnitatud sektsiooni nähtavaks muutumisel; lõuendi suurus ei muutu.
+- Minimaalne akna suurus on 1100 × 700. Kontekstipaneel on igal laiusel ülekattena; lõuendi suurus ei muutu. Paneeli avab kasutaja ülariba nupust, `O`-ga või valitud jalal `M`-iga. Uus valik ega kinnitatud sektsiooni nähtavaks muutumine kasutaja peidetud paneeli ei ava.
+- Omadused on nähtavad ainult avatud olekus ning valiku või nähtava kinnitatud sektsiooni korral. Ülariba nupp näitab tegeliku nähtavuse järgi „Näita omadusi“ või „Peida omadused“. Kui valikut ega kinnitatud sektsiooni pole, on nupp keelatud pealkirjaga „Omadused · vali komponent või jalg“ ning `O` ei muuda paneeli eelistust.
+- Omaduste päise sulgemisnupp peidab paneeli ja viib fookuse ülariba omaduste nupule. Mõlema ülariba paneelinupu vaskne täide järgib `aria-expanded` olekut; täide on ainult avatud paneelil.
 - Paneelide laius ja olek (avatud/kokku pandud) jäävad meelde.
 - Tahvli paigutus tuleb M5-s (navigaator sahtlina, kontekst alt üles tõusva lehena).
 

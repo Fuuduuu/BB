@@ -93,7 +93,7 @@ export const et: {
         readonly components: "Komponendid";
         readonly navigatorEmpty: "Siia ilmuvad plaadi komponendid.";
         readonly context: "Omadused";
-        readonly contextEmpty: "Vali komponent, et näha selle omadusi.";
+        readonly contextEmpty: "Omadused · vali komponent või jalg";
         readonly showContext: "Näita omadusi";
         readonly hideContext: "Peida omadused";
         readonly resizeNavigator: "Navigaatori laius";
@@ -306,9 +306,10 @@ export type Theme = 'system' | 'light' | 'dark';
 
 ### `TopBar`
 ```ts
-export function TopBar({ name, status, canUndo, canRedo, onUndo, onRedo, children, }: HistoryActions & {
+export function TopBar({ name, status, canUndo, canRedo, onUndo, onRedo, contextAvailable, children, }: HistoryActions & {
     name: string;
     status: Status;
+    contextAvailable: boolean;
     children?: ReactNode;
 }): import("react").JSX.Element;
 ```

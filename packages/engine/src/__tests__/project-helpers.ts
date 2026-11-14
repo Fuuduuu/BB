@@ -59,7 +59,7 @@ export async function projectSetup(
     create?: boolean;
     wrap?: (repo: ProjectRepository) => ProjectRepository;
     timing?: { debounceMs: number; maxWaitMs: number };
-    photos?: Partial<Pick<PhotoStore, 'prune' | 'url'>>;
+    photos?: Partial<Pick<PhotoStore, 'prune' | 'url' | 'importBytes'>>;
   } = {},
 ) {
   expect(api.createProjectService).toBeTypeOf('function');
@@ -77,6 +77,16 @@ export async function projectSetup(
     photos: {
       prune: options.photos?.prune ?? (async () => undefined),
       url: options.photos?.url ?? (() => ''),
+      importBytes:
+        options.photos?.importBytes ??
+        (async (_session, _bytes, id, name) => ({
+          id,
+          name,
+          side: 'top',
+          widthPx: 1,
+          heightPx: 1,
+          transform: 'none',
+        })),
     },
     clock,
     ids: { newId: (prefix) => `${prefix}_${instance}_${++id}` },

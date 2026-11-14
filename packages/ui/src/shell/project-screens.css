@@ -203,3 +203,41 @@
     margin-bottom: 40px;
   }
 }
+.pcbk-start__photo {
+  margin-top: 28px;
+  border: 2px dashed var(--line-2);
+  border-radius: 12px;
+  background: var(--panel);
+  transition:
+    border-color 120ms,
+    background 120ms;
+}
+.pcbk-start__photo[data-dragging='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.pcbk-start__photo button {
+  width: 100%;
+  min-height: 150px;
+  padding: 28px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  font: inherit;
+}
+.pcbk-start__photo button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.pcbk-start__appearance {
+  margin-top: 48px;
+  text-align: center;
+  color: var(--ink-2);
+}
+.pcbk-start__appearance label {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}

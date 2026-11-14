@@ -34,7 +34,7 @@ export function createProjectService(opts: {
   engine: DocumentEngine;
   host: EngineHost;
   repo: ProjectRepository;
-  photos: Pick<PhotoStore, 'prune' | 'url'>;
+  photos: Pick<PhotoStore, 'prune' | 'url' | 'importBytes'>;
   clock: Clock;
   ids: IdGen;
   timing?: { debounceMs: number; maxWaitMs: number };
@@ -263,6 +263,19 @@ export function createProjectService(opts: {
     saveView(view) {
       const parsed = parseViewState(view);
       if (parsed) active?.saver.saveView(parsed);
+    },
+    importPhoto(file) {
+      return serial(async () => {
+        if (!active) return err({ code: 'stale_session' });
+        return ok(
+          await opts.photos.importBytes(
+            active.opened.session,
+            file.bytes,
+            opts.ids.newId('pho'),
+            file.name,
+          ),
+        );
+      });
     },
     photoUrl(id, variant) {
       return active ? opts.photos.url(active.opened.session, id, variant) : null;

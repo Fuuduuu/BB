@@ -79,6 +79,9 @@ export const et = {
   },
   project: {
     newBoard: 'Uus plaat',
+    dropPhoto: 'Lohista plaadi foto siia või kleebi Ctrl+V',
+    invalidPhotoDrop: 'Lohista siia JPEG- või PNG-foto.',
+    photoFailed: (reason: string) => `Fotot ei saanud lisada: ${reason}`,
     open: 'Ava fail…',
     openTitle: 'Ava projekt',
     openNamed: (name: string) => `Ava ${name}`,

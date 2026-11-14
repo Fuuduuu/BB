@@ -224,6 +224,9 @@ export const et: {
     };
     readonly project: {
         readonly newBoard: "Uus plaat";
+        readonly dropPhoto: "Lohista plaadi foto siia või kleebi Ctrl+V";
+        readonly invalidPhotoDrop: "Lohista siia JPEG- või PNG-foto.";
+        readonly photoFailed: (reason: string) => string;
         readonly open: "Ava fail…";
         readonly openTitle: "Ava projekt";
         readonly openNamed: (name: string) => string;
@@ -388,6 +391,14 @@ export interface PanelSpec extends SlotSpec {
 }
 ```
 
+### `pickPhotoFile`
+
+Select a supported photo, or pass an unsupported image on to the decoder for its reason.
+
+```ts
+export function pickPhotoFile(files: Iterable<File> | ArrayLike<File>): File | null;
+```
+
 ### `PinnedSpec`
 ```ts
 export interface PinnedSpec {
@@ -488,7 +499,7 @@ export interface SlotSpec {
 
 ### `StartScreen`
 ```ts
-export function StartScreen({ recent, availableProjects, openAvailable, onPickProjectFile, showBrowserStorage, onNew, onOpen, onRestore, onRemoveRecent, }: StartScreenProps): import("react").JSX.Element;
+export function StartScreen({ recent, availableProjects, openAvailable, onPickProjectFile, showBrowserStorage, busy, onPhotoFiles, onNew, onOpen, onRestore, onRemoveRecent, }: StartScreenProps): import("react").JSX.Element;
 ```
 
 ### `Theme`
@@ -620,8 +631,9 @@ export const useViewStore: import("zustand").UseBoundStore<import("zustand").Sto
 
 ### `Workbench`
 ```ts
-export function Workbench({ host, uiModules, }: {
+export function Workbench({ host, uiModules, addPhoto, }: {
     host: AppHost;
+    addPhoto?: (file: File) => Promise<Result<void, EngineError>>;
     uiModules: (onHome: () => void) => UiModule[];
 }): import("react").JSX.Element;
 ```

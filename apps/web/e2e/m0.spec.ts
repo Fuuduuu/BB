@@ -122,15 +122,18 @@ test('stored projects remain discoverable when the recent index is absent', asyn
   await expect(page.getByRole('heading', { name: 'Leitav plaat', exact: true })).toBeVisible();
 });
 test('chosen theme stays active when returning to the start screen', async ({ page }) => {
-  await createBoard(page, 'Teema katse');
+  await page.goto('/');
   await page.getByRole('combobox', { name: 'Välimus' }).selectOption('dark');
+  await createBoard(page, 'Teema katse');
+  await expect(page.getByRole('combobox', { name: 'Välimus' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Tagasi avalehele', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Uus plaat', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe('dark');
 });
 test('theme survives a full reload as a UI preference', async ({ page }) => {
-  await createBoard(page, 'Püsiv teema');
+  await page.goto('/');
   await page.getByRole('combobox', { name: 'Välimus' }).selectOption('dark');
+  await createBoard(page, 'Püsiv teema');
   await page.reload();
   await expect(page.getByRole('button', { name: 'Uus plaat', exact: true })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('pcbk.theme'))).toBe('dark');

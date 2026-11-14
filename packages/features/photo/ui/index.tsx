@@ -6,6 +6,9 @@ import { calibrateToolSpec } from './CalibrateTool';
 import { CalibrationDialog } from './CalibrationDialog';
 import { PHOTO_CALIBRATION_LAYER } from './CalibrationLayer';
 import { useCalibrateStore } from './calibrate-store';
+import { PhotoDropLayer } from './PhotoDropLayer';
+import { resetPhotoImports } from './photo-import-store';
+export { addPhoto } from './add-photo';
 
 export function createPhotoUi(): UiModule {
   return {
@@ -25,8 +28,12 @@ export function createPhotoUi(): UiModule {
     tools: [calibrateToolSpec()],
     canvasLayers: [
       { id: 'photo.image', z: 0, render: (props) => <PhotoLayer {...props} /> },
+      { id: 'photo.drop', z: 1, render: () => <PhotoDropLayer /> },
       PHOTO_CALIBRATION_LAYER,
     ],
-    onSessionReset: () => useCalibrateStore.getState().reset(),
+    onSessionReset: () => {
+      useCalibrateStore.getState().reset();
+      resetPhotoImports();
+    },
   };
 }

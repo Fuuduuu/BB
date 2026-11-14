@@ -1,5 +1,9 @@
 export const photoEt = {
   title: 'Foto',
+  add: 'Lisa foto',
+  photoLimit: 'Plaadil on juba foto. Foto vahetus tuleb hiljem.',
+  dropHint: 'Lohista siia JPEG- või PNG-foto.',
+  addFailed: (reason: string) => `Fotot ei saanud lisada: ${reason}`,
   hide: 'Peida foto',
   show: 'Näita fotot',
   opacity: 'Läbipaistvus',

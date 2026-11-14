@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
-import type { AppHost } from '@pcbk/contracts';
+import type { AppHost, EngineError, Result } from '@pcbk/contracts';
 import { boardSurface, sceneTransformOf } from '@pcbk/domain/geometry';
 import { Canvas } from '../canvas/Canvas';
 import { Button } from '../kit/Button';
@@ -16,6 +16,7 @@ import { useTheme } from '../shell/use-theme';
 import { useViewStore } from '../shell/view-store';
 import { useWideLayout } from '../shell/use-wide-layout';
 import { useWorkbench } from './use-workbench';
+import { HomeFeedback, HomeFeedbackContext } from './HomeFeedback';
 import './workbench.css';
 
 function BoardCanvas({ registry }: { registry: UiRegistry }) {
@@ -49,14 +50,27 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
 export function Workbench({
   host,
   uiModules,
+  addPhoto,
 }: {
   host: AppHost;
+  addPhoto?: (file: File) => Promise<Result<void, EngineError>>;
   uiModules: (onHome: () => void) => UiModule[];
 }) {
   useTheme();
-  const workbench = useWorkbench(host);
+  const workbench = useWorkbench(host, addPhoto);
   const { goHome } = workbench;
-  const registry = useMemo(() => new UiRegistry(uiModules(goHome)), [uiModules, goHome]);
+  const registry = useMemo(
+    () =>
+      new UiRegistry([
+        ...uiModules(goHome),
+        {
+          id: 'home-feedback',
+          title: '',
+          bottomBar: [{ id: 'home-feedback', order: -100, render: () => <HomeFeedback /> }],
+        },
+      ]),
+    [uiModules, goHome],
+  );
   const copyAvailable = Boolean(workbench.info && host.pickSavePath);
   const restoreAvailable = host.kind === 'desktop' && Boolean(host.pickSavePath);
 
@@ -67,30 +81,58 @@ export function Workbench({
         onExportDiagnostics={workbench.diagnose}
         copyAvailable={Boolean(workbench.info && (host.recoveryCopyPath || host.pickSavePath))}
       >
-        {workbench.info ? (
-          <AppShell
-            manageTheme={false}
-            registry={registry}
-            canvas={<BoardCanvas registry={registry} />}
-            copyAvailable={copyAvailable}
-            onRetrySave={workbench.retrySave}
-            onSaveElsewhere={() => workbench.copy('stay')}
-            onCopyAndReload={() => workbench.copy('reload')}
-            onExportDiagnostics={workbench.diagnose}
-          />
-        ) : (
-          <StartScreen
-            recent={workbench.recent}
-            availableProjects={workbench.available}
-            openAvailable={Boolean(host.listOpenable || host.pickProjectFile)}
-            {...(host.pickProjectFile && { onPickProjectFile: workbench.pickProjectFile })}
-            showBrowserStorage={host.kind === 'web'}
-            onNew={workbench.openCreate}
-            onOpen={workbench.open}
-            {...(restoreAvailable && { onRestore: workbench.openRestore })}
-            onRemoveRecent={workbench.removeRecent}
-          />
-        )}
+        <HomeFeedbackContext.Provider value={workbench.photoError}>
+          <fieldset
+            className="pcbk-workbench-controls"
+            disabled={workbench.busy}
+            aria-busy={workbench.busy}
+            onClickCapture={(event) => {
+              if (workbench.busy) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
+            onPointerDownCapture={(event) => {
+              if (workbench.busy) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
+            onKeyDownCapture={(event) => {
+              if (workbench.busy) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
+          >
+            {workbench.info ? (
+              <AppShell
+                manageTheme={false}
+                registry={registry}
+                canvas={<BoardCanvas registry={registry} />}
+                copyAvailable={copyAvailable}
+                onRetrySave={workbench.retrySave}
+                onSaveElsewhere={() => workbench.copy('stay')}
+                onCopyAndReload={() => workbench.copy('reload')}
+                onExportDiagnostics={workbench.diagnose}
+              />
+            ) : (
+              <StartScreen
+                busy={workbench.busy}
+                {...(addPhoto && { onPhotoFiles: workbench.createFromPhoto })}
+                recent={workbench.recent}
+                availableProjects={workbench.available}
+                openAvailable={Boolean(host.listOpenable || host.pickProjectFile)}
+                {...(host.pickProjectFile && { onPickProjectFile: workbench.pickProjectFile })}
+                showBrowserStorage={host.kind === 'web'}
+                onNew={workbench.openCreate}
+                onOpen={workbench.open}
+                {...(restoreAvailable && { onRestore: workbench.openRestore })}
+                onRemoveRecent={workbench.removeRecent}
+              />
+            )}
+          </fieldset>
+        </HomeFeedbackContext.Provider>
         <NewBoardDialog
           open={workbench.createOpen}
           busy={workbench.busy}

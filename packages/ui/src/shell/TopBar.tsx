@@ -20,8 +20,6 @@ export function TopBar({
   onRedo,
   children,
 }: HistoryActions & { name: string; status: Status; children?: ReactNode }) {
-  const theme = useViewStore((s) => s.theme);
-  const setTheme = useViewStore((s) => s.setTheme);
   const contextOpen = useViewStore((s) => s.contextOpen);
   const setContextOpen = useViewStore((s) => s.setContextOpen);
   return (
@@ -63,16 +61,6 @@ export function TopBar({
           <span aria-hidden="true">↷</span>
         </Button>
         <span className="pcbk-toolbar-divider" />
-        <select
-          aria-label={et.shell.appearance}
-          className="pcbk-theme-select"
-          value={theme}
-          onChange={(e) => setTheme(e.target.value as typeof theme)}
-        >
-          <option value="system">{et.shell.themeSystem}</option>
-          <option value="light">{et.shell.themeLight}</option>
-          <option value="dark">{et.shell.themeDark}</option>
-        </select>
         <Button
           variant="ghost"
           onClick={() => setContextOpen(!contextOpen)}

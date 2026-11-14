@@ -63,6 +63,7 @@ export class FakeProjects implements ProjectService {
   copy = unavailable;
   backups = unavailable;
   restore = unavailable;
+  importPhoto = unavailable;
   close = async () => ok(undefined);
   discard = async () => ok(undefined);
   flush = async () => ok(undefined);

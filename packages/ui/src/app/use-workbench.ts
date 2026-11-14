@@ -7,9 +7,12 @@ import type {
   EngineError,
   ProjectInfo,
   RecentProject,
+  Result,
   StorageReason,
 } from '@pcbk/contracts';
 import { et } from '../shell/i18n/et';
+import { photoBoardName } from '../shell/board-name';
+import { pickPhotoFile } from './pick-photo-file';
 import { useViewStore } from '../shell/view-store';
 import { useProjectLists } from './use-project-lists';
 import { sameProjectPath, useWorkbenchAction, useWorkbenchHost } from './use-workbench-host';
@@ -30,10 +33,31 @@ function closeReason(error: EngineError): StorageReason {
   return error.code === 'read_only' ? 'read_only' : 'unknown';
 }
 
-export function useWorkbench(host: AppHost) {
+export function useWorkbench(
+  host: AppHost,
+  addPhoto?: (file: File) => Promise<Result<void, EngineError>>,
+) {
   const engine = useEngine();
   const projects = useProjects();
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const [info, setInfo] = useState<ProjectInfo | null>(null);
+  useEffect(() => {
+    if (!photoError || !info) return;
+    const clearAddedPhotoError = () => {
+      const snapshot = engine.snapshot();
+      if (snapshot.sessionId === info.sessionId && snapshot.doc.photos.length > 0)
+        setPhotoError(null);
+    };
+    clearAddedPhotoError();
+    return engine.subscribe(clearAddedPhotoError);
+  }, [engine, info, photoError]);
   const [missing, setMissing] = useState<string[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -55,6 +79,7 @@ export function useWorkbench(host: AppHost) {
       useViewStore.getState().restore(next.view);
       activePath.current = next.path;
       setInfo(next);
+      setPhotoError(null);
       setCloseError(null);
       setCreateOpen(false);
       setRestoreSource(null);
@@ -68,6 +93,7 @@ export function useWorkbench(host: AppHost) {
   const deactivate = useCallback(() => {
     activePath.current = null;
     setInfo(null);
+    setPhotoError(null);
     setCloseError(null);
     void refreshRecent().catch(() => setLaunchError(et.error.root));
   }, [refreshRecent]);
@@ -168,6 +194,39 @@ export function useWorkbench(host: AppHost) {
     });
   };
 
+  const createFromPhoto = useCallback(
+    (files: Iterable<File> | ArrayLike<File>) => {
+      if (!addPhoto) return;
+      const file = pickPhotoFile(files);
+      if (!file) {
+        setLaunchError(et.project.invalidPhotoDrop);
+        return;
+      }
+      void run(async () => {
+        if (!mounted.current) return;
+        const created = await projects.create({ name: photoBoardName(file) });
+        if (!mounted.current) return;
+        if (!created.ok) {
+          setLaunchError(errorText(created.error));
+          return;
+        }
+        activate(created.value);
+        const sessionId = created.value.sessionId;
+        if (engine.snapshot().sessionId !== sessionId) return;
+        try {
+          const imported = await addPhoto(file);
+          if (!mounted.current || engine.snapshot().sessionId !== sessionId) return;
+          if (imported.ok) useViewStore.getState().setNavigatorTab('library');
+          else setPhotoError(et.project.photoFailed(errorText(imported.error)));
+        } catch {
+          if (mounted.current && engine.snapshot().sessionId === sessionId)
+            setPhotoError(et.project.photoFailed(et.reason.unknown));
+        }
+      }, true);
+    },
+    [addPhoto, run, projects, activate, engine],
+  );
+
   const pickProjectFile = () => {
     void run(async () => {
       const path = await host.pickProjectFile?.();
@@ -248,6 +307,8 @@ export function useWorkbench(host: AppHost) {
   });
   return {
     info,
+    photoError,
+    createFromPhoto,
     recent: recent.map(withMissing),
     available: available.map(withMissing),
     createOpen,

@@ -22,3 +22,4 @@ export type { RecentProjectCard } from './shell/StartScreen';
 export { NewBoardDialog } from './shell/NewBoardDialog';
 export { useTheme } from './shell/use-theme';
 export { Workbench } from './app/Workbench';
+export { pickPhotoFile } from './app/pick-photo-file';

@@ -132,7 +132,13 @@ export async function mountFailedSwitch(
     repo,
     clock,
     ids,
-    photos: { prune: async () => undefined, url: () => '' },
+    photos: {
+      prune: async () => undefined,
+      url: () => '',
+      importBytes: async () => {
+        throw new StorageError('unknown');
+      },
+    },
   });
   const runtime = { engine, projects };
   const current = await seedProject(runtime, 'Praegune plaat');

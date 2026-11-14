@@ -1,4 +1,4 @@
-import type { Vec2 } from '@pcbk/domain';
+import type { PhotoRef, Vec2 } from '@pcbk/domain';
 import type { Unsubscribe } from './document-engine';
 import type { EngineError, StorageReason } from './errors';
 import type { Result } from './result';
@@ -50,6 +50,7 @@ export interface ProjectService {
   discard(): Promise<Result<void, EngineError>>;
   flush(): Promise<Result<void, EngineError>>;
   saveView(view: ViewState): void;
+  importPhoto(file: { bytes: ArrayBuffer; name: string }): Promise<Result<PhotoRef, EngineError>>;
   photoUrl(id: string, variant: 'display' | 'original'): string | null;
   copy(req: CopyReq): Promise<Result<ProjectInfo & { fromMemory: boolean }, EngineError>>;
   backups(req?: BackupsReq): Promise<Result<BackupInfo[], EngineError>>;

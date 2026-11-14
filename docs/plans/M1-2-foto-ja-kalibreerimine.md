@@ -107,6 +107,20 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
     - **Musta sondi valik real:** „Vali jalg“ liigub musta sondi reale ja selle nimi on „Vali musta sondi jalg“.
       - Kui `PickRefTool` on aktiivne, on rida esile tõstetud tekstiga „Klõpsa plaadil musta sondi jalal“.
       - Pärast valikut asendub juhis kontaktitähisega.
+  - Komponentide vaate ülevaatusest (2026-11-14, koodis kontrollitud) lisandub. Punkt 1 on M1.3 esimene:
+    1. **Jalg padjandi kujuga.**
+       - Praegu on jala märk ring raadiusega `max(w, h) / 2` (`geometry/board.ts`) ja tabamuse ala on sama ring (`hits.ts`).
+       - SOIC-i padjand on 1,55 × 0,60 mm ja samm 1,27 mm, nii et naabermärgid ja tabamuse alad kattuvad. Tehnik võib valida vale jala.
+       - Joonista jalg padjandi `w × h` ristkülikuna, mis on pööratud koos korpusega.
+       - Tabamuse ala on sama ristkülik, aga vähemalt 5 ekraanipikslit, ja naabrite vahel valitakse lähim kese.
+       - Esimese jala nurka tuleb väike punkt. `pin1` on footprint'is olemas, aga seda ei joonistata.
+       - Test: SOIC-8 naaberjalgade märgid ja tabamuse alad ei kattu sobival suumil.
+    2. **Korpuse eelvaade.**
+       - Avatud teegireal on väike pealtvaade jalgade ja esimese jala märgiga. Pealtvaade muutub kohe, kui jalgade arv muutub (8 → 16).
+       - Paigutamisel liigub kursoriga kaasa sama kuju jalgadega, mitte ainult kere kontuur.
+    3. **Tähis ja näit eraldi.**
+       - Esimene reegel: näit ei lähe oma komponendi tähise kasti peale. Vajadusel nihkub näit lähimasse vabasse kohta ja lühike viitejoon näitab jalani.
+       - Üldine siltide paigutus ümber takistuste otsustatakse alles siis, kui see reegel ei piisa.
   - Paigutuse ülevaatusest lükati tagasi või lükati edasi:
     - Väide „dialoog enne lõuendit“ ei pea paika: teegist valitud korpus läheb kohe kursori külge ja üks klõps paigutab selle. `AddComponentDialog` on eraldi, mittekohustuslik tee.
     - Kitsas aknas on kontekstipaneel juba ujuv ja „Sobita“ arvestab sellega.

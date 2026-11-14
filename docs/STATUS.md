@@ -1,6 +1,6 @@
 # BB: jooksev seis ja üleandmine
 
-Uuendatud: **2026-11-11**. Hoia see fail lühikese hetkeseisuna, soovitatavalt kuni 80 rida. Varasem ajalugu on Git-is; siia jäävad järgmisele tegijale vajalikud faktid.
+Uuendatud: **2026-11-14**. Hoia see fail lühikese hetkeseisuna, soovitatavalt kuni 80 rida. Varasem ajalugu on Git-is; siia jäävad järgmisele tegijale vajalikud faktid.
 
 ## Eesmärk praegu
 
@@ -13,6 +13,7 @@ Uuendatud: **2026-11-11**. Hoia see fail lühikese hetkeseisuna, soovitatavalt k
 ## Mis on olemas
 
 - Toote- ja ehitusdokumendid [01–08](README.md) ning käivitatav veebiprototüüp kaustas `prototype/`.
+- Foto ja lõuendi [joonduse kontroll](../tools/skills/bb-check-canvas/SKILL.md) on proovitud sünteetiliste PNG-dega kõigi kaheksa stseeniteisenduse korral. Töölaua ekspordi tulemus selgub kaardiga [M1-2-8](tasks/M1-2-8.md).
 - [ADR-002](adr/ADR-002-typescript-tauri.md), [ADR-003 v2](adr/ADR-003-frontend-backend.md) ja [ADR-004](adr/ADR-004-kaks-vaadet-ja-uhendused.md) on vastu võetud kasutaja otsusega 2026-11-07.
 - Claude on viinud põhidokumendid kehtivate otsustega kooskõlla. Põhjendused, neljanda ringi parandused ja kasutaja otsused: [ülevaatuste otsused](review/2026-11-07-ulevaatuste-otsused.md). Codexi varasem tervikplaan on lähtematerjal, ehituse alus on kehtiv ADR ja arhitekti verstaposti plaan.
 - M0 [teostusplaan](plans/M0-vundament.md) ja [ehituse üleandmine](plans/M0-uleandmine.md) kirjeldavad varasema töö ning tehtud kontrollid.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "BB lõuendi joonduse kontroll"
+  short_description: "Kontrolli foto, komponendi ja PNG omavahelist joondust"
+  default_prompt: "Kasuta $bb-check-canvas ja kontrolli PNG-proovis komponendi asukohta foto suhtes."

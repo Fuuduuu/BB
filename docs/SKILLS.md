@@ -48,7 +48,9 @@ Kui need tingimused kehtivad, piira käivitustingimus ja tulemus, lae oskuse loo
 
 Projekti püsireegel jääb [AGENTS](../AGENTS.md) või [WORKFLOW](WORKFLOW.md) faili. Mehaaniline korduskontroll sobib pigem skriptiks/CI-kontrolliks. Uus oskus ei dubleeri neid ega hoia projekti jooksvat seisu.
 
-Repo jaoks loodud oskused hoia vajadusel kaustas `.agents/skills/<nimi>/SKILL.md`, et need liiguksid projektiga kaasa. Ära loo tühje kandidaadioskusi. Praegu BB-spetsiifilisi oskusi ei ole; kandidaat märgitakse STATUS-esse ainult siis, kui selle kasu ja puuduv olemasolev lahendus on selged.
+BB foto ja lõuendi joonduse kontrolliks ava [bb-check-canvas](../tools/skills/bb-check-canvas/SKILL.md). Kasuta seda, kui pead tõendama, et jalg või komponent jääb pööratud fotol, hiirega tabamisel või PNG-ekspordis õigesse kohta. Oskusega on kaasas sünteetiliste PNG-märkide pikslikontroll.
+
+Projekti oskused liiguvad kaasa repo failidena. Automaatseks avastamiseks sobib `.agents/skills/<nimi>/SKILL.md`.
 
 Oskuse loomine kasutaja ülesande sees ei käivita eraldi kõrvalprojekti. Kui see muudaks töö mahtu märgatavalt, kirjelda kasu ja jäta ettepanek kasutajale otsustada; põhiülesandega saab edasi minna olemasoleva töövõtte abil.
 

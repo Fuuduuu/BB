@@ -16,6 +16,7 @@ export const componentEt = {
   pinId: 'Jalg',
   pinName: 'Nimi',
   nc: 'NC',
+  backToComponent: '← Komponent',
   addPin: 'Lisa jalg',
   remove: 'Eemalda',
   noPins: 'Jalgu pole veel lisatud.',

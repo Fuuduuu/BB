@@ -27,7 +27,7 @@ function typeVoltage(value: string) {
 }
 
 function chooseReference(clickPin: (pinId: string) => void, pinId: string) {
-  fireEvent.click(measureBlock().getByRole('button', { name: 'Vali jalg' }));
+  fireEvent.click(measureBlock().getByRole('button', { name: 'Vali musta sondi jalg' }));
   clickPin(pinId);
 }
 

@@ -12,7 +12,9 @@ test('ui_shows_internal_error_text', () => {
 });
 
 const value = () => screen.getByRole<HTMLInputElement>('textbox', { name: 'Pinge' });
-const pickRef = () => fireEvent.click(screen.getByRole('button', { name: 'Vali jalg' }));
+const block = () => within(screen.getByRole('region', { name: 'Mõõda' }));
+const pickRef = () =>
+  fireEvent.click(block().getByRole('button', { name: 'Vali musta sondi jalg' }));
 
 test('blank_click_and_tab_change_keep_location_and_draft', () => {
   const { clickPin, clickBlank } = mountMeasurements();
@@ -20,7 +22,7 @@ test('blank_click_and_tab_change_keep_location_and_draft', () => {
   fireEvent.change(value(), { target: { value: '4,98' } });
   clickBlank();
   fireEvent.click(screen.getByRole('tab', { name: 'Mõõtmised' }));
-  expect(screen.getByText('U1.1')).toBeTruthy();
+  expect(block().getByText('U1.1')).toBeTruthy();
   expect(value().value).toBe('4,98');
 });
 
@@ -40,12 +42,12 @@ test('pick_ref_tool_sets_black_probe_and_esc_cancels', () => {
   expect(useSessionStore.getState().toolId).toBe('measurements.pickRef');
   clickPin('4');
   expect(useSessionStore.getState().toolId).toBe('select');
-  expect(screen.getByText('U1.1')).toBeTruthy();
-  expect(screen.getByText('U1.4')).toBeTruthy();
+  expect(block().getByText('U1.1')).toBeTruthy();
+  expect(block().getByText('U1.4')).toBeTruthy();
   pickRef();
   fireEvent.keyDown(svg, { key: 'Escape' });
   expect(useSessionStore.getState().toolId).toBe('select');
-  expect(screen.getByText('U1.4')).toBeTruthy();
+  expect(block().getByText('U1.4')).toBeTruthy();
   expect(engine.snapshot().doc.measurements).toEqual([]);
 });
 
@@ -98,13 +100,13 @@ test('pinned_measure_section_does_not_reopen_hidden_context', () => {
   ).getByRole<HTMLButtonElement>('button', { name: 'Näita omadusi' });
   expect(toggle.disabled).toBe(false);
   fireEvent.keyDown(svg, { key: 'o' });
-  expect(screen.getByText('U1.1')).toBeTruthy();
+  expect(block().getByText('U1.1')).toBeTruthy();
   fireEvent.change(value(), { target: { value: '4,98' } });
   fireEvent.keyDown(svg, { key: 'o' });
   clickPin('2');
   expect(screen.queryByRole('complementary', { name: 'Omadused' })).toBeNull();
   fireEvent.keyDown(svg, { key: 'm' });
-  expect(screen.getByText('U1.2')).toBeTruthy();
+  expect(block().getByText('U1.2')).toBeTruthy();
   expect(document.activeElement).toBe(value());
 });
 

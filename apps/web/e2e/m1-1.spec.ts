@@ -105,10 +105,12 @@ test('blank_click_and_tab_keep_measure_location', async ({ page }) => {
   await clickPin(page, '3');
   await voltage(page).fill('4,98');
 
-  const componentRef = page.getByRole('textbox', { name: 'Tähis', exact: true });
-  await expect(componentRef).toBeVisible();
+  const pinHeading = page
+    .getByRole('complementary', { name: 'Omadused', exact: true })
+    .getByRole('heading', { name: 'U1.3', exact: true });
+  await expect(pinHeading).toBeVisible();
   await canvas(page).click({ position: { x: 30, y: 30 } });
-  await expect(componentRef).toHaveCount(0);
+  await expect(pinHeading).toHaveCount(0);
   await expect(measure(page).getByText('U1.3', { exact: true })).toBeVisible();
   await expect(voltage(page)).toHaveValue('4,98');
 
@@ -175,7 +177,12 @@ test('undo_redo_of_placement_and_measurement', async ({ page }) => {
   await redo.click();
   await expect(readings(page).getByText('4,98 V', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Mõõtmised (1)', exact: true }).click();
-  await expect(page.getByRole('listitem').getByText('U1.3', { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole('tabpanel', { name: 'Mõõtmised (1)', exact: true })
+      .getByRole('listitem')
+      .getByText('U1.3', { exact: true }),
+  ).toBeVisible();
 });
 
 test('board_zoom_pan_survive_view_only_close_and_reopen', async ({ page }) => {

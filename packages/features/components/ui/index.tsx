@@ -1,6 +1,7 @@
 import type { IdGen } from '@pcbk/contracts';
 import type { UiModule } from '@pcbk/ui';
 import { ComponentDetails } from './ComponentDetails';
+import { PinCard } from './PinCard';
 import { Library } from './Library';
 import { createPlaceToolSpec } from './PlaceTool';
 import { PlacementSection, placementKeys } from './PlacementSection';
@@ -37,8 +38,12 @@ export function createComponentsUi(ids: IdGen): UiModule {
         appliesTo: ['component', 'pin'],
         render: ({ selection }) => {
           const [item] = selection.items;
-          const id = item?.kind === 'component' ? item.id : item?.componentId;
-          return id ? <ComponentDetails key={id} id={id} ids={ids} /> : null;
+          if (item?.kind === 'pin' && item.componentId) {
+            return <PinCard componentId={item.componentId} pinId={item.id} />;
+          }
+          return item?.kind === 'component' ? (
+            <ComponentDetails key={item.id} id={item.id} ids={ids} />
+          ) : null;
         },
       },
       {

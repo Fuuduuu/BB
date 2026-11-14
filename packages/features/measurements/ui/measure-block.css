@@ -10,9 +10,7 @@
   border-bottom: 1px solid var(--line);
 }
 
-.pcbk-measure-block h2,
-.pcbk-measure-block dl,
-.pcbk-measure-block dd {
+.pcbk-measure-block h2 {
   margin: 0;
 }
 
@@ -20,18 +18,45 @@
   font-size: 14px;
 }
 
-.pcbk-measure-block dl {
+.pcbk-probe-rows,
+.pcbk-probe-row {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 6px 12px;
+  gap: 6px;
   font-size: 13px;
 }
 
-.pcbk-measure-block dd {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 6px;
+.pcbk-probe-row {
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   overflow-wrap: anywhere;
+}
+
+.pcbk-probe-row[data-picking='true'] {
+  border-color: var(--accent);
+}
+
+.pcbk-probe-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pcbk-probe-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.pcbk-probe-dot--red {
+  background: var(--danger);
+}
+
+.pcbk-probe-dot--black {
+  background: var(--drill);
+  border: 1px solid var(--ink-2);
 }
 
 .pcbk-measure-actions {

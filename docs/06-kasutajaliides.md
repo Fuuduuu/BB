@@ -16,6 +16,7 @@ Visuaalne keel tuleb prototüübist ([prototype/src/app.css](../prototype/src/ap
 - Minimaalne akna suurus on 1100 × 700. Kontekstipaneel on igal laiusel ülekattena; lõuendi suurus ei muutu. Paneeli avab kasutaja ülariba nupust, `O`-ga või valitud jalal `M`-iga. Uus valik ega kinnitatud sektsiooni nähtavaks muutumine kasutaja peidetud paneeli ei ava.
 - Omadused on nähtavad ainult avatud olekus ning valiku või nähtava kinnitatud sektsiooni korral. Ülariba nupp näitab tegeliku nähtavuse järgi „Näita omadusi“ või „Peida omadused“. Kui valikut ega kinnitatud sektsiooni pole, on nupp keelatud pealkirjaga „Omadused · vali komponent või jalg“ ning `O` ei muuda paneeli eelistust.
 - Omaduste päise sulgemisnupp peidab paneeli ja viib fookuse ülariba omaduste nupule. Mõlema ülariba paneelinupu vaskne täide järgib `aria-expanded` olekut; täide on ainult avatud paneelil.
+- Jala valikul on omadustes kinnitatud Mõõda-plokk, ainult valitud jala kaart (tähis, nimi, NC ja „← Komponent“) ning selle jala mõõtmised. Komponendi valikul jääb alles komponendi vorm koos jalgade tabeliga.
 - Paneelide laius ja olek (avatud/kokku pandud) jäävad meelde.
 - Tahvli paigutus tuleb M5-s (navigaator sahtlina, kontekst alt üles tõusva lehena).
 
@@ -83,6 +84,14 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 - Tuvastamata: tähise juures väike „?“.
 - DNP: kere 40 % läbipaistvusega, tähis läbikriipsutatud.
 - Valitud: kontuur `--sel`, 8 käepidet (8 px ruudud), pöördekäepide üleval (ring, 16 px kaugusel).
+
+## Mõõda-plokk
+
+- Sondid on nimetatud: „Punane sond · U1.4“ ja „Must sond · U1.3“, jala nimi on vihjena. Punane täpp kasutab `--danger` värvi; mustal tumedal täpil on ääris. Tekst eristab sonde ka ilma värvita. Valimata must sond on „määramata“, kustutatud jalg „—“.
+- Musta sondi real on „Vali musta sondi jalg“ ja „Tühjenda“. Valimise ajal on real aktsendivärvi ääris ning juhis „Klõpsa plaadil musta sondi jalal“; pärast valikut on real jälle jala tähis.
+- Õnnestunud salvestuse järel jääb pinge sisestusväli tühjaks ja fookusesse. Selle all on näiteks „Viimati salvestatud 4,73 V · U1.4 → U1.3“, musta sondita ainult „U1.4“. Rida loeb väärtuse ja paari salvestatud mõõtmisest, mitte praegustest sondidest, ning asendab vihje „nt 4,98“.
+- Tagasivõetud või kustutatud viimase mõõtmise rida kaob ja vihje taastub; uuesti tegemine toob näidu tagasi. Viimase mõõtmise viide nullitakse seansivahetusel ega kuulu dokumenti.
+- Jala kaardilt saab muuta nime ja NC-d ning nupuga „← Komponent“ valida kogu komponendi. Mõõtmiste sektsioon näitab valitud jala `uid`-ga seotud kummagi sondi mõõtmiste koguarvu ja kuni viit uusimat salvestatud paariga. Tühi olek on „Selle jalaga mõõtmisi pole.“
 
 ## Klaviatuur
 

@@ -3,25 +3,22 @@ import type { KeyboardEvent } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
 import type { IdGen } from '@pcbk/contracts';
 import type { MeasuredPin } from '@pcbk/domain';
-import { parseReading } from '@pcbk/domain/measure/reading';
+import { formatReading, parseReading } from '@pcbk/domain/measure/reading';
 import { Button, Field, useSessionStore } from '@pcbk/ui';
 import { resolveContact } from './contacts';
 import { commandError, measureEt as text } from './i18n/et';
 import { pairKey, useMeasureStore } from './measure-store';
 import type { Power } from './measure-store';
-import { PICK_REF_TOOL_ID } from './PickRefTool';
+import { ProbeRows } from './ProbeRows';
 import './measure-block.css';
 
 const nextPower: Record<Power, Power> = { unknown: 'on', on: 'off', off: 'unknown' };
 
-function label(contact: NonNullable<ReturnType<typeof resolveContact>>): string {
-  return `${contact.component.ref}.${contact.pin.id}`;
-}
-
 export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: MeasuredPin[] }) {
   const engine = useEngine();
   const snapshot = useSnapshot((value) => value);
-  const { measureAt, blackProbe, drafts, lastPower, focusTick, ...actions } = useMeasureStore();
+  const { measureAt, blackProbe, drafts, lastPower, focusTick, lastSavedId, ...actions } =
+    useMeasureStore();
   const [error, setError] = useState<{ pair: string; message: string; invalid?: boolean }>();
   const input = useRef<HTMLInputElement>(null);
   const handledFocusTick = useRef(0);
@@ -41,6 +38,11 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
   const pair = pairKey(at, blackProbe);
   const draft = drafts[pair] ?? { text: '', power: lastPower };
   const activeError = error?.pair === pair ? error : undefined;
+  const saved = snapshot.doc.measurements.find(({ id }) => id === lastSavedId);
+  const lastSaved =
+    saved?.mode === 'voltage' && saved.value !== undefined
+      ? `${text.lastSaved} ${formatReading({ value: saved.value }, 'voltage')} · ${saved.atLabel}${saved.refLabel ? ` → ${saved.refLabel}` : ''}`
+      : undefined;
 
   function editDraft(change: Partial<typeof draft>) {
     actions.setDraft(pair, { ...draft, ...change });
@@ -55,8 +57,9 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
       setError({ pair, message, invalid: true });
       return;
     }
+    const measurementId = ids.newId('msr');
     const result = engine.execute('measurements.add', {
-      id: ids.newId('msr'),
+      id: measurementId,
       mode: 'voltage',
       at,
       ...(blackProbe && { ref: blackProbe }),
@@ -69,6 +72,7 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
       return;
     }
     actions.clearDraft(pair, draft.power);
+    actions.setLastSaved(measurementId);
     setError(undefined);
     input.current?.focus();
   }
@@ -106,31 +110,7 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
   return (
     <section className="pcbk-measure-block" aria-labelledby={`${id}-heading`}>
       <h2 id={`${id}-heading`}>{text.title}</h2>
-      <dl>
-        <dt>{text.at}</dt>
-        <dd>
-          <span>{atContact ? label(atContact) : text.missingContact}</span>
-          {atContact?.pin.name && <span className="bb-field__hint">{atContact.pin.name}</span>}
-        </dd>
-        <dt>{text.ref}</dt>
-        <dd>{refContact ? label(refContact) : blackProbe ? text.missingContact : text.unset}</dd>
-      </dl>
-      <div className="pcbk-measure-actions">
-        <Button onClick={() => useSessionStore.getState().setToolId(PICK_REF_TOOL_ID)}>
-          {text.pickRef}
-        </Button>
-        <Button disabled={!blackProbe} onClick={() => actions.setBlackProbe(null)}>
-          {text.clearRef}
-        </Button>
-        {suggestions.map((suggestion) => {
-          const contact = resolveContact(snapshot, suggestion);
-          return contact ? (
-            <Button key={suggestion.uid} onClick={() => actions.setBlackProbe(suggestion)}>
-              {label(contact)}
-            </Button>
-          ) : null;
-        })}
-      </div>
+      <ProbeRows snapshot={snapshot} at={at} blackProbe={blackProbe} suggestions={suggestions} />
       {blocked && (
         <div className="bb-field bb-field__error" id={`${id}-deleted`} role="alert">
           {!atContact && <span>{text.missingAt}</span>}
@@ -163,7 +143,7 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
         <Field
           ref={input}
           label={text.voltage}
-          hint={text.hint}
+          hint={lastSaved ?? text.hint}
           error={activeError?.invalid ? activeError.message : undefined}
           aria-describedby={blocked ? `${id}-deleted` : undefined}
           value={draft.text}

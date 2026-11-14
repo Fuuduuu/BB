@@ -20,3 +20,6 @@ createRoot(document.getElementById('root')!).render(
 
 if (import.meta.env.DEV && import.meta.env.VITE_PCBK_PERF === '1')
   void import('./perf/probe').then((m) => m.runPerfProbe(runtime));
+
+if (import.meta.env.DEV && import.meta.env.VITE_PCBK_PNG_PROBE === '1')
+  void import('./perf/png-probe').then((m) => m.runPngProbe(runtime));

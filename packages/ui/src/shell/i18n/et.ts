@@ -33,6 +33,8 @@ export const et = {
     projectName: 'Projekti nimi',
     untitled: 'Nimetu plaat',
     navigator: 'Navigaator',
+    showNavigator: 'Näita navigaatorit',
+    hideNavigator: 'Peida navigaator',
     components: 'Komponendid',
     navigatorEmpty: 'Siia ilmuvad plaadi komponendid.',
     context: 'Omadused',

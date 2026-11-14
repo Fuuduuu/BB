@@ -168,6 +168,7 @@ export function useWorkbench(
       if (engine.snapshot().sessionId !== info.sessionId) return;
       if (
         next.navigatorWidth !== previous.navigatorWidth ||
+        next.navigatorOpen !== previous.navigatorOpen ||
         next.navigatorTab !== previous.navigatorTab ||
         next.contextWidth !== previous.contextWidth ||
         next.contextOpen !== previous.contextOpen ||

@@ -178,6 +178,8 @@ export const et: {
         readonly projectName: "Projekti nimi";
         readonly untitled: "Nimetu plaat";
         readonly navigator: "Navigaator";
+        readonly showNavigator: "Näita navigaatorit";
+        readonly hideNavigator: "Peida navigaator";
         readonly components: "Komponendid";
         readonly navigatorEmpty: "Siia ilmuvad plaadi komponendid.";
         readonly context: "Omadused";

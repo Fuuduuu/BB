@@ -71,6 +71,7 @@ test('listing uses current document names and modification times without writing
   });
   await repo.saveView(opened.session, {
     navigatorWidth: 350,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -109,6 +110,7 @@ test('modification time survives a removed recent card and a fresh repository', 
   expect((await repo.open(opened.path)).savedAt).toBe('2026-11-08T14:00:00.000Z');
   await repo.saveView(opened.session, {
     navigatorWidth: 360,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,

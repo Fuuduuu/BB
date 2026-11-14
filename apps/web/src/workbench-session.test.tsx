@@ -50,17 +50,17 @@ test('native close waits for a pending open and takes priority over another open
 });
 
 test('undo clears a deleted component selection and redo leaves the context empty', async () => {
-  const { app, runtime, component, context } = await mountWithComponent('Valiku tagasivõtmine');
+  const { app, runtime, component } = await mountWithComponent('Valiku tagasivõtmine');
   try {
     fireEvent.click(screen.getByRole('button', { name: et.shell.undo }));
     expect(runtime.engine.snapshot().doc.components).toHaveLength(0);
     expect.soft(useSessionStore.getState().selection).toEqual({ items: [] });
-    expect.soft(context.queryByText(et.shell.contextEmpty)).toBeTruthy();
+    expect.soft(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: et.shell.redo }));
     expect(runtime.engine.snapshot().doc.components[0]?.id).toBe(component.id);
     expect.soft(useSessionStore.getState().selection).toEqual({ items: [] });
-    expect.soft(context.queryByText(et.shell.contextEmpty)).toBeTruthy();
+    expect.soft(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
   } finally {
     app.unmount();
     await runtime.projects.close();

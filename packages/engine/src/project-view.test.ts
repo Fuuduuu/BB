@@ -19,6 +19,7 @@ test('module_only_changes_save_metadata_without_document_revision_or_shared_refe
   const { engine, projects, memory, store, path } = await projectSetup();
   const panels = {
     navigatorWidth: 300,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -59,6 +60,7 @@ test.each(['open', 'restore'] as const)(
     seed(store, path, newBoardDoc('Saved'));
     store.files.get(path)!.view = {
       navigatorWidth: 420,
+      navigatorOpen: true,
       navigatorTab: 'components',
       contextWidth: 340,
       contextOpen: true,
@@ -79,6 +81,7 @@ test.each(['open', 'restore'] as const)(
         path: target,
         view: {
           navigatorWidth: 420,
+          navigatorOpen: true,
           navigatorTab: 'components',
           contextWidth: 340,
           contextOpen: true,
@@ -93,6 +96,7 @@ test.each(['open', 'restore'] as const)(
       value: {
         view: {
           navigatorWidth: 420,
+          navigatorOpen: true,
           navigatorTab: 'components',
           contextWidth: 340,
           contextOpen: true,
@@ -101,6 +105,7 @@ test.each(['open', 'restore'] as const)(
     });
     expect(store.files.get(target)!.view).toEqual({
       navigatorWidth: 420,
+      navigatorOpen: true,
       navigatorTab: 'components',
       contextWidth: 340,
       contextOpen: true,
@@ -116,6 +121,7 @@ test('changing only the board view writes metadata and leaves the document and h
   const { engine, projects, memory, store, path } = await projectSetup();
   const panels = {
     navigatorWidth: 380,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
@@ -134,6 +140,7 @@ test('mutating the returned board view cannot alter the current project view', a
   const { projects, path } = await projectSetup();
   projects.saveView({
     navigatorWidth: 380,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
@@ -152,6 +159,7 @@ test('opening the already active path returns the current in-memory view', async
   const { projects, path } = await projectSetup();
   projects.saveView({
     navigatorWidth: 380,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
@@ -161,6 +169,7 @@ test('opening the already active path returns the current in-memory view', async
     value: {
       view: {
         navigatorWidth: 380,
+        navigatorOpen: true,
         navigatorTab: 'log',
         contextWidth: 340,
         contextOpen: true,
@@ -172,6 +181,7 @@ test('copy returns the newest unsaved in-memory view without sharing its referen
   const { projects, store } = await projectSetup();
   projects.saveView({
     navigatorWidth: 500,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
@@ -182,6 +192,7 @@ test('copy returns the newest unsaved in-memory view without sharing its referen
     value: {
       view: {
         navigatorWidth: 500,
+        navigatorOpen: true,
         navigatorTab: 'log',
         contextWidth: 340,
         contextOpen: true,
@@ -195,6 +206,7 @@ test('copy returns the newest unsaved in-memory view without sharing its referen
     value: {
       view: {
         navigatorWidth: 500,
+        navigatorOpen: true,
         navigatorTab: 'log',
         contextWidth: 340,
         contextOpen: true,
@@ -203,6 +215,7 @@ test('copy returns the newest unsaved in-memory view without sharing its referen
   });
   expect(store.files.get('Copy.pcbk')!.view).toEqual({
     navigatorWidth: 500,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
@@ -225,6 +238,7 @@ test('copy response includes a view changed while the copy was awaiting storage'
   });
   projects.saveView({
     navigatorWidth: 320,
+    navigatorOpen: true,
     navigatorTab: 'old',
     contextWidth: 340,
     contextOpen: true,
@@ -233,6 +247,7 @@ test('copy response includes a view changed while the copy was awaiting storage'
   await started.promise;
   projects.saveView({
     navigatorWidth: 640,
+    navigatorOpen: true,
     navigatorTab: 'latest',
     contextWidth: 340,
     contextOpen: true,
@@ -243,6 +258,7 @@ test('copy response includes a view changed while the copy was awaiting storage'
     value: {
       view: {
         navigatorWidth: 640,
+        navigatorOpen: true,
         navigatorTab: 'latest',
         contextWidth: 340,
         contextOpen: true,
@@ -252,6 +268,7 @@ test('copy response includes a view changed while the copy was awaiting storage'
   expect((await projects.flush()).ok).toBe(true);
   expect(store.files.get('Copy.pcbk')!.view).toEqual({
     navigatorWidth: 640,
+    navigatorOpen: true,
     navigatorTab: 'latest',
     contextWidth: 340,
     contextOpen: true,
@@ -263,6 +280,7 @@ test('copy activation cannot overwrite a newer view supplied by a status observe
   const { projects, store } = await projectSetup();
   projects.saveView({
     navigatorWidth: 360,
+    navigatorOpen: true,
     navigatorTab: 'copied',
     contextWidth: 340,
     contextOpen: true,
@@ -273,6 +291,7 @@ test('copy activation cannot overwrite a newer view supplied by a status observe
     changed = true;
     projects.saveView({
       navigatorWidth: 700,
+      navigatorOpen: true,
       navigatorTab: 'observer',
       contextWidth: 340,
       contextOpen: true,
@@ -283,6 +302,7 @@ test('copy activation cannot overwrite a newer view supplied by a status observe
     value: {
       view: {
         navigatorWidth: 700,
+        navigatorOpen: true,
         navigatorTab: 'observer',
         contextWidth: 340,
         contextOpen: true,
@@ -292,6 +312,7 @@ test('copy activation cannot overwrite a newer view supplied by a status observe
   expect((await projects.flush()).ok).toBe(true);
   expect(store.files.get('Copy.pcbk')!.view).toEqual({
     navigatorWidth: 700,
+    navigatorOpen: true,
     navigatorTab: 'observer',
     contextWidth: 340,
     contextOpen: true,

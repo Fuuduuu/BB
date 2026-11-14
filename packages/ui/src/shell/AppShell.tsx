@@ -11,12 +11,11 @@ import { PanelErrorBoundary, RootErrorBoundary } from './ErrorBoundary';
 import type { RootRecoveryActions } from './ErrorBoundary';
 import { ResizeHandle } from './ResizeHandle';
 import { UiRegistry, type PinnedSpec } from './UiRegistry';
-import { bindHistoryKeys } from './keymap';
+import { bindHistoryKeys, bindPanelKeys } from './keymap';
 import { useSessionStore } from './session-store';
 import type { Selection } from './session-store';
 import { useViewStore } from './view-store';
 import { useTheme } from './use-theme';
-import { useWideLayout } from './use-wide-layout';
 import { et } from './i18n/et';
 
 const emptyRegistry = new UiRegistry();
@@ -133,9 +132,6 @@ function Context({
         {sections.map((section) => (
           <section key={section.id}>{section.render({ selection })}</section>
         ))}
-        {selection.items.length === 0 && pinned.length === 0 && (
-          <p className="pcbk-empty-pane">{et.shell.contextEmpty}</p>
-        )}
       </div>
     </>
   );
@@ -145,7 +141,6 @@ interface ContextPaneProps {
   selection: Selection;
   pinned: PinnedSpec[];
   sessionId: string;
-  wide: boolean;
   open: boolean;
   width: number;
   onResize(width: number): void;
@@ -159,7 +154,12 @@ function ContextPane({
   width,
   onResize,
 }: ContextPaneProps) {
-  if (!open) return null;
+  const shown = open && (selection.items.length > 0 || pinned.length > 0);
+  useLayoutEffect(() => {
+    useViewStore.getState().setContextShown(shown);
+    return () => useViewStore.getState().setContextShown(false);
+  }, [sessionId, shown]);
+  if (!shown) return null;
   return (
     <>
       <ResizeHandle
@@ -182,13 +182,13 @@ function ContextPane({
 function createPinnedContextPane(registry: UiRegistry) {
   // Keep each registered hook mounted with a stable component type while the pane is closed.
   return registry.contextPinned().reduceRight((Next, section) => {
-    return function PinnedContextPane({ pinned, wide, ...props }: ContextPaneProps) {
+    return function PinnedContextPane({ pinned, ...props }: ContextPaneProps) {
       const visible = section.useVisible();
       useEffect(() => {
         const view = useViewStore.getState();
-        if (!wide && visible && !view.contextOpen) view.setContextOpen(true);
-      }, [wide, visible]);
-      return <Next {...props} wide={wide} pinned={visible ? [...pinned, section] : pinned} />;
+        if (visible && !view.contextOpen) view.setContextOpen(true);
+      }, [visible]);
+      return <Next {...props} pinned={visible ? [...pinned, section] : pinned} />;
     };
   }, ContextPane);
 }
@@ -206,8 +206,16 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
   const status = useSaveStatus();
   const view = useViewStore(
     useShallow(
-      ({ navigatorWidth, contextWidth, contextOpen, setNavigatorWidth, setContextWidth }) => ({
+      ({
         navigatorWidth,
+        navigatorOpen,
+        contextWidth,
+        contextOpen,
+        setNavigatorWidth,
+        setContextWidth,
+      }) => ({
+        navigatorWidth,
+        navigatorOpen,
         contextWidth,
         contextOpen,
         setNavigatorWidth,
@@ -217,7 +225,6 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
   );
   useTheme(props.manageTheme !== false);
   const selection = useSelection(sessionId, components);
-  const wide = useWideLayout();
   const PinnedContextPane = useMemo(() => createPinnedContextPane(registry), [registry]);
   const activeSession = useRef<string>();
   useLayoutEffect(() => {
@@ -239,10 +246,34 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
     [engine, history.canUndo, history.canRedo],
   );
   useEffect(() => {
-    if (!wide && selection.items.length > 0) useViewStore.getState().setContextOpen(true);
-  }, [wide, selection]);
+    return bindPanelKeys(window, {
+      navigator: () => {
+        const view = useViewStore.getState();
+        view.setNavigatorOpen(!view.navigatorOpen);
+      },
+      context: () => {
+        const view = useViewStore.getState();
+        view.setContextOpen(!view.contextOpen);
+      },
+    });
+  }, []);
+  const previousSelection = useRef<Selection>(noSelection);
+  useEffect(() => {
+    const previous = previousSelection.current;
+    previousSelection.current = selection;
+    const changed =
+      previous.items.length !== selection.items.length ||
+      selection.items.some(
+        (item) =>
+          !previous.items.some(
+            (old) =>
+              old.kind === item.kind && old.id === item.id && old.componentId === item.componentId,
+          ),
+      );
+    if (changed && selection.items.length > 0) useViewStore.getState().setContextOpen(true);
+  }, [selection]);
   const style = {
-    '--navigator-width': `${view.navigatorWidth}px`,
+    '--navigator-width': `${view.navigatorOpen ? view.navigatorWidth : 0}px`,
     '--context-width': `${view.contextWidth}px`,
   } as CSSProperties;
   return (
@@ -260,21 +291,25 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
         </PanelErrorBoundary>
       </TopBar>
       {status.state === 'error' && <ErrorBar reason={status.reason} {...props} />}
-      <div className="pcbk-workspace" id="workspace" data-context-open={view.contextOpen}>
-        <aside className="pcbk-navigator" id="pcbk-navigator" aria-label={et.shell.navigator}>
-          <PanelErrorBoundary key={sessionId}>
-            <Navigator registry={registry} />
-          </PanelErrorBoundary>
-        </aside>
-        <ResizeHandle
-          label={et.shell.resizeNavigator}
-          width={view.navigatorWidth}
-          min={240}
-          max={420}
-          side="left"
-          controls="pcbk-navigator"
-          onResize={view.setNavigatorWidth}
-        />
+      <div className="pcbk-workspace" id="workspace" data-navigator-open={view.navigatorOpen}>
+        {view.navigatorOpen && (
+          <>
+            <aside className="pcbk-navigator" id="pcbk-navigator" aria-label={et.shell.navigator}>
+              <PanelErrorBoundary key={sessionId}>
+                <Navigator registry={registry} />
+              </PanelErrorBoundary>
+            </aside>
+            <ResizeHandle
+              label={et.shell.resizeNavigator}
+              width={view.navigatorWidth}
+              min={240}
+              max={420}
+              side="left"
+              controls="pcbk-navigator"
+              onResize={view.setNavigatorWidth}
+            />
+          </>
+        )}
         <main className="pcbk-canvas" aria-label={et.shell.canvas}>
           <PanelErrorBoundary key={sessionId}>
             {canvas ?? (
@@ -305,7 +340,6 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
           selection={selection}
           pinned={[]}
           sessionId={sessionId}
-          wide={wide}
           open={view.contextOpen}
           width={view.contextWidth}
           onResize={view.setContextWidth}

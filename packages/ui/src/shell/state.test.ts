@@ -42,6 +42,7 @@ describe('view state', () => {
   test('starts with the specified panel sizes and clamps both resize ranges', () => {
     expect(useViewStore.getState()).toMatchObject({
       navigatorWidth: 300,
+      navigatorOpen: true,
       navigatorTab: 'components',
       contextWidth: 340,
       contextOpen: true,
@@ -61,6 +62,7 @@ describe('view state', () => {
     useViewStore.getState().setTheme('dark');
     useViewStore.getState().restore({
       navigatorWidth: 360,
+      navigatorOpen: true,
       navigatorTab: 'log',
       contextWidth: 390,
       contextOpen: false,
@@ -69,6 +71,7 @@ describe('view state', () => {
     const view = useViewStore.getState().getView();
     expect(view).toEqual({
       navigatorWidth: 360,
+      navigatorOpen: true,
       navigatorTab: 'log',
       contextWidth: 390,
       contextOpen: false,
@@ -89,6 +92,7 @@ describe('view state', () => {
     useViewStore.getState().restore(null);
     expect(useViewStore.getState().getView()).toEqual({
       navigatorWidth: 300,
+      navigatorOpen: true,
       navigatorTab: 'components',
       contextWidth: 340,
       contextOpen: true,
@@ -101,12 +105,14 @@ describe('view state', () => {
   test('invalid or extreme persisted widths cannot break the layout', () => {
     useViewStore.getState().restore({
       navigatorWidth: Number.NaN,
+      navigatorOpen: true,
       navigatorTab: '',
       contextWidth: Number.POSITIVE_INFINITY,
       contextOpen: true,
     });
     expect(useViewStore.getState().getView()).toEqual({
       navigatorWidth: 300,
+      navigatorOpen: true,
       navigatorTab: 'components',
       contextWidth: 340,
       contextOpen: true,
@@ -115,6 +121,7 @@ describe('view state', () => {
     });
     useViewStore.getState().restore({
       navigatorWidth: -100,
+      navigatorOpen: true,
       navigatorTab: 'components',
       contextWidth: 1000,
       contextOpen: false,

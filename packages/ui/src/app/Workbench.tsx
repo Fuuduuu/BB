@@ -14,7 +14,6 @@ import { UiRegistry, type UiModule } from '../shell/UiRegistry';
 import { et } from '../shell/i18n/et';
 import { useTheme } from '../shell/use-theme';
 import { useViewStore } from '../shell/view-store';
-import { useWideLayout } from '../shell/use-wide-layout';
 import { useWorkbench } from './use-workbench';
 import { HomeFeedback, HomeFeedbackContext } from './HomeFeedback';
 import './workbench.css';
@@ -27,8 +26,7 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
   const tools = useMemo(() => registry.tools(), [registry]);
   const keys = useMemo(() => registry.keys(), [registry]);
   const view = useViewStore((state) => state.boardView);
-  const wide = useWideLayout();
-  const contextOpen = useViewStore((state) => state.contextOpen);
+  const contextShown = useViewStore((state) => state.contextShown);
   const contextWidth = useViewStore((state) => state.contextWidth);
   const setBoardView = useViewStore((state) => state.setBoardView);
   return (
@@ -40,7 +38,7 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
       execute={execute}
       sceneTransform={sceneTransformOf(snapshot.doc)}
       surface={boardSurface(snapshot.doc)}
-      fitInsets={{ right: !wide && contextOpen ? contextWidth : 0 }}
+      fitInsets={{ right: contextShown ? contextWidth : 0 }}
       view={view}
       onViewChange={setBoardView}
     />

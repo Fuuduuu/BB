@@ -7,6 +7,7 @@ import type { AppHost, ProjectService } from '@pcbk/contracts';
 import { FakeEngine, FakeProjects, snapshot } from '../../../client/src/__tests__/fakes';
 import { Workbench } from './Workbench';
 import { useViewStore } from '../shell/view-store';
+import { useSessionStore } from '../shell/session-store';
 
 afterEach(() => {
   cleanup();
@@ -77,6 +78,8 @@ test('workbench_fit_tracks_overlay_open_closed_wide_and_resized_panel', async ()
     expect(useViewStore.getState().boardView.zoom).toBeCloseTo(zoom, 8);
     expect(useViewStore.getState().boardView.pan.x).toBeCloseTo((796 - right) / 4 - 1000 * zoom, 8);
   }
+  expectFit(0);
+  act(() => useSessionStore.getState().setSelection({ items: [{ kind: 'net', id: 'net_fit' }] }));
   expectFit(340);
   fireEvent.keyDown(screen.getByRole('separator', { name: 'Omaduste paneeli laius' }), {
     key: 'ArrowLeft',
@@ -91,11 +94,13 @@ test('workbench_fit_tracks_overlay_open_closed_wide_and_resized_panel', async ()
     wide = true;
     for (const notify of listeners) notify();
   });
-  expectFit(0);
+  expectFit(350);
   act(() => {
     wide = false;
     for (const notify of listeners) notify();
   });
   expectFit(350);
+  act(() => useSessionStore.getState().setSelection({ items: [] }));
+  expectFit(0);
   expect(engine.snapshot().rev).toBe(0);
 });

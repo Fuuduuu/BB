@@ -27,6 +27,7 @@ test('view writes capture caller data and preserve document revision, metadata a
   const before = await get(`project:${opened.path}`, store);
   const view = {
     navigatorWidth: 355,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 460,
     contextOpen: false,
@@ -42,6 +43,7 @@ test('view writes capture caller data and preserve document revision, metadata a
     ...before,
     view: {
       navigatorWidth: 355,
+      navigatorOpen: true,
       navigatorTab: 'components',
       contextWidth: 460,
       contextOpen: false,
@@ -71,6 +73,7 @@ test('web view writes normalize legacy fields and exclude theme without changing
     ...before,
     view: {
       navigatorWidth: 420,
+      navigatorOpen: true,
       navigatorTab: 'log',
       contextWidth: 340,
       contextOpen: true,
@@ -122,7 +125,12 @@ test.each([
     const stored = { ...value, view: raw };
     await set(key, stored, store);
     expect((await repo.open(opened.path)).view).toEqual(
-      expected && { ...expected, boardView: { zoom: 1, pan: { x: 0, y: 0 } }, modules: {} },
+      expected && {
+        ...expected,
+        navigatorOpen: true,
+        boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+        modules: {},
+      },
     );
     expect((await repo.listProjects()).map((item) => item.path)).toEqual([opened.path]);
     expect(await get(key, store)).toEqual(stored);

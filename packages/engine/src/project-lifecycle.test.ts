@@ -127,6 +127,7 @@ test.each(['close', 'open'] as const)(
     expect((await projects.open({ path })).ok).toBe(true);
     projects.saveView({
       navigatorWidth: 480,
+      navigatorOpen: true,
       navigatorTab: 'log',
       contextWidth: 340,
       contextOpen: true,
@@ -145,6 +146,7 @@ test('an ephemeral read-only view is kept in a new writable rescue copy', async 
   await projects.open({ path });
   projects.saveView({
     navigatorWidth: 480,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
@@ -155,6 +157,7 @@ test('an ephemeral read-only view is kept in a new writable rescue copy', async 
   });
   expect(store.files.get('Writable.pcbk')!.view).toEqual({
     navigatorWidth: 480,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,

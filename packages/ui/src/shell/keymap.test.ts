@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { bindHistoryKeys } from './keymap';
+import { bindHistoryKeys, bindPanelKeys } from './keymap';
 
 const undo = vi.fn();
 const redo = vi.fn();
@@ -85,4 +85,73 @@ test('an open modal never sends history shortcuts to the document behind it', ()
   press(button, 'y');
   expect(undo).not.toHaveBeenCalled();
   expect(redo).not.toHaveBeenCalled();
+});
+
+test('panel shortcuts dispatch N and O once and release the listener on cleanup', () => {
+  const navigator = vi.fn(),
+    context = vi.fn();
+  const release = bindPanelKeys(window, { navigator, context });
+  expect(press(window, 'N', { ctrlKey: false }).defaultPrevented).toBe(true);
+  expect(press(window, 'O', { ctrlKey: false }).defaultPrevented).toBe(true);
+  expect(navigator).toHaveBeenCalledOnce();
+  expect(context).toHaveBeenCalledOnce();
+  release();
+  press(window, 'n', { ctrlKey: false });
+  press(window, 'o', { ctrlKey: false });
+  expect(navigator).toHaveBeenCalledOnce();
+  expect(context).toHaveBeenCalledOnce();
+});
+
+test.each([
+  '<input>',
+  '<textarea></textarea>',
+  '<select></select>',
+  '<div contenteditable="true"><span>Editor</span></div>',
+  '<div contenteditable="plaintext-only"><span>Editor</span></div>',
+  '<dialog open><button>Action</button></dialog>',
+  '<div role="dialog" aria-modal="true"><button>Action</button></div>',
+])('panel shortcuts preserve editing and dialog input in %s', (html) => {
+  document.body.innerHTML = html;
+  const navigator = vi.fn(),
+    context = vi.fn();
+  const release = bindPanelKeys(window, { navigator, context });
+  try {
+    const target = document.body.querySelector('span, button, input, textarea, select')!;
+    expect(press(target, 'n', { ctrlKey: false }).defaultPrevented).toBe(false);
+    expect(press(target, 'o', { ctrlKey: false }).defaultPrevented).toBe(false);
+    expect(navigator).not.toHaveBeenCalled();
+    expect(context).not.toHaveBeenCalled();
+  } finally {
+    release();
+  }
+});
+
+test('panel shortcuts ignore modifiers, composition, repetition, and consumed events', () => {
+  const navigator = vi.fn(),
+    context = vi.fn();
+  const release = bindPanelKeys(window, { navigator, context });
+  try {
+    for (const extra of [
+      { ctrlKey: true },
+      { metaKey: true },
+      { altKey: true },
+      { shiftKey: true },
+      { isComposing: true },
+      { repeat: true },
+    ]) {
+      for (const key of ['n', 'o']) {
+        expect(press(window, key, { ctrlKey: false, ...extra }).defaultPrevented).toBe(false);
+      }
+    }
+    for (const key of ['n', 'o']) {
+      const consumed = new KeyboardEvent('keydown', { key, cancelable: true });
+      consumed.preventDefault();
+      window.dispatchEvent(consumed);
+    }
+    press(window, 'x', { ctrlKey: false });
+    expect(navigator).not.toHaveBeenCalled();
+    expect(context).not.toHaveBeenCalled();
+  } finally {
+    release();
+  }
 });

@@ -333,6 +333,7 @@ export type Unsubscribe = () => void;
 ```ts
 export type ViewState = {
     navigatorWidth: number;
+    navigatorOpen: boolean;
     navigatorTab: string;
     contextWidth: number;
     contextOpen: boolean;

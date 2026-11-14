@@ -2,6 +2,7 @@ import type { BoardView, ViewState } from './project-service';
 
 export const DEFAULT_VIEW_STATE: Readonly<Required<ViewState>> = Object.freeze({
   navigatorWidth: 300,
+  navigatorOpen: true,
   navigatorTab: 'components',
   contextWidth: 340,
   contextOpen: true,
@@ -54,6 +55,10 @@ export function parseViewState(input: unknown): Required<ViewState> | null {
     return null;
   return {
     navigatorWidth,
+    navigatorOpen:
+      typeof view.navigatorOpen === 'boolean'
+        ? view.navigatorOpen
+        : DEFAULT_VIEW_STATE.navigatorOpen,
     navigatorTab,
     contextWidth,
     contextOpen,

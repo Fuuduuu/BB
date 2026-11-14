@@ -155,6 +155,7 @@ const copy: CopyReq = { dest: 'Koopia.pcbk', identity: 'new' };
 const restore: RestoreReq = { backup: 'backup.pcbk', dest: 'Taastatud.pcbk' };
 const view: ViewState = {
   navigatorWidth: 260,
+  navigatorOpen: true,
   navigatorTab: 'components',
   contextWidth: 340,
   contextOpen: true,

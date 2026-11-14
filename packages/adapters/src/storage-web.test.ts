@@ -67,6 +67,7 @@ test('create and open persist a detached document, revision, journal, metadata a
   });
   await repo.saveView(opened.session, {
     navigatorWidth: 320,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -76,6 +77,7 @@ test('create and open persist a detached document, revision, journal, metadata a
   expect(again.doc).toMatchObject({ name: 'Renamed', rev: 1 });
   expect(again.view).toEqual({
     navigatorWidth: 320,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -199,6 +201,7 @@ test('closed sessions and missing projects cannot write or recreate records', as
   await expect(
     repo.saveView(opened.session, {
       navigatorWidth: 320,
+      navigatorOpen: true,
       navigatorTab: 'components',
       contextWidth: 340,
       contextOpen: true,

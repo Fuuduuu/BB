@@ -62,9 +62,9 @@ test('visible pinned sections are ordered above selected item sections', () => {
       },
     ]),
   );
-  const pane = screen.getByRole('complementary', { name: et.shell.context });
-  expect(within(pane).getByText(et.shell.contextEmpty)).toBeTruthy();
+  expect(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
   act(() => useVisible.setState({ first: true, second: true }));
+  const pane = screen.getByRole('complementary', { name: et.shell.context });
   expect(within(pane).queryByText(et.shell.contextEmpty)).toBeNull();
   expect(within(pane).getByText('Esimene')).toBeTruthy();
   act(() => useSessionStore.getState().setSelection({ items: [{ kind: 'net', id: 'net_1' }] }));
@@ -84,36 +84,41 @@ test('the selection prompt stays hidden when a selected kind has no sections', (
   expect(screen.queryByText(et.shell.contextEmpty)).toBeNull();
 });
 
-test('a newly visible pinned section opens the narrow panel even if another is already visible', () => {
-  vi.stubGlobal('matchMedia', () => ({
-    matches: false,
-    addEventListener() {},
-    removeEventListener() {},
-  }));
-  const useVisible = create(() => ({ second: false }));
-  setup(
-    new UiRegistry([
-      {
-        id: 'pinned',
-        title: 'Pinned',
-        contextPinned: [
-          { id: 'first', order: 1, useVisible: () => true, render: () => 'Esimene' },
-          {
-            id: 'second',
-            order: 2,
-            useVisible: () => useVisible((s) => s.second),
-            render: () => 'Teine',
-          },
-        ],
-      },
-    ]),
-  );
-  fireEvent.click(screen.getByRole('button', { name: et.shell.hideContext }));
-  expect(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
-  act(() => useVisible.setState({ second: true }));
-  const pane = screen.getByRole('complementary', { name: et.shell.context });
-  expect(within(pane).getByText('Teine')).toBeTruthy();
-});
+test.each([true, false])(
+  'a newly visible pinned section opens the panel even if another is already visible (wide=%s)',
+  (wide) => {
+    vi.stubGlobal('matchMedia', () => ({
+      matches: wide,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    const useVisible = create(() => ({ second: false }));
+    setup(
+      new UiRegistry([
+        {
+          id: 'pinned',
+          title: 'Pinned',
+          contextPinned: [
+            { id: 'first', order: 1, useVisible: () => true, render: () => 'Esimene' },
+            {
+              id: 'second',
+              order: 2,
+              useVisible: () => useVisible((s) => s.second),
+              render: () => 'Teine',
+            },
+          ],
+        },
+      ]),
+    );
+    fireEvent.click(screen.getByRole('button', { name: et.shell.hideContext }));
+    expect(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
+    act(() => useVisible.setState({ second: false }));
+    expect(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
+    act(() => useVisible.setState({ second: true }));
+    const pane = screen.getByRole('complementary', { name: et.shell.context });
+    expect(within(pane).getByText('Teine')).toBeTruthy();
+  },
+);
 
 test('replacing the registry can change the hooks for a pinned id', () => {
   const withHook = (useVisible: () => boolean, content: string) =>

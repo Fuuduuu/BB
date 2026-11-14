@@ -28,6 +28,7 @@ test('memory view writes normalize legacy fields and exclude theme without chang
     ...before,
     view: {
       navigatorWidth: 420,
+      navigatorOpen: true,
       navigatorTab: 'log',
       contextWidth: 340,
       contextOpen: true,

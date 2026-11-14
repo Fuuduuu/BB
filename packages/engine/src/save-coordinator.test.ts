@@ -56,6 +56,7 @@ test('one write at a time; newer document and view are written immediately after
   await blocked.started;
   projects.saveView({
     navigatorWidth: 300,
+    navigatorOpen: true,
     navigatorTab: 'first',
     contextWidth: 340,
     contextOpen: true,
@@ -63,6 +64,7 @@ test('one write at a time; newer document and view are written immediately after
   engine.execute('demo.rename', { name: 'Newest' });
   projects.saveView({
     navigatorWidth: 420,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -78,6 +80,7 @@ test('one write at a time; newer document and view are written immediately after
   expect(store.files.get(path)!.doc).toEqual(engine.snapshot().doc);
   expect(store.files.get(path)!.view).toEqual({
     navigatorWidth: 420,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -131,6 +134,7 @@ test('view-only changes save without a document write or rev change', async () =
   const { engine, projects, memory, store, path } = await projectSetup();
   const view = {
     navigatorWidth: 320,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -143,6 +147,7 @@ test('view-only changes save without a document write or rev change', async () =
   expect(engine.snapshot().rev).toBe(0);
   expect(store.files.get(path)!.view).toEqual({
     navigatorWidth: 320,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -155,6 +160,7 @@ test('a failed view write stays dirty and can be retried', async () => {
   const { projects, memory, store, path } = await projectSetup();
   projects.saveView({
     navigatorWidth: 320,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -165,6 +171,7 @@ test('a failed view write stays dirty and can be retried', async () => {
   expect((await projects.flush()).ok).toBe(true);
   expect(store.files.get(path)!.view).toEqual({
     navigatorWidth: 320,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -177,6 +184,7 @@ test('context-only changes persist without touching the document revision or jou
   const { engine, projects, memory, store, path } = await projectSetup();
   projects.saveView({
     navigatorWidth: 300,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -184,6 +192,7 @@ test('context-only changes persist without touching the document revision or jou
   expect((await projects.flush()).ok).toBe(true);
   projects.saveView({
     navigatorWidth: 300,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 460,
     contextOpen: true,
@@ -191,6 +200,7 @@ test('context-only changes persist without touching the document revision or jou
   expect((await projects.flush()).ok).toBe(true);
   projects.saveView({
     navigatorWidth: 300,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 460,
     contextOpen: false,
@@ -198,6 +208,7 @@ test('context-only changes persist without touching the document revision or jou
   expect((await projects.flush()).ok).toBe(true);
   expect(store.files.get(path)!.view).toEqual({
     navigatorWidth: 300,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 460,
     contextOpen: false,
@@ -214,6 +225,7 @@ test('close flushes document and view before unloading', async () => {
   engine.execute('demo.rename', { name: 'Last' });
   projects.saveView({
     navigatorWidth: 300,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
@@ -223,6 +235,7 @@ test('close flushes document and view before unloading', async () => {
   expect(store.files.get(path)!.doc).toMatchObject({ name: 'Last', rev: 1 });
   expect(store.files.get(path)!.view).toEqual({
     navigatorWidth: 300,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,

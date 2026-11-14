@@ -141,6 +141,7 @@ test('theme survives a full reload as a UI preference', async ({ page }) => {
 });
 test('context panel width and collapsed state survive reopening', async ({ page }) => {
   await createBoard(page, 'Paneeli mälu');
+  await addResistor(page);
   const handle = page.getByRole('separator', { name: 'Omaduste paneeli laius' });
   await handle.focus();
   await page.keyboard.press('ArrowLeft');
@@ -170,7 +171,8 @@ test('context panel width and collapsed state survive reopening', async ({ page 
   expect(savedViews).toEqual([
     {
       navigatorWidth: 300,
-      navigatorTab: 'components',
+      navigatorOpen: true,
+      navigatorTab: 'unplaced',
       contextWidth: 360,
       contextOpen: false,
       boardView: { zoom: 1, pan: { x: 0, y: 0 } },
@@ -182,6 +184,8 @@ test('context panel width and collapsed state survive reopening', async ({ page 
   await expect(page.getByRole('heading', { name: 'Paneeli mälu', exact: true })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'Omadused', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Näita omadusi', exact: true }).click();
+  await expect(page.getByRole('complementary', { name: 'Omadused', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Vali R1', exact: true }).click();
   await expect(page.getByRole('separator', { name: 'Omaduste paneeli laius' })).toHaveAttribute(
     'aria-valuenow',
     '360',

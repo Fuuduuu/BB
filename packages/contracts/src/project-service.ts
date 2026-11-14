@@ -13,6 +13,7 @@ export type BoardView = { zoom: number; pan: Vec2 };
 
 export type ViewState = {
   navigatorWidth: number;
+  navigatorOpen: boolean;
   navigatorTab: string;
   contextWidth: number;
   contextOpen: boolean;

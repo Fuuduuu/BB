@@ -94,6 +94,42 @@ function digests() {
   );
 }
 
+test('ui barrel generates separate directory digests with the unchanged public import name', () => {
+  const ui = join(project, 'packages', 'ui', 'src');
+  for (const name of ['kit', 'canvas']) mkdirSync(join(ui, name), { recursive: true });
+  writeFileSync(join(ui, 'index.ts'), "export * from './kit';\nexport * from './canvas';\n");
+  writeFileSync(join(ui, 'kit', 'index.ts'), "export { button } from './button';\n");
+  writeFileSync(join(ui, 'kit', 'button.ts'), 'export const button = true;\n');
+  writeFileSync(join(ui, 'canvas', 'index.ts'), 'export type Canvas = { zoom: number };\n');
+  generate();
+  const files = digests();
+  expect(Object.keys(files).filter((file) => file.startsWith('ui'))).toEqual([
+    'ui-canvas.md',
+    'ui-kit.md',
+    'ui.md',
+  ]);
+  expect(files['ui.md']).toContain('[canvas](ui-canvas.md)');
+  expect(files['ui.md']).toContain('[kit](ui-kit.md)');
+  expect(files['ui.md']).not.toContain('```');
+  expect(files['ui-kit.md']).toContain('export const button: true;');
+  expect(files['ui-canvas.md']).toMatch(/export type Canvas = \{\s*zoom: number;/);
+  for (const name of ['canvas', 'kit']) {
+    expect(files[`ui-${name}.md`]).toContain('# @pcbk/ui\n');
+    expect(files[`ui-${name}.md`]).toContain(`packages/ui/src/${name}/index.ts`);
+    expect(files[`ui-${name}.md`]).not.toContain(`@pcbk/ui/${name}`);
+  }
+  generate();
+  expect(digests()).toEqual(files);
+  writeFileSync(join(ui, 'canvas', 'index.ts'), 'export type Canvas = { zoom: string };\n');
+  const stale = run('--check');
+  expect(stale.status, stale.output).toBe(1);
+  expect(stale.output).toContain('Erineb: docs/api/ui-canvas.md');
+  expect(digests()).toEqual(files);
+  generate();
+  expect(digests()['ui-canvas.md']).toMatch(/zoom: string;/);
+  expect(run('--check').status).toBe(0);
+});
+
 test('api_digest_writes_one_file_per_domain_subpath', () => {
   domainFixture();
   generate();

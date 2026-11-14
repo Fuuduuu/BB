@@ -12,6 +12,7 @@ import {
 } from './png-session';
 import { exportPngRoute, type PngPreview, type PngRow } from './png-export';
 import { observePngFont } from './png-font';
+import { pngProbeOptions } from './png-options';
 
 function showPngResults(result: unknown, previews: PngPreview[]) {
   const overlay = document.createElement('section');
@@ -72,8 +73,9 @@ async function measurePng(runtime: PngRuntime, previews: PngPreview[]) {
   try {
     await awaitProbeReady(() => probeButton(et.project.open) !== null);
     foreground = trackForeground();
-    for (const portrait of [false, true]) {
-      const fixture = await createPngFixture(portrait);
+    const options = pngProbeOptions(import.meta.env.VITE_PCBK_PNG_PROBE_SIZE);
+    for (const portrait of options.portraits) {
+      const fixture = await createPngFixture(portrait, options.size);
       const path = await createPngProject(runtime, fixture, (created) =>
         projectPaths.push(created),
       );
@@ -85,7 +87,7 @@ async function measurePng(runtime: PngRuntime, previews: PngPreview[]) {
       } catch (error) {
         fonts.push({ photo: fixture.kind, observation: 'unknown', error: String(error) });
       }
-      for (const variant of ['display', 'original'] as const) {
+      for (const variant of options.variants) {
         const sourceView =
           variant === 'display'
             ? { zoom: 1.7, pan: { x: 173, y: -89 } }
@@ -95,7 +97,7 @@ async function measurePng(runtime: PngRuntime, previews: PngPreview[]) {
         await nextFrame();
         const url = runtime.projects.photoUrl(photo.id, variant);
         if (!url) throw new Error(`Photo URL missing: ${variant}`);
-        for (const route of ['P1', 'P2-normal', 'P2-anonymous', 'P3'] as const) {
+        for (const route of options.routes) {
           rows.push({
             ...(await exportPngRoute({ route, variant, url, source, photo, fixture, previews })),
             sourceView,

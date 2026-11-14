@@ -1,6 +1,9 @@
 use super::ProjectStore;
 use rusqlite::{params, OptionalExtension};
 
+#[path = "photo_orientation.rs"]
+mod photo_orientation;
+
 pub struct PhotoResponse {
     pub status: u16,
     pub mime: Option<String>,
@@ -80,8 +83,14 @@ impl ProjectStore {
             "SELECT mime,bytes FROM photos WHERE id=?1 AND (variant=?2 OR (?2='display' AND variant='original')) ORDER BY CASE WHEN variant=?2 THEN 0 ELSE 1 END LIMIT 1",
             params![id, variant], |row| Ok((row.get::<_, String>(0)?, row.get::<_, Vec<u8>>(1)?)),
         ).optional();
+        // The query owns the response bytes; image traversal needs neither lock.
+        drop(order);
+        drop(sessions);
         match selected {
-            Ok(Some((mime, bytes))) if matches!(mime.as_str(), "image/jpeg" | "image/png") => {
+            Ok(Some((mime, mut bytes))) if matches!(mime.as_str(), "image/jpeg" | "image/png") => {
+                if variant == "display" {
+                    photo_orientation::neutralize(&mut bytes, &mime);
+                }
                 PhotoResponse {
                     status: 200,
                     mime: Some(mime),

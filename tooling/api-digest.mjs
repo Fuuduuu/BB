@@ -50,7 +50,8 @@ function reexportedSources(entry) {
     const resolved = ts.resolveModuleName(specifier, entry.path, {}, ts.sys).resolvedModule;
     if (!resolved)
       throw new Error(`Re-eksporditud faili ei saa lugeda: ${entry.path}: ${specifier}`);
-    const name = basename(resolved.resolvedFileName).replace(/\.tsx?$/u, '');
+    const fileName = basename(resolved.resolvedFileName);
+    const name = fileName === 'index.ts' ? specifier.slice(2) : fileName.replace(/\.tsx?$/u, '');
     sources.push({
       name: `${entry.name}/${name}`,
       publicName: entry.name,
@@ -69,6 +70,10 @@ function entrypoints(root) {
     .map((name) => ({
       name,
       path: join(packages, name, 'src', 'index.ts'),
+    }))
+    .map((entry) => ({
+      ...entry,
+      sources: entry.name === 'ui' ? reexportedSources(entry) : undefined,
     }));
   const domain = join(packages, 'domain');
   const manifest = join(domain, 'package.json');
@@ -122,6 +127,24 @@ function domainContents(entries) {
     } else {
       lines.push(`- [${subpath}](${name.replaceAll('/', '-')}.md)`);
     }
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+/** @param {Entrypoint} entry */
+function reexportContents(entry) {
+  const lines = [
+    '<!-- Genereeritud: pnpm api. Ära muuda käsitsi. -->',
+    '',
+    `# @pcbk/${entry.name}`,
+    '',
+    'Avalik liides lähtefailide kaupa (imporditee ei muutu):',
+    '',
+  ];
+  for (const source of entry.sources ?? []) {
+    lines.push(
+      `- [${source.name.slice(entry.name.length + 1)}](${source.name.replaceAll('/', '-')}.md)`,
+    );
   }
   return `${lines.join('\n')}\n`;
 }
@@ -205,6 +228,11 @@ function apiDigest(root, check) {
   );
   const domain = declared.filter(({ name }) => name.startsWith('domain/'));
   if (domain.length) generated.set('domain.md', domainContents(domain));
+  for (const entry of declared) {
+    if (entry.sources && !entry.name.startsWith('domain/')) {
+      generated.set(`${entry.name.replaceAll('/', '-')}.md`, reexportContents(entry));
+    }
+  }
   const extras = existsSync(output)
     ? readdirSync(output, { withFileTypes: true })
         .filter(

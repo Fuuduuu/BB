@@ -125,7 +125,7 @@ fn original_bytes_stored_unchanged() {
     assert_eq!(photo.id, "photo-id");
     assert_eq!(photo.name, "Plaat.vasak");
     assert_eq!(photo.side, "top");
-    let response = store.photo_protocol(&format!("/photo/{session}/photo-id?v=display"));
+    let response = store.photo_protocol(&format!("/photo/{session}/photo-id?v=original"));
     assert_eq!(response.bytes, original);
     store.close(&session).unwrap();
     let conn = Connection::open(path).unwrap();

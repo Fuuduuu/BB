@@ -9,9 +9,12 @@ export type PngFixture = {
   exif: 1 | 6;
 };
 
-export async function createPngFixture(portrait: boolean): Promise<PngFixture> {
-  const width = portrait ? 3000 : 4000;
-  const height = portrait ? 4000 : 3000;
+export async function createPngFixture(
+  portrait: boolean,
+  rawSize = { width: 4000, height: 3000 },
+): Promise<PngFixture> {
+  const width = portrait ? rawSize.height : rawSize.width;
+  const height = portrait ? rawSize.width : rawSize.height;
   const visible = new OffscreenCanvas(width, height);
   const context = visible.getContext('2d');
   if (!context) throw new Error('Fixture canvas unavailable');
@@ -31,11 +34,11 @@ export async function createPngFixture(portrait: boolean): Promise<PngFixture> {
   context.fillRect(0, 0, 200, 200);
   context.fillStyle = '#0000ff';
   context.fillRect(width - 200, height - 200, 200, 200);
-  const raw = new OffscreenCanvas(4000, 3000);
+  const raw = new OffscreenCanvas(rawSize.width, rawSize.height);
   const rawContext = raw.getContext('2d');
   if (!rawContext) throw new Error('Raw fixture canvas unavailable');
   // Visible portrait -> raw JPEG: inverse of EXIF 6, before encoding exactly once.
-  if (portrait) rawContext.setTransform(0, -1, 1, 0, 0, 3000);
+  if (portrait) rawContext.setTransform(0, -1, 1, 0, 0, rawSize.height);
   rawContext.drawImage(visible, 0, 0);
   const jpeg = await raw.convertToBlob({ type: 'image/jpeg', quality: 0.85 });
   const bytes = await jpeg.arrayBuffer();
@@ -46,8 +49,14 @@ export async function createPngFixture(portrait: boolean): Promise<PngFixture> {
     visible: { width, height },
     // Continuous SVG centers corresponding to raw JPEG pixel indices + 0.5.
     centers: portrait
-      ? { resistor: { x: 100, y: 2900 }, soic: { x: 3900, y: 100 } }
-      : { resistor: { x: 100, y: 100 }, soic: { x: 3900, y: 2900 } },
+      ? {
+          resistor: { x: 100, y: rawSize.height - 100 },
+          soic: { x: rawSize.width - 100, y: 100 },
+        }
+      : {
+          resistor: { x: 100, y: 100 },
+          soic: { x: rawSize.width - 100, y: rawSize.height - 100 },
+        },
     exif: portrait ? 6 : 1,
   };
 }

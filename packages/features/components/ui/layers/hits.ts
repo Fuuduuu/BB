@@ -45,11 +45,14 @@ export function componentPinHits({ doc }: Snapshot): HitItem[] {
       board,
       pins.map((pin) => pin.id),
       doc.scale.pxPerMm,
-    ).map(({ pinId, at, radiusPx }) => ({
+    ).map<HitItem>(({ pinId, at, halfPx, angleDeg, shape }) => ({
       kind: 'pin',
       id: pinId,
       componentId: id,
-      shape: { type: 'point', at, r: radiusPx },
+      shape:
+        shape === 'rect'
+          ? { type: 'rect', at, half: halfPx, angleDeg }
+          : { type: 'point', at, r: halfPx.x },
       priority: 2,
     }));
   });

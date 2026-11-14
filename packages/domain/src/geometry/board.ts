@@ -26,27 +26,40 @@ export function boardPads(
   placement: BoardPlacement,
   pinIds: readonly string[],
   pxPerMm: number,
-): { pinId: string; at: Vec2; radiusPx: number }[] {
-  const pads: { pinId: string; at: Vec2; radiusPx: number }[] = [];
+): {
+  pinId: string;
+  at: Vec2;
+  radiusPx: number;
+  halfPx: Vec2;
+  angleDeg: number;
+  shape: 'rect' | 'circle';
+}[] {
+  const pads: ReturnType<typeof boardPads> = [];
   const pins = new Set(pinIds);
   const geometry = footprintGeometry(placement.footprint, placement.params);
 
-  function appendPad(pinId: string, local: Vec2, w: number, h: number) {
+  function appendPad(pinId: string, local: Vec2, w: number, h: number, shape: 'rect' | 'circle') {
     pads.push({
       pinId,
       at: padToBoard(placement, local, pxPerMm),
       radiusPx: (Math.max(w * placement.scaleX, h * placement.scaleY) * pxPerMm) / 2,
+      halfPx: {
+        x: (w * placement.scaleX * pxPerMm) / 2,
+        y: (h * placement.scaleY * pxPerMm) / 2,
+      },
+      angleDeg: placement.rotationDeg,
+      shape,
     });
   }
 
   for (const pad of geometry?.pads ?? []) {
     const pinId = placement.padMap?.[pad.id] ?? pad.id;
-    if (pins.has(pinId)) appendPad(pinId, pad, pad.w, pad.h);
+    if (pins.has(pinId)) appendPad(pinId, pad, pad.w, pad.h, pad.shape);
   }
   for (const pinId of pins) {
     if (!Object.hasOwn(placement.customPads, pinId)) continue;
     const pad = placement.customPads[pinId];
-    if (pad) appendPad(pinId, pad.local, pad.sizeMm, pad.sizeMm);
+    if (pad) appendPad(pinId, pad.local, pad.sizeMm, pad.sizeMm, 'circle');
   }
   return pads;
 }

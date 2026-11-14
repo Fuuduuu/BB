@@ -43,11 +43,11 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 
 | Omadus | Reegel |
 |---|---|
-| Minimaalne suurus | ekraanil vähemalt 10 px läbimõõt (`max(tegelik, 5 px raadius)`) |
-| Jalg 1 | ruudukujuline marker (ka siis, kui padjand on ümmargune) |
-| Number | nähtav, kui raadius on ≥ 7 px; nimi lisaks, kui raadius on ≥ 14 px |
+| Kuju ja minimaalne suurus | padjandi pööratud ristkülik või ring; ristküliku kumbki külg ja ringi läbimõõt on ekraanil vähemalt 5 px |
+| Jalg 1 | korpuse geomeetria määratud kohal punkt värviga `--body` ja haloga; raadius vähemalt 0,25 mm plaadil ja 2 px ekraanil. Padjandi kuju tuleb generaatorist |
+| Number | nähtav, kui lühema külje pool on ≥ 7 px; nimi lisaks, kui lühema külje pool on ≥ 14 px; font vähemalt 8 px ekraanil |
 | Halo | iga jala ümber 1,5 px kontrastne kontuur (`--halo`), et see paistaks fotol välja |
-| Tabamusala | `max(raadius, 6 px)`; kui kaks jalga on lähestikku, võidab kursorile lähim |
+| Tabamusala | ristkülikul sama pööratud kuju, iga külg vähemalt 5 px ekraanil; ringil jääb raadius `max(tegelik, 6 px ekraanil)`. Sama prioriteedi korral võidab kursorile lähim kese |
 
 | Olek | Täide | Rõngas | Lisaks |
 |---|---|---|---|

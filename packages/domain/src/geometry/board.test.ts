@@ -39,6 +39,76 @@ test('rotation_wraps_and_is_clockwise_with_y_down', () => {
   }
 });
 
+test('board_pads_return_pad_size_angle_and_shape', () => {
+  const board = placement({
+    center: { x: 0, y: 0 },
+    side: 'bottom',
+    rotationDeg: 90,
+    scaleX: 3,
+    scaleY: 2,
+    customPads: {
+      manual: { local: { x: 2, y: 1 }, sizeMm: 2, shape: 'rect', through: false },
+    },
+  });
+  const pads = boardPads(board, ['1', 'manual'], 20);
+
+  expect(pads).toHaveLength(2);
+  expect(pads[0]).toMatchObject({
+    pinId: '1',
+    halfPx: { x: 30, y: 27 },
+    angleDeg: 90,
+    shape: 'rect',
+    radiusPx: 30,
+  });
+  expectPoint(pads[0]?.at, 0, 60);
+  expect(pads[1]).toStrictEqual({
+    pinId: 'manual',
+    at: { x: expect.closeTo(-40, 10), y: expect.closeTo(-120, 10) },
+    halfPx: { x: 60, y: 40 },
+    angleDeg: 90,
+    shape: 'circle',
+    radiusPx: 60,
+  });
+});
+
+test('board_pads_keep_round_footprint_pad_shape', () => {
+  const pads = boardPads(
+    placement({ footprint: 'header1', params: { pins: 4, pitch: 2.54 } }),
+    ['1', '2'],
+    10,
+  );
+
+  expect(pads.map(({ pinId, shape }) => ({ pinId, shape }))).toEqual([
+    { pinId: '1', shape: 'rect' },
+    { pinId: '2', shape: 'circle' },
+  ]);
+});
+
+test.each([
+  ['top', 0, 40, 200],
+  ['top', 90, 100, 140],
+  ['top', 180, 160, 200],
+  ['top', 270, 100, 260],
+  ['bottom', 0, 160, 200],
+  ['bottom', 90, 100, 260],
+  ['bottom', 180, 40, 200],
+  ['bottom', 270, 100, 140],
+  ['bottom', 450, 100, 260],
+  ['bottom', -270, 100, 260],
+] as const)('pad_axes_follow_placement_%s_%s', (side, rotationDeg, x, y) => {
+  const board = placement({ side, rotationDeg, scaleX: 3, scaleY: 2 });
+  const pads = boardPads(board, ['1'], 20);
+
+  expect(pads).toHaveLength(1);
+  expect(pads[0]).toMatchObject({
+    halfPx: { x: 30, y: 27 },
+    angleDeg: rotationDeg,
+    shape: 'rect',
+    radiusPx: 30,
+  });
+  expectPoint(pads[0]?.at, x, y);
+});
+
 test('pad_map_redirects_pad_to_pin', () => {
   const board = Object.freeze(
     placement({
@@ -57,8 +127,22 @@ test('pad_map_redirects_pad_to_pin', () => {
   const pins = Object.freeze(['A', '2', 'x1']);
 
   expect(boardPads(board, pins, 12)).toStrictEqual([
-    { pinId: 'A', at: { x: 76, y: 200 }, radiusPx: 12 },
-    { pinId: 'x1', at: { x: 100, y: 224 }, radiusPx: 24 },
+    {
+      pinId: 'A',
+      at: { x: 76, y: 200 },
+      radiusPx: 12,
+      halfPx: { x: 12, y: expect.closeTo(8.1, 10) },
+      angleDeg: 0,
+      shape: 'rect',
+    },
+    {
+      pinId: 'x1',
+      at: { x: 100, y: 224 },
+      radiusPx: 24,
+      halfPx: { x: 24, y: 12 },
+      angleDeg: 0,
+      shape: 'circle',
+    },
   ]);
 });
 
@@ -105,7 +189,14 @@ test('invalid or unknown footprints keep manual pads for known pins', () => {
     });
     expect(bodyOutline(board, 10)).toEqual([]);
     expect(boardPads(board, ['A'], 10)).toStrictEqual([
-      { pinId: 'A', at: { x: 110, y: 220 }, radiusPx: 5 },
+      {
+        pinId: 'A',
+        at: { x: 110, y: 220 },
+        radiusPx: 5,
+        halfPx: { x: 5, y: 5 },
+        angleDeg: 0,
+        shape: 'circle',
+      },
     ]);
   }
 });
@@ -113,8 +204,22 @@ test('invalid or unknown footprints keep manual pads for known pins', () => {
 test('two physical pads mapped to one pin remain separate', () => {
   const board = placement({ padMap: { '1': 'A', '2': 'A' } });
   expect(boardPads(board, ['A'], 10)).toStrictEqual([
-    { pinId: 'A', at: { x: 90, y: 200 }, radiusPx: 6.75 },
-    { pinId: 'A', at: { x: 110, y: 200 }, radiusPx: 6.75 },
+    {
+      pinId: 'A',
+      at: { x: 90, y: 200 },
+      radiusPx: 6.75,
+      halfPx: { x: 5, y: 6.75 },
+      angleDeg: 0,
+      shape: 'rect',
+    },
+    {
+      pinId: 'A',
+      at: { x: 110, y: 200 },
+      radiusPx: 6.75,
+      halfPx: { x: 5, y: 6.75 },
+      angleDeg: 0,
+      shape: 'rect',
+    },
   ]);
 });
 

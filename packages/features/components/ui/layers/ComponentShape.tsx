@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import type { Snapshot } from '@pcbk/contracts';
 import type { BoardPlacement } from '@pcbk/domain';
-import { boardPads, bodyOutline } from '@pcbk/domain/geometry';
+import { footprintGeometry } from '@pcbk/domain/footprints';
+import { boardPads, bodyOutline, padToBoard } from '@pcbk/domain/geometry';
 import { SceneText, screenToSceneVector, useSceneTransform } from '@pcbk/ui';
 import { componentLabelLayout, isComponentLabelVisible } from './hits';
 import { PinLabels, PinMarker } from './PinMarker';
@@ -29,14 +30,18 @@ function translation(dx: number, dy: number): string | undefined {
 function Body({
   board,
   pxPerMm,
+  zoom,
   selected,
 }: {
   board: BoardPlacement;
   pxPerMm: number;
+  zoom: number;
   selected: boolean;
 }) {
   const outline = bodyOutline(board, pxPerMm);
   if (outline.length === 0) return null;
+  const pin1 = footprintGeometry(board.footprint, board.params)?.body.pin1;
+  const pin1At = pin1 && padToBoard(board, pin1, pxPerMm);
   const geometry = {
     points: outline.map(({ x, y }) => `${x},${y}`).join(' '),
     strokeDasharray: board.side === 'bottom' ? '4 3' : undefined,
@@ -51,6 +56,18 @@ function Body({
         stroke={selected ? 'var(--sel)' : 'var(--body)'}
         strokeWidth={1.4}
       />
+      {pin1At && (
+        <circle
+          cx={pin1At.x}
+          cy={pin1At.y}
+          r={Math.max(0.25 * pxPerMm, 2 / zoom)}
+          fill="var(--body)"
+          stroke="var(--halo)"
+          strokeWidth={3.6}
+          paintOrder="stroke"
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
     </>
   );
 }
@@ -124,7 +141,7 @@ export const ComponentShape = memo(function ComponentShape({
         transform={transform}
         opacity={component.dnp ? 0.4 : undefined}
       >
-        <Body board={component.board} pxPerMm={pxPerMm} selected={selected} />
+        <Body board={component.board} pxPerMm={pxPerMm} zoom={zoom} selected={selected} />
       </g>
     );
   }
@@ -133,12 +150,20 @@ export const ComponentShape = memo(function ComponentShape({
   const pads = boardPads(component.board, [...pins.keys()], pxPerMm);
   return (
     <g data-component={component.id} transform={transform}>
-      {pads.map(({ pinId, at, radiusPx }, index) => {
+      {pads.map(({ pinId, at, halfPx, angleDeg, shape }, index) => {
         const pin = pins.get(pinId)!;
-        const props = { pin, x: at.x, y: at.y, radius: Math.max(radiusPx, 5 / zoom), zoom };
+        const props = {
+          pin,
+          x: at.x,
+          y: at.y,
+          halfPx: { x: Math.max(halfPx.x, 2.5 / zoom), y: Math.max(halfPx.y, 2.5 / zoom) },
+          angleDeg,
+          shape,
+          zoom,
+        };
         const key = `${pin.uid}:${index}`;
         return kind === 'pins' ? (
-          <PinMarker key={key} {...props} square={index === 0} selected={pinId === selectedPinId} />
+          <PinMarker key={key} {...props} selected={pinId === selectedPinId} />
         ) : (
           <PinLabels key={key} {...props} />
         );

@@ -100,6 +100,11 @@ export type HitShape = {
     at: Vec2;
     r: number;
 } | {
+    type: 'rect';
+    at: Vec2;
+    half: Vec2;
+    angleDeg: number;
+} | {
     type: 'segment';
     a: Vec2;
     b: Vec2;

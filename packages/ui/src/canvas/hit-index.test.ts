@@ -5,6 +5,83 @@ function pin(id: string, x: number, y: number, r = 1): HitItem {
   return { kind: 'pin', id, shape: { type: 'point', at: { x, y }, r } };
 }
 
+function pad(
+  id: string,
+  at: { x: number; y: number },
+  half = { x: 10, y: 2 },
+  angleDeg = 0,
+): HitItem {
+  return { kind: 'pin', id, shape: { type: 'rect', at, half, angleDeg }, priority: 2 };
+}
+
+it('rect_hit_accepts_inside_rotated_pad_and_rejects_outside', () => {
+  const target = pad('rotated', { x: 20, y: 30 }, { x: 10, y: 2 }, 45);
+  const hits = createHitIndex([target]);
+  expect(hits.query({ x: 26, y: 36 }, 2)).toBe(target);
+  expect(hits.query({ x: 20, y: 34 }, 2)).toBeUndefined();
+  expect(hits.query({ x: 28, y: 38 }, 2)).toBeUndefined();
+});
+
+it('rect_hit_grows_to_min_5_screen_px', () => {
+  const target = pad('tiny', { x: 30, y: 30 }, { x: 0.1, y: 0.2 });
+  const otherCells = Array.from({ length: 12 }, (_, i) => pin(`other-${i}`, 300 + 32 * i, 300));
+  const hits = createHitIndex([target, ...otherCells], 16);
+  for (const zoom of [0.5, 1, 2]) {
+    const half = 2.5 / zoom;
+    expect(hits.query({ x: 30 + half, y: 30 + half }, zoom)).toBe(target);
+    expect(hits.query({ x: 30 + half + 0.01, y: 30 }, zoom)).toBeUndefined();
+    expect(hits.query({ x: 30, y: 30 - half - 0.01 }, zoom)).toBeUndefined();
+  }
+  const long = pad('long', { x: 0, y: 0 }, { x: 10, y: 1 });
+  expect(createHitIndex([long]).query({ x: 10, y: 2.5 }, 1)).toBe(long);
+  expect(createHitIndex([long]).query({ x: 10.01, y: 0 }, 1)).toBeUndefined();
+});
+
+it('rotated_rect_includes_its_boundary_corners', () => {
+  for (const [angle, edge, outside] of [
+    [0, { x: 30, y: 32 }, { x: 30.01, y: 32 }],
+    [90, { x: 18, y: 40 }, { x: 18, y: 40.01 }],
+    [180, { x: 10, y: 28 }, { x: 9.99, y: 28 }],
+    [270, { x: 22, y: 20 }, { x: 22, y: 19.99 }],
+  ] as const) {
+    const target = pad('edge', { x: 20, y: 30 }, { x: 10, y: 2 }, angle);
+    const hits = createHitIndex([target]);
+    expect(hits.query(edge, 2)).toBe(target);
+    expect(hits.query(outside, 2)).toBeUndefined();
+  }
+});
+
+it('rect_boundary_includes_translation_rounding_at_normal_board_coordinates', () => {
+  const target = pad('translated', { x: 1000, y: 800 }, { x: 7.75, y: 3 }, 45);
+  const hits = createHitIndex([target]);
+  // Rotate local corner (7.75,3) by45 degrees, then translate by(1000,800).
+  expect(hits.query({ x: 1003.3587572106361, y: 807.6013978977554 }, 1)).toBe(target);
+  expect(hits.query({ x: 1003.3587572106361, y: 807.6023978977554 }, 1)).toBeUndefined();
+});
+
+it('pin_hit_picks_nearest_center_between_neighbours', () => {
+  const first = pad('first', { x: -3, y: 0 }, { x: 3, y: 0.3 });
+  const second = pad('second', { x: 3, y: 0 }, { x: 3, y: 0.3 });
+  const hits = createHitIndex([first, second]);
+  expect(hits.query({ x: 1, y: 0 }, 0.5)).toBe(second);
+  expect(hits.query({ x: -1, y: 0 }, 0.5)).toBe(first);
+  expect(createHitIndex([second, first]).query({ x: 1, y: 0 }, 0.5)).toBe(second);
+  const point = { ...pin('point', 0, 0), priority: 2 };
+  expect(createHitIndex([second, point]).query({ x: 0.5, y: 0 }, 0.5)).toBe(point);
+  expect(createHitIndex([{ ...point, priority: 1 }, second]).query({ x: 0.5, y: 0 }, 0.5)).toBe(
+    second,
+  );
+});
+
+it('rotated_rect_corners_are_indexed_across_grid_cells', () => {
+  const target = pad('large', { x: 0, y: 0 }, { x: 30, y: 40 }, 45);
+  const otherCells = Array.from({ length: 24 }, (_, i) => pin(`other-${i}`, 300 + 32 * i, 300));
+  const hits = createHitIndex([target, ...otherCells], 16);
+  // Inverse rotation gives (41 / sqrt(2), 55 / sqrt(2)), inside (30, 40).
+  expect(hits.query({ x: -7, y: 48 }, 2)).toBe(target);
+  expect(hits.query({ x: -7, y: 52 }, 2)).toBeUndefined();
+});
+
 describe('hit index', () => {
   it('nearest_pin_wins_inside_hit_radius', () => {
     const farther = pin('farther', -38, 5, 16);

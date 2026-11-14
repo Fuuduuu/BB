@@ -17,3 +17,6 @@ createRoot(document.getElementById('root')!).render(
     />
   </EngineProvider>,
 );
+
+if (import.meta.env.DEV && import.meta.env.VITE_PCBK_PERF === '1')
+  void import('./perf/probe').then((m) => m.runPerfProbe(runtime));

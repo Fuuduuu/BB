@@ -8,6 +8,7 @@ export default defineConfig({
       'tooling/**/*.test.ts',
       'packages/**/*.test.{ts,tsx}',
       'apps/web/src/**/*.test.{ts,tsx}',
+      'apps/desktop/src/**/*.test.{ts,tsx}',
     ],
     exclude: ['**/node_modules/**', 'tooling/fixtures/**'],
     coverage: {

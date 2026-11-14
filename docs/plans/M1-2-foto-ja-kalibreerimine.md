@@ -89,7 +89,7 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
   - Jalad Canvas'ele ainult siis, kui pärast seda eelarve ikka ei pea.
 - **M1.3 töövoo lihtsustus** (töövoo ülevaatus 2026-11-12, koodis kontrollitud):
   - Jala valimisel näitab kontekstipaneel Mõõda-plokki ja ainult selle jala kaarti: nimi, NC, mõõtmised ja „← Komponent“. Komponendi täisvormi ja jalgade tabelit näidatakse ainult komponendi valimisel. Praegu näidatakse jala valimisel kogu `ComponentDetails`.
-  - Vahekaart „Paigutamata“ ühendatakse „Plaadil“ vahekaardiga ülemiseks rühmaks, mis on nähtav ainult siis, kui paigutamata komponente on.
+  - ~~Vahekaart „Paigutamata“ ühendatakse „Plaadil“ vahekaardiga ülemiseks rühmaks.~~ Asendatud: „Komponendid“ filtritega, vt allpool „Tööpinna paigutus“, punkt 2.
   - Ülevaates tagasi lükatud, sest kood juba töötab nii:
     - lõuendil pole 12–14 nupuga tööriistariba (tööriistad käivituvad teegist ja klahvidega);
     - must sond püsib valituna, kuni kasutaja selle eemaldab, nii et eraldi lukku pole vaja;
@@ -107,7 +107,7 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
     - **Musta sondi valik real:** „Vali jalg“ liigub musta sondi reale ja selle nimi on „Vali musta sondi jalg“.
       - Kui `PickRefTool` on aktiivne, on rida esile tõstetud tekstiga „Klõpsa plaadil musta sondi jalal“.
       - Pärast valikut asendub juhis kontaktitähisega.
-  - Komponentide vaate ülevaatusest (2026-11-14, koodis kontrollitud) lisandub. Punkt 1 on M1.3 esimene:
+  - Komponentide vaate ülevaatusest (2026-11-14, koodis kontrollitud) lisandub. Punkt 1 tuleb kohe pärast tööpinna paigutuse punkti 1:
     1. **Jalg padjandi kujuga.**
        - Praegu on jala märk ring raadiusega `max(w, h) / 2` (`geometry/board.ts`) ja tabamuse ala on sama ring (`hits.ts`).
        - SOIC-i padjand on 1,55 × 0,60 mm ja samm 1,27 mm, nii et naabermärgid ja tabamuse alad kattuvad. Tehnik võib valida vale jala.
@@ -121,6 +121,24 @@ M0/M1.1 piirangud kehtivad (strict TS, failid ≤ 400 rida, sõltuvusreeglid, te
     3. **Tähis ja näit eraldi.**
        - Esimene reegel: näit ei lähe oma komponendi tähise kasti peale. Vajadusel nihkub näit lähimasse vabasse kohta ja lühike viitejoon näitab jalani.
        - Üldine siltide paigutus ümber takistuste otsustatakse alles siis, kui see reegel ei piisa.
+  - **Tööpinna paigutus** (ülevaatus 2026-11-14, kasutaja kinnitas). Mõõdud: ülariba 40 px ja alumine riba 36 px. 1280 px aknas jääb plaadile navigaatoriga 976 px ning navigaatori ja omadustega umbes 632 px; 1100 px aknas 796 ja umbes 452 px. Punkt 1 on **M1.3 esimene kaart**, enne komponentide vaate punkti 1:
+    1. **Omaduste paneel jääb kasutaja soovil peitu.** See **muudab M1-2-6b otsust**, mille järgi uus valik avab paneeli uuesti.
+       - Omaduste päisesse tuleb nähtav sulgemisnupp.
+       - Käsitsi peidetud paneel jääb peitu ka uue komponendi või jala valimisel.
+       - Paneeli avavad ainult ülariba nupp, klahv `O` ja mõõtmise alustamine valitud jalal klahviga `M`.
+       - Ülariba kahel paneelinupul on avatud oleku märgiks vaskne täide, nii et olek on näha ka ilma hiirt nupule viimata.
+       - Vastuvõtt: tehnik peidab paneeli, valib teise komponendi ja seejärel jala; paneel püsib mõlemal korral peidus. Ülariba nupp, `O` ja `M` avavad selle.
+       - M1.2 suitsukatsel vali järjest mitu jalga plaadi paremas servas: nii on näha, kui palju paneeli uuesti avanemine praegu segab.
+    2. **Vasak menüü kolme valikuga:** „Teek“, „Komponendid“, „Mõõtmised“.
+       - „Plaadil“ ja „Paigutamata“ on „Komponendid“ all filtrid; vaikimisi on avatud „Plaadil“. See asendab ülal oleva „Paigutamata“ rühma ettepaneku.
+       - Aktiivse valiku vaskne allajoon jääb.
+       - Loendur (näiteks „1500 mõõtmist“) on avatud vaate päises, mitte menüüs.
+       - Vastuvõtt: 300 px laiuses navigaatoris mahuvad kolm valikut ühele reale ka suure mõõtmiste arvuga.
+    3. **Alumine riba otstarbe järgi.**
+       - Vasakul on foto näitamise ja peitmise nupp. Selle kõrval avab „Foto sätted“ menüü, kus on läbipaistvus, kontrast, halltoon, pööramine ja peegeldus.
+       - Kalibreerimise olek on alati nähtav. „Kalibreerimata“ otsetee kalibreerimisse peab säilima.
+       - Paremal on `−` 100% `+`, „Sobita“ ja koordinaadid.
+       - Vastuvõtt: fotoga projektis mahub riba 1100 px aknas ühele 36 px reale.
   - Paigutuse ülevaatusest lükati tagasi või lükati edasi:
     - Väide „dialoog enne lõuendit“ ei pea paika: teegist valitud korpus läheb kohe kursori külge ja üks klõps paigutab selle. `AddComponentDialog` on eraldi, mittekohustuslik tee.
     - Kitsas aknas on kontekstipaneel juba ujuv ja „Sobita“ arvestab sellega.

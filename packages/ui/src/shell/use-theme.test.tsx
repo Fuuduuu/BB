@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
-import { act, cleanup, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { useTheme } from './use-theme';
 import { useViewStore } from './view-store';
+import { StartScreen } from './StartScreen';
 
 function ThemeRoot() {
   useTheme();
-  return null;
+  return <StartScreen recent={[]} onNew={() => {}} onOpen={() => {}} onRemoveRecent={() => {}} />;
 }
 
 beforeEach(() => {
@@ -33,7 +34,9 @@ test('applies a theme change even when browser storage writes fail', () => {
     throw new DOMException('Storage denied', 'QuotaExceededError');
   });
   render(<ThemeRoot />);
-  act(() => useViewStore.getState().setTheme('dark'));
+  fireEvent.change(screen.getByRole('combobox', { name: 'Välimus' }), {
+    target: { value: 'dark' },
+  });
   expect(useViewStore.getState().theme).toBe('dark');
   expect(document.documentElement.dataset.theme).toBe('dark');
   expect(localStorage.getItem('pcbk.theme')).toBeNull();

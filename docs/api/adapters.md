@@ -15,7 +15,9 @@ export function createMemoryRepository(store?: MemoryStore): {
     open(path: string): Promise<import("@pcbk/engine").OpenedProject>;
     save(req: import("@pcbk/engine").SaveReq): Promise<void>;
     saveView(session: string, view: ViewState): Promise<void>;
-    copy(req: import("@pcbk/engine").CopyProjectReq): Promise<import("@pcbk/engine").OpenedProject>;
+    copy(req: import("@pcbk/engine").CopyProjectReq): Promise<import("@pcbk/engine").OpenedProject & {
+        fromMemory: boolean;
+    }>;
     backupFull(session: string, reason: "migration"): Promise<void>;
     backups(projectId: string): Promise<BackupInfo[]>;
     restore(req: import("@pcbk/contracts").RestoreReq): Promise<import("@pcbk/engine").OpenedProject>;
@@ -28,6 +30,14 @@ export function createMemoryRepository(store?: MemoryStore): {
 export function createMemoryStore(): MemoryStore;
 ```
 
+### `createTauriPhotoStore`
+```ts
+export function createTauriPhotoStore({ invoke, platform, }: {
+    invoke: PhotoInvoke;
+    platform?: string;
+}): PhotoStore;
+```
+
 ### `createTauriRepository`
 ```ts
 export function createTauriRepository({ invoke, warn, }: {
@@ -36,12 +46,27 @@ export function createTauriRepository({ invoke, warn, }: {
 }): ProjectRepository;
 ```
 
+### `createWebPhotoStore`
+```ts
+export function createWebPhotoStore(options?: {
+    store?: UseStore;
+}): {
+    photos: PhotoStore;
+    prepare(session: string, projectId: string): Promise<void>;
+    release(session: string): void;
+};
+```
+
 ### `createWebRepository`
 ```ts
 export function createWebRepository(options?: {
     store?: UseStore;
     recentStorage?: Storage;
     now?: () => string;
+    photoLifecycle?: {
+        prepare(session: string, projectId: string): Promise<void>;
+        release(session: string): void;
+    };
 }): ProjectRepository & {
     recents(): RecentProject[];
     removeRecent(path: string): void;
@@ -53,6 +78,7 @@ export function createWebRepository(options?: {
 ```ts
 export type MemoryProject = {
     projectId: string;
+    fileId?: string;
     copiedFromProjectId?: string;
     doc: unknown;
     rev: number;

@@ -19,9 +19,13 @@ type Outcome = Result<void, EngineError>;
 
 function copyView(view: ViewState): ViewState {
   const { boardView } = view;
-  return boardView
-    ? { ...view, boardView: { zoom: boardView.zoom, pan: { ...boardView.pan } } }
-    : { ...view };
+  return {
+    ...view,
+    ...(boardView && { boardView: { zoom: boardView.zoom, pan: { ...boardView.pan } } }),
+    ...(view.modules && {
+      modules: JSON.parse(JSON.stringify(view.modules)) as Record<string, unknown>,
+    }),
+  };
 }
 
 export function saveTiming(input?: { debounceMs: number; maxWaitMs: number }) {
@@ -192,7 +196,8 @@ export function createSaveCoordinator(opts: {
         view.contextOpen === next.contextOpen &&
         view.boardView?.zoom === next.boardView?.zoom &&
         view.boardView?.pan.x === next.boardView?.pan.x &&
-        view.boardView?.pan.y === next.boardView?.pan.y
+        view.boardView?.pan.y === next.boardView?.pan.y &&
+        JSON.stringify(view.modules ?? {}) === JSON.stringify(next.modules ?? {})
       )
         return;
       view = copyView(next);

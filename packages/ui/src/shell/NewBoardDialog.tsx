@@ -5,6 +5,7 @@ import { Button } from '../kit/Button';
 import { Dialog } from '../kit/Dialog';
 import { Field } from '../kit/Field';
 import { et } from './i18n/et';
+import { defaultBoardName } from './board-name';
 import './project-screens.css';
 
 export interface NewBoardDialogProps {
@@ -16,13 +17,7 @@ export interface NewBoardDialogProps {
 }
 
 function emptyForm() {
-  const today = new Date();
-  const date = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0'),
-  ].join('-');
-  const defaultName = et.project.defaultName(date);
+  const defaultName = defaultBoardName();
   return { defaultName, name: defaultName, device: '', problem: '' };
 }
 

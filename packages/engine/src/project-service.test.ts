@@ -167,6 +167,7 @@ test('discard releases the repository session without saving', async () => {
   engine.execute('demo.rename', { name: 'Discarded' });
   projects.saveView({
     navigatorWidth: 340,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
@@ -226,6 +227,7 @@ test('copy rescues unsaved data after a storage failure without changing the ori
   engine.execute('demo.rename', { name: 'Rescued' });
   projects.saveView({
     navigatorWidth: 340,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
@@ -240,10 +242,12 @@ test('copy rescues unsaved data after a storage failure without changing the ori
   expect(store.files.get('Rescue.pcbk')!.doc).toEqual(engine.snapshot().doc);
   expect(store.files.get('Rescue.pcbk')!.view).toEqual({
     navigatorWidth: 340,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 340,
     contextOpen: true,
     boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    modules: {},
   });
   expect(store.files.get('Rescue.pcbk')!.journal).toHaveLength(1);
   expect(store.files.get(path)!.doc).toMatchObject({ name: 'Board', rev: 0 });
@@ -270,6 +274,7 @@ test('commands during copy are retained and saved into the new file', async () =
   engine.execute('demo.rename', { name: 'Later' });
   projects.saveView({
     navigatorWidth: 380,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
@@ -281,10 +286,12 @@ test('commands during copy are retained and saved into the new file', async () =
   expect(store.files.get('New.pcbk')!.doc).toEqual(engine.snapshot().doc);
   expect(store.files.get('New.pcbk')!.view).toEqual({
     navigatorWidth: 380,
+    navigatorOpen: true,
     navigatorTab: 'components',
     contextWidth: 340,
     contextOpen: true,
     boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    modules: {},
   });
   expect(store.files.get('New.pcbk')!.journal).toHaveLength(2);
   expect(store.files.get('New.pcbk')!.projectId).not.toBe(store.files.get(path)!.projectId);

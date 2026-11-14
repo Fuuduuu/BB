@@ -3,6 +3,7 @@ import type { Vec2 } from '@pcbk/domain';
 import { et } from '../shell/i18n/et';
 import type { Selection, SelectionItem } from '../shell/session-store';
 import type { HitItem } from './hit-index';
+import { screenToSceneVector } from './stage';
 import type { CanvasPointer, CanvasTool, ToolSpec } from './tools';
 
 export type TranslatePreviewData = { items: SelectionItem[]; dx: number; dy: number };
@@ -113,7 +114,8 @@ function createSelectTool(getSelection: () => Selection): CanvasTool {
       if (items.length === 0) return false;
       if (!event.repeat && !gesture) {
         const step = event.shiftKey ? 10 : 1;
-        api.execute('items.translate', { items, dx: direction.x * step, dy: direction.y * step });
+        const world = screenToSceneVector(api.sceneTransform(), direction);
+        api.execute('items.translate', { items, dx: world.x * step, dy: world.y * step });
       }
       return true;
     },

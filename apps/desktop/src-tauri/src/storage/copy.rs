@@ -95,9 +95,11 @@ pub(super) fn write(
     let tx = conn.transaction()?;
     let format = replace_snapshot(&tx, request.doc_json, request.rev, request.view_json)?;
     let format = format.to_string();
+    let file_id = uuid::Uuid::new_v4().to_string();
     for (key, value) in [
         ("format_version", format.as_str()),
         ("project_id", request.project_id),
+        ("file_id", file_id.as_str()),
         (
             "copied_from_project_id",
             request.copied_from_project_id.unwrap_or_default(),

@@ -4,16 +4,15 @@ import { expect, test, vi } from 'vitest';
 import type { AppHost, RecentProject } from '@pcbk/contracts';
 import { et, useViewStore } from '@pcbk/ui';
 import { createRuntime } from './runtime';
-import { fakeHost, mount, seedProject } from './test-support/workbench';
+import { fakeHost, mount, openWorkbenchProject, seedProject } from './test-support/workbench';
 
 test('view_only_change_leaves_document_rev_unchanged', async () => {
   const runtime = createRuntime();
+  const savingView = vi.spyOn(runtime.projects, 'saveView');
   const project = await seedProject(runtime, 'Lõuendi vaate proov');
   const { host } = fakeHost();
   const app = mount(runtime, host);
-  const openPath = host.onOpenPath.mock.lastCall?.[0];
-  if (!openPath) throw new Error('Workbench did not register an open-path handler');
-  await act(async () => openPath(project.path));
+  await openWorkbenchProject(runtime, host, project.path);
   expect(await screen.findByText(project.name)).toBeTruthy();
 
   try {
@@ -27,6 +26,7 @@ test('view_only_change_leaves_document_rev_unchanged', async () => {
       'matrix(2 0 0 2 -120 -18)',
     );
     expect(useViewStore.getState().boardView).toEqual({ zoom: 2, pan: { x: -120, y: -18 } });
+    expect(savingView).toHaveBeenCalled();
     await act(async () => expect((await runtime.projects.flush()).ok).toBe(true));
     expect(runtime.engine.snapshot()).toMatchObject({ rev: before.rev, history: before.history });
   } finally {
@@ -105,9 +105,7 @@ test('missing optional host methods disable their buttons', async () => {
   fireEvent.click(open);
   expect(screen.queryByRole('dialog', { name: et.project.openTitle })).toBeNull();
 
-  const openPath = host.onOpenPath.mock.lastCall?.[0];
-  if (!openPath) throw new Error('Workbench did not register an open-path handler');
-  await act(async () => openPath(project.path));
+  await openWorkbenchProject(runtime, host, project.path);
   expect(await screen.findByText(project.name)).toBeTruthy();
   const close = vi.spyOn(runtime.projects, 'close').mockResolvedValue({
     ok: false,

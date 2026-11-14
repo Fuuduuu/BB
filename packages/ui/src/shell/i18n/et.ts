@@ -8,6 +8,10 @@ const reason = {
   exists: 'See failinimi on juba kasutusel. Vali uus failinimi.',
   not_project: 'see fail ei ole PCB Kaardistaja projekt',
   too_new: 'fail on tehtud uuema äpiga',
+  unsupported_image:
+    'Seda pildivormingut ei saa avada. Salvesta pilt tavalise JPEG- või PNG-failina.',
+  image_too_large: 'Pilt on liiga suur (üle 100 MP või 200 MB).',
+  corrupt_image: 'Pildifail on vigane või poolik.',
   stale_rev:
     'Projekti muudeti teises aknas. Sinu muudatused on alles ainult selles aknas; salvesta need mujale.',
   unknown: 'tundmatu viga',
@@ -29,6 +33,8 @@ export const et = {
     projectName: 'Projekti nimi',
     untitled: 'Nimetu plaat',
     navigator: 'Navigaator',
+    showNavigator: 'Näita navigaatorit',
+    hideNavigator: 'Peida navigaator',
     components: 'Komponendid',
     navigatorEmpty: 'Siia ilmuvad plaadi komponendid.',
     context: 'Omadused',
@@ -43,7 +49,14 @@ export const et = {
     canvasEmpty: 'Sinu plaadi tööala',
     canvasHint: 'Komponendid ja ühendused kuvatakse siin.',
     bottomBar: 'Plaadi olek',
-    ready: 'Valmis',
+    zoomOut: 'Vähenda',
+    zoomIn: 'Suurenda',
+    fit: 'Sobita',
+    zoomPercent: (zoom: number) => `${Math.round(zoom * 100)} %`,
+    cursor: (point: { x: number; y: number } | null) =>
+      point
+        ? `X ${point.x.toFixed(1).replace('.', ',')} mm · Y ${point.y.toFixed(1).replace('.', ',')} mm`
+        : 'X — · Y —',
     undo: 'Võta tagasi',
     redo: 'Tee uuesti',
     appearance: 'Välimus',
@@ -68,6 +81,9 @@ export const et = {
   },
   project: {
     newBoard: 'Uus plaat',
+    dropPhoto: 'Lohista plaadi foto siia või kleebi Ctrl+V',
+    invalidPhotoDrop: 'Lohista siia JPEG- või PNG-foto.',
+    photoFailed: (reason: string) => `Fotot ei saanud lisada: ${reason}`,
     open: 'Ava fail…',
     openTitle: 'Ava projekt',
     openNamed: (name: string) => `Ava ${name}`,
@@ -91,6 +107,8 @@ export const et = {
     restoreConfirm: 'Taasta',
     restoreName: (name: string) => `${name} (taastatud)`,
     copyUnavailable: 'Koopia salvestamine on saadaval töölauarakenduses.',
+    rescueCopy:
+      'Koopia tehti mälus olevast seisust, sest algset faili ei saanud lugeda. Fotod ja manused jäid algsesse faili.',
     diagnosticsSaved: 'Diagnostika salvestatud',
     returnHome: 'Tagasi avalehele',
     closeProject: 'Sulge projekt',

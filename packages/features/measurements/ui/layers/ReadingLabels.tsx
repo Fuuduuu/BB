@@ -1,9 +1,10 @@
 import { boardPads } from '@pcbk/domain/geometry';
 import { formatReading } from '@pcbk/domain/measure/reading';
-import { SceneText } from '@pcbk/ui';
+import { SceneText, sceneToScreenVector, useSceneTransform } from '@pcbk/ui';
 import type { LayerSpec, TranslatePreviewData } from '@pcbk/ui';
 
 function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render']>[0]) {
+  const transform = useSceneTransform();
   const readings = new Map(Object.entries(snapshot.derived.pinReadings));
   const { pxPerMm } = snapshot.doc.scale;
   const textSize = 1.2 * pxPerMm;
@@ -31,7 +32,11 @@ function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render
           return pads.map(({ pinId, at, radiusPx }, index) => {
             const x = at.x + (offset?.dx ?? 0);
             const y = at.y + (offset?.dy ?? 0);
-            const isLeft = at.x < board.center.x;
+            const isLeft =
+              sceneToScreenVector(transform, {
+                x: at.x - board.center.x,
+                y: at.y - board.center.y,
+              }).x < 0;
             const radius = Math.max(radiusPx, 5 / zoom) + 2 / zoom;
             const labelOffset = radius + 2 / zoom;
             return (

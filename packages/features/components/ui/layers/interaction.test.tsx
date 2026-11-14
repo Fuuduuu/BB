@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { useSyncExternalStore } from 'react';
 import { newBoardDoc } from '@pcbk/domain';
 import type { BoardPlacement } from '@pcbk/domain';
 import { Canvas, UiRegistry, useSessionStore } from '@pcbk/ui';
-import type { ToolApi } from '@pcbk/ui';
+import type { SceneTransform, ToolApi } from '@pcbk/ui';
 import { idGenerator, setup } from '../../../__tests__/helpers';
 import { createComponentsUi } from '..';
 
@@ -20,7 +20,11 @@ afterEach(() => {
   useSessionStore.getState().reset('');
 });
 
-function mount(placement: Partial<BoardPlacement> = {}, zoom = 1) {
+function mount(
+  placement: Partial<BoardPlacement> = {},
+  zoom = 1,
+  sceneTransform: SceneTransform = 'none',
+) {
   const doc = newBoardDoc('Plaadi proov');
   doc.scale.pxPerMm = 10;
   doc.components.push({
@@ -59,7 +63,7 @@ function mount(placement: Partial<BoardPlacement> = {}, zoom = 1) {
       <Canvas
         layers={layers}
         tools={[]}
-        sceneTransform="none"
+        sceneTransform={sceneTransform}
         view={view}
         onViewChange={() => {}}
         snapshot={snapshot}
@@ -134,8 +138,8 @@ test('hidden_label_has_no_hit_area', () => {
   const { engine, layers } = mount({ labelOffset }, 0.4);
   const labelLayer = layers.find((layer) => layer.id === 'components.labels');
   expect(labelLayer).toBeDefined();
-  expect(labelLayer!.hits?.(engine.snapshot(), 0.4)).toEqual([]);
-  expect(labelLayer!.hits?.(engine.snapshot(), 0.5)).toHaveLength(1);
+  expect(labelLayer!.hits?.(engine.snapshot(), 0.4, 'none')).toEqual([]);
+  expect(labelLayer!.hits?.(engine.snapshot(), 0.5, 'none')).toHaveLength(1);
 });
 
 test('label_click_selects_component', () => {
@@ -145,4 +149,57 @@ test('label_click_selects_component', () => {
   pointer(svg, 'pointerup', labelAt.x, labelAt.y);
   expect(useSessionStore.getState().selection.items).toEqual([component]);
   expect(execute).not.toHaveBeenCalled();
+});
+
+test('label_hit_area_matches_screen_text_under_all_8_transforms', () => {
+  const transforms = {
+    none: [1, 0, 0, 1],
+    rot90: [0, 1, -1, 0],
+    rot180: [-1, 0, 0, -1],
+    rot270: [0, -1, 1, 0],
+    mirror: [-1, 0, 0, 1],
+    mirror_rot90: [0, -1, -1, 0],
+    mirror_rot180: [1, 0, 0, -1],
+    mirror_rot270: [0, 1, 1, 0],
+  } as const;
+  for (const transform of Object.keys(transforms) as SceneTransform[]) {
+    const { svg, engine, layers } = mount({ labelOffset }, 2, transform);
+    const [a, b, c, d] = transforms[transform];
+    const projectOffset = (x: number, y: number) => ({
+      x: a * (x - labelAt.x) + c * (y - labelAt.y),
+      y: b * (x - labelAt.x) + d * (y - labelAt.y),
+    });
+    const label = layers.find(({ id }) => id === 'components.labels')!;
+    const hit = label.hits!(engine.snapshot(), 2, transform)[0]!;
+    expect(hit.shape.type).toBe('area');
+    if (hit.shape.type !== 'area') throw new Error('Expected label polygon');
+    const expected = [
+      [-23.4, -9],
+      [23.4, -9],
+      [23.4, 28.2],
+      [-23.4, 28.2],
+    ];
+    hit.shape.polygon.forEach(({ x, y }, index) => {
+      const screen = projectOffset(x, y);
+      expect(screen.x, transform).toBeCloseTo(expected[index]![0]!);
+      expect(screen.y, transform).toBeCloseTo(expected[index]![1]!);
+    });
+    const texts = svg.querySelectorAll('[data-layer="components.labels"] text');
+    const value = [...texts].find((text) => text.textContent === '100R')!;
+    const valueOffset = projectOffset(
+      Number(value.getAttribute('x')),
+      Number(value.getAttribute('y')),
+    );
+    expect(valueOffset.x, transform).toBeCloseTo(0);
+    expect(valueOffset.y, transform).toBeCloseTo(19.2);
+    act(() =>
+      useSessionStore.getState().setPreview({
+        owner: 'components.label',
+        data: { id, dx: 7, dy: -4 },
+      }),
+    );
+    expect(value.closest('[transform="translate(7 -4)"]')).toBeTruthy();
+    cleanup();
+    useSessionStore.getState().reset('');
+  }
 });

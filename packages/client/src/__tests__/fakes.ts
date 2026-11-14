@@ -63,10 +63,12 @@ export class FakeProjects implements ProjectService {
   copy = unavailable;
   backups = unavailable;
   restore = unavailable;
+  importPhoto = unavailable;
   close = async () => ok(undefined);
   discard = async () => ok(undefined);
   flush = async () => ok(undefined);
   saveView() {}
+  photoUrl: ProjectService['photoUrl'] = () => null;
   status(fn: (value: SaveNotice) => void) {
     this.listeners.add(fn);
     if (this.latest) fn(this.latest);

@@ -2,10 +2,12 @@ import type { BoardView, ViewState } from './project-service';
 
 export const DEFAULT_VIEW_STATE: Readonly<Required<ViewState>> = Object.freeze({
   navigatorWidth: 300,
+  navigatorOpen: true,
   navigatorTab: 'components',
   contextWidth: 340,
   contextOpen: true,
   boardView: Object.freeze({ zoom: 1, pan: Object.freeze({ x: 0, y: 0 }) }),
+  modules: Object.freeze({}),
 });
 
 function record(input: unknown): Record<string, unknown> | undefined {
@@ -53,9 +55,14 @@ export function parseViewState(input: unknown): Required<ViewState> | null {
     return null;
   return {
     navigatorWidth,
+    navigatorOpen:
+      typeof view.navigatorOpen === 'boolean'
+        ? view.navigatorOpen
+        : DEFAULT_VIEW_STATE.navigatorOpen,
     navigatorTab,
     contextWidth,
     contextOpen,
     boardView: normalizeBoardView(boardView),
+    modules: JSON.parse(JSON.stringify(record(view.modules) ?? {})) as Record<string, unknown>,
   };
 }

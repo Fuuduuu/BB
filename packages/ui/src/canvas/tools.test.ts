@@ -50,6 +50,7 @@ function setup(initialSelection: Selection = { items: [] }, unplacedBoard: strin
     setPreview: (next) => (preview = next),
     hitIndex: { query: () => undefined },
     snapshot: () => snapshot,
+    sceneTransform: () => 'none',
   };
   const selectTool = createSelectToolSpec(() => selection).create();
   return { api, execute, selectTool, selection: () => selection, preview: () => preview };

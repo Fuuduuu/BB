@@ -3,7 +3,15 @@ import { render } from '@testing-library/react';
 import type { Vec2 } from '@pcbk/domain';
 import { describe, expect, it } from 'vitest';
 import { SceneText } from './scene-text';
-import { pointerWorld, sceneMatrix, viewMatrix, zoomAt, type SceneTransform } from './stage';
+import {
+  pointerWorld,
+  sceneMatrix,
+  sceneToScreenVector,
+  screenToSceneVector,
+  viewMatrix,
+  zoomAt,
+  type SceneTransform,
+} from './stage';
 
 type Matrix = [number, number, number, number, number, number];
 
@@ -49,6 +57,29 @@ const transforms: [SceneTransform, Vec2, Vec2][] = [
 ];
 
 describe('scene stage', () => {
+  it.each(transforms)('scene_bounds_start_at_origin_under_all_8_transforms (%s)', (transform) => {
+    const surface = { width: 4000, height: 3000 };
+    const matrix = svgMatrix(sceneMatrix(transform, surface));
+    const corners = [
+      { x: 0, y: 0 },
+      { x: surface.width, y: 0 },
+      { x: surface.width, y: surface.height },
+      { x: 0, y: surface.height },
+    ].map((point) => apply(matrix, point));
+    const swapsAxes = transform.includes('90') || transform.includes('270');
+
+    expect(Math.min(...corners.map(({ x }) => x))).toBe(0);
+    expect(Math.min(...corners.map(({ y }) => y))).toBe(0);
+    expect(Math.max(...corners.map(({ x }) => x))).toBe(swapsAxes ? 3000 : 4000);
+    expect(Math.max(...corners.map(({ y }) => y))).toBe(swapsAxes ? 4000 : 3000);
+  });
+
+  it.each(transforms)('scene_vectors_follow_linear_transform_and_inverse (%s)', (transform, at) => {
+    const actual = sceneToScreenVector(transform, anchor);
+    expect(actual).toEqual(at);
+    expect(screenToSceneVector(transform, actual)).toEqual(anchor);
+  });
+
   it.each(transforms)(
     'scene_transform_keeps_text_readable_for_all_8_transforms (%s)',
     (sceneTransform, expectedAnchor) => {

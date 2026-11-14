@@ -55,9 +55,9 @@ test('m_key_focuses_value_field', () => {
   clickBlank();
   expect(document.activeElement).not.toBe(value());
   fireEvent.click(screen.getByRole('button', { name: 'Peida omadused' }));
-  expect(svg.closest('#workspace')?.getAttribute('data-context-open')).toBe('false');
+  expect(screen.queryByRole('complementary', { name: 'Omadused' })).toBeNull();
   fireEvent.keyDown(svg, { key: 'm' });
-  expect(svg.closest('#workspace')?.getAttribute('data-context-open')).toBe('true');
+  expect(screen.getByRole('complementary', { name: 'Omadused' }).contains(value())).toBe(true);
   expect(document.activeElement).toBe(value());
 });
 

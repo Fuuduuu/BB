@@ -98,6 +98,7 @@ export function createProjectService(opts: {
     engine: DocumentEngine;
     host: EngineHost;
     repo: ProjectRepository;
+    photos: Pick<PhotoStore, 'prune' | 'url' | 'importBytes'>;
     clock: Clock;
     ids: IdGen;
     timing?: {
@@ -170,6 +171,7 @@ export type JournalEntry = {
 export type OpenedProject = {
     session: string;
     projectId: string;
+    fileId: string;
     path: string;
     doc: unknown;
     view: ViewState | null;
@@ -187,9 +189,10 @@ export type PendingEvent = Pick<DomainEvent, 'type' | 'payload'>;
 ### `PhotoStore`
 ```ts
 export interface PhotoStore {
-    importPath(session: string, path: string): Promise<PhotoRef>;
-    importBytes(session: string, bytes: ArrayBuffer): Promise<PhotoRef>;
-    url(id: string, variant: 'display' | 'original'): string;
+    importPath(session: string, path: string, id: string): Promise<PhotoRef>;
+    importBytes(session: string, bytes: ArrayBuffer, id: string, name: string): Promise<PhotoRef>;
+    prune(session: string, keep: string[]): Promise<void>;
+    url(session: string, id: string, variant: 'display' | 'original'): string;
 }
 ```
 
@@ -200,7 +203,9 @@ export interface ProjectRepository {
     open(path: string): Promise<OpenedProject>;
     save(req: SaveReq): Promise<void>;
     saveView(session: string, view: ViewState): Promise<void>;
-    copy(req: CopyProjectReq): Promise<OpenedProject>;
+    copy(req: CopyProjectReq): Promise<OpenedProject & {
+        fromMemory: boolean;
+    }>;
     backupFull(session: string, reason: 'migration'): Promise<void>;
     backups(projectId: string): Promise<BackupInfo[]>;
     restore(req: RestoreReq): Promise<OpenedProject>;

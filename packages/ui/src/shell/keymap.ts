@@ -31,3 +31,29 @@ export function bindHistoryKeys(target: Window, actions: HistoryActions): () => 
   target.addEventListener('keydown', listener);
   return () => target.removeEventListener('keydown', listener);
 }
+
+export function bindPanelKeys(
+  target: Window,
+  actions: { navigator(): void; context(): void },
+): () => void {
+  const listener = (event: KeyboardEvent) => {
+    if (
+      event.defaultPrevented ||
+      event.isComposing ||
+      event.repeat ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      event.shiftKey ||
+      isEditing(event)
+    )
+      return;
+    const key = event.key.toLowerCase();
+    if (key !== 'n' && key !== 'o') return;
+    event.preventDefault();
+    if (key === 'n') actions.navigator();
+    else actions.context();
+  };
+  target.addEventListener('keydown', listener);
+  return () => target.removeEventListener('keydown', listener);
+}

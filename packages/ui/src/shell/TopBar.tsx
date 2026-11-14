@@ -5,6 +5,22 @@ import { SaveStatus } from './SaveStatus';
 import { et } from './i18n/et';
 import { useViewStore } from './view-store';
 
+function PanelIcon({ side }: { side: 'left' | 'right' }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      aria-hidden="true"
+    >
+      <rect x="2" y="3" width="14" height="12" rx="1" />
+      <path d={side === 'left' ? 'M7 3v12' : 'M11 3v12'} />
+    </svg>
+  );
+}
+
 export interface HistoryActions {
   canUndo: boolean;
   canRedo: boolean;
@@ -20,10 +36,13 @@ export function TopBar({
   onRedo,
   children,
 }: HistoryActions & { name: string; status: Status; children?: ReactNode }) {
-  const theme = useViewStore((s) => s.theme);
-  const setTheme = useViewStore((s) => s.setTheme);
   const contextOpen = useViewStore((s) => s.contextOpen);
+  const contextShown = useViewStore((s) => s.contextShown);
   const setContextOpen = useViewStore((s) => s.setContextOpen);
+  const navigatorOpen = useViewStore((s) => s.navigatorOpen);
+  const setNavigatorOpen = useViewStore((s) => s.setNavigatorOpen);
+  const navigatorLabel = navigatorOpen ? et.shell.hideNavigator : et.shell.showNavigator;
+  const contextLabel = contextOpen ? et.shell.hideContext : et.shell.showContext;
   return (
     <header className="pcbk-topbar">
       <a className="pcbk-brand" href="#workspace" aria-label={et.appName}>
@@ -63,23 +82,27 @@ export function TopBar({
           <span aria-hidden="true">↷</span>
         </Button>
         <span className="pcbk-toolbar-divider" />
-        <select
-          aria-label={et.shell.appearance}
-          className="pcbk-theme-select"
-          value={theme}
-          onChange={(e) => setTheme(e.target.value as typeof theme)}
-        >
-          <option value="system">{et.shell.themeSystem}</option>
-          <option value="light">{et.shell.themeLight}</option>
-          <option value="dark">{et.shell.themeDark}</option>
-        </select>
         <Button
           variant="ghost"
-          onClick={() => setContextOpen(!contextOpen)}
-          aria-expanded={contextOpen}
-          aria-controls="pcbk-context"
+          className="pcbk-panel-toggle"
+          onClick={() => setNavigatorOpen(!navigatorOpen)}
+          aria-label={navigatorLabel}
+          aria-expanded={navigatorOpen}
+          aria-controls="pcbk-navigator"
+          title={`${navigatorLabel} · N`}
         >
-          {contextOpen ? et.shell.hideContext : et.shell.showContext}
+          <PanelIcon side="left" />
+        </Button>
+        <Button
+          variant="ghost"
+          className="pcbk-panel-toggle"
+          onClick={() => setContextOpen(!contextOpen)}
+          aria-label={contextLabel}
+          aria-expanded={contextShown}
+          aria-controls="pcbk-context"
+          title={`${contextLabel} · O`}
+        >
+          <PanelIcon side="right" />
         </Button>
       </div>
     </header>

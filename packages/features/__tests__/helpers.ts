@@ -4,11 +4,9 @@ import { createEngine } from '@pcbk/engine';
 import { expect } from 'vitest';
 import * as project from '../project/engine/index';
 import * as components from '../components/engine/index';
+import * as photo from '../photo/engine/index';
 
 const reserved: DocKey[] = [
-  'photos',
-  'activePhotoId',
-  'scale',
   'junctions',
   'connections',
   'netLabels',
@@ -30,7 +28,7 @@ export function setup(doc: BoardDoc = newBoardDoc('Plaat')) {
   expect(project.projectEngine).toBeDefined();
   expect(components.componentsEngine).toBeDefined();
   const result = createEngine({
-    modules: [project.projectEngine, components.componentsEngine],
+    modules: [project.projectEngine, components.componentsEngine, photo.photoEngine],
     reserved,
     clock: { now: () => '2026-11-08T10:00:00.000Z' },
   });

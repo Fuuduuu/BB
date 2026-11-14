@@ -1,0 +1,16 @@
+.pcbk-calibration-form {
+  display: grid;
+  gap: 18px;
+}
+
+.pcbk-calibration-form > p {
+  margin: 0;
+}
+
+.pcbk-calibration-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}

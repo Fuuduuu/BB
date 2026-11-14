@@ -16,3 +16,6 @@
   box-shadow: var(--shadow);
   font: 14px/1.5 var(--f-ui);
 }
+.pcbk-workbench-controls {
+  display: contents;
+}

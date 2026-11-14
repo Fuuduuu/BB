@@ -9,7 +9,7 @@
   font: 14px/1.4 var(--f-ui);
 }
 .pcbk-topbar {
-  height: 52px;
+  height: 40px;
   flex: none;
   display: flex;
   align-items: center;
@@ -66,6 +66,10 @@
   width: 1px;
   background: var(--line);
 }
+.pcbk-panel-toggle {
+  width: 32px;
+  padding: 5px;
+}
 .pcbk-theme-select {
   color: var(--ink-2);
   background: var(--panel);
@@ -78,13 +82,16 @@
 }
 .pcbk-workspace {
   display: grid;
-  grid-template-columns: var(--navigator-width) 4px minmax(0, 1fr) 4px var(--context-width);
+  grid-template-columns: var(--navigator-width) 4px minmax(0, 1fr);
   min-height: 0;
   flex: 1;
   position: relative;
 }
-.pcbk-workspace[data-context-open='false'] {
-  grid-template-columns: var(--navigator-width) 4px minmax(0, 1fr);
+.pcbk-workspace[data-navigator-open='false'] {
+  grid-template-columns: 0 0 minmax(0, 1fr);
+}
+.pcbk-canvas {
+  grid-column: 3;
 }
 .pcbk-navigator,
 .pcbk-context {
@@ -95,7 +102,7 @@
   background: var(--panel);
 }
 .pcbk-pane-heading {
-  height: 48px;
+  height: 36px;
   display: flex;
   align-items: center;
   padding: 0 18px;
@@ -200,7 +207,7 @@
   font-size: 34px;
 }
 .pcbk-bottom-bar {
-  height: 48px;
+  height: 36px;
   flex: none;
   display: flex;
   align-items: center;
@@ -211,17 +218,21 @@
   font-size: 12px;
   color: var(--ink-2);
 }
-.pcbk-ready {
+.pcbk-bottom-modules,
+.pcbk-view-controls {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.pcbk-ready i {
-  display: block;
-  height: 6px;
-  width: 6px;
-  background: var(--ok);
-  border-radius: 50%;
+.pcbk-view-controls {
+  margin-left: auto;
+  flex: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.pcbk-cursor-readout {
+  min-width: 164px;
+  text-align: right;
 }
 .pcbk-error-bar {
   display: flex;
@@ -274,35 +285,35 @@
   font-family: var(--f-mono);
   font-variant-numeric: tabular-nums;
 }
+.pcbk-context {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--context-width);
+  box-shadow: var(--shadow);
+  z-index: 4;
+  border-left: 1px solid var(--line-2);
+}
+.pcbk-resizer[aria-controls='pcbk-context'] {
+  position: absolute;
+  right: var(--context-width);
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 5;
+}
 @media (max-width: 1279px) {
-  .pcbk-workspace,
-  .pcbk-workspace[data-context-open='false'] {
-    grid-template-columns: var(--navigator-width) 4px minmax(0, 1fr);
-  }
-  .pcbk-context {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: var(--context-width);
-    box-shadow: var(--shadow);
-    z-index: 4;
-    border-left: 1px solid var(--line-2);
-  }
-  .pcbk-resizer[aria-controls='pcbk-context'] {
-    position: absolute;
-    right: var(--context-width);
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    z-index: 5;
-  }
   .pcbk-project-heading {
     flex-direction: column;
     gap: 0;
   }
   .pcbk-topbar {
     gap: 14px;
+  }
+  .pcbk-bottom-bar {
+    gap: 8px;
+    padding: 0 8px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

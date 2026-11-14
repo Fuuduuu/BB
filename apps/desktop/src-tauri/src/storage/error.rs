@@ -13,6 +13,9 @@ pub enum Reason {
     NotProject,
     TooNew,
     StaleRev,
+    UnsupportedImage,
+    ImageTooLarge,
+    CorruptImage,
     Unknown,
 }
 

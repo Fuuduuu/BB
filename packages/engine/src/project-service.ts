@@ -11,7 +11,7 @@ import type {
 } from '@pcbk/contracts';
 import { z } from 'zod';
 import { StorageError } from './ports';
-import type { OpenedProject, ProjectRepository } from './ports';
+import type { OpenedProject, PhotoStore, ProjectRepository } from './ports';
 import type { Clock, EngineHost } from './types';
 import { createSaveCoordinator, saveTiming, storageFailure } from './save-coordinator';
 import type { SaveCoordinator, SaveNotice } from './save-coordinator';
@@ -34,6 +34,7 @@ export function createProjectService(opts: {
   engine: DocumentEngine;
   host: EngineHost;
   repo: ProjectRepository;
+  photos: Pick<PhotoStore, 'prune' | 'url' | 'importBytes'>;
   clock: Clock;
   ids: IdGen;
   timing?: { debounceMs: number; maxWaitMs: number };
@@ -101,6 +102,7 @@ export function createProjectService(opts: {
   }
   const info = (context: Context): ProjectInfo => ({
     projectId: context.opened.projectId,
+    fileId: context.opened.fileId,
     path: context.opened.path,
     sessionId: context.sessionId,
     name: opts.host.current()!.doc.name,
@@ -176,6 +178,12 @@ export function createProjectService(opts: {
     const opened = await open();
     try {
       const prepared = await prepare(opened);
+      if (!opened.readOnly) {
+        await opts.photos.prune(
+          opened.session,
+          prepared.doc.photos.map((photo) => photo.id),
+        );
+      }
       // Input may continue during open/migration: flush the previous project's newest state.
       if (before) {
         do {
@@ -256,6 +264,22 @@ export function createProjectService(opts: {
       const parsed = parseViewState(view);
       if (parsed) active?.saver.saveView(parsed);
     },
+    importPhoto(file) {
+      return serial(async () => {
+        if (!active) return err({ code: 'stale_session' });
+        return ok(
+          await opts.photos.importBytes(
+            active.opened.session,
+            file.bytes,
+            opts.ids.newId('pho'),
+            file.name,
+          ),
+        );
+      });
+    },
+    photoUrl(id, variant) {
+      return active ? opts.photos.url(active.opened.session, id, variant) : null;
+    },
     status(listener) {
       listeners.add(listener);
       if (latest) notify(new Set([listener]), latest);
@@ -272,7 +296,7 @@ export function createProjectService(opts: {
         const current = opts.host.current()!;
         const journal = opts.host.drainJournal();
         const copiedView = before.saver.currentView();
-        let opened: OpenedProject;
+        let opened: Awaited<ReturnType<ProjectRepository['copy']>>;
         try {
           opened = await opts.repo.copy({
             ...params,
@@ -300,7 +324,7 @@ export function createProjectService(opts: {
         // Keep the live document/history: commands made during copy are still pending.
         const context = coordinate(opened, sessionId, current.rev, false, latestView);
         await retire(before.opened.session);
-        return ok(info(context));
+        return ok({ ...info(context), fromMemory: opened.fromMemory });
       });
     },
     backups(req) {

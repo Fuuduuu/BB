@@ -11,6 +11,9 @@ export type StorageReason =
   | 'not_project'
   | 'too_new'
   | 'stale_rev'
+  | 'unsupported_image'
+  | 'image_too_large'
+  | 'corrupt_image'
   | 'unknown';
 
 export type EngineError =

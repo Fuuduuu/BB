@@ -3,6 +3,8 @@ import type { RecentProject } from '@pcbk/contracts';
 import { Button } from '../kit/Button';
 import { Dialog } from '../kit/Dialog';
 import { et } from './i18n/et';
+import { HomePhotoInput } from './HomePhotoInput';
+import { useViewStore } from './view-store';
 import './project-screens.css';
 
 export type RecentProjectCard = RecentProject;
@@ -13,6 +15,8 @@ export interface StartScreenProps {
   openAvailable?: boolean;
   onPickProjectFile?(): void;
   showBrowserStorage?: boolean;
+  busy?: boolean;
+  onPhotoFiles?(files: Iterable<File> | ArrayLike<File>): void;
   onNew(): void;
   onOpen(path: string): void;
   onRestore?(project: RecentProjectCard): void;
@@ -57,11 +61,15 @@ export function StartScreen({
   openAvailable = true,
   onPickProjectFile,
   showBrowserStorage = true,
+  busy = false,
+  onPhotoFiles,
   onNew,
   onOpen,
   onRestore,
   onRemoveRecent,
 }: StartScreenProps) {
+  const theme = useViewStore((state) => state.theme);
+  const setTheme = useViewStore((state) => state.setTheme);
   const [openList, setOpenList] = useState(false);
   return (
     <main className="pcbk-start">
@@ -76,6 +84,7 @@ export function StartScreen({
             <span>{et.brand.pcb}</span> {et.brand.name}
           </h1>
           <p>{et.project.intro}</p>
+          {onPhotoFiles && <HomePhotoInput onFiles={onPhotoFiles} busy={busy} />}
           <div className="pcbk-start__actions">
             <Button variant="primary" onClick={onNew}>
               {et.project.newBoard}
@@ -121,6 +130,21 @@ export function StartScreen({
             </div>
           )}
         </section>
+        <footer className="pcbk-start__appearance">
+          <label>
+            {et.shell.appearance}
+            <select
+              aria-label={et.shell.appearance}
+              className="pcbk-theme-select"
+              value={theme}
+              onChange={(event) => setTheme(event.target.value as typeof theme)}
+            >
+              <option value="system">{et.shell.themeSystem}</option>
+              <option value="light">{et.shell.themeLight}</option>
+              <option value="dark">{et.shell.themeDark}</option>
+            </select>
+          </label>
+        </footer>
       </div>
       {openList && (
         <Dialog open title={et.project.openTitle} onClose={() => setOpenList(false)}>

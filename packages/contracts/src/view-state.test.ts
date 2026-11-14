@@ -1,6 +1,74 @@
 import { expect, test } from 'vitest';
 import { parseViewState } from './view-state';
 
+test('old_view_without_navigator_open_defaults_to_open', () => {
+  expect(
+    parseViewState({
+      navigatorWidth: 410,
+      navigatorTab: 'log',
+      contextWidth: 390,
+      contextOpen: false,
+      boardView: { zoom: 2, pan: { x: 10, y: -30 } },
+      modules: { photo: { opacity: 0.6 } },
+    }),
+  ).toEqual({
+    navigatorWidth: 410,
+    navigatorOpen: true,
+    navigatorTab: 'log',
+    contextWidth: 390,
+    contextOpen: false,
+    boardView: { zoom: 2, pan: { x: 10, y: -30 } },
+    modules: { photo: { opacity: 0.6 } },
+  });
+});
+
+test.each([null, 0, 1, '', 'false', [], {}, NaN].map((navigatorOpen) => ({ navigatorOpen })))(
+  'invalid navigator visibility defaults open without losing view (%j)',
+  ({ navigatorOpen }) => {
+    expect(parseViewState({ navigatorOpen, navigatorWidth: 410 })).toMatchObject({
+      navigatorOpen: true,
+      navigatorWidth: 410,
+    });
+  },
+);
+
+test.each([true, false])('preserves navigator visibility (%j)', (navigatorOpen) => {
+  expect(parseViewState({ navigatorOpen })?.navigatorOpen).toBe(navigatorOpen);
+});
+
+test('computed context visibility is excluded from saved metadata', () => {
+  expect(parseViewState({ contextShown: true })).not.toHaveProperty('contextShown');
+});
+
+test.each([undefined, null, [], 'broken', 7, true])(
+  'invalid_module_view_falls_back_without_losing_view (%j)',
+  (modules) => {
+    expect(
+      parseViewState({
+        navigatorWidth: 400,
+        navigatorTab: 'log',
+        contextWidth: 380,
+        contextOpen: false,
+        boardView: { zoom: 2, pan: { x: -20, y: 30 } },
+        modules,
+      }),
+    ).toEqual({
+      navigatorWidth: 400,
+      navigatorOpen: true,
+      navigatorTab: 'log',
+      contextWidth: 380,
+      contextOpen: false,
+      boardView: { zoom: 2, pan: { x: -20, y: 30 } },
+      modules: {},
+    });
+  },
+);
+
+test('keeps opaque module records without interpreting their fields', () => {
+  const modules = { photo: { opacity: 'bad', extra: [7] }, future: { enabled: true } };
+  expect(parseViewState({ modules })?.modules).toEqual(modules);
+});
+
 test.each([
   undefined,
   null,
@@ -19,10 +87,12 @@ test.each([
     }),
   ).toEqual({
     navigatorWidth: 400,
+    navigatorOpen: true,
     navigatorTab: 'log',
     contextWidth: 380,
     contextOpen: false,
     boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    modules: {},
   });
 });
 
@@ -61,7 +131,9 @@ test.each([
 ])('normalizes optional view fields and strips unrelated values: %j', ({ raw, expected }) => {
   expect(parseViewState(raw)).toEqual({
     ...expected,
+    navigatorOpen: true,
     boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+    modules: {},
   });
 });
 

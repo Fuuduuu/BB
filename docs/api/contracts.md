@@ -27,6 +27,7 @@ export interface AppHost {
 ```ts
 export type BackupInfo = {
     file: string;
+    fileId?: string;
     kind: 'full' | 'doc';
     at: string;
     base?: string;
@@ -223,6 +224,7 @@ export function parseViewState(input: unknown): Required<ViewState> | null;
 ```ts
 export type ProjectInfo = {
     projectId: string;
+    readonly fileId: string;
     sessionId: string;
     name: string;
     path: string;
@@ -240,7 +242,14 @@ export interface ProjectService {
     discard(): Promise<Result<void, EngineError>>;
     flush(): Promise<Result<void, EngineError>>;
     saveView(view: ViewState): void;
-    copy(req: CopyReq): Promise<Result<ProjectInfo, EngineError>>;
+    importPhoto(file: {
+        bytes: ArrayBuffer;
+        name: string;
+    }): Promise<Result<PhotoRef, EngineError>>;
+    photoUrl(id: string, variant: 'display' | 'original'): string | null;
+    copy(req: CopyReq): Promise<Result<ProjectInfo & {
+        fromMemory: boolean;
+    }, EngineError>>;
     backups(req?: BackupsReq): Promise<Result<BackupInfo[], EngineError>>;
     restore(req: RestoreReq): Promise<Result<ProjectInfo, EngineError>>;
     status(fn: (s: SaveStatus & {
@@ -312,7 +321,7 @@ export interface Snapshot {
 
 ### `StorageReason`
 ```ts
-export type StorageReason = 'disk_full' | 'read_only' | 'missing' | 'locked' | 'exists' | 'not_project' | 'too_new' | 'stale_rev' | 'unknown';
+export type StorageReason = 'disk_full' | 'read_only' | 'missing' | 'locked' | 'exists' | 'not_project' | 'too_new' | 'stale_rev' | 'unsupported_image' | 'image_too_large' | 'corrupt_image' | 'unknown';
 ```
 
 ### `Unsubscribe`
@@ -324,9 +333,11 @@ export type Unsubscribe = () => void;
 ```ts
 export type ViewState = {
     navigatorWidth: number;
+    navigatorOpen: boolean;
     navigatorTab: string;
     contextWidth: number;
     contextOpen: boolean;
     boardView?: BoardView;
+    modules?: Record<string, unknown>;
 };
 ```

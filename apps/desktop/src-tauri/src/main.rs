@@ -8,6 +8,7 @@ use std::{
 
 use pcbk_desktop::{
     ipc::{self, InitialPath},
+    ipc_photo,
     storage::{ProjectStore, SystemClock},
 };
 use tauri::{Emitter, Manager};
@@ -40,6 +41,24 @@ fn main() {
         &env::current_dir().unwrap_or_default(),
     );
     tauri::Builder::default()
+        .register_asynchronous_uri_scheme_protocol("pcbk", |context, request, responder| {
+            let app = context.app_handle().clone();
+            std::thread::spawn(move || {
+                let route = if request.method() == tauri::http::Method::GET {
+                    request
+                        .uri()
+                        .path_and_query()
+                        .map(|value| value.as_str())
+                        .unwrap_or("")
+                } else {
+                    ""
+                };
+                responder.respond(pcbk_desktop::photo_protocol_response(
+                    &app.state::<ProjectStore>(),
+                    route,
+                ));
+            });
+        })
         .manage(InitialPath::new(initial))
         .plugin(tauri_plugin_single_instance::init(|app, arguments, cwd| {
             if let Some(window) = app.get_webview_window("main") {
@@ -89,6 +108,9 @@ fn main() {
             ipc::recent_add,
             ipc::recent_remove,
             ipc::project_close,
+            ipc_photo::photo_import_path,
+            ipc_photo::photo_import_bytes,
+            ipc_photo::photo_prune,
             ipc::default_project_path,
             ipc::take_initial_path,
             ipc::log_export,

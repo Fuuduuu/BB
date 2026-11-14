@@ -2,7 +2,7 @@ import { memo } from 'react';
 import type { Snapshot } from '@pcbk/contracts';
 import type { BoardPlacement } from '@pcbk/domain';
 import { boardPads, bodyOutline } from '@pcbk/domain/geometry';
-import { SceneText } from '@pcbk/ui';
+import { SceneText, screenToSceneVector, useSceneTransform } from '@pcbk/ui';
 import { componentLabelLayout, isComponentLabelVisible } from './hits';
 import { PinLabels, PinMarker } from './PinMarker';
 
@@ -68,7 +68,9 @@ function Labels({
   dx: number;
   dy: number;
 }) {
+  const transform = useSceneTransform();
   const { at, textSize, valueY } = componentLabelLayout(component.board, pxPerMm);
+  const valueOffset = screenToSceneVector(transform, { x: 0, y: valueY - at.y });
   if (!isComponentLabelVisible(textSize, zoom)) return null;
   const textProps = {
     x: at.x,
@@ -94,7 +96,7 @@ function Labels({
         {!component.identified && <tspan fontSize={textSize * 0.75}> ?</tspan>}
       </SceneText>
       {component.value && (
-        <SceneText {...textProps} y={valueY}>
+        <SceneText {...textProps} x={at.x + valueOffset.x} y={at.y + valueOffset.y}>
           {component.value}
         </SceneText>
       )}

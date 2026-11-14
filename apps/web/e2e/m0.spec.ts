@@ -122,15 +122,18 @@ test('stored projects remain discoverable when the recent index is absent', asyn
   await expect(page.getByRole('heading', { name: 'Leitav plaat', exact: true })).toBeVisible();
 });
 test('chosen theme stays active when returning to the start screen', async ({ page }) => {
-  await createBoard(page, 'Teema katse');
+  await page.goto('/');
   await page.getByRole('combobox', { name: 'Välimus' }).selectOption('dark');
+  await createBoard(page, 'Teema katse');
+  await expect(page.getByRole('combobox', { name: 'Välimus' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Tagasi avalehele', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Uus plaat', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe('dark');
 });
 test('theme survives a full reload as a UI preference', async ({ page }) => {
-  await createBoard(page, 'Püsiv teema');
+  await page.goto('/');
   await page.getByRole('combobox', { name: 'Välimus' }).selectOption('dark');
+  await createBoard(page, 'Püsiv teema');
   await page.reload();
   await expect(page.getByRole('button', { name: 'Uus plaat', exact: true })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('pcbk.theme'))).toBe('dark');
@@ -138,6 +141,7 @@ test('theme survives a full reload as a UI preference', async ({ page }) => {
 });
 test('context panel width and collapsed state survive reopening', async ({ page }) => {
   await createBoard(page, 'Paneeli mälu');
+  await addResistor(page);
   const handle = page.getByRole('separator', { name: 'Omaduste paneeli laius' });
   await handle.focus();
   await page.keyboard.press('ArrowLeft');
@@ -167,10 +171,12 @@ test('context panel width and collapsed state survive reopening', async ({ page 
   expect(savedViews).toEqual([
     {
       navigatorWidth: 300,
-      navigatorTab: 'components',
+      navigatorOpen: true,
+      navigatorTab: 'unplaced',
       contextWidth: 360,
       contextOpen: false,
       boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+      modules: {},
     },
   ]);
   await page.reload();
@@ -178,6 +184,8 @@ test('context panel width and collapsed state survive reopening', async ({ page 
   await expect(page.getByRole('heading', { name: 'Paneeli mälu', exact: true })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'Omadused', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Näita omadusi', exact: true }).click();
+  await expect(page.getByRole('complementary', { name: 'Omadused', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Vali R1', exact: true }).click();
   await expect(page.getByRole('separator', { name: 'Omaduste paneeli laius' })).toHaveAttribute(
     'aria-valuenow',
     '360',

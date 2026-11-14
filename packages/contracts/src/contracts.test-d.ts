@@ -129,6 +129,9 @@ expectTypeOf<StorageReason>().toEqualTypeOf<
   | 'not_project'
   | 'too_new'
   | 'stale_rev'
+  | 'unsupported_image'
+  | 'image_too_large'
+  | 'corrupt_image'
   | 'unknown'
 >();
 
@@ -152,16 +155,24 @@ const copy: CopyReq = { dest: 'Koopia.pcbk', identity: 'new' };
 const restore: RestoreReq = { backup: 'backup.pcbk', dest: 'Taastatud.pcbk' };
 const view: ViewState = {
   navigatorWidth: 260,
+  navigatorOpen: true,
   navigatorTab: 'components',
   contextWidth: 340,
   contextOpen: true,
 };
 expectTypeOf<ProjectInfo['view']>().toEqualTypeOf<ViewState | null>();
+expectTypeOf<ProjectInfo['fileId']>().toEqualTypeOf<string>();
+expectTypeOf<BackupInfo['fileId']>().toEqualTypeOf<string | undefined>();
+declare const projectInfo: ProjectInfo;
+// @ts-expect-error physical file identity is owned by storage
+projectInfo.fileId = 'replacement';
 expectTypeOf(projects.create(create)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
 expectTypeOf(projects.open(open)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
 expectTypeOf(projects.close()).toEqualTypeOf<Promise<Result<void, EngineError>>>();
 expectTypeOf(projects.flush()).toEqualTypeOf<Promise<Result<void, EngineError>>>();
-expectTypeOf(projects.copy(copy)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
+expectTypeOf(projects.copy(copy)).toEqualTypeOf<
+  Promise<Result<ProjectInfo & { fromMemory: boolean }, EngineError>>
+>();
 expectTypeOf(projects.backups()).toEqualTypeOf<Promise<Result<BackupInfo[], EngineError>>>();
 expectTypeOf(projects.restore(restore)).toEqualTypeOf<Promise<Result<ProjectInfo, EngineError>>>();
 expectTypeOf(projects.saveView(view)).toBeVoid();

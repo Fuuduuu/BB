@@ -234,7 +234,13 @@ fn backup_failure_does_not_fail_save() {
 #[test]
 fn corrupt_documents_and_stranded_tmp_do_not_block_backups() {
     let f = Fixture::new();
-    let dir = f.app_data.join("backups").join(PROJECT_ID);
+    let created = f.create("original.pcbk");
+    f.store.close(&created.session).unwrap();
+    let dir = f
+        .app_data
+        .join("backups")
+        .join(PROJECT_ID)
+        .join(&created.file_id);
     fs::create_dir_all(&dir).unwrap();
     let oldest = dir.join("2026-11-01-v1.pcbk");
     for day in 1..=5 {
@@ -259,7 +265,7 @@ fn corrupt_documents_and_stranded_tmp_do_not_block_backups() {
     assert_eq!(f.store.backups(PROJECT_ID).unwrap().len(), 5);
 
     f.clock.set("2026-11-06T08:00:00+02:00");
-    let opened = f.open_with_daily_backup("original.pcbk");
+    let opened = f.store.open(&f.path("original.pcbk")).unwrap();
     f.store.close(&opened.session).unwrap();
 
     let backups = f.store.backups(PROJECT_ID).unwrap();

@@ -28,10 +28,12 @@ test('memory view writes normalize legacy fields and exclude theme without chang
     ...before,
     view: {
       navigatorWidth: 420,
+      navigatorOpen: true,
       navigatorTab: 'log',
       contextWidth: 340,
       contextOpen: true,
       boardView: { zoom: 1, pan: { x: 0, y: 0 } },
+      modules: {},
     },
   };
   expect(store.files.get(opened.path)).toEqual(expected);

@@ -6,13 +6,14 @@ Visuaalne keel tuleb prototüübist ([prototype/src/app.css](../prototype/src/ap
 
 | Ala | Mõõt | Sisu |
 |---|---|---|
-| Ülariba | 52 px | ☰, projekti nimi ja salvestuse olek, edenemine, **Plaat \| Skeem**, ↶ ↷, `Ctrl+K`, Ekspordi |
-| Navigaator (vasak) | 300 px, muudetav 240–420 | Teek · Plaadil · Paigutamata (plaadile / skeemile) · Võrgud · Mõõtmised · Logi |
+| Ülariba | 40 px | navigaatori ja omaduste lülitid (`N`, `O`), projekti nimi ja salvestuse olek, edenemine, **Plaat \| Skeem**, ↶ ↷, `Ctrl+K`, Ekspordi |
+| Navigaator (vasak) | 300 px, muudetav 240–420, peidetav (`N`) | Teek · Plaadil · Paigutamata (plaadile / skeemile) · Võrgud · Mõõtmised · Logi |
 | Lõuend (kesk) | ülejäänu | tööriistariba vasakus servas (40 px nupud), ankru- ja abisildid |
-| Kontekstipaneel (parem) | 340 px, muudetav 280–460, kokkupandav | valitud objekti sektsioonid või „Järgmine samm“ |
-| Mõõteriba (all) | 48 px | foto nähtavus (kohe foto all), kontrast, ⟳, ⇋, poole valik, kihid, „Näita kahtlaseid“, suum, mõõtkava, koordinaadid |
+| Kontekstipaneel (parem) | 340 px, muudetav 280–460, alati ülekattena (`O`) | valitud objekti sektsioonid või nähtav kinnitatud sektsioon; tühja valiku korral peidetud |
+| Paneeli pealkiri | 36 px | paneeli nimi |
+| Mõõteriba (all) | 36 px | foto nähtavus (kohe foto all), kontrast, ⟳, ⇋, poole valik, kihid, „Näita kahtlaseid“, suum, mõõtkava, koordinaadid |
 
-- Minimaalne akna suurus on 1100 × 700. Alla 1280 px laiuse on kontekstipaneel ülekattena ja avaneb valikul.
+- Minimaalne akna suurus on 1100 × 700. Kontekstipaneel on igal laiusel ülekattena ja avaneb valikul või kinnitatud sektsiooni nähtavaks muutumisel; lõuendi suurus ei muutu.
 - Paneelide laius ja olek (avatud/kokku pandud) jäävad meelde.
 - Tahvli paigutus tuleb M5-s (navigaator sahtlina, kontekst alt üles tõusva lehena).
 

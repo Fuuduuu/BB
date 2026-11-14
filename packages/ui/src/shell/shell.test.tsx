@@ -139,6 +139,10 @@ test('every StorageReason has an Estonian text', () => {
     exists: 'See failinimi on juba kasutusel. Vali uus failinimi.',
     not_project: 'see fail ei ole PCB Kaardistaja projekt',
     too_new: 'fail on tehtud uuema äpiga',
+    unsupported_image:
+      'Seda pildivormingut ei saa avada. Salvesta pilt tavalise JPEG- või PNG-failina.',
+    image_too_large: 'Pilt on liiga suur (üle 100 MP või 200 MB).',
+    corrupt_image: 'Pildifail on vigane või poolik.',
     stale_rev:
       'Projekti muudeti teises aknas. Sinu muudatused on alles ainult selles aknas; salvesta need mujale.',
     unknown: 'tundmatu viga',
@@ -217,7 +221,7 @@ test('history buttons follow the engine snapshot rather than a second UI history
     false,
   );
 });
-test('a restored open context panel stays open in a narrow window', () => {
+test('a restored context preference shows the panel after selection in a narrow window', () => {
   const previous = window.matchMedia;
   window.matchMedia = () =>
     ({
@@ -228,11 +232,15 @@ test('a restored open context panel stays open in a narrow window', () => {
   try {
     useViewStore.getState().restore({
       navigatorWidth: 300,
+      navigatorOpen: true,
       navigatorTab: 'components',
       contextWidth: 360,
       contextOpen: true,
     });
     setup();
+    expect(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
+    expect(useViewStore.getState().contextOpen).toBe(true);
+    act(() => useSessionStore.getState().setSelection({ items: [{ kind: 'net', id: 'net_1' }] }));
     expect(screen.getByRole('complementary', { name: et.shell.context })).toBeTruthy();
     expect(useViewStore.getState().contextWidth).toBe(360);
   } finally {
@@ -241,6 +249,7 @@ test('a restored open context panel stays open in a narrow window', () => {
 });
 test('pane resizing is keyboard accessible and retains the chosen width', () => {
   setup();
+  act(() => useSessionStore.getState().setSelection({ items: [{ kind: 'net', id: 'net_1' }] }));
   fireEvent.keyDown(screen.getByRole('separator', { name: et.shell.resizeNavigator }), {
     key: 'ArrowRight',
   });
@@ -284,7 +293,8 @@ test('switching projects never renders the previous selection in the new project
     expect(screen.getByText('Valitud')).toBeTruthy();
     act(() => engine.replace(snapshot('session-b', 0, 'Teine plaat')));
     expect(screen.queryByText(et.error.panel)).toBeNull();
-    expect(screen.getByText(et.shell.contextEmpty)).toBeTruthy();
+    expect(screen.queryByText(et.shell.contextEmpty)).toBeNull();
+    expect(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
   } finally {
     restore();
   }

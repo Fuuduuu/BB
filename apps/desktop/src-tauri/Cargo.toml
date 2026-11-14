@@ -39,6 +39,10 @@ log = "=0.4.35"
 tauri-plugin-dialog = { version = "=2.8.4", optional = true }
 tauri-plugin-log = { version = "=2.10.1", optional = true }
 tauri-plugin-single-instance = { version = "=2.5.5", optional = true }
+image = { version = "=0.25.10", default-features = false, features = ["jpeg", "png"] }
+kamadak-exif = "=0.6.2"
+zune-jpeg = "=0.5.15"
+zune-core = "=0.5.3"
 
 [build-dependencies]
 tauri-build = { version = "=2.7.4", optional = true , features = [] }

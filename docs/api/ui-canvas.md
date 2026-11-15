@@ -115,6 +115,24 @@ export type HitShape = {
 };
 ```
 
+### `LabelObstacle`
+
+Screen-aligned bounds, with scene center and half extents along screen axes in scene units.
+
+```ts
+export interface LabelObstacle {
+    owner: string;
+    componentId?: string;
+    center: Vec2;
+    half: Vec2;
+}
+```
+
+### `LabelObstaclesContext`
+```ts
+export const LabelObstaclesContext: import("react").Context<readonly LabelObstacle[]>;
+```
+
 ### `LayerSpec`
 ```ts
 export type LayerSpec = {
@@ -126,7 +144,29 @@ export type LayerSpec = {
         zoom: number;
     }): ReactNode;
     hits?(snapshot: Snapshot, zoom: number, sceneTransform: SceneTransform): HitItem[];
+    obstacles?(snapshot: Snapshot, zoom: number, sceneTransform: SceneTransform): LabelObstacle[];
 };
+```
+
+### `MONO_ADVANCE_EM`
+
+Calibrated against the application's Martian Mono font in Chromium.
+
+```ts
+export const MONO_ADVANCE_EM: 0.72;
+```
+
+### `MONO_LINE_EM`
+```ts
+export const MONO_LINE_EM: 1.25;
+```
+
+### `monoLabelHalf`
+
+Conservative mono-font bounds including halo and one screen pixel of safety on each side.
+
+```ts
+export function monoLabelHalf(text: string, fontSize: number, zoom: number, haloPx?: number): Vec2;
 ```
 
 ### `SceneText`
@@ -142,6 +182,11 @@ export function sceneToScreenVector(transform: SceneTransform, { x, y }: Vec2): 
 ### `SceneTransform`
 ```ts
 export type SceneTransform = PhotoRef['transform'];
+```
+
+### `screenBoxesOverlap`
+```ts
+export function screenBoxesOverlap(a: LabelObstacle, b: LabelObstacle, transform: SceneTransform): boolean;
 ```
 
 ### `screenToSceneVector`
@@ -180,6 +225,11 @@ export type TranslatePreviewData = {
     dx: number;
     dy: number;
 };
+```
+
+### `useLabelObstacles`
+```ts
+export function useLabelObstacles(): readonly LabelObstacle[];
 ```
 
 ### `useSceneTransform`

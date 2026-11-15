@@ -1,7 +1,12 @@
 import { createElement } from 'react';
 import type { LayerSpec } from '@pcbk/ui';
 import { ComponentsLayer } from './ComponentsLayer';
-import { componentBodyHits, componentLabelHits, componentPinHits } from './hits';
+import {
+  componentBodyHits,
+  componentLabelHits,
+  componentLabelObstacles,
+  componentPinHits,
+} from './hits';
 
 export const COMPONENTS_LAYERS: LayerSpec[] = [
   {
@@ -21,5 +26,6 @@ export const COMPONENTS_LAYERS: LayerSpec[] = [
     z: 60,
     render: (props) => createElement(ComponentsLayer, { ...props, kind: 'labels' }),
     hits: componentLabelHits,
+    obstacles: componentLabelObstacles,
   },
 ];

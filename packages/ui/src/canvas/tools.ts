@@ -3,6 +3,7 @@ import type { Vec2 } from '@pcbk/domain';
 import type { JSX, ReactNode } from 'react';
 import type { Preview, Selection } from '../shell/session-store';
 import type { HitIndex, HitItem } from './hit-index';
+import type { LabelObstacle } from './label-obstacles';
 import type { SceneTransform } from './stage';
 
 export interface CanvasPointer {
@@ -48,4 +49,5 @@ export type LayerSpec = {
   z: number;
   render(props: { snapshot: Snapshot; preview: Preview | null; zoom: number }): ReactNode;
   hits?(snapshot: Snapshot, zoom: number, sceneTransform: SceneTransform): HitItem[];
+  obstacles?(snapshot: Snapshot, zoom: number, sceneTransform: SceneTransform): LabelObstacle[];
 };

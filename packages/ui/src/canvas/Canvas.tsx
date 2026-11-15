@@ -8,6 +8,7 @@ import { useSessionStore } from '../shell/session-store';
 import type { Preview } from '../shell/session-store';
 import type { KeySpec } from '../shell/UiRegistry';
 import { createHitIndex } from './hit-index';
+import { LabelObstaclesContext } from './label-obstacles';
 import { useCanvasControls } from './use-canvas-controls';
 import { createPanToolSpec } from './PanTool';
 import { createSelectToolSpec } from './SelectTool';
@@ -70,14 +71,19 @@ export function Canvas({
   const lodDelay = useRef<number>();
   const lodFrame = useRef<number>();
   const current = useRef({ snapshot, execute, onViewChange });
-  const cache = useRef<{
-    layers: typeof layers;
-    rev: number;
-    sessionId: string;
-    lodZoom: number;
-    sceneTransform: SceneTransform;
-    index: ReturnType<typeof createHitIndex>;
-  }>();
+  // Snapshot identity may change for selection/preview; geometry changes with its revision/session.
+  const layerData = useMemo(
+    () => ({
+      index: createHitIndex(
+        layers.flatMap((layer) => layer.hits?.(snapshot, lodZoom, sceneTransform) ?? []),
+      ),
+      obstacles: layers.flatMap(
+        (layer) => layer.obstacles?.(snapshot, lodZoom, sceneTransform) ?? [],
+      ),
+    }),
+    [layers, snapshot.rev, snapshot.sessionId, lodZoom, sceneTransform],
+  );
+  const cache = useRef(layerData);
   const gesture = useRef<{ pointerId: number; tool: CanvasTool } | null>(null);
   const space = useRef(false);
   const preview = useSessionStore((store) => store.preview);
@@ -189,26 +195,8 @@ export function Canvas({
     const previousSnapshot = current.current.snapshot;
     current.current = { snapshot, execute, onViewChange };
     if (gesture.current && previousSnapshot.rev !== snapshot.rev) cancel(active);
-    const previous = cache.current;
-    if (
-      previous?.layers !== layers ||
-      previous.rev !== snapshot.rev ||
-      previous.sessionId !== snapshot.sessionId ||
-      previous.lodZoom !== lodZoom ||
-      previous.sceneTransform !== sceneTransform
-    ) {
-      cache.current = {
-        layers,
-        rev: snapshot.rev,
-        sessionId: snapshot.sessionId,
-        lodZoom,
-        sceneTransform,
-        index: createHitIndex(
-          layers.flatMap((layer) => layer.hits?.(snapshot, lodZoom, sceneTransform) ?? []),
-        ),
-      };
-    }
-  }, [active, cancel, layers, snapshot, execute, onViewChange, lodZoom, sceneTransform]);
+    cache.current = layerData;
+  }, [active, cancel, snapshot, execute, onViewChange, layerData]);
   useLayoutEffect(() => cancelLod, [cancelLod]);
   useLayoutEffect(() => applyView(view), [applyView, view]);
   useLayoutEffect(
@@ -376,8 +364,10 @@ export function Canvas({
             />
           )}
           <SceneTransformContext.Provider value={sceneTransform}>
-            <Layers layers={layers} snapshot={snapshot} preview={preview} lodZoom={lodZoom} />
-            {active.overlay?.(api)}
+            <LabelObstaclesContext.Provider value={layerData.obstacles}>
+              <Layers layers={layers} snapshot={snapshot} preview={preview} lodZoom={lodZoom} />
+              {active.overlay?.(api)}
+            </LabelObstaclesContext.Provider>
           </SceneTransformContext.Provider>
         </g>
       </g>

@@ -3,8 +3,8 @@ import type { Snapshot } from '@pcbk/contracts';
 import type { BoardPlacement } from '@pcbk/domain';
 import { footprintGeometry } from '@pcbk/domain/footprints';
 import { boardPads, bodyOutline, padToBoard } from '@pcbk/domain/geometry';
-import { SceneText, screenToSceneVector, useSceneTransform } from '@pcbk/ui';
-import { componentLabelLayout, isComponentLabelVisible } from './hits';
+import { SceneText, useSceneTransform } from '@pcbk/ui';
+import { componentLabelBox, isComponentLabelVisible } from './hits';
 import { PinLabels, PinMarker } from './PinMarker';
 
 export type ComponentLayerKind = 'bodies' | 'pins' | 'labels';
@@ -86,12 +86,7 @@ function Labels({
   dy: number;
 }) {
   const transform = useSceneTransform();
-  const { at, textSize, valueY } = componentLabelLayout(
-    component.board,
-    pxPerMm,
-    Boolean(component.value),
-  );
-  const valueOffset = screenToSceneVector(transform, { x: 0, y: valueY - at.y });
+  const { at, textSize, valueAt } = componentLabelBox(component, pxPerMm, zoom, transform);
   if (!isComponentLabelVisible(textSize, zoom)) return null;
   const textProps = {
     x: at.x,
@@ -117,7 +112,7 @@ function Labels({
         {!component.identified && <tspan fontSize={textSize * 0.75}> ?</tspan>}
       </SceneText>
       {component.value && (
-        <SceneText {...textProps} x={at.x + valueOffset.x} y={at.y + valueOffset.y}>
+        <SceneText {...textProps} x={valueAt.x} y={valueAt.y}>
           {component.value}
         </SceneText>
       )}

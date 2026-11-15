@@ -44,6 +44,6 @@ test('qfp_reference_and_value_are_rendered_above_top_pads', () => {
       />
     </svg>,
   );
-  expect(Number(screen.getByText('U1').getAttribute('y'))).toBeCloseTo(155.8);
-  expect(Number(screen.getByText('MCU').getAttribute('y'))).toBeCloseTo(175);
+  expect(Number(screen.getByText('U1').getAttribute('y'))).toBeCloseTo(152.8);
+  expect(Number(screen.getByText('MCU').getAttribute('y'))).toBeCloseTo(172);
 });

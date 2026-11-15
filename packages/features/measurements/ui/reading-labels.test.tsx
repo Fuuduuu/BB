@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import type { SceneTransform } from '@pcbk/ui';
 import type { BoardDoc } from '@pcbk/domain';
+import { boardPads } from '@pcbk/domain/geometry';
 import { expect, test } from 'vitest';
 import { mountMeasurements, pinRef, pointer } from '../__tests__/workspace';
 
@@ -46,6 +47,15 @@ test('reading_label_shown_on_pin', () => {
   expect(label.getAttribute('font-family')).toBe('var(--f-mono)');
 });
 
+test('reading_label_insets_glyph_inside_halo_box', () => {
+  mountMeasurements({ seed });
+  const label = screen.getByText('4,98 V');
+  const dx = Number(label.getAttribute('dx'));
+  const dy = Number(label.getAttribute('dy'));
+  // The candidate starts at the padded box edge: move its text anchor 2px inside at zoom 1.
+  expect(Math.abs(dx) - Math.abs(dy)).toBeCloseTo(2);
+});
+
 test('reading_label_points_away_from_component_body', () => {
   const { engine } = mountMeasurements({
     seed(doc) {
@@ -70,7 +80,7 @@ test('reading_label_points_away_from_component_body', () => {
     expect(label.getAttribute('text-anchor')).toBe(anchor);
     const dy = Number(label.getAttribute('dy'));
     expect(dy).toBeLessThan(0);
-    expect(Number(label.getAttribute('dx'))).toBe(anchor === 'end' ? dy : -dy);
+    expect(Number(label.getAttribute('dx'))).toBe(anchor === 'end' ? dy - 2 : -dy + 2);
   };
 
   expectDirection('4,98 V', 'end');
@@ -85,7 +95,7 @@ test('reading_label_points_away_from_component_body', () => {
 });
 
 test('reading_label_follows_drag_preview', () => {
-  const { engine, host, svg, pinPoint } = mountMeasurements({ seed });
+  const { engine, host, svg, pinPoint } = mountMeasurements({ seed: seedLabelCollision });
   const before = engine.snapshot();
   const pin = pinPoint('1');
   const layer = svg.querySelector('[data-layer="measurements.readings"]')!;
@@ -155,9 +165,127 @@ test('reading_label_side_follows_screen_under_all_8_transforms', () => {
     expect(Number(label.getAttribute('dy'))).toBeLessThan(0);
     expect(Number(label.getAttribute('dx'))).toBe(
       cases[transform] === 'end'
-        ? Number(label.getAttribute('dy'))
-        : -Number(label.getAttribute('dy')),
+        ? Number(label.getAttribute('dy')) - 2
+        : -Number(label.getAttribute('dy')) + 2,
     );
     cleanup();
   }
+});
+
+function textBounds(text: Element) {
+  const size = Number(text.getAttribute('font-size'));
+  // Chromium's measured 59.4px advance for seven characters at 12px, independent of the estimator.
+  const width = Array.from(text.textContent ?? '').length * (59.4 / 7 / 12) * size;
+  const x = Number(text.getAttribute('x')) + Number(text.getAttribute('dx'));
+  const y = Number(text.getAttribute('y')) + Number(text.getAttribute('dy'));
+  const anchor = text.getAttribute('text-anchor');
+  const left = x - (anchor === 'end' ? width : anchor === 'middle' ? width / 2 : 0);
+  return { left, right: left + width, top: y - (1.25 * size) / 2, bottom: y + (1.25 * size) / 2 };
+}
+
+function boundsOverlap(a: ReturnType<typeof textBounds>, b: ReturnType<typeof textBounds>) {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+function seedLabelCollision(doc: BoardDoc) {
+  seed(doc);
+  const component = doc.components[0]!;
+  const board = component.board!;
+  const pin = boardPads(board, ['1'], doc.scale.pxPerMm)[0]!;
+  // Pin 1 is on the left; place the component reference across its first label candidate.
+  board.labelOffset = { x: pin.at.x - board.center.x - 35, y: -12 };
+}
+
+test('reading_label_avoids_own_ref_label', () => {
+  mountMeasurements({ seed: seedLabelCollision });
+  const reference = screen.getByText('U1', { selector: 'text' });
+  const reading = screen.getByText('4,98 V');
+  expect(boundsOverlap(textBounds(reference), textBounds(reading))).toBe(false);
+});
+
+test('reading_label_avoids_other_reading_labels', () => {
+  mountMeasurements({
+    seed(doc) {
+      seed(doc);
+      const component = doc.components[0]!;
+      component.board!.footprint = 'custom-test';
+      component.board!.customPads = Object.fromEntries(
+        ['1', '2'].map((id) => [
+          id,
+          {
+            local: { x: -2, y: 0 },
+            sizeMm: 1,
+            shape: 'circle',
+            through: true,
+          },
+        ]),
+      );
+      doc.measurements[1] = {
+        ...doc.measurements[0]!,
+        id: 'msr_second_voltage',
+        at: pinRef('2'),
+        atLabel: 'U1.2',
+        value: 3.3,
+      };
+    },
+  });
+  expect(
+    boundsOverlap(textBounds(screen.getByText('4,98 V')), textBounds(screen.getByText('3,3 V'))),
+  ).toBe(false);
+});
+
+test('reading_label_draws_leader_line_when_moved', () => {
+  const { svg } = mountMeasurements({
+    seed(doc) {
+      seed(doc);
+      const component = doc.components[0]!;
+      const board = component.board!;
+      const pin = boardPads(board, ['1'], doc.scale.pxPerMm)[0]!;
+      component.ref = 'VERY_LONG_REFERENCE';
+      board.labelOffset = { x: pin.at.x - board.center.x, y: 0 };
+      component.value = 'long value';
+    },
+  });
+  const leader = svg.querySelector('[data-layer="measurements.readings"] line');
+  expect(leader).not.toBeNull();
+  expect(leader!.getAttribute('stroke')).toBe('var(--ink-2)');
+  expect(leader!.getAttribute('stroke-width')).toBe('1');
+  expect(leader!.getAttribute('vector-effect')).toBe('non-scaling-stroke');
+});
+
+test('reading_labels_use_measured_font_bounds_for_adjacent_pads', () => {
+  mountMeasurements({
+    seed(doc) {
+      seed(doc);
+      const component = doc.components[0]!;
+      component.board = {
+        ...component.board!,
+        footprint: 'area',
+        center: { x: 150, y: 150 },
+        labelOffset: { x: -80, y: -80 },
+        customPads: Object.fromEntries(
+          ['1', '2'].map((id, index) => [
+            id,
+            {
+              local: { x: index === 0 ? 2 : 7.4, y: 0 },
+              sizeMm: 1,
+              shape: 'circle',
+              through: true,
+            },
+          ]),
+        ),
+      };
+      doc.measurements[0]!.value = 3.651;
+      doc.measurements[1] = {
+        ...doc.measurements[0]!,
+        id: 'msr_adjacent',
+        at: pinRef('2'),
+        atLabel: 'U1.2',
+        value: 3.652,
+      };
+    },
+  });
+  const first = textBounds(screen.getByText('3,651 V'));
+  const second = textBounds(screen.getByText('3,652 V'));
+  expect(boundsOverlap(first, second)).toBe(false);
 });

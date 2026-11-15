@@ -72,6 +72,8 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 | Valitud | | +2 px `--sel` | kogu võrk esile tõstetud, teised 25 % läbipaistvusega |
 | Piiksu ankur | | 3 px sinine | silt „Must sond“ |
 
+Näidu silt väldib komponendi tähise ja teiste näitude tekstikaste ka pööratud ning peegeldatud plaadil. Kastid arvestavad kasutatava fondi tegelikke mõõte ja halo. Tähis jääb tehniku valitud kohta; automaatne tähis hoiab padjanditest ekraani üles-suunas eemale. Näit proovib esmalt nelja lähedast kohta ning seejärel kaugemaid kohti. Kaugema näidu juurest viib jala rõngani peen viitejoon. Lohistamise ajal liigub näit senise nihkega kaasa; paigutus ei muuda dokumenti ega tähise salvestatud nihet.
+
 ## Ühendused
 
 | Tüüp ja alus | Joon |

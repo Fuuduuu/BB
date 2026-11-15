@@ -2,6 +2,15 @@ export { Canvas } from './Canvas';
 export type { CanvasProps } from './Canvas';
 export { createHitIndex } from './hit-index';
 export type { HitDrag, HitIndex, HitItem, HitShape } from './hit-index';
+export {
+  LabelObstaclesContext,
+  MONO_ADVANCE_EM,
+  MONO_LINE_EM,
+  monoLabelHalf,
+  screenBoxesOverlap,
+  useLabelObstacles,
+} from './label-obstacles';
+export type { LabelObstacle } from './label-obstacles';
 export { SceneText, useSceneTransform } from './scene-text';
 export { sceneToScreenVector, screenToSceneVector } from './stage';
 export type { SceneTransform } from './stage';

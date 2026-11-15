@@ -102,9 +102,17 @@ Näidu silt väldib komponendi tähise ja teiste näitude tekstikaste ka pööra
 
 - Sondid on nimetatud: „Punane sond · U1.4“ ja „Must sond · U1.3“, jala nimi on vihjena. Punane täpp kasutab `--danger` värvi; mustal tumedal täpil on ääris. Tekst eristab sonde ka ilma värvita. Valimata must sond on „määramata“, kustutatud jalg „—“.
 - Musta sondi real on „Vali musta sondi jalg“ ja „Tühjenda“. Valimise ajal on real aktsendivärvi ääris ning juhis „Klõpsa plaadil musta sondi jalal“; pärast valikut on real jälle jala tähis.
-- Õnnestunud salvestuse järel jääb pinge sisestusväli tühjaks ja fookusesse. Selle all on näiteks „Viimati salvestatud 4,73 V · U1.4 → U1.3“, musta sondita ainult „U1.4“. Rida loeb väärtuse ja paari salvestatud mõõtmisest, mitte praegustest sondidest, ning asendab vihje „nt 4,98“.
+- Sisestatav pinge on 20 px monokirjas ja tabulaarsete numbritega. Ilma viimase salvestuseta on väljal vihje „nt 4,98“.
+- Õnnestunud salvestuse järel jääb pinge sisestusväli tühjaks ja fookusesse. Selle all on ümardatud taustaga eraldi plokk: 12 px pealkiri „Viimati salvestatud“, alumisel real vasakul 18 px monokirjas väärtus (näiteks „4,73 V“) ja paremal 12 px monokirjas salvestatud sondipaar („U1.4 → U1.3“, musta sondita ainult „U1.4“). Väärtus ja paar tulevad salvestatud mõõtmisest, mitte praegustest sondidest; uus tulemus teatatakse ekraanilugejale viisakalt ning plokk asendab vihje „nt 4,98“.
 - Tagasivõetud või kustutatud viimase mõõtmise rida kaob ja vihje taastub; uuesti tegemine toob näidu tagasi. Viimase mõõtmise viide nullitakse seansivahetusel ega kuulu dokumenti.
 - Jala kaardilt saab muuta nime ja NC-d ning nupuga „← Komponent“ valida kogu komponendi. Mõõtmiste sektsioon näitab valitud jala `uid`-ga seotud kummagi sondi mõõtmiste koguarvu ja kuni viit uusimat salvestatud paariga. Tühi olek on „Selle jalaga mõõtmisi pole.“
+- Sisendite ja sekundaarsete nuppude raam kasutab `--control-border` tokenit: heledas teemas `#7d8a82`, tumedas `#63786d`. Kontrast paneeli taustaga on ümardatult 3,38 : 1 ja 3,67 : 1, mõlemas vähemalt 3 : 1; fookuse ning vea värvid säilivad.
+
+## Mõõtmiste loend
+
+- Ajaloo rea esimene rida on 15 px poolpaksus monokirjas väärtus, teine rida 12 px monokirjas sondipaar. Toiteolek ja kellaaeg on kolmandal real 11 px kõrvaltekstina ning jäävad samale reale.
+- Paremal on 28 px veerus prügikastiikooniga kustutamisnupp. Nupu ligipääsetav nimi on „Kustuta mõõtmine {väärtus} {paar}“, kohtspikker „Kustuta mõõtmine“ ja klaviatuurifookus nähtav. Kustutamise, tagasivõtmise ning veateate käitumine säilib.
+- Mõõtevorm ja viimase salvestuse plokk mahuvad 280 px omaduste paani; ajalugu mahub 240 ja 300 px navigaatorisse ilma horisontaalse kerimiseta.
 
 ## Klaviatuur
 

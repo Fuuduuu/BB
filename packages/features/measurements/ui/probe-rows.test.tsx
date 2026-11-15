@@ -56,20 +56,23 @@ test('last_saved_reading_follows_undo', () => {
   pickBlack(clickPin, '3');
   expect(block().getByText('nt 4,98')).toBeTruthy();
   save();
-  const saved = 'Viimati salvestatud 4,73 V · U1.4 → U1.3';
-  expect(block().getByText(saved)).toBeTruthy();
+  const saved = () =>
+    block().getByText('Viimati salvestatud').closest<HTMLElement>('.pcbk-last-saved')!;
+  expect(within(saved()).getByText('4,73 V')).toBeTruthy();
+  expect(within(saved()).getByText('U1.4 → U1.3')).toBeTruthy();
   expect(block().queryByText('nt 4,98')).toBeNull();
   expect(voltage().value).toBe('');
   expect(document.activeElement).toBe(voltage());
   act(() => {
     expect(engine.undo().ok).toBe(true);
   });
-  expect(block().queryByText(saved)).toBeNull();
+  expect(block().queryByText('Viimati salvestatud')).toBeNull();
   expect(block().getByText('nt 4,98')).toBeTruthy();
   act(() => {
     expect(engine.redo().ok).toBe(true);
   });
-  expect(block().getByText(saved)).toBeTruthy();
+  expect(within(saved()).getByText('4,73 V')).toBeTruthy();
+  expect(within(saved()).getByText('U1.4 → U1.3')).toBeTruthy();
 });
 
 test('last_saved_reading_shows_saved_pair_not_current_probes', () => {
@@ -81,14 +84,18 @@ test('last_saved_reading_shows_saved_pair_not_current_probes', () => {
   pickBlack(clickPin, '1');
   expect(block().getByRole('group', { name: 'Punane sond' }).textContent).toContain('U1.2');
   expect(block().getByRole('group', { name: 'Must sond' }).textContent).toContain('U1.1');
-  expect(block().getByText('Viimati salvestatud 4,73 V · U1.4 → U1.3')).toBeTruthy();
+  const saved = block().getByText('Viimati salvestatud').closest<HTMLElement>('.pcbk-last-saved')!;
+  expect(within(saved).getByText('4,73 V')).toBeTruthy();
+  expect(within(saved).getByText('U1.4 → U1.3')).toBeTruthy();
 });
 
 test('last_saved_without_black_probe_is_cleared_on_session_reset', () => {
   const { clickPin } = mountMeasurements();
   clickPin('4');
   save('3m3');
-  expect(block().getByText('Viimati salvestatud 3,3 mV · U1.4')).toBeTruthy();
+  const saved = block().getByText('Viimati salvestatud').closest<HTMLElement>('.pcbk-last-saved')!;
+  expect(within(saved).getByText('3,3 mV')).toBeTruthy();
+  expect(within(saved).getByText('U1.4')).toBeTruthy();
   expect(useMeasureStore.getState().lastSavedId).toBeTruthy();
   act(() => useMeasureStore.getState().reset());
   expect(useMeasureStore.getState().lastSavedId).toBeNull();

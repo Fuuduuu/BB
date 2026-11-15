@@ -5,6 +5,7 @@
   --well: #e0e6e2;
   --line: #d0d9d3;
   --line-2: #b9c6bd;
+  --control-border: #7d8a82;
   --ink: #16201c;
   --ink-2: #4a5852;
   --ink-3: #77847d;
@@ -44,6 +45,7 @@
     --well: #1b2521;
     --line: #25312c;
     --line-2: #34433c;
+    --control-border: #63786d;
     --ink: #e3eae6;
     --ink-2: #a2b0a9;
     --ink-3: #6b7972;
@@ -81,6 +83,7 @@
   --well: #1b2521;
   --line: #25312c;
   --line-2: #34433c;
+  --control-border: #63786d;
   --ink: #e3eae6;
   --ink-2: #a2b0a9;
   --ink-3: #6b7972;

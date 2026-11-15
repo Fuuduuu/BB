@@ -18,6 +18,57 @@
   font-size: 14px;
 }
 
+.pcbk-measure-value {
+  font-family: var(--f-mono);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcbk-last-saved-live:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.pcbk-last-saved {
+  min-width: 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--well);
+}
+
+.pcbk-last-saved__title {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.pcbk-last-saved__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pcbk-last-saved__value {
+  min-width: 0;
+  flex-shrink: 1;
+  font-family: var(--f-mono);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.pcbk-last-saved__pair {
+  min-width: 0;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 .pcbk-probe-rows,
 .pcbk-probe-row {
   display: grid;

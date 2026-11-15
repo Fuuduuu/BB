@@ -41,7 +41,10 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
   const saved = snapshot.doc.measurements.find(({ id }) => id === lastSavedId);
   const lastSaved =
     saved?.mode === 'voltage' && saved.value !== undefined
-      ? `${text.lastSaved} ${formatReading({ value: saved.value }, 'voltage')} · ${saved.atLabel}${saved.refLabel ? ` → ${saved.refLabel}` : ''}`
+      ? {
+          value: formatReading({ value: saved.value }, 'voltage'),
+          pair: `${saved.atLabel}${saved.refLabel ? ` → ${saved.refLabel}` : ''}`,
+        }
       : undefined;
 
   function editDraft(change: Partial<typeof draft>) {
@@ -143,13 +146,25 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
         <Field
           ref={input}
           label={text.voltage}
-          hint={lastSaved ?? text.hint}
+          className="pcbk-measure-value"
+          hint={lastSaved ? undefined : text.hint}
           error={activeError?.invalid ? activeError.message : undefined}
           aria-describedby={blocked ? `${id}-deleted` : undefined}
           value={draft.text}
           onChange={(event) => editDraft({ text: event.currentTarget.value })}
           onKeyDown={onValueKey}
         />
+        <div className="pcbk-last-saved-live" aria-live="polite" aria-atomic="true">
+          {lastSaved && (
+            <div className="pcbk-last-saved" key={lastSavedId}>
+              <span className="pcbk-last-saved__title">{text.lastSaved}</span>
+              <div className="pcbk-last-saved__row">
+                <span className="pcbk-last-saved__value">{lastSaved.value}</span>
+                <span className="pcbk-last-saved__pair">{lastSaved.pair}</span>
+              </div>
+            </div>
+          )}
+        </div>
         {activeError && !activeError.invalid && (
           <p className="bb-field__error" role="alert">
             {activeError.message}

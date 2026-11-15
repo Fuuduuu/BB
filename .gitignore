@@ -5,6 +5,7 @@ coverage/
 playwright-report/
 test-results/
 output/playwright/
+output/review-card/
 .playwright-cli/
 src-tauri/target/
 src-tauri/gen/

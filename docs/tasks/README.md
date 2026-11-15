@@ -8,6 +8,21 @@ Kaardid asuvad põhikaustas `C:\Users\TRUMPIT\Desktop\BB\docs\tasks\`, samamoodi
 
 Kaarte on kõige lihtsam lugeda MCP tööriistaga `bb_task`. See tagastab kaardi koos „Loe“-loendi dokumendijaotistega ühe päringuga. Ilma MCP-ta loe kaart ja loendi read käsitsi.
 
+## Kaardi ülevaatus ühe käsuga
+
+Codex käivitab enne üleandmist ja Claude ülevaatusel põhikaustast sama käsu:
+
+```sh
+pnpm bb-review-card M1-3-8 --plan
+pnpm bb-review-card M1-3-8
+```
+
+`--plan` loeb põhikausta kaarti ja otsib nõutud testide deklaratsioone kaardi päises nimetatud haru tööpuust. See näitab puuduvaid nimesid ning Cargo ja Tauri vajadust. Otsing jätab välja otseselt keelatud testid (`skip`, `todo`, `fixme`, Rusti `#[ignore]`). Käitusajal otsustatud vahelejätmised selguvad testiraportist. Kontrollitava tööpuu saab ise valida, näiteks `pnpm bb-review-card M1-2-4 --worktree .` pärast haru liitmist põhikausta.
+
+Täiskäik jooksutab valitud tööpuus `check`, `api:check`, `format:check`, `coverage`, `e2e` ja `git diff --check`. Rajal B lisandub `cargo test`, kui kaart seda sõnaselgelt ära ei jäta. Tauri ehitus lisandub kaardi nõudel. Playwright käivitab rakenduse ise ja vajab konfiguratsioonis määratud vaba porti. Kaardil eraldi nõutud lisakatsed, näiteks `cargo clippy` või kümme järjestikust testikäiku, teeb ülevaataja eraldi.
+
+Iga käigu logid ja `summary.json` asuvad põhikaustas `output/review-card/<kaart>-<käik>/`. Kokkuvõttes on kontrollitud haru, HEAD, tööpuu olek käigu alguses, käsud, puuduvad nimed ning testitulemused. Vitesti testiarv tuleb katvuskäigust ühe korra. Katvus käib valitud tööpuu Vitesti seadistuses määratud lähtekoodi kohta. E2E vaikimisi ajapiir on 15 minutit. Seda saab muuta keskkonnamuutujaga `BB_REVIEW_E2E_TIMEOUT_MS` (millisekundites), et ka takerdunud serveri korral jõuaks käik kokkuvõtteni. Väljumiskood 1 tähendab, et kontroll ebaõnnestus, nõutud tõend puudub või kaart vajab käsitsi tõlgendamist. Kaardi brauserivaatlus ja kasutaja visuaalne vastuvõtt märgitakse üleandmises eraldi.
+
 ## Kes mida loeb
 
 | Roll | Loeb | Ei loe |

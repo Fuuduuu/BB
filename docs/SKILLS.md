@@ -36,6 +36,8 @@ TypeScripti, Reacti, Tauri, SQLite'i ja testimise erioskusi otsi nende tegeliku 
 
 Codexi jaoks on Superpowersi ja GitHubi pluginad olemas ning brauseri/arvuti tööriistad saadaval. `playwright` ja `gh-fix-ci` on paigaldatud kasutaja Codexi oskustekausta; uued oskused muutuvad kättesaadavaks järgmisel pöördumisel. See ei tähenda nende olemasolu Claude'i või Gemini keskkonnas. Windowsis on Playwright CLI jaoks `playwright-cli.cmd`; BB enda e2e-testid kasutavad M0 plaanis projekti lukufailiga määratud Playwrighti. Kõiki oskusi korraga ei laadita.
 
+Kaardi üleandmisel ja ülevaatusel käivita põhikaustast `pnpm bb-review-card <ID>`. Kaardi haru valikut, plaanirežiimi ja tulemuste asukohta kirjeldab [ülevaatuse juhend](tasks/README.md#kaardi-ülevaatus-ühe-käsuga).
+
 ## Kas sellest tööst tasub teha uus oskus?
 
 Hinda seda iga uue töö alguses; loo oskus siis, kui kasu on konkreetne:

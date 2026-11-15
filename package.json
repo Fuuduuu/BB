@@ -8,6 +8,7 @@
     "node": ">=26 <27"
   },
   "scripts": {
+    "bb-review-card": "node tooling/review-card/run.mjs",
     "check": "pnpm run typecheck && pnpm run lint && pnpm run depcruise && pnpm run filelength && pnpm run test && pnpm run api:check",
     "api": "node tooling/api-digest.mjs",
     "api:check": "node tooling/api-digest.mjs --check",

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 coverage/
+output/review-card/
 .superpowers/
 .mcp.json
 .gemini/

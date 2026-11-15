@@ -335,10 +335,6 @@
   .pcbk-topbar {
     gap: 14px;
   }
-  .pcbk-bottom-bar {
-    gap: 8px;
-    padding: 0 8px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .pcbk-app *,

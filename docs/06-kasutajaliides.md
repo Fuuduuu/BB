@@ -11,13 +11,15 @@ Visuaalne keel tuleb prototüübist ([prototype/src/app.css](../prototype/src/ap
 | Lõuend (kesk) | ülejäänu | tööriistariba vasakus servas (40 px nupud), ankru- ja abisildid |
 | Kontekstipaneel (parem) | 340 px, muudetav 280–460, alati ülekattena (`O`) | valitud objekti sektsioonid või nähtav kinnitatud sektsioon; peidetud, kui mõlemad puuduvad |
 | Paneeli pealkiri | 36 px | paneeli nimi; omaduste paneelil paremal sulgemisnupp (`O`) |
-| Mõõteriba (all) | 36 px | foto nähtavus (kohe foto all), kontrast, ⟳, ⇋, poole valik, kihid, „Näita kahtlaseid“, suum, mõõtkava, koordinaadid |
+| Mõõteriba (all) | 36 px | foto näitamine/peitmine, „Foto sätted“, kalibreerimise nupp; suum − / + ja protsent, „Sobita“, koordinaadid; hiljem lisanduvad poole valik, kihid ja „Näita kahtlaseid“ |
 
 - Minimaalne akna suurus on 1100 × 700. Kontekstipaneel on igal laiusel ülekattena; lõuendi suurus ei muutu. Paneeli avab kasutaja ülariba nupust, `O`-ga või valitud jalal `M`-iga. Uus valik ega kinnitatud sektsiooni nähtavaks muutumine kasutaja peidetud paneeli ei ava.
 - Omadused on nähtavad ainult avatud olekus ning valiku või nähtava kinnitatud sektsiooni korral. Ülariba nupp näitab tegeliku nähtavuse järgi „Näita omadusi“ või „Peida omadused“. Kui valikut ega kinnitatud sektsiooni pole, on nupp keelatud pealkirjaga „Omadused · vali komponent või jalg“ ning `O` ei muuda paneeli eelistust.
 - Omaduste päise sulgemisnupp peidab paneeli ja viib fookuse ülariba omaduste nupule. Mõlema ülariba paneelinupu vaskne täide järgib `aria-expanded` olekut; täide on ainult avatud paneelil.
 - Jala valikul on omadustes kinnitatud Mõõda-plokk, ainult valitud jala kaart (tähis, nimi, NC ja „← Komponent“) ning selle jala mõõtmised. Komponendi valikul jääb alles komponendi vorm koos jalgade tabeliga.
 - Paneelide laius ja olek (avatud/kokku pandud) jäävad meelde.
+- Fotota plaadil on alumisel ribal „Lisa foto“. Fotoga plaadil on selles järjekorras foto lüliti, „Foto sätted“ ja kalibreerimise olek („Kalibreerimata“ või px/mm). Kaks Tab-vajutust fotolülitilt viivad kalibreerimiseni. Suumi märkide „−“ ja „+“ ligipääsetavad nimed ning vihjed on „Vähenda“ ja „Suurenda“.
+- „Foto sätted“ avab nupu kohal mittemodaalse paneeli: läbipaistvus, kontrast, „Hall“, „Pööra 90°“, „Peegelda“. Esimene liugur saab fookuse; Tab liigub edasi kalibreerimisnupule fookust lõksustamata. Escape sulgeb paneeli ja tagastab fookuse nupule; välisklõps jätab fookuse klõpsatud kohta. Foto kadumine ja seansivahetus sulgevad paneeli; pööramine ja peegeldamine jätavad selle avatuks. Paneel ei muuda riba ega lõuendi mõõte.
 - Navigaatori vahekaardinimed on ilma loendurita. Aktiivse paneeli kohal on 12 px kokkuvõte: näiteks „12 plaadil · 3 paigutamata“, „1 mõõtmine“ või „1500 mõõtmist“. Nulli korral vastav osa puudub; tühjal paneelil ja Teegis kokkuvõtet pole.
 - „Komponendid“ all vahetavad filtrinupud „Plaadil (12)“ ja „Paigutamata (3)“ olemasolevaid loendeid. Kui filter on „Plaadil“ ja paigutamata komponente on, märgib neid teisel nupul aktsenditäpp; automaatset filtrivahetust pole. Filter jääb projekti vaates meelde dokumendi revisjoni muutmata; vigane või puuduv väärtus tähendab „Plaadil“.
 - Vana vahekaardi `unplaced` id-d eraldi ei teisendata: tundmatu salvestatud id korral avaneb esimene vahekaart „Teek“.

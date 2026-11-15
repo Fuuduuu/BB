@@ -107,6 +107,20 @@ test('context_hidden_without_selection_on_wide_window', () => {
   expect(useViewStore.getState().contextShown).toBe(false);
 });
 
+test('zoom_buttons_show_signs_with_names', () => {
+  setup();
+  const out = screen.getByRole('button', { name: 'Vähenda' });
+  const inside = screen.getByRole('button', { name: 'Suurenda' });
+  expect(out.textContent).toBe('−');
+  expect(out.title).toBe('Vähenda');
+  expect(inside.textContent).toBe('+');
+  expect(inside.title).toBe('Suurenda');
+  fireEvent.click(out);
+  expect(useViewStore.getState().zoomRequest).toEqual({ sequence: 1, factor: 0.8 });
+  fireEvent.click(inside);
+  expect(useViewStore.getState().zoomRequest).toEqual({ sequence: 2, factor: 1.25 });
+});
+
 test('context_overlays_canvas_without_resizing_it', () => {
   setup();
   const canvas = screen.getByRole('main');

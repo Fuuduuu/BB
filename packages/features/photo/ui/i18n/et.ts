@@ -6,6 +6,7 @@ export const photoEt = {
   addFailed: (reason: string) => `Fotot ei saanud lisada: ${reason}`,
   hide: 'Peida foto',
   show: 'Näita fotot',
+  settings: 'Foto sätted',
   opacity: 'Läbipaistvus',
   contrast: 'Kontrast',
   gray: 'Hall',

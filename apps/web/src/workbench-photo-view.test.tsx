@@ -6,7 +6,49 @@ import { URL } from 'node:url';
 import { uiFeatures } from '@pcbk/features/ui';
 import { useViewStore } from '@pcbk/ui';
 import { createRuntime } from './runtime';
-import { fakeHost, mount, openWorkbenchProject } from './test-support/workbench';
+import {
+  fakeHost,
+  mount,
+  mountWithComponent,
+  openWorkbenchProject,
+} from './test-support/workbench';
+
+test('photo_settings_escape_preserves_external_component_draft_cancellation', async () => {
+  vi.stubGlobal('Blob', Blob);
+  vi.stubGlobal('URL', URL);
+  vi.stubGlobal('createImageBitmap', async () => ({ width: 1, height: 1, close() {} }));
+  const { app, runtime, component, context } = await mountWithComponent('Menüü Escape');
+  try {
+    await act(async () => {
+      const imported = await runtime.projects.importPhoto({
+        bytes: Uint8Array.from(
+          Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a4p8AAAAASUVORK5CYII=',
+            'base64',
+          ),
+        ).buffer,
+        name: 'Sünteetiline.png',
+      });
+      if (!imported.ok) throw new Error('Expected the synthetic photo import');
+      expect(runtime.engine.execute('photo.add', { photo: imported.value }).ok).toBe(true);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Foto sätted' }));
+    const marking = context.getByRole<HTMLInputElement>('textbox', { name: 'Korpuse märgistus' });
+    marking.focus(); // Moving here with Tab does not send an outside pointer event.
+    fireEvent.change(marking, { target: { value: 'Tühistatud mustand' } });
+    const before = runtime.engine.snapshot();
+    fireEvent.keyDown(marking, { key: 'Escape' });
+    expect(marking.value).toBe('');
+    expect(runtime.engine.snapshot()).toBe(before);
+    expect(
+      runtime.engine.snapshot().doc.components.find(({ id }) => id === component.id)?.marking,
+    ).toBe('');
+    expect(screen.getByRole('dialog', { name: 'Foto sätted' })).toBeTruthy();
+  } finally {
+    app.unmount();
+    await runtime.projects.discard();
+  }
+});
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -44,6 +86,7 @@ test('photo_view_settings_survive_reopen_without_rev', async () => {
   try {
     await openWorkbenchProject(runtime, host, path);
     const before = runtime.engine.snapshot();
+    fireEvent.click(screen.getByRole('button', { name: 'Foto sätted' }));
     fireEvent.change(screen.getByRole('slider', { name: 'Läbipaistvus' }), {
       target: { value: '35' },
     });
@@ -65,6 +108,7 @@ test('photo_view_settings_survive_reopen_without_rev', async () => {
     app = mount(runtime, host, (onHome) => uiFeatures(runtime.ids, onHome));
     await openWorkbenchProject(runtime, host, path);
     expect(useViewStore.getState().modules.photo).toEqual(settings);
+    fireEvent.click(screen.getByRole('button', { name: 'Foto sätted' }));
     expect(screen.getByRole<HTMLInputElement>('slider', { name: 'Läbipaistvus' }).value).toBe('35');
     expect(screen.getByRole<HTMLInputElement>('slider', { name: 'Kontrast' }).value).toBe('140');
     expect(screen.getByRole('button', { name: 'Hall' }).getAttribute('aria-pressed')).toBe('true');

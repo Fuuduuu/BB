@@ -1,9 +1,11 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import ts from 'typescript';
 
 /** @typedef {'unit' | 'e2e' | 'rust' | 'any'} Kind */
 /** @typedef {Record<string, Kind[]>} TestKinds */
+/** @typedef {{title:string, parameterized:boolean, disabled:boolean, expectedFailure?:boolean, line?:number, endLine?:number}} SourceTest */
+/** @typedef {SourceTest & {name:string, kind:'unit' | 'e2e' | 'rust' | 'type', file:string}} TestDeclaration */
 
 /** Extract only the requested Markdown section, not the later handoff or review. @param {string} text @param {string} heading */
 function section(text, heading) {
@@ -84,7 +86,11 @@ export function parseCard(markdown) {
   /** @type {Kind|null} */
   let group = null;
   let fenced = false;
-  for (const line of testEvidence.split(/\r?\n/)) {
+  // An architect can add tests before handoff, either inline or in a nested list.
+  const answers = requirements
+    .split(/^(?=#{1,6}\s)/m)
+    .filter((block) => /^#{2,3}\s+Arhitekti (?:täpsustus|vastus ehitajale)(?:\s|$)/i.test(block));
+  for (const line of [testEvidence, ...answers].join('\n').split(/\r?\n/)) {
     if (/^\s*```/.test(line)) {
       fenced = !fenced;
       continue;
@@ -94,9 +100,10 @@ export function parseCard(markdown) {
     if (!bullet) continue;
     const text = (bullet[2] ?? '').replaceAll('**', '').trim();
     if (!bullet[1]) group = null;
-    const labeled = /^(TS|Rust|E2e|UI|engine|Testid|Lisaks)(?:\s*\([^)]*\))?\s*:\s*(.*)$/i.exec(
-      text,
-    );
+    const labeled =
+      /^(TS|Rust|E2e|UI|engine|Testid|Lisatest(?:id)?|Lisaks)(?:\s*\([^)]*\))?\s*:\s*(.*)$/i.exec(
+        text,
+      );
     const explicitE2e = /^E2e\s+`([^`]+)`/i.exec(text);
     if (labeled) {
       group = testKind(text.slice(0, text.indexOf(':')));
@@ -148,10 +155,6 @@ export function parseCard(markdown) {
       }
     }
   }
-  const amendment = section(requirements, 'Arhitekti täpsustus(?: [^\\r\\n]+)?');
-  for (const row of amendment.matchAll(/^\s*-\s*(?:\*\*)?Lisatest:(?:\*\*)?\s*(.+)$/gim)) {
-    readList(row[1] ?? '', 'any');
-  }
   if (!lane) warnings.push('Kaardi päises puudub rada A/B. Kontrolli nõutud käske käsitsi.');
   if (!testEvidence) warnings.push('Kaardil puudub jaotis „Tõend“.');
   else if (!Object.keys(kinds).length)
@@ -170,55 +173,55 @@ export function parseCard(markdown) {
   };
 }
 
-/** @param {string} source @param {string} file @returns {Set<string>} */
+/** @param {string} source @param {string} file @returns {SourceTest[]} */
 function tsTests(source, file) {
   const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, false);
-  const names = new Set();
-  /** @param {ts.Node} node */
-  function visit(node) {
+  /** @type {SourceTest[]} */
+  const tests = [];
+  /** @param {ts.Node} node @param {boolean} disabled */
+  function visit(node, disabled) {
     if (ts.isCallExpression(node)) {
       const [title] = node.arguments;
       const call = node.expression;
       const curried = ts.isCallExpression(call);
       const signature = curried ? call.expression.getText(tree) : call.getText(tree);
-      if (
-        /^(?:it|test|describe|suite)(?:\.|$)/.test(signature) &&
-        (/\.(?:skip|todo|fixme)(?:\.|$)/.test(signature) ||
+      if (/^x?(?:it|test|describe|suite)(?:\.|$)/.test(signature)) {
+        disabled ||=
+          signature.startsWith('x') ||
+          /\.(?:skip|todo|fixme)(?:\.|$)/.test(signature) ||
           (curried &&
             /\.skipIf$/.test(signature) &&
             call.arguments[0]?.kind === ts.SyntaxKind.TrueKeyword) ||
           (curried &&
             /\.runIf$/.test(signature) &&
-            call.arguments[0]?.kind === ts.SyntaxKind.FalseKeyword))
-      )
-        return; // Also prune a disabled suite before visiting its test declarations.
-      if (/^(?:xdescribe|xsuite|xit|xtest)$/.test(signature)) return;
+            call.arguments[0]?.kind === ts.SyntaxKind.FalseKeyword);
+      }
       if (
         title &&
         ts.isStringLiteralLike(title) &&
-        /^(?:it|test)(?:\.(?:only|fails|concurrent|sequential))*(?:\.(?:each|for|skipIf|runIf))?$/.test(
+        /^x?(?:it|test)(?:\.(?:only|fails|concurrent|sequential|skip|todo|fixme))*(?:\.(?:each|for|skipIf|runIf))?$/.test(
           signature,
         ) &&
         curried === /\.(?:each|for|skipIf|runIf)$/.test(signature)
       ) {
-        names.add(title.text);
-        // Modern cards name the case once, while Vitest appends its parameter values.
-        if (/\.(?:each|for)$/.test(signature)) {
-          const base = /^(\S+)\s+(?:[\s()[\],-]*(?:%[sdifjoO#$]|\$[\w.]+))+[\s()[\],-]*$/.exec(
-            title.text,
-          )?.[1];
-          if (base) names.add(base);
-        }
+        tests.push({
+          title: title.text,
+          parameterized: /\.(?:each|for)$/.test(signature),
+          disabled,
+          ...(/\.fails(?:\.|$)/.test(signature) && { expectedFailure: true }),
+          line: tree.getLineAndCharacterOfPosition(call.getStart(tree)).line + 1,
+          endLine: tree.getLineAndCharacterOfPosition(title.getStart(tree)).line + 1,
+        });
       }
     }
-    ts.forEachChild(node, visit);
+    ts.forEachChild(node, (child) => visit(child, disabled));
   }
-  visit(tree);
-  return names;
+  visit(tree, false);
+  return tests;
 }
 
 // Ignore literal and commented Rust examples before recognizing #[test] functions.
-/** @param {string} source @returns {Set<string>} */
+/** @param {string} source @returns {SourceTest[]} */
 function rustTests(source) {
   const token =
     /(?:b?r)(#*)"[\s\S]*?"\1|"(?:\\[\s\S]|[^"\\])*"|'(?:\\.|[^'\\\r\n])'|\/\/[^\n]*|\/\*/g;
@@ -242,16 +245,14 @@ function rustTests(source) {
   const matches = withoutLiterals.matchAll(
     /((?:#\s*\[[^\]]*\]\s*)+)(?:(?:pub|async|unsafe)\s+)*fn\s+(\w+)\b/g,
   );
-  const names = new Set();
+  /** @type {SourceTest[]} */
+  const tests = [];
   for (const [, attrs = '', name] of matches) {
-    if (
-      name &&
-      /#\s*\[\s*(?:\w+::)*test(?:\([^)]*\))?\s*\]/.test(attrs) &&
-      !/#\s*\[\s*ignore\b/.test(attrs)
-    )
-      names.add(name);
+    if (name && /#\s*\[\s*(?:\w+::)*test(?:\([^)]*\))?\s*\]/.test(attrs)) {
+      tests.push({ title: name, parameterized: false, disabled: /#\s*\[\s*ignore\b/.test(attrs) });
+    }
   }
-  return names;
+  return tests;
 }
 
 const ignored = new Set([
@@ -266,9 +267,16 @@ const ignored = new Set([
   'bindings',
 ]);
 
-/** @param {string} root @param {string[]} names @param {TestKinds} [kinds] */
-export function findMissingTests(root, names, kinds = {}) {
-  const available = { rust: new Set(), unit: new Set(), e2e: new Set() };
+/** @param {Kind} expected @param {TestDeclaration['kind']} actual */
+function matchesKind(expected, actual) {
+  return expected === 'any' || expected === actual || (expected === 'unit' && actual === 'type');
+}
+
+/** @param {string} root @param {string[]} names @param {TestKinds} [kinds] @returns {TestDeclaration[]} */
+export function findTestDeclarations(root, names, kinds = {}) {
+  /** @type {TestDeclaration[]} */
+  const declarations = [];
+  const requested = new Set(names);
   /** @param {string} directory @param {'rust'|'unit'|'e2e'} kind @param {RegExp} pattern */
   function scan(directory, kind, pattern) {
     if (!existsSync(directory)) return;
@@ -281,8 +289,25 @@ export function findMissingTests(root, names, kinds = {}) {
       if (!entry.isFile() || !pattern.test(entry.name)) continue;
       const source = readFileSync(file, 'utf8');
       if (!names.some((name) => source.includes(name)) && !source.includes('\\')) continue;
-      for (const title of kind === 'rust' ? rustTests(source) : tsTests(source, file))
-        available[kind].add(title);
+      const filePath = relative(root, file).split(sep).join('/');
+      const actual = kind === 'unit' && /\.test-d\.tsx?$/.test(file) ? 'type' : kind;
+      for (const record of kind === 'rust' ? rustTests(source) : tsTests(source, file)) {
+        // A card can name a parameterized declaration once for all generated rows.
+        const base =
+          record.parameterized &&
+          /^(\S+)\s+(?:[\s()[\],-]*(?:%[sdifjoO#$]|\$[\w.]+))+[\s()[\],-]*$/.exec(
+            record.title,
+          )?.[1];
+        for (const name of base ? [record.title, base] : [record.title]) {
+          if (!requested.has(name)) continue;
+          if (
+            Object.hasOwn(kinds, name) &&
+            !kinds[name]?.some((expected) => matchesKind(expected, actual))
+          )
+            continue;
+          declarations.push({ ...record, name, kind: actual, file: filePath });
+        }
+      }
     }
   }
   if (!names.length) return [];
@@ -293,12 +318,21 @@ export function findMissingTests(root, names, kinds = {}) {
   scan(join(root, 'tooling'), 'unit', /\.test(?:-d)?\.ts$/);
   scan(join(root, 'apps/web/e2e'), 'e2e', /\.spec\.ts$/);
   scan(join(root, 'apps/desktop/src-tauri'), 'rust', /\.rs$/);
-  return names.filter(
-    (name) =>
-      !(kinds[name] ?? ['any']).every((kind) =>
-        kind === 'any'
-          ? Object.values(available).some((suite) => suite.has(name))
-          : available[kind].has(name),
-      ),
-  );
+  return declarations;
+}
+
+/** @param {string[]} names @param {TestKinds} kinds @param {TestDeclaration[]} declarations */
+export function missingTestDeclarations(names, kinds, declarations) {
+  return names.filter((name) => {
+    const available = declarations.filter((item) => item.name === name && !item.disabled);
+    const expected = Object.hasOwn(kinds, name) ? kinds[name] : undefined;
+    return !(expected ?? ['any']).every((kind) =>
+      available.some((item) => matchesKind(kind, item.kind)),
+    );
+  });
+}
+
+/** @param {string} root @param {string[]} names @param {TestKinds} [kinds] */
+export function findMissingTests(root, names, kinds = {}) {
+  return missingTestDeclarations(names, kinds, findTestDeclarations(root, names, kinds));
 }

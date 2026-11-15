@@ -67,6 +67,7 @@ export function buildSteps(card, dir, e2eTimeoutMs = 15 * 60_000) {
         'run',
         'coverage',
         '--reporter=json',
+        '--includeTaskLocation',
         `--outputFile=${join(dir, 'unit.json')}`,
         '--coverage.reporter=json-summary',
         '--coverage.reportOnFailure',

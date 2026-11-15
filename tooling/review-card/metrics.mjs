@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /** @param {string} path */
-function readReport(path) {
+export function readReport(path) {
   try {
     return JSON.parse(readFileSync(path, 'utf8'));
   } catch {
@@ -16,7 +16,7 @@ function record(value) {
 }
 
 /** @param {unknown} report */
-function unitMetrics(report) {
+export function unitMetrics(report) {
   if (!record(report) || !Array.isArray(report.testResults) || typeof report.success !== 'boolean')
     return null;
 
@@ -74,7 +74,7 @@ function coverageMetrics(report) {
 }
 
 /** @param {unknown} report */
-function browserMetrics(report) {
+export function browserMetrics(report) {
   if (!record(report) || !Array.isArray(report.suites) || !Array.isArray(report.errors))
     return null;
   if (report.errors.length || !record(report.stats)) return null;

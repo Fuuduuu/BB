@@ -2,8 +2,9 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { findMissingTests, parseCard } from './card.mjs';
+import { findTestDeclarations, missingTestDeclarations, parseCard } from './card.mjs';
 import { readMetrics } from './metrics.mjs';
+import { readCardOutcomes } from './outcomes.mjs';
 import {
   buildSteps,
   explicitWorktree,
@@ -53,7 +54,8 @@ function main() {
     ? explicitWorktree(values.worktree, trees)
     : pickWorktree(markdown, trees, root);
   const changesBefore = worktreeChanges(target.path);
-  const missing = findMissingTests(target.path, card.names, card.kinds);
+  const declarations = findTestDeclarations(target.path, card.names, card.kinds);
+  const missing = missingTestDeclarations(card.names, card.kinds, declarations);
   console.log(
     `${id} · rada ${card.lane ?? 'määramata'} · ${target.branch || 'detached HEAD'} @ ${target.head.slice(0, 9)}\nTööpuu: ${target.path}`,
   );
@@ -89,11 +91,26 @@ function main() {
     if (exitCode !== 0) console.log(`  VIGA (${exitCode}): ${log}`);
   }
   const metrics = readMetrics(dir);
+  const requiredTestResults = readCardOutcomes(dir, card, declarations, {
+    root: target.path,
+    typecheckPassed: checks.some((c) => c.id === 'check' && c.exitCode === 0),
+    cargoPassed: checks.some((c) => c.id === 'cargo' && c.exitCode === 0),
+  });
+  const labels = {
+    passed: 'läbis',
+    failed: 'ebaõnnestus',
+    skipped: 'jäeti vahele',
+    flaky: 'läbis kordusel',
+    'not-run': 'käivitust ei leitud',
+    unknown: 'teadmata',
+    typechecked: 'tüübikontroll läbis',
+  };
   const rust = card.cargoTest ? rustCounts(readFileSync(join(dir, 'cargo.log'), 'utf8')) : null;
   const coverage = metrics.coverage;
   const hasCoverage = coverage && Object.values(coverage).every((v) => v !== null);
   const ok = Boolean(
     completeCard &&
+    requiredTestResults.every((r) => ['passed', 'flaky', 'typechecked'].includes(r.status)) &&
     checks.every((c) => c.exitCode === 0) &&
     metrics.unit &&
     metrics.unit.passed > 0 &&
@@ -111,6 +128,7 @@ function main() {
     changesBefore,
     lane: card.lane,
     requiredTests: card.names,
+    requiredTestResults,
     missing,
     warnings: card.warnings,
     cargoTest: card.cargoTest,
@@ -129,6 +147,7 @@ function main() {
   );
   console.log(checks.map((c) => `${c.id}: ${c.exitCode === 0 ? 'OK' : 'VIGA'}`).join(' · '));
   console.log('Vitest: ' + counts(metrics.unit) + '\nE2E: ' + counts(metrics.e2e));
+  for (const r of requiredTestResults) console.log(`  ${r.name} [${r.kind}] — ${labels[r.status]}`);
   if (card.cargoTest) console.log('Rust: ' + counts(rust));
   const percent = (/** @type {number | null} */ value) =>
     value === null ? 'teadmata' : value + '%';

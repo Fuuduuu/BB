@@ -2,7 +2,12 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { expect, test } from 'vitest';
-import { findMissingTests, parseCard } from './card.mjs';
+import {
+  findMissingTests,
+  findTestDeclarations,
+  missingTestDeclarations,
+  parseCard,
+} from './card.mjs';
 import { buildSteps } from './runner.mjs';
 
 const header = '# Testkaart\n\n**Rada:** B\n\n## Tõend\n';
@@ -69,6 +74,15 @@ test('includes named architect amendments and honors native-command exceptions',
   );
   expect(card.names).toEqual(['first_case', 'additional_case']);
   expect(card).toMatchObject({ cargoTest: true, tauriBuild: false });
+});
+
+test('includes the two test names in the architect answer on J29 card M1-3-10', () => {
+  const markdown = readFileSync(new URL('../../docs/tasks/M1-3-10.md', import.meta.url), 'utf8');
+  const card = parseCard(markdown + '\n### Arhitekti vastus ehitajale\n- Lisatest: `review_only`.');
+  expect(card.names).toHaveLength(11);
+  expect(card.kinds.mono_label_half_covers_measured_chromium_box).toEqual(['any']);
+  expect(card.kinds.adjacent_readings_do_not_overlap).toEqual(['e2e']);
+  expect(card.names).not.toContain('review_only');
 });
 
 test('recognizes test declarations in the right suite, ignoring fixture code, comments and helpers', () => {
@@ -139,6 +153,72 @@ test('recognizes test declarations in the right suite, ignoring fixture code, co
       'disabled_rust',
       'another_disabled_rust',
     ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('links card aliases to source titles, discovery kind and portable paths, retaining named skips', () => {
+  const root = mkdtempSync(join(tmpdir(), 'bb-card-links-'));
+  const files = {
+    'packages/a/labels.test.ts': "test.each([1])(\n  'aligned (%j)', () => {});",
+    'packages/b/labels.test.ts': "describe.skip('future', () => { test('aligned', () => {}); });",
+    'packages/a/labels.test-d.ts': "it('type_contract', () => {});",
+    'apps/web/e2e/labels.spec.ts': "test('aligned', () => {});",
+    'apps/desktop/src-tauri/tests/restore.rs': '#[test] #[ignore] fn rust_restore() {}',
+  };
+  try {
+    for (const [file, contents] of Object.entries(files)) {
+      const target = join(root, file);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, contents);
+    }
+    const card = parseCard(header + '- TS: `aligned`, `type_contract`.\n- Rust: `rust_restore`.');
+    const declarations = findTestDeclarations(root, card.names, card.kinds);
+    expect(declarations).toHaveLength(4);
+    expect(declarations).toEqual(
+      expect.arrayContaining([
+        {
+          name: 'aligned',
+          title: 'aligned (%j)',
+          kind: 'unit',
+          file: 'packages/a/labels.test.ts',
+          parameterized: true,
+          disabled: false,
+          line: 1,
+          endLine: 2,
+        },
+        {
+          name: 'aligned',
+          title: 'aligned',
+          kind: 'unit',
+          file: 'packages/b/labels.test.ts',
+          parameterized: false,
+          disabled: true,
+          line: 1,
+          endLine: 1,
+        },
+        {
+          name: 'type_contract',
+          title: 'type_contract',
+          kind: 'type',
+          file: 'packages/a/labels.test-d.ts',
+          parameterized: false,
+          disabled: false,
+          line: 1,
+          endLine: 1,
+        },
+        {
+          name: 'rust_restore',
+          title: 'rust_restore',
+          kind: 'rust',
+          file: 'apps/desktop/src-tauri/tests/restore.rs',
+          parameterized: false,
+          disabled: true,
+        },
+      ]),
+    );
+    expect(missingTestDeclarations(card.names, card.kinds, declarations)).toEqual(['rust_restore']);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

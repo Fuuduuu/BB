@@ -23,6 +23,20 @@ Täiskäik jooksutab valitud tööpuus `check`, `api:check`, `format:check`, `co
 
 Iga käigu logid ja `summary.json` asuvad põhikaustas `output/review-card/<kaart>-<käik>/`. Kokkuvõttes on kontrollitud haru, HEAD, tööpuu olek käigu alguses, käsud, puuduvad nimed ning testitulemused. Vitesti testiarv tuleb katvuskäigust ühe korra. Katvus käib valitud tööpuu Vitesti seadistuses määratud lähtekoodi kohta. E2E vaikimisi ajapiir on 15 minutit. Seda saab muuta keskkonnamuutujaga `BB_REVIEW_E2E_TIMEOUT_MS` (millisekundites), et ka takerdunud serveri korral jõuaks käik kokkuvõtteni. Väljumiskood 1 tähendab, et kontroll ebaõnnestus, nõutud tõend puudub või kaart vajab käsitsi tõlgendamist. Kaardi brauserivaatlus ja kasutaja visuaalne vastuvõtt märgitakse üleandmises eraldi.
 
+Täiskäigu väljundis ja `summary.json` väljal `requiredTestResults` on iga kaardil nõutud nime tulemus. Allikateks on sama käigu Vitesti ja Playwrighti JSON-raportid ning Cargo logi. Parameetritega testil on näha üksikjuhud ja Playwrightil ka projekt. Nõutud testi viga, vahelejätmine, puuduv käivitus või ebapiisav tõend annab väljumiskoodi 1 ka siis, kui ülejäänud testid läbivad. Kordusel läbinud brauseritest ja eduka tüübikontrolliga kaetud `.test-d.ts` deklaratsioon saavad eraldi märke.
+
+## M1-3-10 brauseritõend
+
+```sh
+pnpm proof M1-3-10
+```
+
+Käivita käsk põhikaustast. See leiab kaardi haru tööpuu või kasutab käsureal antud `--worktree <BB kaust>`. Proov kasutab selle kausta hetkeversiooni koos kohalike muudatustega. Kahe tulemuse võrdlemiseks vaata kokkuvõttest Git-i HEAD-i ja ehitatud veebifailide sõrmejälge `applicationSha256`. Kindla commiti kontrolliks anna selle puhas tööpuu. Tööpuus peavad olema kaardi E2E-testid ja paigaldatud projekti sõltuvused. Esmakordsel kasutamisel saab sobiva Chromiumi tööpuust paigaldada käsuga `pnpm exec playwright install chromium`.
+
+Skript ehitab valitud tööpuu veebirakenduse ja avab selle failid otse uues Chromiumi brauserikontekstis. Igas katses luuakse oma sünteetiline plaat. Vaade on 1280 × 800, pikslitihedus 1. Heledas ja tumedas teemas jooksutatakse samad kaks testi, mis on rakenduse E2E-komplektis. J29 puhul mõõdetakse tähise ja näidu kattumist kaheksal stseeniteisendusel ning kontrollitakse viitejoont. Teisel plaadil mõõdetakse kahe kõrvutise näidu vahet.
+
+Iga kord tekib uus `output/playwright/proof/M1-3-10-<käik>/`. Ava `summary.json` või võrdle faile `j29-light.png`, `j29-dark.png`, `adjacent-light.png` ja `adjacent-dark.png`. Sama nimega JSON-is on mõõdud. Väljumiskood 0 nõuab kõigi nelja juhtumi läbimist koos mõõtude ja kuvatõmmistega. Ebaõnnestumisel leiab detailid Playwrighti raportist `playwright.json`.
+
 ## Kes mida loeb
 
 | Roll | Loeb | Ei loe |

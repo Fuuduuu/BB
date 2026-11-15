@@ -8,6 +8,7 @@ export interface PadGeom {
   h: number;
   shape: 'rect' | 'circle' | 'oval';
   through: boolean;
+  name?: string;
 }
 
 export interface FootprintGeom {

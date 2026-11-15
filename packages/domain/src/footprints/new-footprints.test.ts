@@ -9,7 +9,16 @@ type Proto = {
     { t: 'rect'; w: number; h: number } | { t: 'circle'; r: number } | { t: 'path'; bb: number[] }
   )[];
   marks: { t: string; x?: number; y?: number }[];
-  pins: { id: string; x: number; y: number; w: number; h: number; shape: string; drill: number }[];
+  pins: {
+    id: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    shape: string;
+    drill: number;
+    name: string;
+  }[];
 };
 type Entry = {
   key: string;
@@ -28,6 +37,7 @@ const keys: Record<string, string> = {
   c_el: 'radial',
   d_smd: 'chip_diode',
   d_tht: 'axial',
+  led_smd: 'chip_led',
   led_tht: 'led_tht',
   sot223: 'sot223',
   dpak: 'dpak',
@@ -70,7 +80,7 @@ function expectedGeometry(proto: Proto): FootprintGeom {
   }
   const dot = proto.marks.find((mark) => mark.t === 'dot');
   return {
-    pads: Array.from(proto.pins, ({ id, x, y, w, h, shape, drill }) => ({
+    pads: Array.from(proto.pins, ({ id, x, y, w, h, shape, drill, name }) => ({
       id,
       x,
       y,
@@ -78,6 +88,7 @@ function expectedGeometry(proto: Proto): FootprintGeom {
       h,
       shape: shape as 'rect' | 'circle',
       through: drill > 0,
+      ...(name ? { name } : {}),
     })),
     body: {
       w: Math.round(w * 1000) / 1000,

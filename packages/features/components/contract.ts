@@ -2,7 +2,7 @@ import {
   BoardPlacementSchema,
   ComponentKindSchema,
   defaultPinIds,
-  footprintPinIds,
+  footprintGeometry,
   IdSchema,
   PinSchema,
   SideSchema,
@@ -113,7 +113,7 @@ export const COMPONENT_LIBRARY: readonly LibraryEntry[] = [
     [
       'led_smd',
       'led',
-      'chip',
+      'chip_led',
       { size: '0805' },
       'led',
       [choice('size', ['0603', '0805', '1206'], 'case')],
@@ -263,7 +263,7 @@ export const AddComponentSchema = z.strictObject({
   id: IdSchema,
   kind: ComponentKindSchema,
   ref: z.string().trim().min(1).optional(),
-  pins: z.array(pinIdentity),
+  pins: z.array(PinSchema.pick({ id: true, uid: true, name: true })),
   marking: z.string().optional(),
   value: z.string().optional(),
   board: BoardInputSchema.optional(),
@@ -284,6 +284,11 @@ export const RenamePinSchema = PinTargetSchema.extend({ name: z.string().nullabl
 export const SetNcSchema = PinTargetSchema.extend({ nc: z.boolean() });
 export const ComponentTargetSchema = z.strictObject({ id: IdSchema });
 export const PlaceOnBoardSchema = ComponentTargetSchema.extend({ board: BoardInputSchema });
+export const ChangeFootprintSchema = ComponentTargetSchema.extend({
+  footprint: z.string({ error: 'invalid_footprint' }),
+  params: footprintParams,
+  newPinUids: BoardPlacementSchema.shape.padMap.unwrap(),
+});
 export const RotateSchema = ComponentTargetSchema.extend({ deltaDeg: z.number() });
 export const SetLabelOffsetSchema = ComponentTargetSchema.extend({ offset: Vec2Schema.nullable() });
 
@@ -296,6 +301,7 @@ export type RenamePinParams = z.infer<typeof RenamePinSchema>;
 export type SetNcParams = z.infer<typeof SetNcSchema>;
 export type ComponentTargetParams = z.infer<typeof ComponentTargetSchema>;
 export type PlaceOnBoardParams = z.infer<typeof PlaceOnBoardSchema>;
+export type ChangeFootprintParams = z.infer<typeof ChangeFootprintSchema>;
 export type RotateParams = z.infer<typeof RotateSchema>;
 export type SetLabelOffsetParams = z.infer<typeof SetLabelOffsetSchema>;
 
@@ -308,6 +314,7 @@ declare module '@pcbk/contracts' {
     'components.setNc': SetNcParams;
     'components.removePin': PinTargetParams;
     'components.placeOnBoard': PlaceOnBoardParams;
+    'components.changeFootprint': ChangeFootprintParams;
     'components.removeFromBoard': ComponentTargetParams;
     'components.rotate': RotateParams;
     'components.flipSide': ComponentTargetParams;
@@ -338,11 +345,15 @@ export function makePlacedComponent(
   center: Vec2,
 ): AddComponentParams {
   const board = { footprint: entry.footprint, params: { ...entry.params, ...params }, center };
-  const pinIds = footprintPinIds(board.footprint, board.params) ?? [];
+  const pads = footprintGeometry(board.footprint, board.params)?.pads ?? [];
   return {
     id: ids.newId('cmp'),
     kind: entry.kind,
-    pins: pinIds.map((id) => ({ id, uid: ids.newId('pin') })),
+    pins: pads.map(({ id, name }) => ({
+      id,
+      uid: ids.newId('pin'),
+      ...(name === undefined ? {} : { name }),
+    })),
     board,
   };
 }

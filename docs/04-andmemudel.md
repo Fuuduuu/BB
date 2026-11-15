@@ -316,7 +316,8 @@ Edenemisriba = keskmine kolmest osakaalust: komponendid tuvastatud, jalad kaardi
 - **„Eemalda joonistus“** eemaldab ühenduse joonistuse plaadilt või skeemilt, aga elektriline ühendus jääb alles (plaadil õhujoonena).
 - **„Kustuta ühendus“** eemaldab elektrilise sideme koos mõlema joonistusega. Liitepunktid, mis jäävad ilma ühendusteta, kaovad samuti. Mõõtmised jäävad.
 - **Liitepunkti kustutamine** kustutab kõik selle ühendused. Äpp ütleb enne, mitu ühendust see on. Sellele ankurdatud sildid käsitletakse sama käsu sees ([Võrkude arvutus](#võrkude-arvutus-resolvenets)).
-- **Korpuse vahetus** (`components.update` muudab `board.footprint`-i või jalgade arvu mõjutavaid `params`-e):
+- **Korpuse vahetus** (`components.changeFootprint` muudab `board.footprint`-i või jalgade arvu mõjutavaid `params`-e):
+  - Siht `area` („Tundmatu komponent“) säilitab kõik jalad samas järjekorras koos `uid`-i, nime ja NC-ga ning säilitab `customPads` ja `padMap` kirjed. Muutuvad ainult `board.footprint` ja `board.params`; mõju on null ning kinnitusdialoogi ei näidata.
   - Sama id-ga jalad jäävad seotuks ja säilitavad oma `uid`-i, ka kui nende asukoht muutub. Uued jalad saavad uue `uid`-i.
   - Kui vastavus pole üheselt selge, pakub äpp jalgade vastavuse tabelit ega tõsta midagi vaikselt ümber.
   - Kui mõni kaduv jalg on ühenduse ots, sildi ankur või mõõtmise kontakt või kui sellel on nimi või NC-märge, küsib äpp enne kinnitust ja loetleb mõju („Kaovad jalad 9–14: 3 ühendust, 2 mõõtmist, 1 silt“).

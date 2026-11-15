@@ -50,7 +50,10 @@ export const jstFootprint = defineFootprint(
         pad(i + 1, i - (pins - 1) / 2, -1.6, 0.6, 1.55),
       );
       const mx = (pins - 1) / 2 + 1.35;
-      pads.push(pad('MP1', -mx, 1.2, 1.2, 1.8), pad('MP2', mx, 1.2, 1.2, 1.8));
+      pads.push(
+        pad('MP1', -mx, 1.2, 1.2, 1.8, 'rect', 0, 'MP'),
+        pad('MP2', mx, 1.2, 1.2, 1.8, 'rect', 0, 'MP'),
+      );
       return { pads, body: body(pins - 1 + 3.6, 3.2) };
     }
     const s = jst[series]!;
@@ -87,44 +90,48 @@ export const terminalFootprint = defineFootprint(
 );
 
 export const usbCFootprint = defineFootprint('usb_c', 'USB-C', {}, () => {
-  const contacts: readonly [string, number, number][] = [
-    ['A1B12', -3.2, 0.6],
-    ['A4B9', -2.4, 0.6],
-    ['B8', -1.75, 0.3],
-    ['A5', -1.25, 0.3],
-    ['B7', -0.75, 0.3],
-    ['A6', -0.25, 0.3],
-    ['A7', 0.25, 0.3],
-    ['B6', 0.75, 0.3],
-    ['A8', 1.25, 0.3],
-    ['B5', 1.75, 0.3],
-    ['B4A9', 2.4, 0.6],
-    ['B1A12', 3.2, 0.6],
+  const contacts: readonly [string, number, number, string][] = [
+    ['A1B12', -3.2, 0.6, 'GND'],
+    ['A4B9', -2.4, 0.6, 'VBUS'],
+    ['B8', -1.75, 0.3, 'SBU2'],
+    ['A5', -1.25, 0.3, 'CC1'],
+    ['B7', -0.75, 0.3, 'D−'],
+    ['A6', -0.25, 0.3, 'D+'],
+    ['A7', 0.25, 0.3, 'D−'],
+    ['B6', 0.75, 0.3, 'D+'],
+    ['A8', 1.25, 0.3, 'SBU1'],
+    ['B5', 1.75, 0.3, 'CC2'],
+    ['B4A9', 2.4, 0.6, 'VBUS'],
+    ['B1A12', 3.2, 0.6, 'GND'],
   ];
-  const pads: PadGeom[] = contacts.map(([id, x, w]) => pad(id, x, -3.85, w, 1.15));
+  const pads: PadGeom[] = contacts.map(([id, x, w, name]) =>
+    pad(id, x, -3.85, w, 1.15, 'rect', 0, name),
+  );
   pads.push(
-    pad('S1', -4.32, -2.9, 0.9, 2, 'oval', 0.6),
-    pad('S2', 4.32, -2.9, 0.9, 2, 'oval', 0.6),
-    pad('S3', -4.32, 1.1, 0.9, 1.7, 'oval', 0.6),
-    pad('S4', 4.32, 1.1, 0.9, 1.7, 'oval', 0.6),
+    pad('S1', -4.32, -2.9, 0.9, 2, 'oval', 0.6, 'SHIELD'),
+    pad('S2', 4.32, -2.9, 0.9, 2, 'oval', 0.6, 'SHIELD'),
+    pad('S3', -4.32, 1.1, 0.9, 1.7, 'oval', 0.6, 'SHIELD'),
+    pad('S4', 4.32, 1.1, 0.9, 1.7, 'oval', 0.6, 'SHIELD'),
   );
   return { pads, body: body(8.94, 7.3) };
 });
 export const microUsbFootprint = defineFootprint('micro_usb', 'Micro-USB', {}, () => {
-  const pads = Array.from({ length: 5 }, (_, i) => pad(i + 1, (i - 2) * 0.65, -2.7, 0.4, 1.35));
+  const pads = ['VBUS', 'D−', 'D+', 'ID', 'GND'].map((name, i) =>
+    pad(i + 1, (i - 2) * 0.65, -2.7, 0.4, 1.35, 'rect', 0, name),
+  );
   pads.push(
-    pad('S1', -3.1, -2.45, 1.6, 1.4),
-    pad('S2', 3.1, -2.45, 1.6, 1.4),
-    pad('S3', -1.2, 0, 1.9),
-    pad('S4', 1.2, 0, 1.9),
+    pad('S1', -3.1, -2.45, 1.6, 1.4, 'rect', 0, 'SHIELD'),
+    pad('S2', 3.1, -2.45, 1.6, 1.4, 'rect', 0, 'SHIELD'),
+    pad('S3', -1.2, 0, 1.9, 1.9, 'rect', 0, 'SHIELD'),
+    pad('S4', 1.2, 0, 1.9, 1.9, 'rect', 0, 'SHIELD'),
   );
   return { pads, body: body(7.5, 5) };
 });
 export const dcJackFootprint = defineFootprint('dc_jack', 'Toitepesa DC', {}, () => ({
   pads: [
-    pad(1, 0, -5.2, 3.2, 1.6, 'oval', 1),
-    pad(2, 0, 0.8, 3.2, 1.6, 'oval', 1),
-    pad(3, 4.5, -2.2, 1.6, 3.2, 'oval', 1),
+    pad(1, 0, -5.2, 3.2, 1.6, 'oval', 1, '+'),
+    pad(2, 0, 0.8, 3.2, 1.6, 'oval', 1, '−'),
+    pad(3, 4.5, -2.2, 1.6, 3.2, 'oval', 1, 'SW'),
   ],
   body: body(9, 14.4),
 }));

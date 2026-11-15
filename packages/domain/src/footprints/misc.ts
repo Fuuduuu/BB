@@ -26,7 +26,7 @@ export const buttonFootprint = defineFootprint('button', 'Nupp 6×6', {}, () => 
 export const trimmerFootprint = defineFootprint('trimmer', 'Trimmer', {}, () => ({
   pads: [
     pad(1, -2.54, 2.3, 1.6, 1.6, 'rect', 0.8),
-    pad(2, 0, 2.3, 1.6, 1.6, 'circle', 0.8),
+    pad(2, 0, 2.3, 1.6, 1.6, 'circle', 0.8, 'W'),
     pad(3, 2.54, 2.3, 1.6, 1.6, 'circle', 0.8),
   ],
   body: body(6.6, 7),

@@ -8,6 +8,7 @@ export function pad(
   h = w,
   shape: PadGeom['shape'] = 'rect',
   drill = 0,
+  name?: string,
 ): PadGeom {
   return {
     id: String(id),
@@ -17,6 +18,7 @@ export function pad(
     h: roundMm(h),
     shape,
     through: drill > 0,
+    ...(name ? { name } : {}),
   };
 }
 

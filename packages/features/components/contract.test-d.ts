@@ -11,6 +11,36 @@ const params: AddComponentParams = makeAddComponent(ids, 'ic', 8);
 engine.execute('components.add', params);
 engine.execute('components.update', { id: 'cmp_a', value: '10k' });
 engine.execute('components.renamePin', { id: 'cmp_a', pinId: '1', name: null });
+engine.execute('components.add', {
+  id: 'cmp_named',
+  kind: 'diode',
+  pins: [{ id: '1', uid: 'pin_named', name: 'K' }],
+});
+engine.execute('components.changeFootprint', {
+  id: 'cmp_a',
+  footprint: 'soic',
+  params: { pins: 14 },
+  newPinUids: { '9': 'pin_new' },
+});
+// @ts-expect-error the caller supplies the new pin identity map
+engine.execute('components.changeFootprint', {
+  id: 'cmp_a',
+  footprint: 'soic',
+  params: { pins: 14 },
+});
+engine.execute('components.changeFootprint', {
+  id: 'cmp_a',
+  footprint: 'soic',
+  params: {},
+  // @ts-expect-error new pin identities are strings
+  newPinUids: { '9': 9 },
+});
+engine.execute('components.add', {
+  id: 'cmp_a',
+  kind: 'diode',
+  // @ts-expect-error named add inputs do not enable NC on add
+  pins: [{ id: '1', uid: 'pin_a', nc: true }],
+});
 engine.execute('project.rename', { name: 'Plaat' });
 engine.execute('project.setInfo', { device: 'PSU-1' });
 // @ts-expect-error the caller supplies pin instance identities

@@ -81,7 +81,8 @@ function quadFootprint(kind: 'qfp' | 'qfn'): FootprintDef {
       );
     }
     pads.sort((a, b) => Number(a.id) - Number(b.id));
-    if (qfn && params.ep === 'jah') pads.push(pad(4 * n + 1, 0, 0, B * 0.55));
+    if (qfn && params.ep === 'jah')
+      pads.push(pad(4 * n + 1, 0, 0, B * 0.55, B * 0.55, 'rect', 0, 'EP'));
     return { pads, body: body(B, B, { x: -B / 2 + 0.8, y: -B / 2 + 0.8 }) };
   });
 }

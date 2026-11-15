@@ -4,124 +4,21 @@ import { footprintGeometry, type FootprintParams } from '@pcbk/domain/footprints
 import type { LibraryEntry } from '../contract';
 import { placementEt } from './i18n/et';
 import { FootprintPreview } from './FootprintPreview';
+import { FootprintParameters, validatedFootprintParams } from './FootprintParameters';
 import { beginPlacement, usePlaceStore } from './place-store';
-import {
-  libraryName,
-  numericParameter,
-  parameterLabel,
-  positiveDecimal,
-  searchLibrary,
-} from './placement';
-
-function OptionField<T extends string | number>({
-  label,
-  value,
-  choices,
-  onChange,
-}: {
-  label: string;
-  value: string | number | undefined;
-  choices: readonly T[];
-  onChange(value: T): void;
-}) {
-  const id = useId();
-  return (
-    <div className="bb-field">
-      <label htmlFor={id} className="bb-field__label">
-        {label}
-      </label>
-      <select
-        id={id}
-        className="bb-input"
-        value={value}
-        onChange={(event) => {
-          const next = choices.find((choice) => String(choice) === event.target.value);
-          if (next !== undefined) onChange(next);
-        }}
-      >
-        {choices.map((choice) => (
-          <option key={choice} value={choice}>
-            {typeof choice === 'number' ? choice.toLocaleString('et') : choice}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
+import { libraryName, searchLibrary } from './placement';
 
 function LibraryParameters({ entry }: { entry: LibraryEntry }) {
   const [params, setParams] = useState<FootprintParams>(entry.params);
   const isPlacing = usePlaceStore(
     ({ request }) => request?.mode === 'new' && request.entryId === entry.id,
   );
-  const labels = placementEt.params;
-  const isArea = entry.footprint === 'area';
-  const width = positiveDecimal(String(params.w ?? ''));
-  const height = positiveDecimal(String(params.h ?? ''));
-  const validatedParams: FootprintParams = { ...params };
-  let valid = true;
-  for (const spec of entry.paramSpec) {
-    if ('choices' in spec) continue;
-    const value = numericParameter(String(params[spec.key] ?? ''), spec);
-    if (value === undefined) valid = false;
-    else validatedParams[spec.key] = value;
-  }
-  const placementParams = isArea
-    ? width !== undefined && height !== undefined
-      ? { w: width, h: height }
-      : undefined
-    : valid
-      ? validatedParams
-      : undefined;
+  const placementParams = validatedFootprintParams(entry, params);
   const setParam = (key: string, value: string | number) =>
     setParams((previous) => ({ ...previous, [key]: value }));
   return (
     <div className="pcbk-library__params">
-      {entry.paramSpec.map((spec) =>
-        'choices' in spec ? (
-          <OptionField
-            key={spec.key}
-            label={parameterLabel(spec.label)}
-            value={params[spec.key]}
-            choices={spec.choices}
-            onChange={(value) => setParam(spec.key, value)}
-          />
-        ) : (
-          <Field
-            key={spec.key}
-            label={parameterLabel(spec.label)}
-            inputMode={spec.step === 1 ? 'numeric' : 'decimal'}
-            value={params[spec.key]}
-            min={spec.min}
-            max={spec.max}
-            step={spec.step}
-            error={
-              numericParameter(String(params[spec.key] ?? ''), spec) === undefined
-                ? labels.range(spec.min, spec.max, spec.step)
-                : undefined
-            }
-            onChange={(event) => setParam(spec.key, event.target.value)}
-          />
-        ),
-      )}
-      {isArea && (
-        <>
-          <Field
-            label={labels.width}
-            inputMode="decimal"
-            value={params.w}
-            error={width === undefined ? labels.positive : undefined}
-            onChange={(event) => setParam('w', event.target.value)}
-          />
-          <Field
-            label={labels.height}
-            inputMode="decimal"
-            value={params.h}
-            error={height === undefined ? labels.positive : undefined}
-            onChange={(event) => setParam('h', event.target.value)}
-          />
-        </>
-      )}
+      <FootprintParameters entry={entry} params={params} onChange={setParam} />
       <FootprintPreview
         name={libraryName(entry.id)}
         geometry={placementParams && footprintGeometry(entry.footprint, placementParams)}

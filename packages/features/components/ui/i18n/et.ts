@@ -138,6 +138,7 @@ export const placementEt = {
   },
   footprints: {
     chip: 'SMD',
+    chip_led: 'LED SMD',
     chip_tant: 'Tantaal SMD',
     chip_diode: 'Diood SMD',
     el_smd: 'Elektrolüüt SMD',
@@ -204,6 +205,27 @@ export const placementEt = {
     pinNames: 'Jalgade nimed ei sobi',
     pinCount: (componentCount: number, footprintCount: number) =>
       `Jalad ei sobi: komponendil ${componentCount}, korpusel ${footprintCount}`,
+  },
+  change: {
+    edit: 'Muuda',
+    editor: 'Korpuse valik',
+    choose: 'Vali korpus',
+    title: 'Korpuse vahetus',
+    apply: 'Vaheta korpus',
+    cancel: 'Loobu',
+    pinCount: (count: number) => `${count} ${count === 1 ? 'jalg' : 'jalga'}`,
+    impact: (pins: string, counts: { measurements: number; names: number; nc: number }) => {
+      const details = [
+        counts.measurements > 0
+          ? `${counts.measurements} ${counts.measurements === 1 ? 'mõõtmine' : 'mõõtmist'}`
+          : '',
+        counts.names > 0 ? `${counts.names} ${counts.names === 1 ? 'nimi' : 'nime'}` : '',
+        counts.nc > 0 ? `${counts.nc} ${counts.nc === 1 ? 'NC-märge' : 'NC-märget'}` : '',
+      ]
+        .filter(Boolean)
+        .join(', ');
+      return `Kaovad jalad ${pins}: ${details}.${counts.measurements > 0 ? ' Mõõtmised jäävad ajaloolistena alles.' : ''}`;
+    },
   },
   section: {
     title: 'Korpus ja asend',

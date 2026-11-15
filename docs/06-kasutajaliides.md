@@ -26,6 +26,9 @@ Visuaalne keel tuleb prototüübist ([prototype/src/app.css](../prototype/src/ap
 - „Komponendid“ all vahetavad filtrinupud „Plaadil (12)“ ja „Paigutamata (3)“ olemasolevaid loendeid. Kui filter on „Plaadil“ ja paigutamata komponente on, märgib neid teisel nupul aktsenditäpp; automaatset filtrivahetust pole. Filter jääb projekti vaates meelde dokumendi revisjoni muutmata; vigane või puuduv väärtus tähendab „Plaadil“.
 - Vana vahekaardi `unplaced` id-d eraldi ei teisendata: tundmatu salvestatud id korral avaneb esimene vahekaart „Teek“.
 - Teegist paigutades jääb sama korpuse tööriist aktiivseks kuni `Esc`-ini või nupuni „Lõpeta paigutamine“. Iga klõps lisab uue komponendi ja on eraldi tagasivõtmise samm; kursori juures püsivad kere katkendkontuur, padjandid ja jala 1 märk, et kuju fotoga joondada. Paigutamata loendi olemasolev komponent paigutatakse ühe korraga.
+- Paigutatud komponendi kokkupandav jaotis „Korpus“ näitab praegust korpust ja jalgade arvu. „Muuda“ avab teegikirjete valiku samade parameetriväljade ja pealtvaatega. Vahetus säilitab komponendi liigi, asendi ning sama numbriga jalgade nimed, NC ja mõõtmiste seose; uued jalad saavad korpuses määratud nimed.
+- Kui kaduval jalal on mõõtmine, nimi või NC-märge, küsib „Vaheta korpus“ kinnitust ning loetleb jalad vahemikena ja mõju. Mõõtmised jäävad ajaloolistena alles. Korpuse uuesti suurendamine neid ei aktiveeri; `Ctrl+Z` taastab senised jalad ja mõõtmiste aktiivsuse. Ilma mõjuta vahetus ei ava dialoogi.
+- „Tundmatu komponent“ sihtkorpusena säilitab kõik senised jalad ja mõõtmiste seosed ning rakendub kinnitusdialoogita.
 - Tahvli paigutus tuleb M5-s (navigaator sahtlina, kontekst alt üles tõusva lehena).
 
 ## Disainitokenid

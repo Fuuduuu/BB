@@ -54,7 +54,7 @@ export function createComponentsUi(ids: IdGen): UiModule {
         appliesTo: ['component'],
         render: ({ selection }) => {
           const [item] = selection.items;
-          return item ? <PlacementSection key={item.id} id={item.id} /> : null;
+          return item ? <PlacementSection key={item.id} id={item.id} ids={ids} /> : null;
         },
       },
     ],

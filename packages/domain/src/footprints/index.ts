@@ -1,5 +1,6 @@
 import { areaFootprint } from './area';
 import { chipFootprint } from './chip';
+import { chipLedFootprint } from './chip-led';
 import {
   dcJackFootprint,
   header2Footprint,
@@ -37,6 +38,7 @@ export const FOOTPRINTS: readonly FootprintDef[] = [
   to220Footprint,
   header1Footprint,
   areaFootprint,
+  chipLedFootprint,
   chipTantFootprint,
   chipDiodeFootprint,
   elSmdFootprint,

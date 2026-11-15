@@ -74,10 +74,9 @@ test('first_through_flow_measurement_survives_reopen', async ({ page }) => {
   expect(ring.y).toBeCloseTo(measuredPin.y, 1);
   await expect(reading).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Mõõtmised (1)', exact: true }).click();
-  const row = page
-    .getByRole('tabpanel', { name: 'Mõõtmised (1)', exact: true })
-    .getByRole('listitem');
+  await page.getByRole('tab', { name: 'Mõõtmised', exact: true }).click();
+  await expect(page.locator('.pcbk-pane-summary')).toHaveText('1 mõõtmine');
+  const row = page.getByRole('tabpanel', { name: 'Mõõtmised', exact: true }).getByRole('listitem');
   await expect(row.getByText('U1.3', { exact: true })).toBeVisible();
   await expect(row.getByText('4,98 V', { exact: true })).toBeVisible();
 });
@@ -176,10 +175,11 @@ test('undo_redo_of_placement_and_measurement', async ({ page }) => {
   await expect(readings(page).getByText('4,98 V', { exact: true })).toHaveCount(0);
   await redo.click();
   await expect(readings(page).getByText('4,98 V', { exact: true })).toBeVisible();
-  await page.getByRole('tab', { name: 'Mõõtmised (1)', exact: true }).click();
+  await page.getByRole('tab', { name: 'Mõõtmised', exact: true }).click();
+  await expect(page.locator('.pcbk-pane-summary')).toHaveText('1 mõõtmine');
   await expect(
     page
-      .getByRole('tabpanel', { name: 'Mõõtmised (1)', exact: true })
+      .getByRole('tabpanel', { name: 'Mõõtmised', exact: true })
       .getByRole('listitem')
       .getByText('U1.3', { exact: true }),
   ).toBeVisible();

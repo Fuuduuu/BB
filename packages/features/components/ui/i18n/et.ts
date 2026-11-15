@@ -65,9 +65,17 @@ export const componentEt = {
 export const placementEt = {
   tabs: {
     library: 'Teek',
-    placed: 'Plaadil',
-    unplaced: 'Plaadile paigutamata',
+    components: 'Komponendid',
   },
+  filter: {
+    label: 'Filter',
+    placed: 'Plaadil',
+    unplaced: 'Paigutamata',
+  },
+  summary: (placed: number, unplaced: number): string | null =>
+    [placed > 0 ? `${placed} plaadil` : '', unplaced > 0 ? `${unplaced} paigutamata` : '']
+      .filter(Boolean)
+      .join(' · ') || null,
   library: {
     names: {
       r_smd: 'Takisti SMD',

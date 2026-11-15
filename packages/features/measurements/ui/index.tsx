@@ -37,7 +37,7 @@ export function createMeasurementsUi(ids: IdGen): UiModule {
         id: 'measurements',
         title: measureEt.list.title,
         order: 3,
-        count: (snapshot) => snapshot.doc.measurements.length,
+        summary: (snapshot) => measureEt.summary(snapshot.doc.measurements.length),
         render: () => <MeasurementList />,
       },
     ],

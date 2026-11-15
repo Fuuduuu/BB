@@ -4,6 +4,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { EngineProvider } from '@pcbk/client';
 import { FakeEngine, FakeProjects, snapshot } from '../../../client/src/__tests__/fakes';
 import { AppShell } from './AppShell';
+import { UiRegistry } from './UiRegistry';
 import { et } from './i18n/et';
 import { useSessionStore } from './session-store';
 import { useViewStore } from './view-store';
@@ -41,6 +42,39 @@ const contextToggle = () =>
   within(screen.getByRole('banner')).getByRole<HTMLButtonElement>('button', {
     name: /^(Näita omadusi|Peida omadused)$/,
   });
+
+test('old_unplaced_tab_value_opens_first_tab', () => {
+  useViewStore
+    .getState()
+    .restore({ ...useViewStore.getState().getView(), navigatorTab: 'unplaced' });
+  const engine = new FakeEngine(snapshot());
+  render(
+    <EngineProvider engine={engine} projects={new FakeProjects()}>
+      <AppShell
+        onRetrySave={() => {}}
+        onSaveElsewhere={() => {}}
+        onCopyAndReload={() => {}}
+        onExportDiagnostics={() => {}}
+        registry={
+          new UiRegistry([
+            {
+              id: 'test',
+              title: 'Test',
+              navigatorTabs: [
+                { id: 'library', title: 'Teek', order: 0, render: () => 'Teegi sisu' },
+                { id: 'components', title: 'Komponendid', order: 1, render: () => 'Komponendid' },
+              ],
+            },
+          ])
+        }
+      />
+    </EngineProvider>,
+  );
+  expect(screen.getByRole('tab', { name: 'Teek' }).getAttribute('aria-selected')).toBe('true');
+  expect(screen.getByRole('tabpanel', { name: 'Teek' }).textContent).toBe('Teegi sisu');
+  expect(useViewStore.getState().getView().navigatorTab).toBe('unplaced');
+  expect(engine.snapshot().rev).toBe(0);
+});
 
 test('navigator_hides_and_returns_with_same_width', () => {
   setup();

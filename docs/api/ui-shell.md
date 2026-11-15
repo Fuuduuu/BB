@@ -212,7 +212,7 @@ export function PanelErrorBoundary({ children }: PropsWithChildren): import("rea
 ```ts
 export interface PanelSpec extends SlotSpec {
     title: string;
-    count?(snapshot: Snapshot): number;
+    summary?(snapshot: Snapshot): string | null;
 }
 ```
 

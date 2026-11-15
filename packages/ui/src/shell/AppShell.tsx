@@ -68,11 +68,11 @@ function Navigator({ registry }: { registry: UiRegistry }) {
         <p className="pcbk-empty-pane">{et.shell.navigatorEmpty}</p>
       </>
     );
+  const summary = active.summary?.(snapshot);
   return (
     <>
       <div className="pcbk-tabs" role="tablist" aria-label={et.shell.navigator}>
         {tabs.map((tab, index) => {
-          const count = tab.count?.(snapshot) ?? 0;
           return (
             <button
               type="button"
@@ -97,11 +97,11 @@ function Navigator({ registry }: { registry: UiRegistry }) {
               }}
             >
               {tab.title}
-              {count > 0 && ` (${count})`}
             </button>
           );
         })}
       </div>
+      {summary && <div className="pcbk-pane-summary">{summary}</div>}
       <div
         className="pcbk-pane-content"
         role="tabpanel"

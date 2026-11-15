@@ -1,3 +1,44 @@
+.pcbk-component-filters {
+  display: flex;
+  gap: 3px;
+  margin: 12px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--well);
+}
+.pcbk-component-filters__option {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 8px 4px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pcbk-component-filters__option[aria-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.pcbk-component-filters__option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.pcbk-component-filters__dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
 .pcbk-components__toolbar {
   display: flex;
   align-items: center;

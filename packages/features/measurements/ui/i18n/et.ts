@@ -13,6 +13,8 @@ export const measurementListText = {
 export const measureEt = {
   title: 'Mõõda',
   list: { title: measurementListText.tab },
+  summary: (count: number) =>
+    count === 0 ? null : `${count} ${count === 1 ? 'mõõtmine' : 'mõõtmist'}`,
   redProbe: 'Punane sond',
   blackProbe: 'Must sond',
   pickBlack: 'Vali musta sondi jalg',

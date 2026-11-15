@@ -11,7 +11,7 @@ export interface SlotSpec {
 
 export interface PanelSpec extends SlotSpec {
   title: string;
-  count?(snapshot: Snapshot): number;
+  summary?(snapshot: Snapshot): string | null;
 }
 
 export interface KeySpec {

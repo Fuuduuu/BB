@@ -3,6 +3,30 @@ import { fireEvent, screen, within } from '@testing-library/react';
 import type { Measurement } from '@pcbk/domain';
 import { expect, test } from 'vitest';
 import { mountMeasurements, pinRef } from '../__tests__/workspace';
+import { snapshot } from '../../../client/src/__tests__/fakes';
+import { createMeasurementsUi } from './index';
+
+test('measurement_summary_uses_singular_and_plural', () => {
+  const tab = createMeasurementsUi({ newId: () => 'unused' }).navigatorTabs![0]!;
+  for (const [count, expected] of [
+    [0, null],
+    [1, '1 mõõtmine'],
+    [2, '2 mõõtmist'],
+    [1500, '1500 mõõtmist'],
+  ] as const) {
+    const initial = snapshot();
+    const current = {
+      ...initial,
+      doc: {
+        ...initial.doc,
+        measurements: Array.from({ length: count }, (_, index) =>
+          measurement({ id: `msr_${index}` }),
+        ),
+      },
+    };
+    expect(tab.summary?.(current)).toBe(expected);
+  }
+});
 
 const takenAt = '2026-11-10T10:07:00.1Z';
 
@@ -20,8 +44,8 @@ function measurement(overrides: Partial<Measurement> = {}): Measurement {
   };
 }
 
-function openList(count: number) {
-  const name = count ? `Mõõtmised (${count})` : 'Mõõtmised';
+function openList() {
+  const name = 'Mõõtmised';
   fireEvent.click(screen.getByRole('tab', { name }));
   return within(screen.getByRole('tabpanel', { name }));
 }
@@ -47,7 +71,7 @@ test('list_marks_historical_measurements', () => {
     },
   });
 
-  const list = openList(2);
+  const list = openList();
   const rows = list.getAllByRole('listitem');
   const latest = within(rows[0]!);
   const oldest = within(rows[1]!);
@@ -67,7 +91,7 @@ test('list_remove_is_undoable', () => {
     seed: (doc) => doc.measurements.push(measurement()),
   });
 
-  const list = openList(1);
+  const list = openList();
   fireEvent.click(list.getByRole('button', { name: 'Kustuta' }));
   expect(engine.snapshot().doc.measurements).toEqual([]);
   expect(host.drainJournal().map(({ commandId }) => commandId)).toEqual(['measurements.remove']);
@@ -91,7 +115,7 @@ test('list_displays_and_removes_legacy_modes', () => {
     },
   });
 
-  const list = openList(4);
+  const list = openList();
   const rows = list.getAllByRole('listitem');
   const resistance = within(rows.find((row) => within(row).queryByText('Takistus'))!);
   const diode = within(rows.find((row) => within(row).queryByText('Diood'))!);
@@ -106,5 +130,6 @@ test('list_displays_and_removes_legacy_modes', () => {
     'msr_continuity',
     'msr_voltage',
   ]);
-  expect(screen.getByRole('tab', { name: 'Mõõtmised (3)' })).toBeTruthy();
+  expect(screen.getByRole('tab', { name: 'Mõõtmised' })).toBeTruthy();
+  expect(screen.getByText('3 mõõtmist')).toBeTruthy();
 });

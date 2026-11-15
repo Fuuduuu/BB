@@ -10,7 +10,11 @@ async function createBoard(page: Page, name: string) {
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
 }
 async function addResistor(page: Page) {
-  await page.getByRole('tab', { name: /^Plaadile paigutamata(?: \(\d+\))?$/ }).click();
+  await page.getByRole('tab', { name: 'Komponendid', exact: true }).click();
+  await page
+    .getByRole('radiogroup', { name: 'Filter', exact: true })
+    .getByRole('radio', { name: /^Paigutamata \(\d+\)$/ })
+    .click();
   await page.getByRole('button', { name: 'Lisa komponent', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Lisa komponent' });
   await dialog.getByRole('combobox', { name: 'Tüüp' }).selectOption('resistor');
@@ -175,11 +179,11 @@ test('context panel width and collapsed state survive reopening', async ({ page 
     {
       navigatorWidth: 300,
       navigatorOpen: true,
-      navigatorTab: 'unplaced',
+      navigatorTab: 'components',
       contextWidth: 360,
       contextOpen: false,
       boardView: { zoom: 1, pan: { x: 0, y: 0 } },
-      modules: {},
+      modules: { components: { filter: 'unplaced' } },
     },
   ]);
   await page.reload();

@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test } from 'vitest';
 import { EngineProvider } from '@pcbk/client';
-import { useSessionStore } from '@pcbk/ui';
+import { useSessionStore, useViewStore } from '@pcbk/ui';
 import { FakeProjects } from '../../../client/src/__tests__/fakes';
 import { idGenerator, setup } from '../../__tests__/helpers';
 import { createComponentsUi } from './index';
@@ -10,9 +10,15 @@ import { usePlaceStore } from './place-store';
 
 beforeEach(() => {
   useSessionStore.getState().reset('feature-test');
+  useViewStore.getState().reset();
   usePlaceStore.getState().reset();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  useSessionStore.getState().reset('');
+  useViewStore.getState().reset();
+  usePlaceStore.getState().reset();
+});
 
 function mount(tabId: string, engine = setup().engine) {
   const module = createComponentsUi(idGenerator());
@@ -91,7 +97,8 @@ function mountUnplaced(pinIds: string[]) {
     pins: pinIds.map((id, index) => ({ id, uid: `pin_${index}` })),
   });
   expect(result.ok).toBe(true);
-  mount('unplaced', engine);
+  mount('components', engine);
+  fireEvent.click(screen.getByRole('radio', { name: 'Paigutamata (1)' }));
   fireEvent.click(screen.getByRole('button', { name: 'Paiguta plaadile' }));
   return engine;
 }

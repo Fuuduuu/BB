@@ -12,6 +12,7 @@ Uuendatud: **2026-11-14**. Hoia see fail lühikese hetkeseisuna, soovitatavalt k
 
 ## Mis on olemas
 
+- [Salvestuse ja seansivahetuse ülevaatuse oskus](../tools/skills/bb-review-storage/SKILL.md) juhib fotoimpordi, automaatse failinime ja taastamise sihitud kontrolli. Claude ja Codex leiavad selle [oskuste juhendist](SKILLS.md).
 - Toote- ja ehitusdokumendid [01–08](README.md) ning käivitatav veebiprototüüp kaustas `prototype/`.
 - Foto ja lõuendi [joonduse kontroll](../tools/skills/bb-check-canvas/SKILL.md) on proovitud sünteetiliste PNG-dega kõigi kaheksa stseeniteisenduse korral. Töölaua ekspordi tulemus selgub kaardiga [M1-2-8](tasks/M1-2-8.md).
 - [ADR-002](adr/ADR-002-typescript-tauri.md), [ADR-003 v2](adr/ADR-003-frontend-backend.md) ja [ADR-004](adr/ADR-004-kaks-vaadet-ja-uhendused.md) on vastu võetud kasutaja otsusega 2026-11-07.

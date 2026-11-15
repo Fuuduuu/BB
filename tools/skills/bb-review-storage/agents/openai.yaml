@@ -1,0 +1,4 @@
+interface:
+  display_name: "BB salvestuse ja seansivahetuse ülevaatus"
+  short_description: "Kontrolli seansi sihtkohta ja projektifaili säilimist"
+  default_prompt: "Kasuta $bb-review-storage ja kontrolli, millisesse projekti või faili salvestustoiming tegelikult kirjutas."

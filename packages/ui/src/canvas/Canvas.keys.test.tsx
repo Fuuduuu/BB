@@ -4,6 +4,7 @@ import { afterEach, expect, test } from 'vitest';
 import { snapshot } from '../../../client/src/__tests__/fakes';
 import { useSessionStore } from '../shell/session-store';
 import { Canvas, type CanvasProps } from './Canvas';
+import { UiRegistry } from '../shell/UiRegistry';
 
 const getSession = useSessionStore.getState;
 const component = { kind: 'component', id: 'cmp_selected' };
@@ -41,6 +42,89 @@ function setup(props: Partial<CanvasProps> = {}) {
     </>,
   ).container.querySelector('svg')!;
 }
+
+test('shell_keys_are_rejected_for_modules_and_free_key_runs', () => {
+  const registry = new UiRegistry();
+  for (const key of [
+    'Escape',
+    'N',
+    'O',
+    'V',
+    'H',
+    ' ',
+    'Ctrl+Z',
+    'Ctrl+Y',
+    'Ctrl+Shift+Z',
+    'Meta+Z',
+    'Meta+Y',
+    'Meta+Shift+Z',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+  ]) {
+    expect(
+      () =>
+        registry.register({
+          id: `conflict-${key}`,
+          title: 'Conflict',
+          keys: [{ id: 'conflict', key, run: () => true }],
+        }),
+      key,
+    ).toThrow(/keyboard shortcut/);
+    expect(registry.modules()).toEqual([]);
+    expect(
+      () =>
+        registry.register({
+          id: `tool-conflict-${key}`,
+          title: 'Conflict',
+          tools: [
+            {
+              id: 'custom',
+              label: 'Custom',
+              icon: '',
+              group: 'draw',
+              key,
+              create: () => {
+                throw new Error('Conflicting tool must never be created');
+              },
+            },
+          ],
+        }),
+      key,
+    ).toThrow(/keyboard shortcut/);
+    expect(registry.modules()).toEqual([]);
+  }
+  for (const key of ['Escape', ' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) {
+    expect(
+      () =>
+        registry.register({
+          id: `shift-conflict-${key}`,
+          title: 'Conflict',
+          keys: [{ id: 'conflict', key, shift: true, run: () => true }],
+        }),
+      `Shift+${key}`,
+    ).toThrow(/keyboard shortcut/);
+  }
+  let calls = 0;
+  registry.register({
+    id: 'free',
+    title: 'Free',
+    keys: [
+      {
+        id: 'free-key',
+        key: 'K',
+        run: () => {
+          calls++;
+          return true;
+        },
+      },
+    ],
+  });
+  const svg = setup({ keys: registry.keys() });
+  expect(fireEvent.keyDown(svg, { key: 'k' })).toBe(false);
+  expect(calls).toBe(1);
+});
 
 test('canvas_keys_do_not_fire_inside_input', () => {
   const svg = setup({

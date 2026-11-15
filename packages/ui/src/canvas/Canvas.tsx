@@ -3,7 +3,7 @@ import type { PointerEvent } from 'react';
 import type { DocumentEngine, Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
 import { et } from '../shell/i18n/et';
-import { isEditing } from '../shell/keymap';
+import { isEditing, matchesShellKey, SHELL_KEYS } from '../shell/keymap';
 import { useSessionStore } from '../shell/session-store';
 import type { Preview } from '../shell/session-store';
 import type { KeySpec } from '../shell/UiRegistry';
@@ -248,7 +248,7 @@ export function Canvas({
         isEditing(event)
       )
         return;
-      if (event.key === 'Escape') {
+      if (matchesShellKey(event, SHELL_KEYS.cancel)) {
         space.current = false;
         // Switching tools cancels the outgoing tool in the layout cleanup.
         if (getSession().toolId === 'select') cancel(active);
@@ -257,7 +257,7 @@ export function Canvas({
         event.preventDefault();
         return;
       }
-      if (!event.altKey && event.key === ' ') {
+      if (matchesShellKey(event, SHELL_KEYS.temporaryPan)) {
         if (event.target instanceof Element && event.target.closest('button, a[href]')) return;
         space.current = true;
         event.preventDefault();
@@ -288,7 +288,7 @@ export function Canvas({
       }
     }
     function onKeyUp(event: KeyboardEvent) {
-      if (event.key === ' ') space.current = false;
+      if (event.key === SHELL_KEYS.temporaryPan.key) space.current = false;
     }
     function onBlur() {
       space.current = false;

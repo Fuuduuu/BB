@@ -118,7 +118,7 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 | `P` | Punkt plaadil | `Ctrl+Z` / `Ctrl+Y` | tagasi / uuesti |
 | `A` | Joonda kahe jalaga | `Ctrl+K` | käsupalett |
 | `D` | Mõõtjoon | `Ctrl+Tab` | Plaat ↔ Skeem |
-| `O` | Kontuur | `0` / `+` / `−` | sobita / suumi |
+| `N` / `O` | näita/peida navigaatorit / omadusi | `0` / `+` / `−` | sobita / suumi |
 | `K` | Kalibreeri | `Esc` | katkesta → tagasi Vali tööriista → tühjenda valik |
 | `X` | Märgi kahjustatud ala | `?` | kiirklahvide abi |
 
@@ -130,7 +130,7 @@ Mitme jalaga komponendil on „Salvesta“ nupu all nähtav vihje „Alt+↓ jä
 
 Kontekstiklahvid (piiksu nupud, raja joonistamine, skeemivaade) kehtivad ainult selles olekus ja on registris kontekstiga seotud.
 
-Klahvid on registreeritud moodulite kaudu (`keymap`). Topeltregistreerimine on käivitusel viga.
+Kesta rakendatud klahvid on ühises `SHELL_KEYS` loendis: `Esc`, `N`, `O`, `V`, `H`, tühik, nooled (ka `Shift`-iga), `Ctrl+Z`, `Ctrl+Y` ja `Ctrl+Shift+Z` (toetatud on ka `Meta`-kombinatsioonid). Sama loend juhib tegelikke käsitlejaid. Mooduli klahv ega tööriista otsetee ei tohi kattuda kesta kombinatsiooniga; register lükkab kattumise tagasi. Ülejäänud mooduliklahvid registreeritakse `keymap`-i kaudu; topeltregistreerimine on käivitusel viga.
 
 ## Hiir ja puude
 

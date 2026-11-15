@@ -164,11 +164,12 @@ export interface LayerSpec {
 }
 ```
 
-**Registreerimine:** mootori moodulid on loetletud failis `apps/desktop/src/engine.features.ts` ja UI moodulid failis `apps/desktop/src/ui.features.ts`, kumbki rida mooduli kohta. Registrid kontrollivad käivitusel järgmist:
+**Registreerimine:** mõlemad rakendused kasutavad ühiseid nimekirju `packages/features/engine.ts` ja `packages/features/ui.ts`. Koostefaili `packages/features/composition.ts` `assertModulePairs(engineIds, uiIds, uiOnly)` kontroll antakse töölauale rakenduse koostekohast: tootemoodulid kontrollitakse enne registri loomist ja kesta `home-feedback` lisamist. Registrid kontrollivad käivitusel järgmist:
 - id-d on unikaalsed;
 - `dependsOn` on olemas ja tsükleid pole;
 - käskude, tööriistade, klahvide ja paneelide id-d ei kattu;
 - igal UI moodulil on samanimeline mootori moodul (erandid on ainult UI moodulid `guide` ja `export`);
+- igal mootori moodulil on samanimeline UI moodul; puuduva paarilise viga nimetab mooduli ja takistab töölaua avamist;
 - igal `BoardDoc` väljal on täpselt üks omanik.
 
 Vea korral käivitub äpp veateatega. UI register sorteerib `canvasLayers` kihid `z` järgi ning kontrollib kihtide ja tööriistade ID-sid. Lõuend kasutab kihtide üldisi punkt-, lõigu- ja alakuju tabamusi. Valik ja vaate nihutamine kuuluvad lõuendi baasi.
@@ -359,6 +360,10 @@ Skeem on sama projekti **teine tööpind**, mitte tuletatud pilt ([ADR-004](adr/
 
 ## 9. Salvestus ja projekti fail
 
+**Automaatne failinimi:** kui kasutaja pole loomisel teed valinud, küsib töölauaadapter `default_project_path`-ilt vaba nime ja saadab `project_create`-le `exclusive: true`. Rust avaldab ajutise faili olemasolevat sihti üle kirjutamata (`install_new`). Kui nimi on vahepeal hõivatud, annab Rust `path_taken`; adapter küsib uue nime, kokku kuni kolm loomiskatset. Katsete ammendumisel on avalik salvestusviga `exists`. Ajutine fail koristatakse ja hõivatud faili baite ei muudeta. Kasutaja valitud tee kasutab `exclusive: false`; kinnitatud asenduse senine käitumine säilib.
+
+**Fotoimpordi seanss:** `ProjectService.importPhoto` saab impordi alguse loogilise `session`-i (`snapshot.sessionId`). `serial`-järjekorras kontrollitakse seda aktiivse loogilise seansiga enne `photos.importBytes`-i. Aegunud päring annab `stale_session` ilma fotopordi kirjutuskutseta; hoidla sihtseanss võetakse alles selle kontrolli järel aktiivsest kontekstist. Nii võib koopia jätkata sama loogilise seansiga uues hoidlas, kuid projektivahetus ei suuna vana importi uude projekti.
+
 **Üks fail `<nimi>.pcbk` = SQLite andmebaas:**
 
 ```sql
@@ -419,6 +424,7 @@ Projekti faili kirjutab ainult `SaveCoordinator`, mis on mootoris `ProjectServic
 - **Üks järjekord.** Korraga on käimas kõige rohkem üks kirjutus. Kui kirjutuse ajal tuleb uus käsk, kirjutatakse pärast selle lõppu kohe uusim olek.
 - **Revisjoni võrdlus tehingu sees:** `project_save` uuendab dokumenti ainult siis, kui failis on täpselt `base_rev` (`UPDATE … WHERE rev = base_rev`). Muidu tuleb viga `stale_rev` ja midagi ei kirjutata. Luku tõttu ei tohiks see kunagi juhtuda, aga see on teine kaitsekiht.
 - **Vaade eraldi:** `saveView` märgib vaate muutunuks ja kirjutab ainult `view` tabeli, ilma `rev`-i ja ajaloosammuta. Ka see käib samas järjekorras ja `flush()` hõlmab seda.
+  - Võrdlus on ühine `contracts/view-state.ts` `sameViewState`: kõik salvestatavad väljad, sealhulgas `navigatorOpen`, `modules` ja `boardView`. Seda kasutavad nii salvestusjuht kui töölaud; töölaud võrdleb uut vaadet varasema salvestatava vaate koopiaga. Objektivõtmete järjekord võrdlust ei mõjuta, massiivielementide järjekord mõjutab.
 - **Logi read** jäävad järjekorda seni, kuni tehing on õnnestunud. Ebaõnnestumisel ei kao ükski rida.
 - **Nähtav olek:** `saved(rev, aeg)` → „Salvestatud · 14:32“; `pending` ja `saving` → „Salvestan…“; `error(põhjus)` → punane riba „Salvestamine ebaõnnestus: <põhjus>. [Proovi uuesti] [Salvesta mujale…]“. Vea ajal töö jätkub mälus, iga uus käsk proovib uuesti ja olek jääb punaseks, kuni kirjutus õnnestub. Olekuteated kannavad `sessionId`-d.
   - `stale_rev` säilib nii `SaveStatus.reason`-is kui sulgemisdialoogi põhjusena. Tekst on „Projekti muudeti teises aknas. Sinu muudatused on alles ainult selles aknas; salvesta need mujale.“ Selle vea korral puudub ribal ja dialoogis **Proovi uuesti**, sest sama alusrevisjoniga kordus ei lahenda konflikti; **Salvesta mujale…** ja salvestamata sulgemine on alles.

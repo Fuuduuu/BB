@@ -36,6 +36,7 @@ export function storageError(error: unknown): StorageError {
   const actualRev =
     typeof actual === 'number' && Number.isSafeInteger(actual) && actual >= 0 ? actual : undefined;
   if (dto.reason === 'stale_rev') return new StorageError('unknown', actualRev);
+  if (dto.reason === 'path_taken') return new StorageError('exists', actualRev);
   if (reasons.has(dto.reason)) return new StorageError(dto.reason as StorageReason, actualRev);
   return new StorageError('unknown');
 }
@@ -117,14 +118,32 @@ export function createTauriRepository({
 
   return {
     async create(req) {
-      const path = req.path ?? (await call<string>('default_project_path', { name: req.doc.name }));
-      return opened(
-        await call<OpenedProjectDto>('project_create', {
-          path,
-          project_id: req.projectId,
-          doc_json: JSON.stringify(req.doc),
-        }),
-      );
+      const exclusive = req.path === undefined;
+      for (let attempt = 1; ; attempt++) {
+        const path =
+          req.path ?? (await call<string>('default_project_path', { name: req.doc.name }));
+        let dto: OpenedProjectDto;
+        try {
+          dto = await invoke<OpenedProjectDto>('project_create', {
+            path,
+            project_id: req.projectId,
+            doc_json: JSON.stringify(req.doc),
+            exclusive,
+          });
+        } catch (error) {
+          if (
+            exclusive &&
+            attempt < 3 &&
+            typeof error === 'object' &&
+            error !== null &&
+            'reason' in error &&
+            error.reason === 'path_taken'
+          )
+            continue;
+          throw storageError(error);
+        }
+        return opened(dto);
+      }
     },
     async open(path) {
       return opened(await call<OpenedProjectDto>('project_open', { path }));

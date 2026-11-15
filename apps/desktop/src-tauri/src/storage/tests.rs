@@ -1,6 +1,59 @@
 use super::*;
 
 #[test]
+fn auto_named_create_never_replaces_existing_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = crate::desktop_paths::default_project_path(dir.path(), "Automatic").unwrap();
+    assert!(!path.exists());
+    let before = b"synthetic file created after the automatic name was selected";
+    fs::write(&path, before).unwrap();
+    let store = ProjectStore::new(dir.path().join("app-data"), Arc::new(SystemClock));
+
+    let result = store.create_with_exclusive(
+        &path,
+        "new-project",
+        r#"{"format_version":1,"rev":0,"name":"Automatic"}"#,
+        true,
+    );
+
+    assert!(
+        result.is_err(),
+        "automatic creation replaced the occupied file"
+    );
+    assert_eq!(
+        serde_json::to_value(result.unwrap_err()).unwrap()["reason"],
+        "path_taken"
+    );
+    assert_eq!(fs::read(&path).unwrap(), before);
+    let remaining: Vec<_> = fs::read_dir(path.parent().unwrap())
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect();
+    assert_eq!(remaining, vec![path.clone()]);
+
+    let next_path = crate::desktop_paths::default_project_path(dir.path(), "Automatic").unwrap();
+    assert_ne!(next_path, path);
+    let created = store
+        .create_with_exclusive(
+            &next_path,
+            "new-project",
+            r#"{"format_version":1,"rev":0,"name":"Automatic"}"#,
+            true,
+        )
+        .unwrap();
+    store.close(&created.session).unwrap();
+    let reopened = store.open(&next_path).unwrap();
+    assert_eq!(reopened.project_id, "new-project");
+    assert_eq!(reopened.file_id, created.file_id);
+    assert_eq!(
+        reopened.doc_json,
+        r#"{"format_version":1,"rev":0,"name":"Automatic"}"#
+    );
+    store.close(&reopened.session).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), before);
+}
+
+#[test]
 fn copy_falls_back_to_memory_when_source_missing() {
     let dir = tempfile::tempdir().unwrap();
     let source = dir.path().join("source.pcbk");

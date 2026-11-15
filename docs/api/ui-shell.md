@@ -285,6 +285,62 @@ export type SelectionItem = {
 };
 ```
 
+### `SHELL_KEYS`
+```ts
+export const SHELL_KEYS: {
+    readonly cancel: {
+        readonly key: "Escape";
+        readonly shift: "any";
+        readonly alt: "any";
+    };
+    readonly navigator: {
+        readonly key: "N";
+    };
+    readonly context: {
+        readonly key: "O";
+    };
+    readonly undo: {
+        readonly key: "Z";
+        readonly primary: true;
+    };
+    readonly redo: {
+        readonly key: "Y";
+        readonly primary: true;
+    };
+    readonly redoShift: {
+        readonly key: "Z";
+        readonly primary: true;
+        readonly shift: true;
+    };
+    readonly select: {
+        readonly key: "V";
+    };
+    readonly pan: {
+        readonly key: "H";
+    };
+    readonly temporaryPan: {
+        readonly key: " ";
+        readonly shift: "any";
+    };
+    readonly nudgeLeft: {
+        readonly key: "ArrowLeft";
+        readonly shift: "any";
+    };
+    readonly nudgeRight: {
+        readonly key: "ArrowRight";
+        readonly shift: "any";
+    };
+    readonly nudgeUp: {
+        readonly key: "ArrowUp";
+        readonly shift: "any";
+    };
+    readonly nudgeDown: {
+        readonly key: "ArrowDown";
+        readonly shift: "any";
+    };
+};
+```
+
 ### `SlotSpec`
 ```ts
 export interface SlotSpec {

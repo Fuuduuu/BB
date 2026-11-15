@@ -29,6 +29,105 @@ function mockInvoke() {
   return { call, invoke };
 }
 
+test('auto_named_create_retries_on_path_taken', async () => {
+  const { call, invoke } = mockInvoke();
+  const nextPath = 'C:/Projects/Board (2).pcbk';
+  call
+    .mockResolvedValueOnce(dto.path)
+    .mockRejectedValueOnce({ reason: 'path_taken', actual_rev: null })
+    .mockResolvedValueOnce(nextPath)
+    .mockResolvedValueOnce({ ...dto, path: nextPath })
+    .mockResolvedValueOnce(undefined);
+  const repo = createTauriRepository({ invoke });
+
+  await expect(
+    repo.create({ name: doc.name, projectId: dto.project_id, doc }),
+  ).resolves.toMatchObject({
+    path: nextPath,
+    projectId: dto.project_id,
+    fileId: dto.file_id,
+    doc,
+  });
+  expect(call.mock.calls).toEqual([
+    ['default_project_path', { name: doc.name }],
+    [
+      'project_create',
+      {
+        path: dto.path,
+        project_id: dto.project_id,
+        doc_json: JSON.stringify(doc),
+        exclusive: true,
+      },
+    ],
+    ['default_project_path', { name: doc.name }],
+    [
+      'project_create',
+      {
+        path: nextPath,
+        project_id: dto.project_id,
+        doc_json: JSON.stringify(doc),
+        exclusive: true,
+      },
+    ],
+    ['recent_add', { path: nextPath, project_id: dto.project_id, name: doc.name }],
+  ]);
+});
+
+test('auto named create stops after three path conflicts', async () => {
+  const { call, invoke } = mockInvoke();
+  const paths = [
+    'C:/Projects/Board.pcbk',
+    'C:/Projects/Board (2).pcbk',
+    'C:/Projects/Board (3).pcbk',
+  ];
+  for (const path of paths) {
+    call
+      .mockResolvedValueOnce(path)
+      .mockRejectedValueOnce({ reason: 'path_taken', actual_rev: null });
+  }
+  const repo = createTauriRepository({ invoke });
+
+  await expect(repo.create({ name: doc.name, projectId: dto.project_id, doc })).rejects.toEqual(
+    new StorageError('exists'),
+  );
+  expect(call.mock.calls.filter(([command]) => command === 'project_create')).toEqual(
+    paths.map((path) => [
+      'project_create',
+      { path, project_id: dto.project_id, doc_json: JSON.stringify(doc), exclusive: true },
+    ]),
+  );
+  expect(call).toHaveBeenCalledTimes(6);
+});
+
+test('automatic create does not retry other storage failures', async () => {
+  const { call, invoke } = mockInvoke();
+  call
+    .mockResolvedValueOnce(dto.path)
+    .mockRejectedValueOnce({ reason: 'disk_full', actual_rev: null });
+  const repo = createTauriRepository({ invoke });
+
+  await expect(repo.create({ name: doc.name, projectId: dto.project_id, doc })).rejects.toEqual(
+    new StorageError('disk_full'),
+  );
+  expect(call).toHaveBeenCalledTimes(2);
+});
+
+test('explicit create retains confirmed replacement and never retries', async () => {
+  const { call, invoke } = mockInvoke();
+  call.mockRejectedValueOnce({ reason: 'path_taken', actual_rev: null });
+  const repo = createTauriRepository({ invoke });
+
+  await expect(
+    repo.create({ path: dto.path, name: doc.name, projectId: dto.project_id, doc }),
+  ).rejects.toEqual(new StorageError('exists'));
+  expect(call).toHaveBeenCalledExactlyOnceWith('project_create', {
+    path: dto.path,
+    project_id: dto.project_id,
+    doc_json: JSON.stringify(doc),
+    exclusive: false,
+  });
+});
+
 test('maps StorageErrorDto to StorageError', async () => {
   const { call, invoke } = mockInvoke();
   const repo = createTauriRepository({ invoke });

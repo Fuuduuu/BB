@@ -92,6 +92,17 @@ impl PendingFile {
         self.0 = None;
         Ok(())
     }
+
+    fn publish_new(mut self, destination: &Path) -> StorageResult<()> {
+        self.sync()?;
+        match backup::install_new(&mut self, destination) {
+            Ok(()) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                Err(StorageErrorDto::new(Reason::PathTaken))
+            }
+            Err(error) => Err(error.into()),
+        }
+    }
 }
 
 fn replace_file(source: &Path, destination: &Path) -> StorageResult<()> {
@@ -207,6 +218,16 @@ impl ProjectStore {
         project_id: &str,
         doc_json: &str,
     ) -> StorageResult<OpenedProjectDto> {
+        self.create_with_exclusive(path, project_id, doc_json, false)
+    }
+
+    pub fn create_with_exclusive(
+        &self,
+        path: &Path,
+        project_id: &str,
+        doc_json: &str,
+        exclusive: bool,
+    ) -> StorageResult<OpenedProjectDto> {
         db::document_header(doc_json)?;
         if project_id.trim().is_empty() {
             return Err(StorageErrorDto::new(Reason::Unknown));
@@ -224,7 +245,11 @@ impl ProjectStore {
             conn.close()
                 .map_err(|(_, error)| StorageErrorDto::from(error))?;
         }
-        pending.publish(&path)?;
+        if exclusive {
+            pending.publish_new(&path)?;
+        } else {
+            pending.publish(&path)?;
+        }
         self.register(&mut sessions, db::ProjectDb::open(&path)?, false)
     }
     pub fn open(&self, path: &Path) -> StorageResult<OpenedProjectDto> {

@@ -10,6 +10,20 @@ export const DEFAULT_VIEW_STATE: Readonly<Required<ViewState>> = Object.freeze({
   modules: Object.freeze({}),
 });
 
+function viewJson(view: ViewState): string {
+  return JSON.stringify(view, (_key: string, value: unknown) => {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return value;
+    return Object.fromEntries(
+      Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    );
+  });
+}
+
+/** Compare the persisted JSON value, including opaque module settings and future fields. */
+export function sameViewState(a: ViewState, b: ViewState): boolean {
+  return viewJson(a) === viewJson(b);
+}
+
 function record(input: unknown): Record<string, unknown> | undefined {
   if (typeof input === 'object' && input !== null && !Array.isArray(input)) {
     return input as Record<string, unknown>;

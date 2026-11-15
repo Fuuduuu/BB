@@ -48,7 +48,11 @@ async function importPhotoFile(
   if (engine.snapshot().sessionId !== sessionId) return stale();
   if (engine.snapshot().doc.photos.length > 0) return limit();
   try {
-    const imported = await projects.importPhoto({ bytes, name: file.name || 'foto.png' });
+    const imported = await projects.importPhoto({
+      bytes,
+      name: file.name || 'foto.png',
+      session: sessionId,
+    });
     if (engine.snapshot().sessionId !== sessionId) return stale();
     if (!imported.ok) return imported;
     const added = engine.execute('photo.add', { photo: imported.value });

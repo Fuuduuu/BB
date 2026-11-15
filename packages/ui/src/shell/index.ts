@@ -13,7 +13,7 @@ export { useSessionStore } from './session-store';
 export type { Preview, Selection, SelectionItem } from './session-store';
 export { useViewStore } from './view-store';
 export type { Theme } from './view-store';
-export { bindHistoryKeys } from './keymap';
+export { bindHistoryKeys, SHELL_KEYS } from './keymap';
 export { et } from './i18n/et';
 export { StartScreen } from './StartScreen';
 export type { RecentProjectCard } from './StartScreen';

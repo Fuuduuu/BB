@@ -10,6 +10,7 @@ pub enum Reason {
     Missing,
     Locked,
     Exists,
+    PathTaken,
     NotProject,
     TooNew,
     StaleRev,

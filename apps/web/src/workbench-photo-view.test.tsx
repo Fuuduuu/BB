@@ -21,6 +21,7 @@ test('photo_settings_escape_preserves_external_component_draft_cancellation', as
   try {
     await act(async () => {
       const imported = await runtime.projects.importPhoto({
+        session: runtime.engine.snapshot().sessionId,
         bytes: Uint8Array.from(
           Buffer.from(
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a4p8AAAAASUVORK5CYII=',

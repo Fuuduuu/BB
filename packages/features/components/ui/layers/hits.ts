@@ -1,12 +1,13 @@
 import type { Snapshot } from '@pcbk/contracts';
 import type { BoardPlacement, Vec2 } from '@pcbk/domain';
+import { footprintGeometry } from '@pcbk/domain/footprints';
 import { boardPads, bodyOutline } from '@pcbk/domain/geometry';
 import { screenToSceneVector } from '@pcbk/ui';
 import type { HitItem, SceneTransform } from '@pcbk/ui';
 
 export const LABEL_DRAG_OWNER = 'components.label';
 
-function defaultLabelOffset(board: BoardPlacement, pxPerMm: number): Vec2 {
+function defaultLabelOffset(board: BoardPlacement, pxPerMm: number, hasValue: boolean): Vec2 {
   const outline = bodyOutline(board, pxPerMm);
   let top = Infinity;
   let bottom = -Infinity;
@@ -15,11 +16,30 @@ function defaultLabelOffset(board: BoardPlacement, pxPerMm: number): Vec2 {
     bottom = Math.max(bottom, y);
   }
   const height = outline.length === 0 ? 0 : bottom - top;
-  return { x: 0, y: -(height / 2 + pxPerMm) };
+  const offset = { x: 0, y: -(height / 2 + pxPerMm) };
+  const geometry = footprintGeometry(board.footprint, board.params);
+  const pinIds = [
+    ...(geometry?.pads.map(({ id }) => board.padMap?.[id] ?? id) ?? []),
+    ...Object.keys(board.customPads),
+  ];
+  let padTop = Infinity;
+  for (const { at, halfPx, angleDeg, shape } of boardPads(board, pinIds, pxPerMm)) {
+    const radians = (angleDeg * Math.PI) / 180;
+    const halfHeight =
+      shape === 'circle'
+        ? halfPx.x
+        : Math.abs(Math.sin(radians)) * halfPx.x + Math.abs(Math.cos(radians)) * halfPx.y;
+    padTop = Math.min(padTop, at.y - halfHeight);
+  }
+  const valueOffset = hasValue ? 1.2 * 1.6 * pxPerMm : 0;
+  if (board.center.y + offset.y + valueOffset + 0.8 * pxPerMm > padTop) {
+    offset.y = padTop - board.center.y - pxPerMm - valueOffset;
+  }
+  return offset;
 }
 
-export function componentLabelLayout(board: BoardPlacement, pxPerMm: number) {
-  const offset = board.labelOffset ?? defaultLabelOffset(board, pxPerMm);
+export function componentLabelLayout(board: BoardPlacement, pxPerMm: number, hasValue = false) {
+  const offset = board.labelOffset ?? defaultLabelOffset(board, pxPerMm, hasValue);
   const at = { x: board.center.x + offset.x, y: board.center.y + offset.y };
   const textSize = 1.6 * pxPerMm;
   return { at, offset, textSize, valueY: at.y + 1.2 * textSize };
@@ -50,7 +70,7 @@ export function componentPinHits({ doc }: Snapshot): HitItem[] {
       id: pinId,
       componentId: id,
       shape:
-        shape === 'rect'
+        shape !== 'circle'
           ? { type: 'rect', at, half: halfPx, angleDeg }
           : { type: 'point', at, r: halfPx.x },
       priority: 2,
@@ -65,7 +85,11 @@ export function componentLabelHits(
 ): HitItem[] {
   return doc.components.flatMap<HitItem>(({ id, board, ref, value, identified }) => {
     if (!board) return [];
-    const { at, offset, textSize, valueY } = componentLabelLayout(board, doc.scale.pxPerMm);
+    const { at, offset, textSize, valueY } = componentLabelLayout(
+      board,
+      doc.scale.pxPerMm,
+      Boolean(value),
+    );
     if (!isComponentLabelVisible(textSize, zoom)) return [];
 
     // Estimate the centered mono text bounds without reading layout from the DOM.

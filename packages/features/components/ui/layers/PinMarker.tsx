@@ -7,7 +7,7 @@ type PinGeometry = {
   y: number;
   halfPx: Vec2;
   angleDeg: number;
-  shape: 'rect' | 'circle';
+  shape: 'rect' | 'circle' | 'oval';
   zoom: number;
 };
 type PadOutlineProps = Omit<PinGeometry, 'zoom'> & {
@@ -17,12 +17,13 @@ type PadOutlineProps = Omit<PinGeometry, 'zoom'> & {
 
 function PadOutline({ x, y, halfPx, angleDeg, shape, stroke, strokeWidth }: PadOutlineProps) {
   const style = { fill: 'none', stroke, strokeWidth, vectorEffect: 'non-scaling-stroke' };
-  return shape === 'rect' ? (
+  return shape !== 'circle' ? (
     <rect
       x={x - halfPx.x}
       y={y - halfPx.y}
       width={2 * halfPx.x}
       height={2 * halfPx.y}
+      rx={shape === 'oval' ? Math.min(halfPx.x, halfPx.y) : undefined}
       transform={`rotate(${angleDeg} ${x} ${y})`}
       {...style}
     />

@@ -107,7 +107,7 @@ test('rotated_component_pin_hit_selects_that_pin', () => {
 
 test.each([
   { placement: { labelOffset }, at: labelAt, expectedOffset: { x: 68, y: -43 } },
-  { placement: {}, at: { x: 100, y: 63.75 }, expectedOffset: { x: 8, y: -19.25 } },
+  { placement: {}, at: { x: 100, y: 44.05 }, expectedOffset: { x: 8, y: -38.95 } },
 ])('label_drag_outside_body_changes_only_label_offset %#', ({ placement, at, expectedOffset }) => {
   const { svg, engine, execute } = mount(placement);
   const before = engine.snapshot().doc.components[0]!;

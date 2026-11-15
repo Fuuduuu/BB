@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test } from 'vitest';
 import { EngineProvider } from '@pcbk/client';
 import { useSessionStore, useViewStore } from '@pcbk/ui';
@@ -31,7 +31,7 @@ function mount(tabId: string, engine = setup().engine) {
   );
 }
 
-test('library_lists_five_footprint_families_and_unknown', () => {
+test('expanded_library_keeps_original_entries_and_unknown_subtitle', () => {
   mount('library');
   const rows = screen.getAllByRole('listitem');
   const names = [
@@ -43,9 +43,9 @@ test('library_lists_five_footprint_families_and_unknown', () => {
     'Pinnirida 1×N',
     'Tundmatu komponent',
   ];
-  expect(rows).toHaveLength(names.length);
-  names.forEach((name, index) => {
-    expect(within(rows[index]!).getByRole('button', { name })).toBeTruthy();
+  expect(rows).toHaveLength(40);
+  names.forEach((name) => {
+    expect(screen.getByRole('button', { name })).toBeTruthy();
   });
   expect(
     screen.getByRole('button', {
@@ -65,7 +65,8 @@ test('search_filters_by_keyword_and_shows_empty_state', () => {
   fireEvent.change(search, { target: { value: 'mosfet' } });
   expect(screen.getByRole('button', { name: 'SOT-23' })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'TO-220' })).toBeTruthy();
-  expect(screen.getAllByRole('listitem')).toHaveLength(2);
+  expect(screen.getByRole('button', { name: 'DPAK' })).toBeTruthy();
+  expect(screen.getAllByRole('listitem')).toHaveLength(3);
 
   fireEvent.change(search, { target: { value: 'takisti mosfet' } });
   expect(screen.queryByRole('listitem')).toBeNull();

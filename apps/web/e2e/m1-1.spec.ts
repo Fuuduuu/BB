@@ -38,7 +38,7 @@ async function placeSoic(page: Page) {
   await page.getByRole('tab', { name: 'Teek', exact: true }).click();
   const library = page.getByRole('tabpanel', { name: 'Teek', exact: true });
   await library.getByRole('button', { name: 'SOIC', exact: true }).click();
-  await library.getByRole('combobox', { name: 'Jalgade arv', exact: true }).selectOption('8');
+  await library.getByRole('combobox', { name: 'Jalgu', exact: true }).selectOption('8');
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
   const { x, y } = await center(canvas(page));
   await page.mouse.click(x, y);

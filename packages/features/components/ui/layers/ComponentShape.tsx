@@ -86,7 +86,11 @@ function Labels({
   dy: number;
 }) {
   const transform = useSceneTransform();
-  const { at, textSize, valueY } = componentLabelLayout(component.board, pxPerMm);
+  const { at, textSize, valueY } = componentLabelLayout(
+    component.board,
+    pxPerMm,
+    Boolean(component.value),
+  );
   const valueOffset = screenToSceneVector(transform, { x: 0, y: valueY - at.y });
   if (!isComponentLabelVisible(textSize, zoom)) return null;
   const textProps = {

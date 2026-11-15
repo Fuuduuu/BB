@@ -1,4 +1,5 @@
 import { footprintGeometry } from '../footprints';
+import type { PadGeom } from '../footprints';
 import type { BoardPlacement } from '../model/component';
 import type { Vec2 } from '../model/primitives';
 
@@ -32,13 +33,13 @@ export function boardPads(
   radiusPx: number;
   halfPx: Vec2;
   angleDeg: number;
-  shape: 'rect' | 'circle';
+  shape: PadGeom['shape'];
 }[] {
   const pads: ReturnType<typeof boardPads> = [];
   const pins = new Set(pinIds);
   const geometry = footprintGeometry(placement.footprint, placement.params);
 
-  function appendPad(pinId: string, local: Vec2, w: number, h: number, shape: 'rect' | 'circle') {
+  function appendPad(pinId: string, local: Vec2, w: number, h: number, shape: PadGeom['shape']) {
     pads.push({
       pinId,
       at: padToBoard(placement, local, pxPerMm),
@@ -66,7 +67,7 @@ export function boardPads(
 
 export function bodyOutline(placement: BoardPlacement, pxPerMm: number): Vec2[] {
   const geometry = footprintGeometry(placement.footprint, placement.params);
-  if (!geometry) return [];
+  if (!geometry || geometry.body.w <= 0 || geometry.body.h <= 0) return [];
 
   const halfW = geometry.body.w / 2;
   const halfH = geometry.body.h / 2;

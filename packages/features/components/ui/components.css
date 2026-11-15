@@ -109,6 +109,16 @@
   padding: 16px;
   border-bottom: 1px solid var(--line);
 }
+.pcbk-library__category {
+  margin: 0;
+  padding: 12px 18px 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+.pcbk-library__group + .pcbk-library__group {
+  border-top: 1px solid var(--line);
+}
 .pcbk-library__params,
 .pcbk-unplaced__actions {
   display: grid;

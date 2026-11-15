@@ -1,15 +1,7 @@
 import type { Pin } from '@pcbk/domain';
 import { footprintPinIds, type FootprintParams } from '@pcbk/domain/footprints';
-import { COMPONENT_LIBRARY, type LibraryEntry } from '../contract';
+import { COMPONENT_LIBRARY, type LibraryEntry, type ParamSpec } from '../contract';
 import { placementEt } from './i18n/et';
-
-export const chipSizes = ['0402', '0603', '0805', '1206'] as const;
-export const headerPitches = [1.27, 2, 2.54] as const;
-export const footprintPinCounts: Readonly<Partial<Record<string, readonly number[]>>> = {
-  sot23: [3, 5, 6],
-  soic: [8, 14, 16, 20, 24, 28],
-  header1: Array.from({ length: 40 }, (_, index) => index + 1),
-};
 
 function nameFor(names: Readonly<Record<string, string>>, key: string): string {
   return Object.hasOwn(names, key) ? names[key]! : key;
@@ -23,6 +15,11 @@ export function libraryName(entryId: string): string {
   return nameFor(placementEt.library.names, entryId);
 }
 
+export function parameterLabel(key: string): string {
+  const label = placementEt.params[key as keyof typeof placementEt.params];
+  return typeof label === 'string' ? label : key;
+}
+
 export function searchLibrary(query: string): readonly LibraryEntry[] {
   const words = query.trim().toLocaleLowerCase('et').split(/\s+/);
   return COMPONENT_LIBRARY.filter((entry) => {
@@ -32,10 +29,33 @@ export function searchLibrary(query: string): readonly LibraryEntry[] {
 }
 
 export function positiveDecimal(text: string): number | undefined {
+  const number = decimalValue(text);
+  return number !== undefined && number > 0 ? number : undefined;
+}
+
+function decimalValue(text: string): number | undefined {
   const decimal = text.trim();
   if (!/^\+?(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(decimal)) return undefined;
   const number = Number(decimal.replace(',', '.'));
-  return Number.isFinite(number) && number > 0 ? number : undefined;
+  return Number.isFinite(number) ? number : undefined;
+}
+
+export function numericParameter(
+  text: string,
+  spec: Extract<ParamSpec, { min: number }>,
+): number | undefined {
+  const value = decimalValue(text);
+  if (value === undefined || value < spec.min || value > spec.max) return undefined;
+  const steps = (value - spec.min) / spec.step;
+  return Math.abs(steps - Math.round(steps)) < 1e-7 ? value : undefined;
+}
+
+function pinCountChoices(spec: ParamSpec): readonly (string | number)[] {
+  if ('choices' in spec) return spec.choices;
+  return Array.from(
+    { length: Math.floor((spec.max - spec.min) / spec.step) + 1 },
+    (_, index) => spec.min + index * spec.step,
+  );
 }
 
 type PlacementOption = { params: FootprintParams; reason?: never } | { reason: string };
@@ -47,19 +67,22 @@ export function compatiblePlacement(
   if (entry.footprint === 'area') return { params: entry.params };
 
   const defaultIds = footprintPinIds(entry.footprint, entry.params);
-  const counts = footprintPinCounts[entry.footprint];
-  // For these families, the pin count is the only parameter that changes the pad IDs.
-  const params =
-    defaultIds?.length !== pins.length && counts?.includes(pins.length)
-      ? { ...entry.params, pins: pins.length }
-      : entry.params;
-  const padIds = params === entry.params ? defaultIds : footprintPinIds(entry.footprint, params);
-  if (padIds?.length !== pins.length) {
-    return { reason: placementEt.unplaced.pinCount(pins.length, defaultIds?.length ?? 0) };
-  }
   const pinIds = new Set(pins.map((pin) => pin.id));
-  if (!padIds.every((id) => pinIds.has(id))) {
-    return { reason: placementEt.unplaced.pinNames };
+  const countSpec = entry.paramSpec.find(({ key }) => key === 'pins');
+  const candidates = [
+    entry.params,
+    ...(countSpec ? pinCountChoices(countSpec).map((pins) => ({ ...entry.params, pins })) : []),
+  ];
+  let matchingCount = false;
+  for (const params of candidates) {
+    const padIds = params === entry.params ? defaultIds : footprintPinIds(entry.footprint, params);
+    if (padIds?.length !== pins.length) continue;
+    matchingCount = true;
+    if (padIds.every((id) => pinIds.has(id))) return { params };
   }
-  return { params };
+  return {
+    reason: matchingCount
+      ? placementEt.unplaced.pinNames
+      : placementEt.unplaced.pinCount(pins.length, defaultIds?.length ?? 0),
+  };
 }

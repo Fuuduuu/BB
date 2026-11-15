@@ -68,6 +68,11 @@ export type ComponentTargetParams = {
 export const ComponentTargetSchema: ZodType<ComponentTargetParams>;
 ```
 
+### `LibraryCategory`
+```ts
+export type LibraryCategory = 'pass' | 'semi' | 'ic' | 'conn' | 'misc' | 'point';
+```
+
 ### `LibraryEntry`
 ```ts
 export interface LibraryEntry {
@@ -76,6 +81,8 @@ export interface LibraryEntry {
     footprint: string;
     params: FootprintParams;
     kw: string;
+    category: LibraryCategory;
+    paramSpec: readonly ParamSpec[];
 }
 ```
 
@@ -87,6 +94,21 @@ export function makeAddComponent(ids: IdGen, kind: ComponentKind, pinCount?: num
 ### `makePlacedComponent`
 ```ts
 export function makePlacedComponent(ids: IdGen, entry: LibraryEntry, params: FootprintParams, center: Vec2): AddComponentParams;
+```
+
+### `ParamSpec`
+```ts
+export type ParamSpec = {
+    key: string;
+    label: string;
+    choices: readonly (string | number)[];
+} | {
+    key: string;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+};
 ```
 
 ### `PinTargetParams`

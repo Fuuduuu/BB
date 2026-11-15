@@ -8,7 +8,7 @@ test('second_pin_at_right_edge_is_selectable_with_context_hidden', async ({ page
   await page.getByRole('tab', { name: 'Teek', exact: true }).click();
   const library = page.getByRole('tabpanel', { name: 'Teek', exact: true });
   await library.getByRole('button', { name: 'SOIC', exact: true }).click();
-  await library.getByRole('combobox', { name: 'Jalgade arv', exact: true }).selectOption('8');
+  await library.getByRole('combobox', { name: 'Jalgu', exact: true }).selectOption('8');
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
   const area = await bounds(canvas(page));
   await page.mouse.click(area.x + area.width - 80, area.y + 250);

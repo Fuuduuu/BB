@@ -6,7 +6,7 @@ export interface PadGeom {
   y: number;
   w: number;
   h: number;
-  shape: 'rect' | 'circle';
+  shape: 'rect' | 'circle' | 'oval';
   through: boolean;
 }
 

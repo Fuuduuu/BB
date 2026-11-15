@@ -12,7 +12,7 @@ export function boardPads(placement: BoardPlacement, pinIds: readonly string[], 
     radiusPx: number;
     halfPx: Vec2;
     angleDeg: number;
-    shape: 'rect' | 'circle';
+    shape: PadGeom['shape'];
 }[];
 ```
 

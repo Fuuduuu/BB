@@ -8,7 +8,7 @@ test('navigator_tabs_fit_one_row_at_240_and_300px', async ({ page }) => {
   await page.getByRole('tab', { name: 'Teek', exact: true }).click();
   const library = page.getByRole('tabpanel', { name: 'Teek', exact: true });
   await library.getByRole('button', { name: 'SOIC', exact: true }).click();
-  await library.getByRole('combobox', { name: 'Jalgade arv', exact: true }).selectOption('8');
+  await library.getByRole('combobox', { name: 'Jalgu', exact: true }).selectOption('8');
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
   const at = await center(canvas(page));
   await page.mouse.click(at.x, at.y);

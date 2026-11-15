@@ -5,10 +5,9 @@ import type { LibraryEntry } from '../contract';
 import { placementEt } from './i18n/et';
 import { beginPlacement, usePlaceStore } from './place-store';
 import {
-  chipSizes,
-  footprintPinCounts,
-  headerPitches,
   libraryName,
+  numericParameter,
+  parameterLabel,
   positiveDecimal,
   searchLibrary,
 } from './placement';
@@ -55,42 +54,54 @@ function LibraryParameters({ entry }: { entry: LibraryEntry }) {
     ({ request }) => request?.mode === 'new' && request.entryId === entry.id,
   );
   const labels = placementEt.params;
-  const counts = footprintPinCounts[entry.footprint];
   const isArea = entry.footprint === 'area';
   const width = positiveDecimal(String(params.w ?? ''));
   const height = positiveDecimal(String(params.h ?? ''));
+  const validatedParams: FootprintParams = { ...params };
+  let valid = true;
+  for (const spec of entry.paramSpec) {
+    if ('choices' in spec) continue;
+    const value = numericParameter(String(params[spec.key] ?? ''), spec);
+    if (value === undefined) valid = false;
+    else validatedParams[spec.key] = value;
+  }
   const placementParams = isArea
     ? width !== undefined && height !== undefined
       ? { w: width, h: height }
       : undefined
-    : params;
+    : valid
+      ? validatedParams
+      : undefined;
   const setParam = (key: string, value: string | number) =>
     setParams((previous) => ({ ...previous, [key]: value }));
   return (
     <div className="pcbk-library__params">
-      {entry.footprint === 'chip' && (
-        <OptionField
-          label={labels.size}
-          value={params.size}
-          choices={chipSizes}
-          onChange={(size) => setParam('size', size)}
-        />
-      )}
-      {counts && (
-        <OptionField
-          label={labels.pins}
-          value={params.pins}
-          choices={counts}
-          onChange={(pins) => setParam('pins', pins)}
-        />
-      )}
-      {entry.footprint === 'header1' && (
-        <OptionField
-          label={labels.pitch}
-          value={params.pitch}
-          choices={headerPitches}
-          onChange={(pitch) => setParam('pitch', pitch)}
-        />
+      {entry.paramSpec.map((spec) =>
+        'choices' in spec ? (
+          <OptionField
+            key={spec.key}
+            label={parameterLabel(spec.label)}
+            value={params[spec.key]}
+            choices={spec.choices}
+            onChange={(value) => setParam(spec.key, value)}
+          />
+        ) : (
+          <Field
+            key={spec.key}
+            label={parameterLabel(spec.label)}
+            inputMode={spec.step === 1 ? 'numeric' : 'decimal'}
+            value={params[spec.key]}
+            min={spec.min}
+            max={spec.max}
+            step={spec.step}
+            error={
+              numericParameter(String(params[spec.key] ?? ''), spec) === undefined
+                ? labels.range(spec.min, spec.max, spec.step)
+                : undefined
+            }
+            onChange={(event) => setParam(spec.key, event.target.value)}
+          />
+        ),
       )}
       {isArea && (
         <>
@@ -153,32 +164,43 @@ export function Library() {
         </p>
       )}
       {matches.length ? (
-        <ul className="pcbk-components__list">
-          {matches.map((entry) => (
-            <li key={entry.id}>
-              <button
-                type="button"
-                className="pcbk-component-row"
-                aria-label={libraryName(entry.id)}
-                aria-describedby={entry.id === 'unknown' ? subtitleId : undefined}
-                aria-expanded={entryId === entry.id}
-                onClick={() =>
-                  setEntryId((previous) => (previous === entry.id ? undefined : entry.id))
-                }
-              >
-                <span className="pcbk-component-row__body">
-                  <span>{libraryName(entry.id)}</span>
-                  {entry.id === 'unknown' && (
-                    <span id={subtitleId} className="pcbk-component-row__value">
-                      {placementEt.library.unknownSubtitle}
-                    </span>
-                  )}
-                </span>
-              </button>
-              {entryId === entry.id && <LibraryParameters entry={entry} />}
-            </li>
-          ))}
-        </ul>
+        <div className="pcbk-library__groups">
+          {Object.entries(placementEt.library.categories).map(([category, title]) => {
+            const entries = matches.filter((entry) => entry.category === category);
+            if (!entries.length) return null;
+            return (
+              <section key={category} className="pcbk-library__group">
+                <h3 className="pcbk-library__category">{title}</h3>
+                <ul className="pcbk-components__list">
+                  {entries.map((entry) => (
+                    <li key={entry.id}>
+                      <button
+                        type="button"
+                        className="pcbk-component-row"
+                        aria-label={libraryName(entry.id)}
+                        aria-describedby={entry.id === 'unknown' ? subtitleId : undefined}
+                        aria-expanded={entryId === entry.id}
+                        onClick={() =>
+                          setEntryId((previous) => (previous === entry.id ? undefined : entry.id))
+                        }
+                      >
+                        <span className="pcbk-component-row__body">
+                          <span>{libraryName(entry.id)}</span>
+                          {entry.id === 'unknown' && (
+                            <span id={subtitleId} className="pcbk-component-row__value">
+                              {placementEt.library.unknownSubtitle}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                      {entryId === entry.id && <LibraryParameters entry={entry} />}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
       ) : (
         <p className="pcbk-components__empty">
           {placementEt.library.emptyBefore}

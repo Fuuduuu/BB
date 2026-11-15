@@ -127,6 +127,8 @@ Rajad: ülesanded 9 ja 11 on **rada B**, ülejäänud **rada A** ([WORKFLOW](../
 10. **Näit ja tähis eraldi.**
     - Näit ei kata oma komponendi tähise kasti. Vajadusel nihkub näit ja lühike viitejoon näitab jalani.
     - Test: `reading_label_avoids_own_ref_label`.
+    - Vastuvõtukatse (sõltumatu kontroll 2026-11-15). Sünteetilisel 15-jalalisel pistikul J29 salvestati jalale 15 näit 3,651 V. 100% suumil kattusid tähise „J29 ?“ ja näidu tekstikastid umbes 20 × 18 px ning märgid jooksid silmaga vaadates kokku. Pärast parandust ei tohi kastid kattuda: e2e `j29_reading_does_not_overlap_ref_label`.
+    - Arvesta ka M1-3-7 märkusega: tähise nihutamine kasutab maailma `y`-telge, aga ekraanil peab kattumist vältima ka pööratud ja peegeldatud stseenis.
 
 **Osa C · Vastuvõtt**
 

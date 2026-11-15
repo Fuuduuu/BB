@@ -1,4 +1,6 @@
-import { bodyOutline } from '@pcbk/domain/geometry';
+import type { BoardPlacement } from '@pcbk/domain';
+import { footprintGeometry } from '@pcbk/domain/footprints';
+import { boardPads, bodyOutline, padToBoard } from '@pcbk/domain/geometry';
 import { useSceneTransform, useSessionStore } from '@pcbk/ui';
 import type { LayerSpec, TranslatePreviewData } from '@pcbk/ui';
 import type { PlacePreviewData } from '../PlaceTool';
@@ -7,26 +9,73 @@ import { PLACE_TOOL_ID } from '../place-store';
 import { ComponentShape } from './ComponentShape';
 import type { ComponentLayerKind } from './ComponentShape';
 import { LABEL_DRAG_OWNER } from './hits';
+import { PadOutline } from './PinMarker';
 
 type ComponentsLayerProps = Parameters<LayerSpec['render']>[0] & { kind: ComponentLayerKind };
 type LabelPreview = { id: string; dx: number; dy: number };
 
-function PlacementOutline({ data, pxPerMm }: { data: PlacePreviewData; pxPerMm: number }) {
+function PlacementGhost({
+  data,
+  pxPerMm,
+  zoom,
+}: {
+  data: PlacePreviewData;
+  pxPerMm: number;
+  zoom: number;
+}) {
   const rotationDeg = placementRotation(useSceneTransform());
-  const outline = bodyOutline(
-    { ...data, rotationDeg, side: 'top', scaleX: 1, scaleY: 1, customPads: {} },
+  const placement: BoardPlacement = {
+    ...data,
+    rotationDeg,
+    side: 'top',
+    scaleX: 1,
+    scaleY: 1,
+    customPads: {},
+  };
+  const geometry = footprintGeometry(data.footprint, data.params);
+  if (!geometry) return null;
+  const outline = bodyOutline(placement, pxPerMm);
+  const pads = boardPads(
+    placement,
+    geometry.pads.map(({ id }) => id),
     pxPerMm,
   );
-  if (outline.length === 0) return null;
+  const pin1At = geometry.body.pin1 && padToBoard(placement, geometry.body.pin1, pxPerMm);
   return (
-    <polygon
-      points={outline.map(({ x, y }) => `${x},${y}`).join(' ')}
-      fill="none"
-      stroke="var(--sel)"
-      strokeWidth={1.4}
-      strokeDasharray="4 3"
-      vectorEffect="non-scaling-stroke"
-    />
+    <g data-placement-ghost pointerEvents="none">
+      {outline.length > 0 && (
+        <polygon
+          points={outline.map(({ x, y }) => `${x},${y}`).join(' ')}
+          fill="none"
+          stroke="var(--sel)"
+          strokeWidth={1.4}
+          strokeDasharray="4 3"
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
+      {pads.map(({ pinId, at, halfPx, angleDeg, shape }, index) => (
+        <g key={`${pinId}:${index}`} data-pad={pinId}>
+          <PadOutline
+            x={at.x}
+            y={at.y}
+            halfPx={{ x: Math.max(halfPx.x, 2.5 / zoom), y: Math.max(halfPx.y, 2.5 / zoom) }}
+            angleDeg={angleDeg}
+            shape={shape}
+            stroke="var(--sel)"
+            strokeWidth={1.4}
+          />
+        </g>
+      ))}
+      {pin1At && (
+        <circle
+          data-pin1
+          cx={pin1At.x}
+          cy={pin1At.y}
+          r={Math.max(0.25 * pxPerMm, 2 / zoom)}
+          fill="var(--sel)"
+        />
+      )}
+    </g>
   );
 }
 
@@ -83,7 +132,7 @@ export function ComponentsLayer({ kind, snapshot, zoom, preview }: ComponentsLay
         );
       })}
       {placePreview && (
-        <PlacementOutline data={placePreview} pxPerMm={snapshot.doc.scale.pxPerMm} />
+        <PlacementGhost data={placePreview} pxPerMm={snapshot.doc.scale.pxPerMm} zoom={zoom} />
       )}
     </g>
   );

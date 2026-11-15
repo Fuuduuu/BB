@@ -1,8 +1,9 @@
 import { useId, useState } from 'react';
 import { Button, Field, useSessionStore } from '@pcbk/ui';
-import type { FootprintParams } from '@pcbk/domain/footprints';
+import { footprintGeometry, type FootprintParams } from '@pcbk/domain/footprints';
 import type { LibraryEntry } from '../contract';
 import { placementEt } from './i18n/et';
+import { FootprintPreview } from './FootprintPreview';
 import { beginPlacement, usePlaceStore } from './place-store';
 import {
   libraryName,
@@ -121,6 +122,10 @@ function LibraryParameters({ entry }: { entry: LibraryEntry }) {
           />
         </>
       )}
+      <FootprintPreview
+        name={libraryName(entry.id)}
+        geometry={placementParams && footprintGeometry(entry.footprint, placementParams)}
+      />
       <Button
         variant="primary"
         disabled={!isPlacing && !placementParams}

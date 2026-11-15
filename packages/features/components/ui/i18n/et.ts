@@ -128,6 +128,9 @@ export const placementEt = {
       point: 'Punktid plaadil',
     },
     unknownSubtitle: 'Kohandatud korpus',
+    preview: (name: string, pins: number) =>
+      `Pealtvaade: ${name}${pins > 0 ? `, ${pins} ${pins === 1 ? 'jalg' : 'jalga'}` : ''}`,
+    previewInvalid: 'Kontrolli parameetreid',
     search: 'Otsi korpust',
     emptyBefore: 'Sellist korpust ei leitud. Proovi ',
     custom: 'Kohandatud',

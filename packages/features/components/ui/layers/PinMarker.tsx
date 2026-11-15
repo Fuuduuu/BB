@@ -15,7 +15,15 @@ type PadOutlineProps = Omit<PinGeometry, 'zoom'> & {
   strokeWidth: number;
 };
 
-function PadOutline({ x, y, halfPx, angleDeg, shape, stroke, strokeWidth }: PadOutlineProps) {
+export function PadOutline({
+  x,
+  y,
+  halfPx,
+  angleDeg,
+  shape,
+  stroke,
+  strokeWidth,
+}: PadOutlineProps) {
   const style = { fill: 'none', stroke, strokeWidth, vectorEffect: 'non-scaling-stroke' };
   return shape !== 'circle' ? (
     <rect

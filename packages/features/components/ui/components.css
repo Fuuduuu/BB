@@ -125,6 +125,17 @@
   gap: 8px;
   padding: 8px 10px 12px;
 }
+.pcbk-library__preview {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 72px;
+  margin-inline: auto;
+  color: var(--ink-2);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
 .pcbk-unplaced__choices {
   display: grid;
   gap: 8px;

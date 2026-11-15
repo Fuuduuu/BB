@@ -99,12 +99,12 @@ Rajad: ülesanded 9 ja 11 on **rada B**, ülejäänud **rada A** ([WORKFLOW](../
      - `photo_settings_menu_returns_focus_on_escape`
      - `uncalibrated_shortcut_starts_calibration`
      - olemasolev `bottom_bar_controls_fit_at_minimum_window_size` laieneb menüüle.
-6. **Templirežiim ja `Tab` järgmisele jalale.**
+6. **Templirežiim ja järgmise jala otsetee** (kasutaja otsus 2026-11-15: `Tab` jääb vormis liikumiseks, `Alt+↓` tehakse nähtavaks).
    - `PlaceTool` jääb pärast paigutust samale korpusele aktiivseks ja `Escape` lõpetab.
-   - Mõõtmisel viib `Tab` sama komponendi järgmisele jalale ning väärtuse väli jääb fookusesse.
+   - Mõõda-plokis on vihje „Alt+↓ järgmine jalg · Alt+↑ eelmine“; `Tab` liigub vormiväljadel nagu praegu.
    - Testid:
      - `place_tool_stays_armed_until_escape`
-     - `tab_moves_measurement_to_next_pin`
+     - `pin_keys_hint_shown_only_for_multi_pin_component`
 
 **Osa B · Korpuste teek**
 

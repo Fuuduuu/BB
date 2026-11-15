@@ -42,6 +42,8 @@ Kasutaja tellitud [Codexi iseseisev tervikettepanek](review/2026-11-07-codex-ter
 
 [M1.3 mõõtmise ja moodulite skeemid](review/2026-11-15-m1-3-mootmise-skeemid.md) näitavad sondide töövoogu ning J29 tähise ja näidu kattumist. Kaasas on M1-3-10 arhitektuuriotsuse ettepanek Claude’ile.
 
+[M1.3 arhitektuuri ülevaatus](review/2026-11-15-m1-3-arhitektuuri-ulevaatus.md) käsitleb moodulite piire, fotoimpordi seanssi ja vaate salvestamist. Iga leiu juures on koodikoht ja paranduse vastuvõtukatse.
+
 ## Lähtematerjal
 
 - Veebiprototüüp: [prototype/PCB-Kaardistaja.html](../prototype/PCB-Kaardistaja.html), lähtekood [prototype/src/](../prototype/src/). Sealt porditakse korpuste generaatorid (`prototype/src/js/01-footprints.js`), joonistusloogika (`prototype/src/js/03-render.js`), eksport (`prototype/src/js/06-io.js`) ja visuaalne keel (`prototype/src/app.css` tokenid). Prototüübi läheduse põhjal võrke arvutavat `getNets`-i (`prototype/src/js/02-state.js`) uude äppi **ei porta**; seda kasutatakse ainult prototüübi impordi võrdluseks ([ADR-004](adr/ADR-004-kaks-vaadet-ja-uhendused.md)). Prototüüp on käitumise ja geomeetria allikas, mitte uue äpi tuum. Uue äpi kood (`apps/`, `packages/`) on prototüübist eraldi.

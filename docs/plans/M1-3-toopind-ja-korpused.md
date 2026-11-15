@@ -129,6 +129,20 @@ Rajad: ülesanded 9 ja 11 on **rada B**, ülejäänud **rada A** ([WORKFLOW](../
     - Test: `reading_label_avoids_own_ref_label`.
     - Vastuvõtukatse (sõltumatu kontroll 2026-11-15). Sünteetilisel 15-jalalisel pistikul J29 salvestati jalale 15 näit 3,651 V. 100% suumil kattusid tähise „J29 ?“ ja näidu tekstikastid umbes 20 × 18 px ning märgid jooksid silmaga vaadates kokku. Pärast parandust ei tohi kastid kattuda: e2e `j29_reading_does_not_overlap_ref_label`.
     - Arvesta ka M1-3-7 märkusega: tähise nihutamine kasutab maailma `y`-telge, aga ekraanil peab kattumist vältima ka pööratud ja peegeldatud stseenis.
+    - Enne seda tuleb hoolduskaart [M1-3-H](../tasks/M1-3-H.md) ([arhitektuuri ülevaatus](../review/2026-11-15-m1-3-arhitektuuri-ulevaatus.md)).
+
+10b. **Mõõtmise loetavus** ([disainiülevaatus 2026-11-15](../review/2026-11-15-m1-3-disaini-ulevaatus.md), kasutaja kinnitas).
+   - **Pinge sisestamine.**
+     - Sisestatav arv on monokirjas (Martian Mono) ja 20 px suurune.
+     - „Viimati salvestatud“ on eraldi rida, kus on kõrvuti arv ja sondipaar.
+     - Toite valik jääb väiksema kaaluga.
+     - Ülevaatuse võrdluspilt [m1-3-mootepaneel-vordlus.png](../review/pildid/m1-3-mootepaneel-vordlus.png) on suund.
+   - **Sisendi raam.** Kitis (`kit.css`) peab kõigi sisendite raami kontrast olema vähemalt 3 : 1 mõlemas teemas. Praegu on see 1,66 : 1; ülevaatuses proovitud värvid andsid 3,38 ja 3,67.
+   - **Mõõtmiste ajalugu.**
+     - Pinge on rea tugevaim kiri (15 px, tabulaarsed numbrid) ja sondipaar on alati nähtav. Toiteolek ja kellaaeg on väiksemad.
+     - „Kustuta“ asendub kitsa ikooniveeruga. Ikoonil on kohtspikker, nähtav klaviatuurifookus ja ligipääsetav nimi, mis nimetab mõõtmise.
+   - Vastuvõtt: 280 px omaduste paanil ning 240 ja 300 px navigaatoris mahub kõik ühele reale. Tühja ja vigase väärtuse olek ning klaviatuurifookus on kontrollitud.
+   - Testid: `measure_input_uses_large_mono_value`, `last_saved_row_shows_value_and_probe_pair`, `input_border_contrast_at_least_3_to_1_in_both_themes`, `history_delete_is_icon_with_named_tooltip`.
 
 **Osa C · Vastuvõtt**
 
@@ -143,7 +157,8 @@ Rajad: ülesanded 9 ja 11 on **rada B**, ülejäänud **rada A** ([WORKFLOW](../
 | Käsitsi peidetud omaduste paneel jääb uue valiku korral peitu | Ül. 1 testid, Ül. 11 suitsukatse |
 | Kaks kõrvuti jalga plaadi paremas servas on järjest valitavad | Ül. 1 e2e, Ül. 2 |
 | SOIC-8 naaberjalad ei kattu 100% suumil | Ül. 2 |
-| Mõõtepaneelist on näha sondid ja viimane salvestatud näit | Ül. 3 |
+| Mõõtepaneelist on näha sondid ja viimane salvestatud näit | Ül. 3, Ül. 10b |
+| Sisendite raami kontrast on vähemalt 3 : 1 mõlemas teemas | Ül. 10b |
 | Navigaatori kolm valikut mahuvad 300 px laiusesse ühele reale | Ül. 4 |
 | Alumine riba mahub fotoga projektis 1100 px aknas ühele 36 px reale | Ül. 5 |
 | SOIC-8 jalg 1 (−2,775; −1,905) mm, jalg 8 (2,775; −1,905) mm; QFP-44 jalg 12 alumisel küljel | Ül. 7 |
@@ -163,3 +178,4 @@ Rajad: ülesanded 9 ja 11 on **rada B**, ülejäänud **rada A** ([WORKFLOW](../
 - **Väiksemad lahtised asjad:**
   - Katkenud impordi integratsioonitest (`test_writer` + prune) läheb järgmisele raja B salvestuskaardile.
   - `photo_orientation` tõstetakse tavaliseks mooduliks järgmisel Rusti puudutusel.
+  - **Teegi siluetid nimekirjas** (disainiülevaatus 2026-11-15, punkt 1): suletud teegiridadel väike pealtvaate siluett kõige erinevamatele perekondadele (SOIC, QFP, pinnirida). Proovitakse 240 px navigaatoris ja klaviatuuriga. Läheb tiheduse ülevaatusse või M1.4-sse.

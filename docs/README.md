@@ -44,6 +44,8 @@ Kasutaja tellitud [Codexi iseseisev tervikettepanek](review/2026-11-07-codex-ter
 
 [M1.3 arhitektuuri ülevaatus](review/2026-11-15-m1-3-arhitektuuri-ulevaatus.md) käsitleb moodulite piire, fotoimpordi seanssi ja vaate salvestamist. Iga leiu juures on koodikoht ja paranduse vastuvõtukatse.
 
+[M1.3 tööpinna disainiülevaatus](review/2026-11-15-m1-3-disaini-ulevaatus.md) näitab korpuse valikut, pinge sisestamist ja viie mõõtmise ajalugu. Mõõtmispaneeli ettepanekut saab kõrvutada praeguse vaatega mõlemas teemas.
+
 ## Lähtematerjal
 
 - Veebiprototüüp: [prototype/PCB-Kaardistaja.html](../prototype/PCB-Kaardistaja.html), lähtekood [prototype/src/](../prototype/src/). Sealt porditakse korpuste generaatorid (`prototype/src/js/01-footprints.js`), joonistusloogika (`prototype/src/js/03-render.js`), eksport (`prototype/src/js/06-io.js`) ja visuaalne keel (`prototype/src/app.css` tokenid). Prototüübi läheduse põhjal võrke arvutavat `getNets`-i (`prototype/src/js/02-state.js`) uude äppi **ei porta**; seda kasutatakse ainult prototüübi impordi võrdluseks ([ADR-004](adr/ADR-004-kaks-vaadet-ja-uhendused.md)). Prototüüp on käitumise ja geomeetria allikas, mitte uue äpi tuum. Uue äpi kood (`apps/`, `packages/`) on prototüübist eraldi.

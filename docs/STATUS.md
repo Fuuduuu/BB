@@ -13,6 +13,7 @@ Uuendatud: **2026-11-15**. Hoia see fail lühikese hetkeseisuna, soovitatavalt k
 ## Mis on olemas
 
 - [`pnpm bb-review-card <ID>`](tasks/README.md#kaardi-ülevaatus-ühe-käsuga) seob kaardi testinimed käigu tulemustega. [`pnpm proof M1-3-10`](tasks/README.md#m1-3-10-brauseritõend) kordab J29 ja kõrvutiste näitude brauserikatset heledas ja tumedas teemas. Commitil `f58c219` läbisid 11/11 kaardil nõutud testi ja 4/4 brauserijuhtumit.
+- J29 tõendi hoiatus lähtub automaatpaigutusest. M1-3-10b tööpuu katses oli mõlemas teemas `autoRefPinOverlapPx2` enne lohistamist 0 px². Infomõõt `refPinOverlapPx2` pärast käsitsi lohistust oli 239,46 px². M1-3-10c vastuvõtt nõuab automaatpaigutuse kontrolli kõigis kaheksas asendis.
 - [Salvestuse ja seansivahetuse ülevaatuse oskus](../tools/skills/bb-review-storage/SKILL.md) juhib fotoimpordi, automaatse failinime ja taastamise sihitud kontrolli. Claude ja Codex leiavad selle [oskuste juhendist](SKILLS.md).
 - Toote- ja ehitusdokumendid [01–08](README.md) ning käivitatav veebiprototüüp kaustas `prototype/`.
 - Foto ja lõuendi [joonduse kontroll](../tools/skills/bb-check-canvas/SKILL.md) on proovitud sünteetiliste PNG-dega kõigi kaheksa stseeniteisenduse korral. Töölaua ekspordi tulemus selgub kaardiga [M1-2-8](tasks/M1-2-8.md).

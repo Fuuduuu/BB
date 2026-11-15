@@ -62,10 +62,33 @@ export function inspectProof(dir) {
         evidence.theme === theme &&
         hasPng(join(dir, screenshot)),
       );
-      results.push({ stem, title, theme, measurements, screenshot, ok });
+      /** @type {Partial<ReturnType<typeof j29PinSummary>>} */
+      const pinMetrics = scenario === 'j29' ? j29PinSummary(evidence) : {};
+      results.push({ stem, title, theme, measurements, screenshot, ok, ...pinMetrics });
     }
   }
   return results;
+}
+
+/** @param {{refPinOverlapPx2?: number | null, autoRefPinOverlapPx2?: number | null} | null} evidence */
+function j29PinSummary(evidence) {
+  const area = (/** @type {number | null | undefined} */ value) =>
+    typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+  const autoRefPinOverlapPx2 = area(evidence?.autoRefPinOverlapPx2);
+  const warnings = [];
+  if (autoRefPinOverlapPx2 === null) {
+    warnings.push('autoRefPinOverlapPx2 puudub. Automaatpaigutuse kattumine on teadmata.');
+  } else if (autoRefPinOverlapPx2 > 0) {
+    warnings.push(
+      'autoRefPinOverlapPx2 on üle 0 px². J29 automaatselt paigutatud tähis või väärtuse rida kattub jalanumbriga.',
+    );
+  }
+  return {
+    autoRefPinOverlapPx2,
+    refPinOverlapPx2: area(evidence?.refPinOverlapPx2),
+    refPinOverlapNote: 'pärast käsitsi lohistust',
+    warnings,
+  };
 }
 
 async function main() {
@@ -128,6 +151,17 @@ async function main() {
     console.error(error);
   }
   const scenarios = inspectProof(dir);
+  const formatArea = (/** @type {number | null | undefined} */ value) =>
+    value == null
+      ? 'teadmata'
+      : value.toLocaleString('et-EE', { maximumSignificantDigits: 5 }) + ' px²';
+  for (const s of scenarios) {
+    if (s.autoRefPinOverlapPx2 === undefined) continue;
+    console.log(
+      `${s.stem}: autoRefPinOverlapPx2=${formatArea(s.autoRefPinOverlapPx2)} (oodatav 0 px²), refPinOverlapPx2=${formatArea(s.refPinOverlapPx2)} (${s.refPinOverlapNote})`,
+    );
+    for (const warning of s.warnings ?? []) console.warn(`Hoiatus (${s.theme}): ${warning}`);
+  }
   const ok = exitCode === 0 && scenarios.every((s) => s.ok);
   const summary = join(dir, 'summary.json');
   writeFileSync(

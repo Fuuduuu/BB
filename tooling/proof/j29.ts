@@ -16,6 +16,23 @@ function overlap(a: Box, b: Box) {
   );
 }
 
+type LabelBox = { text: string | null; componentId: string | null; box: Box };
+
+export function j29RefPinOverlap(labels: LabelBox[]): number | null {
+  const ref = labels.find((item) => item.text === 'J29 ?');
+  if (!ref?.componentId || !hasArea(ref.box)) return null;
+  const own = labels.filter((item) => item.componentId === ref.componentId);
+  const value = own.find((item) => item.text === 'LONG CONNECTOR VALUE');
+  if (!value || !hasArea(value.box)) return null;
+  let area = 0;
+  for (let number = 1; number <= 15; number++) {
+    const pin = own.find((item) => item.text === String(number));
+    if (!pin || !hasArea(pin.box)) return null;
+    area += overlap(ref.box, pin.box) + overlap(value.box, pin.box);
+  }
+  return area;
+}
+
 // Runs inside Chromium. Observe the accepted E2E's real rotate/mirror actions without
 // copying its project setup, gesture sequence or IDB fixture into this tool.
 function installProbe() {
@@ -26,6 +43,7 @@ function installProbe() {
   const textBoxes = (layer: string) =>
     Array.from(document.querySelectorAll(`[data-layer="${layer}"] text`), (element) => ({
       text: element.textContent,
+      componentId: element.closest('[data-component]')?.getAttribute('data-component') ?? null,
       box: box(element),
       font: getComputedStyle(element).fontFamily,
     }));
@@ -166,6 +184,7 @@ export function registerJ29Proof(test: typeof playwrightTest, artifactDir: strin
     const stem = join(artifactDir, (isJ29 ? 'j29-' : 'adjacent-') + theme);
     const scenes = await page.evaluate(() => window.bbCardProof?.scenes() ?? []);
     const transforms = scenes.map((s) => ({ ...s, overlapPx2: overlap(s.reference, s.reading) }));
+    let autoRefPinOverlapPx2: number | null = null;
     try {
       assert.equal(info.status, 'passed', 'Kaardi algne E2E ei läbinud.');
       if (isJ29) {
@@ -205,6 +224,9 @@ export function registerJ29Proof(test: typeof playwrightTest, artifactDir: strin
               .filter({ hasText: 'LONG CONNECTOR VALUE' }),
           )
           .toHaveCount(1);
+        await page.evaluate(() => document.fonts.ready.then(() => undefined));
+        const autoLabels = await page.evaluate(() => window.bbCardProof!.measure().labels);
+        autoRefPinOverlapPx2 = j29RefPinOverlap(autoLabels);
         // Deliberately block the near placements: drag the reference onto the measured pin.
         const ref = page
           .locator('[data-layer="components.labels"] text')
@@ -276,6 +298,9 @@ export function registerJ29Proof(test: typeof playwrightTest, artifactDir: strin
             transforms,
             overlapPx2,
             valueOverlapPx2,
+            ...(isJ29
+              ? { refPinOverlapPx2: j29RefPinOverlap(sample.labels), autoRefPinOverlapPx2 }
+              : {}),
             gapX,
             issues,
           },

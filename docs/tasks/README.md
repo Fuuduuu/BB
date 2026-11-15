@@ -37,6 +37,8 @@ Skript ehitab valitud tööpuu veebirakenduse ja avab selle failid otse uues Chr
 
 Iga kord tekib uus `output/playwright/proof/M1-3-10-<käik>/`. Ava `summary.json` või võrdle faile `j29-light.png`, `j29-dark.png`, `adjacent-light.png` ja `adjacent-dark.png`. Sama nimega JSON-is on mõõdud. Väljumiskood 0 nõuab kõigi nelja juhtumi läbimist koos mõõtude ja kuvatõmmistega. Ebaõnnestumisel leiab detailid Playwrighti raportist `playwright.json`.
 
+Mõlema teema J29 põhimõõt on `autoRefPinOverlapPx2`. See liidab automaatselt paigutatud tähise ja väärtuse rea tekstikastide lõikepindalad J29 enda 15 jalanumbri tekstikastidega vahetult enne lohistamist. Oodatav tulemus on 0 CSS px². Positiivne või puuduv automaatmõõt annab hoiatuse ja säilitab senise väljumiskoodi. Kuvatõmmise jaoks lohistab proov tähise jalale 15, et viitejoon nähtavale tuleks. Infoväli `refPinOverlapPx2` näitab kattumist „pärast käsitsi lohistust“. Puuduv mõõt kuvatakse JSON-is väärtusena `null`.
+
 ## Kes mida loeb
 
 | Roll | Loeb | Ei loe |

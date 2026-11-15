@@ -50,6 +50,9 @@ Kaarte on kõige lihtsam lugeda MCP tööriistaga `bb_task`. See tagastab kaardi
 ## Otsused ja liidesed
 <täpsed signatuurid, DTO-d, konstandid, veakoodid, tekstid; kõik, mida ehitaja muidu otsima läheks>
 
+## Skeem (valikuline)
+<Mermaidi skeem, kui see teeb ülesande selgemaks: kasutaja töövoog, moodulite vastutus ja andmete liikumine (pidev nool = praegu, katkendlik = muudatus) või olekud. Väikesel või ilmselgel kaardil jäta ära.>
+
 ## Tõend
 - Testid (nimega): …
 - Käsud: `…` → oodatav tulemus

@@ -44,6 +44,7 @@ async function placeSoic(page: Page) {
   await page.mouse.click(x, y);
   await expect(body(page)).toBeVisible();
   await expect(page.locator('[data-layer="components.pins"] [data-pin]')).toHaveCount(8);
+  await page.keyboard.press('Escape');
 }
 
 async function clickPin(page: Page, id: string) {

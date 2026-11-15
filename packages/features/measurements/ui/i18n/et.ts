@@ -31,6 +31,7 @@ export const measureEt = {
   voltage: 'Pinge',
   hint: 'nt 4,98',
   save: 'Salvesta',
+  pinKeys: 'Alt+↓ järgmine jalg · Alt+↑ eelmine',
   emptyVoltage: 'Sisesta pinge, nt 4,98.',
   invalidVoltage: 'Ei saa aru. Sisesta pinge voltides, nt 4,98 või 3m3.',
   missingAt: 'Mõõtmiskoha jalg on kustutatud. Vali uus jalg.',

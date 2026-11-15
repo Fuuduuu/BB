@@ -104,6 +104,24 @@ test('tab_does_not_change_location', () => {
   expect(voltage().value).toBe('4,98');
 });
 
+test('pin_keys_hint_shown_only_for_multi_pin_component', () => {
+  const { clickPin, engine } = mountMeasurements();
+  const hintText = 'Alt+↓ järgmine jalg · Alt+↑ eelmine';
+  expect(screen.queryByText(hintText)).toBeNull();
+  clickPin('1');
+  const hint = measureBlock().getByText(hintText);
+  expect(hint.tagName).toBe('P');
+  expect(hint.hasAttribute('tabindex')).toBe(false);
+  expect(save().nextElementSibling).toBe(hint);
+  act(() => {
+    for (const pinId of ['2', '3', '4']) {
+      expect(engine.execute('components.removePin', { id: 'cmp_u1', pinId }).ok).toBe(true);
+    }
+  });
+  expect(engine.snapshot().doc.components[0]!.pins).toHaveLength(1);
+  expect(measureBlock().queryByText(hintText)).toBeNull();
+});
+
 test('alt_down_stops_at_last_pin_no_wrap', () => {
   const { clickPin } = mountMeasurements();
   clickPin('4');

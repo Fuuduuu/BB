@@ -61,6 +61,7 @@ test('pin_stays_on_photo_mark_after_rotate_and_mirror', async ({ page }) => {
   await library.getByRole('button', { name: 'Takisti SMD', exact: true }).click();
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
   await page.mouse.click(mark!.x, mark!.y);
+  await page.keyboard.press('Escape');
   const body = page.locator('[data-layer="components.bodies"] [data-component]');
   const pin = page.locator('[data-layer="components.pins"] [data-pin="1"]');
   const bodyAt = await center(body);

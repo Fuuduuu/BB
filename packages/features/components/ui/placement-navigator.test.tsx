@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test } from 'vitest';
 import { EngineProvider } from '@pcbk/client';
 import { useSessionStore, useViewStore } from '@pcbk/ui';
@@ -87,6 +87,27 @@ test('search_filters_by_keyword_and_shows_empty_state', () => {
     entryId: 'unknown',
     params: { w: 12.5, h: 10 },
   });
+});
+
+test('library_button_ends_stamping', () => {
+  mount('library');
+  fireEvent.click(screen.getByRole('button', { name: 'Takisti SMD' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Paiguta' }));
+  act(() => {
+    useSessionStore.getState().setPreview({
+      owner: 'components.place',
+      data: { footprint: 'chip', params: { size: '0805' }, center: { x: 100, y: 80 } },
+    });
+    usePlaceStore.setState({ error: 'Proovi uuesti.' });
+  });
+
+  const stop = screen.getByRole('button', { name: 'Lõpeta paigutamine' });
+  expect(stop.title).toBe('Lõpeta paigutamine · Esc');
+  fireEvent.click(stop);
+
+  expect(usePlaceStore.getState()).toMatchObject({ request: null, error: null });
+  expect(useSessionStore.getState()).toMatchObject({ toolId: 'select', preview: null });
+  expect(screen.getByRole('button', { name: 'Paiguta' })).toBeTruthy();
 });
 
 function mountUnplaced(pinIds: string[]) {

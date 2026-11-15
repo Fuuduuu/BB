@@ -14,6 +14,9 @@ test('second_pin_at_right_edge_is_selectable_with_context_hidden', async ({ page
   await page.mouse.click(area.x + area.width - 80, area.y + 250);
   const pins = page.locator('[data-layer="components.pins"] [data-pin]');
   await expect(pins).toHaveCount(8);
+  await page.keyboard.press('Escape');
+  const component = await center(page.locator('[data-layer="components.bodies"] [data-component]'));
+  await page.mouse.click(component.x, component.y);
   const pin3 = page.locator('[data-layer="components.pins"] [data-pin="3"]');
   const pin4 = page.locator('[data-layer="components.pins"] [data-pin="4"]');
   const at3 = await center(pin3);

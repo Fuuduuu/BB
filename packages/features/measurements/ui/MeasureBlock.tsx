@@ -158,6 +158,9 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
         <Button type="submit" variant="primary" disabled={blocked}>
           {text.save}
         </Button>
+        {atContact && atContact.component.pins.length > 1 && (
+          <p className="pcbk-measure-keys">{text.pinKeys}</p>
+        )}
       </form>
     </section>
   );

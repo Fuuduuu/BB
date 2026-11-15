@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { Button, Field } from '@pcbk/ui';
+import { Button, Field, useSessionStore } from '@pcbk/ui';
 import type { FootprintParams } from '@pcbk/domain/footprints';
 import type { LibraryEntry } from '../contract';
 import { placementEt } from './i18n/et';
@@ -51,6 +51,9 @@ function OptionField<T extends string | number>({
 
 function LibraryParameters({ entry }: { entry: LibraryEntry }) {
   const [params, setParams] = useState<FootprintParams>(entry.params);
+  const isPlacing = usePlaceStore(
+    ({ request }) => request?.mode === 'new' && request.entryId === entry.id,
+  );
   const labels = placementEt.params;
   const counts = footprintPinCounts[entry.footprint];
   const isArea = entry.footprint === 'area';
@@ -109,14 +112,20 @@ function LibraryParameters({ entry }: { entry: LibraryEntry }) {
       )}
       <Button
         variant="primary"
-        disabled={!placementParams}
+        disabled={!isPlacing && !placementParams}
+        title={isPlacing ? placementEt.stopPlacingTitle : undefined}
         onClick={() => {
-          if (placementParams) {
+          if (isPlacing) {
+            usePlaceStore.getState().reset();
+            const session = useSessionStore.getState();
+            session.setPreview(null);
+            session.setToolId('select');
+          } else if (placementParams) {
             beginPlacement({ mode: 'new', entryId: entry.id, params: placementParams });
           }
         }}
       >
-        {placementEt.tool}
+        {isPlacing ? placementEt.stopPlacing : placementEt.tool}
       </Button>
     </div>
   );

@@ -1,79 +1,18 @@
 // @vitest-environment jsdom
 import { componentEt } from './i18n/et';
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
-import { useSyncExternalStore } from 'react';
-import { afterEach, expect, test, vi } from 'vitest';
-import { newBoardDoc } from '@pcbk/domain';
-import { Canvas, useSessionStore } from '@pcbk/ui';
-import type { SceneTransform, ToolApi } from '@pcbk/ui';
-import { idGenerator, setup } from '../../__tests__/helpers';
-import { COMPONENTS_LAYERS } from './layers';
-import { createPlaceToolSpec } from './PlaceTool';
-import { beginPlacement, usePlaceStore } from './place-store';
+import { act, cleanup, fireEvent } from '@testing-library/react';
+import { afterEach, expect, test } from 'vitest';
+import { useSessionStore } from '@pcbk/ui';
+import type { SceneTransform } from '@pcbk/ui';
+import { center, mountPlaceTool as mount, resistor } from './__tests__/place-tool-helpers';
+import { usePlaceStore } from './place-store';
 import type { PlacementRequest } from './place-store';
-
-const resistor = { mode: 'new', entryId: 'r_smd', params: { size: '0805' } } as const;
-const center = { x: 100, y: 80 };
 
 afterEach(() => {
   cleanup();
   usePlaceStore.getState().reset();
   useSessionStore.getState().reset('');
 });
-
-function mount(sceneTransform: SceneTransform = 'none') {
-  const doc = newBoardDoc('Paigutuse proov');
-  doc.scale.pxPerMm = 10;
-  const { engine } = setup(doc);
-  const tools = [createPlaceToolSpec(idGenerator())];
-  const execute = vi.fn<ToolApi['execute']>((...args) => engine.execute(...args));
-  const view = { zoom: 2, pan: { x: 0, y: 0 } };
-  useSessionStore.getState().reset(engine.snapshot().sessionId);
-
-  function Board() {
-    const snapshot = useSyncExternalStore(engine.subscribe, engine.snapshot, engine.snapshot);
-    return (
-      <Canvas
-        layers={COMPONENTS_LAYERS}
-        tools={tools}
-        snapshot={snapshot}
-        execute={execute}
-        sceneTransform={sceneTransform}
-        view={view}
-        onViewChange={() => {}}
-      />
-    );
-  }
-
-  const { container } = render(<Board />);
-  const svg = container.querySelector('svg')!;
-  const scene = svg.querySelector('[data-scene]')!;
-  Object.defineProperties(svg, {
-    setPointerCapture: { value: () => {} },
-    hasPointerCapture: { value: () => true },
-    releasePointerCapture: { value: () => {} },
-  });
-  Object.defineProperty(scene, 'getScreenCTM', {
-    value: () => ({ inverse: () => ({ a: 0.5, b: 0, c: 0, d: 0.5, e: 0, f: 0 }) }),
-  });
-
-  function pointer(type: string, x = 200, y = 160, button = 0) {
-    const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y, button });
-    Object.defineProperty(event, 'pointerId', { value: 1 });
-    fireEvent(svg, event);
-  }
-
-  function click() {
-    pointer('pointerdown');
-    pointer('pointerup');
-  }
-
-  function start(request: PlacementRequest = resistor) {
-    act(() => beginPlacement(request));
-  }
-
-  return { engine, execute, svg, pointer, click, start };
-}
 
 test('place_tool_adds_placed_component_in_one_command', () => {
   const { engine, execute, click, start } = mount();
@@ -165,18 +104,36 @@ test('place_tool_preview_follows_cursor', () => {
   expect(engine.snapshot()).toBe(before);
 });
 
-test('placed_component_becomes_selected_and_tool_returns_to_select', () => {
-  const { click, pointer, start } = mount();
-  start();
+test('existing_component_placement_ends_after_one', () => {
+  const { engine, execute, click, pointer, start } = mount();
+  act(() =>
+    engine.execute('components.add', {
+      id: 'cmp_existing',
+      kind: 'resistor',
+      pins: [
+        { id: '1', uid: 'pin_existing1' },
+        { id: '2', uid: 'pin_existing2' },
+      ],
+    }),
+  );
+  start({
+    mode: 'existing',
+    componentId: 'cmp_existing',
+    footprint: 'chip',
+    params: resistor.params,
+  });
   pointer('pointermove');
   click();
 
   expect(useSessionStore.getState()).toMatchObject({
-    selection: { items: [{ kind: 'component', id: 'cmp_1' }] },
+    selection: { items: [{ kind: 'component', id: 'cmp_existing' }] },
     toolId: 'select',
     preview: null,
   });
   expect(usePlaceStore.getState()).toMatchObject({ request: null, error: null });
+  click(300, 200);
+  expect(execute).toHaveBeenCalledTimes(1);
+  expect(engine.snapshot().doc.components).toHaveLength(1);
 });
 
 test.each<{ footprint: string; params: PlacementRequest['params']; pinIds: string[] }>([

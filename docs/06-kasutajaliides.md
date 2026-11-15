@@ -23,6 +23,7 @@ Visuaalne keel tuleb prototüübist ([prototype/src/app.css](../prototype/src/ap
 - Navigaatori vahekaardinimed on ilma loendurita. Aktiivse paneeli kohal on 12 px kokkuvõte: näiteks „12 plaadil · 3 paigutamata“, „1 mõõtmine“ või „1500 mõõtmist“. Nulli korral vastav osa puudub; tühjal paneelil ja Teegis kokkuvõtet pole.
 - „Komponendid“ all vahetavad filtrinupud „Plaadil (12)“ ja „Paigutamata (3)“ olemasolevaid loendeid. Kui filter on „Plaadil“ ja paigutamata komponente on, märgib neid teisel nupul aktsenditäpp; automaatset filtrivahetust pole. Filter jääb projekti vaates meelde dokumendi revisjoni muutmata; vigane või puuduv väärtus tähendab „Plaadil“.
 - Vana vahekaardi `unplaced` id-d eraldi ei teisendata: tundmatu salvestatud id korral avaneb esimene vahekaart „Teek“.
+- Teegist paigutades jääb sama korpuse tööriist aktiivseks kuni `Esc`-ini või nupuni „Lõpeta paigutamine“. Iga klõps lisab uue komponendi ja on eraldi tagasivõtmise samm; eelvaade jääb kursori juurde. Paigutamata loendi olemasolev komponent paigutatakse ühe korraga.
 - Tahvli paigutus tuleb M5-s (navigaator sahtlina, kontekst alt üles tõusva lehena).
 
 ## Disainitokenid
@@ -119,6 +120,7 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 **Skeemivaates** lisaks: `W` juhe · `L` võrgusilt · `R` pööra sümbolit. „Näita teises vaates“ on kontekstimenüüs ja käsupaletis.
 
 **Väärtuse väljas** (mõõtmine): `Enter` salvesta · `Alt+↓` / `Alt+↑` järgmine/eelmine jalg · `Tab` / `Shift+Tab` järgmine/eelmine vormiväli · `Alt+1…4` režiim · `Alt+P` toide · `Esc` tühjenda mustand ja välju. Sisestusväljas ei käivitu ükski lõuendi täheklahv.
+Mitme jalaga komponendil on „Salvesta“ nupu all nähtav vihje „Alt+↓ järgmine jalg · Alt+↑ eelmine“. Vihje ei lisa fookuspeatust; `Tab` ja `Shift+Tab` liiguvad vormiväljade vahel.
 **Piiksumisrežiimi nuppudel:** `Enter` „Piiksub ja ühenda“ · `Shift+Enter` „Ainult mõõtmine“ · `N` „Ei piiksu“ · `Esc` katkesta (ei salvesta midagi). Klahvid on nuppude peal kirjas.
 
 Kontekstiklahvid (piiksu nupud, raja joonistamine, skeemivaade) kehtivad ainult selles olekus ja on registris kontekstiga seotud.

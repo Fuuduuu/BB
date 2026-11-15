@@ -110,6 +110,8 @@ export const placementEt = {
     positive: 'Sisesta nullist suurem arv.',
   },
   tool: 'Paiguta',
+  stopPlacing: 'Lõpeta paigutamine',
+  stopPlacingTitle: 'Lõpeta paigutamine · Esc',
   placed: {
     emptyBefore: 'Plaadil pole veel midagi. Ava ',
     emptyAfter: ' ja paiguta esimene komponent plaadile.',

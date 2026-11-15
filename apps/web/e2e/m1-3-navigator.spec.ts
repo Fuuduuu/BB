@@ -12,6 +12,7 @@ test('navigator_tabs_fit_one_row_at_240_and_300px', async ({ page }) => {
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
   const at = await center(canvas(page));
   await page.mouse.click(at.x, at.y);
+  await page.keyboard.press('Escape');
   const pin = page.locator('[data-layer="components.pins"] [data-pin="3"]');
   const pinAt = await center(pin);
   await page.mouse.click(pinAt.x, pinAt.y);

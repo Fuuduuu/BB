@@ -178,4 +178,5 @@ Rajad: ülesanded 9 ja 11 on **rada B**, ülejäänud **rada A** ([WORKFLOW](../
 - **Väiksemad lahtised asjad:**
   - Katkenud impordi integratsioonitest (`test_writer` + prune) läheb järgmisele raja B salvestuskaardile.
   - `photo_orientation` tõstetakse tavaliseks mooduliks järgmisel Rusti puudutusel.
+  - **Siltide paigutus naaberkomponentide suhtes** (M1-3-11 suitsukatse, 2026-11-17). Pikk väärtus (näiteks 20 märki) võib väikesel suumil ulatuda naaberkomponendi padjanditele. Oma jalad, tähis ja näit on kaitstud, aga naaberkomponendid ja kered ei ole takistused. Lahendus on takistuste kanali laiendamine (komponentide kered ja padjandid). See tuleb koos M2 siltide ja ühenduste paigutusega või M1.4 tiheduse ülevaatusega.
   - **Teegi siluetid nimekirjas** (disainiülevaatus 2026-11-15, punkt 1): suletud teegiridadel väike pealtvaate siluett kõige erinevamatele perekondadele (SOIC, QFP, pinnirida). Proovitakse 240 px navigaatoris ja klaviatuuriga. Läheb tiheduse ülevaatusse või M1.4-sse.

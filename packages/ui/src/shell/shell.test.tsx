@@ -330,16 +330,17 @@ test('navigator tabs support arrows without changing the selected component', ()
   });
 });
 
-test('navigator tab shows its current count only when positive', () => {
+test('navigator_tab_titles_have_no_counts_and_summary_shows_count', () => {
   const registry = new UiRegistry([
     {
       id: 'test',
       title: 'Test',
       navigatorTabs: [
         {
-          id: 'unplaced',
-          title: 'Plaadile paigutamata',
-          count: (current) => current.doc.components.length,
+          id: 'components',
+          title: 'Komponendid',
+          summary: (current) =>
+            current.doc.components.length ? `${current.doc.components.length} plaadil` : null,
           render: () => null,
         },
       ],
@@ -351,9 +352,11 @@ test('navigator tab shows its current count only when positive', () => {
       <AppShell {...actions()} registry={registry} />
     </EngineProvider>,
   );
-  expect(screen.getByRole('tab').textContent).toBe('Plaadile paigutamata (1)');
+  expect(screen.getByRole('tab').textContent).toBe('Komponendid');
+  expect(screen.getByText('1 plaadil').className).toBe('pcbk-pane-summary');
   act(() => engine.replace(snapshot('session-a', 1)));
-  expect(screen.getByRole('tab').textContent).toBe('Plaadile paigutamata');
+  expect(screen.getByRole('tab').textContent).toBe('Komponendid');
+  expect(screen.queryByText('1 plaadil')).toBeNull();
 });
 
 test('session_reset_hook_called_on_project_switch', () => {

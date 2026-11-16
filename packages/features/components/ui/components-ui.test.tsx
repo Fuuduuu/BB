@@ -3,7 +3,7 @@ import { componentEt } from './i18n/et';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test } from 'vitest';
 import { EngineProvider } from '@pcbk/client';
-import { et, useSessionStore } from '@pcbk/ui';
+import { et, useSessionStore, useViewStore } from '@pcbk/ui';
 import { FakeProjects } from '../../../client/src/__tests__/fakes';
 import { idGenerator, setup } from '../../__tests__/helpers';
 import { createComponentsUi } from './index';
@@ -21,6 +21,7 @@ const dialogMethods = {
 };
 beforeEach(() => {
   useSessionStore.getState().reset('feature-test');
+  useViewStore.getState().reset();
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
     configurable: true,
     value: function (this: HTMLDialogElement) {
@@ -36,6 +37,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  useSessionStore.getState().reset('');
+  useViewStore.getState().reset();
   for (const name of ['showModal', 'close'] as const) {
     const original = dialogMethods[name];
     if (original) Object.defineProperty(HTMLDialogElement.prototype, name, original);
@@ -49,7 +52,7 @@ function mount() {
     const selection = useSessionStore((s) => s.selection);
     return (
       <>
-        {module.navigatorTabs?.find((tab) => tab.id === 'unplaced')?.render()}
+        {module.navigatorTabs?.find((tab) => tab.id === 'components')?.render()}
         {module.contextSections![0]!.render({ selection })}
       </>
     );
@@ -59,6 +62,7 @@ function mount() {
       <Screen />
     </EngineProvider>,
   );
+  fireEvent.click(screen.getByRole('radio', { name: 'Paigutamata (0)' }));
   return { engine, host };
 }
 function add(kind?: string, count?: string) {

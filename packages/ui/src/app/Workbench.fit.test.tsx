@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { EngineProvider } from '@pcbk/client';
 import { DEFAULT_VIEW_STATE, ok } from '@pcbk/contracts';
@@ -86,7 +86,9 @@ test('workbench_fit_tracks_overlay_open_closed_wide_and_resized_panel', async ()
   });
   expect(useViewStore.getState().contextWidth).toBe(350);
   expectFit(350);
-  fireEvent.click(screen.getByRole('button', { name: 'Peida omadused' }));
+  fireEvent.click(
+    within(screen.getByRole('banner')).getByRole('button', { name: 'Peida omadused' }),
+  );
   expectFit(0);
   fireEvent.click(screen.getByRole('button', { name: 'Näita omadusi' }));
   expectFit(350);

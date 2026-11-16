@@ -164,11 +164,12 @@ export interface LayerSpec {
 }
 ```
 
-**Registreerimine:** mootori moodulid on loetletud failis `apps/desktop/src/engine.features.ts` ja UI moodulid failis `apps/desktop/src/ui.features.ts`, kumbki rida mooduli kohta. Registrid kontrollivad käivitusel järgmist:
+**Registreerimine:** mõlemad rakendused kasutavad ühiseid nimekirju `packages/features/engine.ts` ja `packages/features/ui.ts`. Koostefaili `packages/features/composition.ts` `assertModulePairs(engineIds, uiIds, uiOnly)` kontroll antakse töölauale rakenduse koostekohast: tootemoodulid kontrollitakse enne registri loomist ja kesta `home-feedback` lisamist. Registrid kontrollivad käivitusel järgmist:
 - id-d on unikaalsed;
 - `dependsOn` on olemas ja tsükleid pole;
 - käskude, tööriistade, klahvide ja paneelide id-d ei kattu;
 - igal UI moodulil on samanimeline mootori moodul (erandid on ainult UI moodulid `guide` ja `export`);
+- igal mootori moodulil on samanimeline UI moodul; puuduva paarilise viga nimetab mooduli ja takistab töölaua avamist;
 - igal `BoardDoc` väljal on täpselt üks omanik.
 
 Vea korral käivitub äpp veateatega. UI register sorteerib `canvasLayers` kihid `z` järgi ning kontrollib kihtide ja tööriistade ID-sid. Lõuend kasutab kihtide üldisi punkt-, lõigu- ja alakuju tabamusi. Valik ja vaate nihutamine kuuluvad lõuendi baasi.
@@ -321,8 +322,12 @@ Komponentide moodul hoiab paigutuse režiimi oma seansihoidlas. Paigutustöörii
 - Kihid renderdatakse `z` järjekorras: foto (0) → alad (10) → kontuur (15) → alumised rajad (20) → komponentide kered (30) → pealmised rajad (40) → jalad (50) → juhtmed ja lingid (55) → sildid (60) → mõõtjooned (70) → hinnangute märgid (80) → valik ja käepidemed (90) → tööriista ülekate (100).
 - Iga komponent ja rada on `React.memo` komponent. Komponendi renderdus sõltub tema andmetest, mõõtkavast, valikust, LOD-suumist ja tema enda eelvaate nihkest.
 - **Pan ja suum** muudavad vaate teisendust ühel SVG grupil. Kui suum muutub, uueneb kihtide `lodZoom` väärtus `requestAnimationFrame`-is 120 ms pärast vaate liikumise lõppu. Ainult vaate nihutamine kihte ega indeksit uuesti ei arvuta.
-- **Tabamuse test:** jalgadel ega radadel pole eraldi sündmusekuulareid. Lõuendi juurel on üks kuular ja ruumiindeks (`HitIndex`, ruudustik 32 px). Kihid annavad tabamused funktsiooniga `hits(snapshot, lodZoom)`. Indeks ehitatakse uuesti revisjoni, seansi, kihtide või LOD-suumi muutudes. Tabamuse ekraanilävi kasutab tegelikku suumi.
-- **Detailsus suumi järgi (LOD):** jalgade numbrid ja nimed renderdatakse [06 › Jalad](06-kasutajaliides.md#jalad) lävede järgi (number alates raadiusest 7 px, nimi alates 14 px). Komponentide tähised ja mõõteväärtuste sildid renderdatakse, kui tekst on ekraanil vähemalt 8 px. Peidetud komponenditähisel puudub tabamusala.
+- **Tabamuse test:** jalgadel ega radadel pole eraldi sündmusekuulareid. Lõuendi juurel on üks kuular ja ruumiindeks (`HitIndex`, ruudustik 32 px). Kihid annavad tabamused funktsiooniga `hits(snapshot, lodZoom, sceneTransform)`. Indeks ehitatakse uuesti revisjoni, seansi, kihtide, LOD-suumi või stseeniteisenduse muutudes. Tabamuse ekraanilävi kasutab tegelikku suumi.
+- **Siltide takistuste kanal:** kiht võib anda `obstacles(snapshot, lodZoom, sceneTransform)` kaudu ekraaniga joondatud `LabelObstacle` kastid. Lõuend kogub need tabamuste indeksiga samade sisendite järgi ning annab tarbijatele `useLabelObstacles()` konteksti; nihutamine ja lohistamise eelvaade vahemälu ei uuenda. Kasti kese on stseeni koordinaatides, poolmõõdud ekraani telgedel stseeni ühikutes. `screenBoxesOverlap` arvestab kõiki kaheksat stseeniteisendust.
+- Komponentide kiht annab nähtavate tähiste ja väärtuseridade kastid sama arvutusega, mida kasutavad joonistus ja tabamus. Automaatne tähis nihkub padjanditest ekraani üles-suunas eemale, arvestades teksti, halo ja tabamisvaru. Käsitsi määratud `labelOffset` säilib.
+- Mõlemad moodulid kasutavad `monoLabelHalf` abifunktsiooni: Martian Mono järgi kalibreeritud märgilaius on 0,72 em ja reakõrgus 1,25 em. Igale küljele lisandub pool halo laiust ning üks ekraanipiksel, jagatud suumiga. Arvutus on puhas ega mõõda iga silti DOM-ist; teise mono-fondi lisamisel tuleb konstandid uuesti kalibreerida.
+- Mõõtmiste kiht paigutab näidud dokumendi komponentide ja jalgade järjekorras, vältides tähiste kaste ning juba paigutatud näite. Esmalt proovitakse nelja lähedast kohta, siis kuni kolme `textSize` sammu kaugusel samu suundi; sobiva puudumisel jääb esimene koht. Kaugemal asuva näidu ühendab jala rõngaga viitejoon. Lohistamise eelvaates säilib arvutatud nihe. Moodulid kasutavad ainult kesta kanalit, teineteist importimata.
+- **Detailsus suumi järgi (LOD):** jalgade numbrid ja nimed renderdatakse [06 › Jalad](06-kasutajaliides.md#jalad) lävede järgi (number alates lühema külje poolest 7 px, nimi alates 14 px). Jalg järgib padjandi ristkülikut või ringi; pööratud ristküliku joonisel ja tabamusel on iga külg ekraanil vähemalt 5 px. Sama prioriteediga ristkülikute vahel võidab kursorile lähim kese. Korpusel märgib jala 1 asukohta punkt, kui korpuse geomeetria selle määrab. Komponentide tähised ja mõõteväärtuste sildid renderdatakse, kui tekst on ekraanil vähemalt 8 px. Peidetud komponenditähisel puudub tabamusala.
 - `HitItem.target` määrab klõpsuga valitava objekti. `HitItem.drag` määrab lohistamise eelvaate omaniku ja vabastamisel tehtava toimingu. Tähise lohistamine saadab ühe `components.setLabelOffset` käsu. Revisjoni muutus katkestab aktiivse žesti, eemaldab eelvaate ja jätab käsu saatmata.
 - **Jõudluseelarve** (keskmine sülearvuti, kuni 12 MP kuvatav foto): 300 komponenti, 3000 jalga ja 1000 rada; pan ja suum 60 fps; lohistamine ≥ 45 fps; projekti avamine < 1,5 s. Seda kontrollitakse kahel viisil:
   - **varajane proov päris Tauri aknas** tiheda sünteetilise plaadiga (siltide, valiku ja fotoga) M1.2-s;
@@ -358,6 +363,10 @@ Skeem on sama projekti **teine tööpind**, mitte tuletatud pilt ([ADR-004](adr/
 - **Automaatpaigutus** (M4, kandidaat ELK/elkjs Workeris) on abiline. „Paiguta lisamata komponendid“ ei liiguta kasutaja paigutatud sümboleid. „Paiguta valik uuesti“ on eraldi tagasivõetav käsk. ELK arvutab ainult paigutust; ühendused ja tähendus jäävad BB omaks.
 
 ## 9. Salvestus ja projekti fail
+
+**Automaatne failinimi:** kui kasutaja pole loomisel teed valinud, küsib töölauaadapter `default_project_path`-ilt vaba nime ja saadab `project_create`-le `exclusive: true`. Rust avaldab ajutise faili olemasolevat sihti üle kirjutamata (`install_new`). Kui nimi on vahepeal hõivatud, annab Rust `path_taken`; adapter küsib uue nime, kokku kuni kolm loomiskatset. Katsete ammendumisel on avalik salvestusviga `exists`. Ajutine fail koristatakse ja hõivatud faili baite ei muudeta. Kasutaja valitud tee kasutab `exclusive: false`; kinnitatud asenduse senine käitumine säilib.
+
+**Fotoimpordi seanss:** `ProjectService.importPhoto` saab impordi alguse loogilise `session`-i (`snapshot.sessionId`). `serial`-järjekorras kontrollitakse seda aktiivse loogilise seansiga enne `photos.importBytes`-i. Aegunud päring annab `stale_session` ilma fotopordi kirjutuskutseta; hoidla sihtseanss võetakse alles selle kontrolli järel aktiivsest kontekstist. Nii võib koopia jätkata sama loogilise seansiga uues hoidlas, kuid projektivahetus ei suuna vana importi uude projekti.
 
 **Üks fail `<nimi>.pcbk` = SQLite andmebaas:**
 
@@ -419,6 +428,7 @@ Projekti faili kirjutab ainult `SaveCoordinator`, mis on mootoris `ProjectServic
 - **Üks järjekord.** Korraga on käimas kõige rohkem üks kirjutus. Kui kirjutuse ajal tuleb uus käsk, kirjutatakse pärast selle lõppu kohe uusim olek.
 - **Revisjoni võrdlus tehingu sees:** `project_save` uuendab dokumenti ainult siis, kui failis on täpselt `base_rev` (`UPDATE … WHERE rev = base_rev`). Muidu tuleb viga `stale_rev` ja midagi ei kirjutata. Luku tõttu ei tohiks see kunagi juhtuda, aga see on teine kaitsekiht.
 - **Vaade eraldi:** `saveView` märgib vaate muutunuks ja kirjutab ainult `view` tabeli, ilma `rev`-i ja ajaloosammuta. Ka see käib samas järjekorras ja `flush()` hõlmab seda.
+  - Võrdlus on ühine `contracts/view-state.ts` `sameViewState`: kõik salvestatavad väljad, sealhulgas `navigatorOpen`, `modules` ja `boardView`. Seda kasutavad nii salvestusjuht kui töölaud; töölaud võrdleb uut vaadet varasema salvestatava vaate koopiaga. Objektivõtmete järjekord võrdlust ei mõjuta, massiivielementide järjekord mõjutab.
 - **Logi read** jäävad järjekorda seni, kuni tehing on õnnestunud. Ebaõnnestumisel ei kao ükski rida.
 - **Nähtav olek:** `saved(rev, aeg)` → „Salvestatud · 14:32“; `pending` ja `saving` → „Salvestan…“; `error(põhjus)` → punane riba „Salvestamine ebaõnnestus: <põhjus>. [Proovi uuesti] [Salvesta mujale…]“. Vea ajal töö jätkub mälus, iga uus käsk proovib uuesti ja olek jääb punaseks, kuni kirjutus õnnestub. Olekuteated kannavad `sessionId`-d.
   - `stale_rev` säilib nii `SaveStatus.reason`-is kui sulgemisdialoogi põhjusena. Tekst on „Projekti muudeti teises aknas. Sinu muudatused on alles ainult selles aknas; salvesta need mujale.“ Selle vea korral puudub ribal ja dialoogis **Proovi uuesti**, sest sama alusrevisjoniga kordus ei lahenda konflikti; **Salvesta mujale…** ja salvestamata sulgemine on alles.

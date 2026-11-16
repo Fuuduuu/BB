@@ -48,27 +48,29 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
 export function Workbench({
   host,
   uiModules,
+  validateModules,
   addPhoto,
 }: {
   host: AppHost;
   addPhoto?: (file: File) => Promise<Result<void, EngineError>>;
   uiModules: (onHome: () => void) => UiModule[];
+  validateModules?: (modules: readonly UiModule[]) => void;
 }) {
   useTheme();
   const workbench = useWorkbench(host, addPhoto);
   const { goHome } = workbench;
-  const registry = useMemo(
-    () =>
-      new UiRegistry([
-        ...uiModules(goHome),
-        {
-          id: 'home-feedback',
-          title: '',
-          bottomBar: [{ id: 'home-feedback', order: -100, render: () => <HomeFeedback /> }],
-        },
-      ]),
-    [uiModules, goHome],
-  );
+  const registry = useMemo(() => {
+    const modules = uiModules(goHome);
+    validateModules?.(modules);
+    return new UiRegistry([
+      ...modules,
+      {
+        id: 'home-feedback',
+        title: '',
+        bottomBar: [{ id: 'home-feedback', order: -100, render: () => <HomeFeedback /> }],
+      },
+    ]);
+  }, [uiModules, validateModules, goHome]);
   const copyAvailable = Boolean(workbench.info && host.pickSavePath);
   const restoreAvailable = host.kind === 'desktop' && Boolean(host.pickSavePath);
 

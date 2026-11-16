@@ -188,6 +188,8 @@ test('add_with_board_creates_pins_from_footprint', () => {
     footprint: 'sot23',
     params: { pins: 3 },
     kw: 'transistor mosfet',
+    category: 'semi',
+    paramSpec: [{ key: 'pins', label: 'pins', choices: [3, 5, 6] }],
   } as const;
   expect(contract.makePlacedComponent).toBeTypeOf('function');
   const params = contract.makePlacedComponent(idGenerator(), entry, { pins: 5 }, chipBoard.center);
@@ -217,51 +219,61 @@ test('add_with_board_creates_pins_from_footprint', () => {
   expect(engine.snapshot().doc.components).toEqual([]);
 });
 
-test('library_has_seven_entries_with_empty_value_and_marking', () => {
+test('all_library_entries_place_with_empty_value_and_marking', () => {
   const { engine } = setup();
-  expect(contract.COMPONENT_LIBRARY).toEqual([
-    {
-      id: 'r_smd',
-      kind: 'resistor',
-      footprint: 'chip',
-      params: { size: '0805' },
-      kw: 'resistor chip',
-    },
-    {
-      id: 'c_smd',
-      kind: 'capacitor',
-      footprint: 'chip',
-      params: { size: '0805' },
-      kw: 'capacitor mlcc',
-    },
-    { id: 'sot23', kind: 'npn', footprint: 'sot23', params: { pins: 3 }, kw: 'transistor mosfet' },
-    { id: 'soic', kind: 'ic', footprint: 'soic', params: { pins: 8, body: 3.9 }, kw: 'so ic' },
-    { id: 'to220', kind: 'regulator', footprint: 'to220', params: {}, kw: 'regulator mosfet' },
-    {
-      id: 'hdr1',
-      kind: 'connector',
-      footprint: 'header1',
-      params: { pins: 4, pitch: 2.54 },
-      kw: 'header pin',
-    },
-    {
-      id: 'unknown',
-      kind: 'other',
-      footprint: 'area',
-      params: { w: 8, h: 10 },
-      kw: 'unknown generic custom',
-    },
-  ]);
+  expect(contract.COMPONENT_LIBRARY).toEqual(
+    expect.arrayContaining(
+      [
+        {
+          id: 'r_smd',
+          kind: 'resistor',
+          footprint: 'chip',
+          params: { size: '0805' },
+          kw: 'resistor chip',
+        },
+        {
+          id: 'c_smd',
+          kind: 'capacitor',
+          footprint: 'chip',
+          params: { size: '0805' },
+          kw: 'capacitor mlcc',
+        },
+        {
+          id: 'sot23',
+          kind: 'npn',
+          footprint: 'sot23',
+          params: { pins: 3 },
+          kw: 'transistor mosfet',
+        },
+        { id: 'soic', kind: 'ic', footprint: 'soic', params: { pins: 8, body: 3.9 }, kw: 'so ic' },
+        { id: 'to220', kind: 'regulator', footprint: 'to220', params: {}, kw: 'regulator mosfet' },
+        {
+          id: 'hdr1',
+          kind: 'connector',
+          footprint: 'header1',
+          params: { pins: 4, pitch: 2.54 },
+          kw: 'header pin',
+        },
+        {
+          id: 'unknown',
+          kind: 'other',
+          footprint: 'area',
+          params: { w: 8, h: 10 },
+          kw: 'unknown generic custom moodul',
+        },
+      ].map((entry) => expect.objectContaining(entry)),
+    ),
+  );
   const ids = idGenerator();
   for (const entry of contract.COMPONENT_LIBRARY) {
     const params = contract.makePlacedComponent(ids, entry, {}, chipBoard.center);
-    expect(engine.execute('components.add', params).ok).toBe(true);
+    expect(engine.execute('components.add', params).ok, entry.id).toBe(true);
   }
   const components = engine.snapshot().doc.components;
   expect(components.map(({ value, marking }) => [value, marking])).toEqual(
-    Array.from({ length: 7 }, () => ['', '']),
+    Array.from({ length: 40 }, () => ['', '']),
   );
-  expect(components[6]!.pins).toEqual([]);
+  expect(components.find(({ board }) => board?.footprint === 'area')!.pins).toEqual([]);
 });
 
 test.each([

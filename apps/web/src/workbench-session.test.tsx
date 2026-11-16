@@ -79,7 +79,11 @@ test('removing the selected pin clears the selection while its component remains
     );
     expect(context.getByLabelText(componentEt.namePin(pin.id))).toBeTruthy();
 
-    fireEvent.click(context.getByRole('button', { name: componentEt.removePin(pin.id) }));
+    act(() => {
+      expect(
+        runtime.engine.execute('components.removePin', { id: component.id, pinId: pin.id }).ok,
+      ).toBe(true);
+    });
     const remaining = runtime.engine
       .snapshot()
       .doc.components.find(({ id }) => id === component.id);

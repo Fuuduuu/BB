@@ -46,7 +46,10 @@ describe('project photo import', () => {
     expect(nativeSession).not.toBe(created.value.sessionId);
     const before = engine.snapshot();
 
-    expect(await projects.importPhoto(file)).toEqual({ ok: true, value: photo });
+    expect(await projects.importPhoto({ ...file, session: before.sessionId })).toEqual({
+      ok: true,
+      value: photo,
+    });
 
     expect(newId).toHaveBeenLastCalledWith('pho');
     expect(importBytes).toHaveBeenCalledExactlyOnceWith(
@@ -64,7 +67,7 @@ describe('project photo import', () => {
 
   it('import_photo_without_project_fails', async () => {
     const { projects, importBytes, newId } = setup();
-    expect(await projects.importPhoto(file)).toEqual({
+    expect(await projects.importPhoto({ ...file, session: 'closed-session' })).toEqual({
       ok: false,
       error: { code: 'stale_session' },
     });
@@ -75,22 +78,23 @@ describe('project photo import', () => {
   it.each<StorageReason>(['unsupported_image', 'image_too_large', 'corrupt_image', 'read_only'])(
     'retains photo port storage reason %s and permits the next operation',
     async (reason) => {
-      const { projects, importBytes } = setup();
+      const { projects, engine, importBytes } = setup();
       expect((await projects.create({ name: 'Board' })).ok).toBe(true);
+      const input = { ...file, session: engine.snapshot().sessionId };
       importBytes.mockRejectedValueOnce(new StorageError(reason));
-      expect(await projects.importPhoto(file)).toEqual({
+      expect(await projects.importPhoto(input)).toEqual({
         ok: false,
         error: { code: 'storage', reason },
       });
-      expect(await projects.importPhoto(file)).toEqual({ ok: true, value: photo });
+      expect(await projects.importPhoto(input)).toEqual({ ok: true, value: photo });
       expect((await projects.close()).ok).toBe(true);
     },
   );
 
-  it('waits for project acquisition before selecting the active storage session', async () => {
+  it('rejects a session captured before a queued acquisition finishes', async () => {
     const started = deferred();
     const release = deferred();
-    const { projects, store, importBytes } = setup((repo) => ({
+    const { projects, importBytes, newId } = setup((repo) => ({
       ...repo,
       async create(req) {
         started.resolve();
@@ -100,12 +104,13 @@ describe('project photo import', () => {
     }));
     const creating = projects.create({ name: 'Board', path: 'board.pcbk' });
     await started.promise;
-    const importing = projects.importPhoto(file);
+    const importing = projects.importPhoto({ ...file, session: 'unopened-session' });
     expect(importBytes).not.toHaveBeenCalled();
     release.resolve();
     expect((await creating).ok).toBe(true);
-    expect((await importing).ok).toBe(true);
-    expect(importBytes.mock.calls[0]![0]).toBe(store.locks.get('board.pcbk'));
+    expect(await importing).toEqual({ ok: false, error: { code: 'stale_session' } });
+    expect(importBytes).not.toHaveBeenCalled();
+    expect(newId).not.toHaveBeenCalledWith('pho');
     expect((await projects.close()).ok).toBe(true);
   });
 
@@ -114,15 +119,16 @@ describe('project photo import', () => {
     const release = deferred();
     const { projects, engine, store, importBytes } = setup();
     expect((await projects.create({ name: 'Board', path: 'board.pcbk' })).ok).toBe(true);
+    const input = { ...file, session: engine.snapshot().sessionId };
     importBytes.mockImplementationOnce(async () => {
       started.resolve();
       await release.promise;
       return photo;
     });
-    const importing = projects.importPhoto(file);
+    const importing = projects.importPhoto(input);
     await started.promise;
     const closing = projects.close();
-    const afterClose = projects.importPhoto(file);
+    const afterClose = projects.importPhoto(input);
     expect(store.locks.has('board.pcbk')).toBe(true);
     expect(engine.snapshot()).not.toBeNull();
     release.resolve();
@@ -141,7 +147,9 @@ describe('project photo import', () => {
     expect(created.ok && copied.ok).toBe(true);
     if (!created.ok || !copied.ok) return;
     expect(copied.value.sessionId).toBe(created.value.sessionId);
-    expect((await projects.importPhoto(file)).ok).toBe(true);
+    expect((await projects.importPhoto({ ...file, session: created.value.sessionId })).ok).toBe(
+      true,
+    );
     expect(importBytes.mock.calls[0]![0]).toBe(store.locks.get('copy.pcbk'));
     expect(importBytes.mock.calls[0]![0]).not.toBe(originalSession);
     expect((await projects.close()).ok).toBe(true);

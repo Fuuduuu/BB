@@ -14,9 +14,10 @@ export function pickPhotoFile(files: Iterable<File> | ArrayLike<File>): File | n
 
 ### `Workbench`
 ```ts
-export function Workbench({ host, uiModules, addPhoto, }: {
+export function Workbench({ host, uiModules, validateModules, addPhoto, }: {
     host: AppHost;
     addPhoto?: (file: File) => Promise<Result<void, EngineError>>;
     uiModules: (onHome: () => void) => UiModule[];
+    validateModules?: (modules: readonly UiModule[]) => void;
 }): import("react").JSX.Element;
 ```

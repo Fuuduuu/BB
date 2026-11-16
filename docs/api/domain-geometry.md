@@ -10,6 +10,9 @@ export function boardPads(placement: BoardPlacement, pinIds: readonly string[], 
     pinId: string;
     at: Vec2;
     radiusPx: number;
+    halfPx: Vec2;
+    angleDeg: number;
+    shape: PadGeom['shape'];
 }[];
 ```
 

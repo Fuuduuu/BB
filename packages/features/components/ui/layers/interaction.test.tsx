@@ -107,7 +107,7 @@ test('rotated_component_pin_hit_selects_that_pin', () => {
 
 test.each([
   { placement: { labelOffset }, at: labelAt, expectedOffset: { x: 68, y: -43 } },
-  { placement: {}, at: { x: 100, y: 63.75 }, expectedOffset: { x: 8, y: -19.25 } },
+  { placement: {}, at: { x: 100, y: 41.05 }, expectedOffset: { x: 8, y: -41.95 } },
 ])('label_drag_outside_body_changes_only_label_offset %#', ({ placement, at, expectedOffset }) => {
   const { svg, engine, execute } = mount(placement);
   const before = engine.snapshot().doc.components[0]!;
@@ -174,10 +174,10 @@ test('label_hit_area_matches_screen_text_under_all_8_transforms', () => {
     expect(hit.shape.type).toBe('area');
     if (hit.shape.type !== 'area') throw new Error('Expected label polygon');
     const expected = [
-      [-23.4, -9],
-      [23.4, -9],
-      [23.4, 28.2],
-      [-23.4, 28.2],
+      [-24.04, -11],
+      [24.04, -11],
+      [24.04, 30.2],
+      [-24.04, 30.2],
     ];
     hit.shape.polygon.forEach(({ x, y }, index) => {
       const screen = projectOffset(x, y);

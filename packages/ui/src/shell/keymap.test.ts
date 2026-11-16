@@ -78,6 +78,16 @@ test('an explicitly noneditable island keeps document shortcuts, and Meta works 
   press(document.querySelector('button')!, 'z', { ctrlKey: false, metaKey: true });
   expect(undo).toHaveBeenCalledTimes(1);
 });
+
+test('Meta redo aliases match Ctrl while AltGraph and Shift+Y keep native behavior', () => {
+  press(window, 'y', { ctrlKey: false, metaKey: true });
+  press(window, 'z', { ctrlKey: false, metaKey: true, shiftKey: true });
+  expect(redo).toHaveBeenCalledTimes(2);
+  expect(press(window, 'y', { shiftKey: true }).defaultPrevented).toBe(false);
+  expect(press(window, 'z', { altKey: true }).defaultPrevented).toBe(false);
+  expect(undo).not.toHaveBeenCalled();
+  expect(redo).toHaveBeenCalledTimes(2);
+});
 test('an open modal never sends history shortcuts to the document behind it', () => {
   document.body.innerHTML = '<dialog open><button>Proovi uuesti</button></dialog>';
   const button = document.querySelector('button')!;

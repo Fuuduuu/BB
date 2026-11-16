@@ -7,14 +7,28 @@ Visuaalne keel tuleb prototüübist ([prototype/src/app.css](../prototype/src/ap
 | Ala | Mõõt | Sisu |
 |---|---|---|
 | Ülariba | 40 px | navigaatori ja omaduste lülitid (`N`, `O`), projekti nimi ja salvestuse olek, edenemine, **Plaat \| Skeem**, ↶ ↷, `Ctrl+K`, Ekspordi |
-| Navigaator (vasak) | 300 px, muudetav 240–420, peidetav (`N`) | Teek · Plaadil · Paigutamata (plaadile / skeemile) · Võrgud · Mõõtmised · Logi |
+| Navigaator (vasak) | 300 px, muudetav 240–420, peidetav (`N`) | Teek · Komponendid · Mõõtmised; vahekaardid ühel real ka 240 px laiuses |
 | Lõuend (kesk) | ülejäänu | tööriistariba vasakus servas (40 px nupud), ankru- ja abisildid |
-| Kontekstipaneel (parem) | 340 px, muudetav 280–460, alati ülekattena (`O`) | valitud objekti sektsioonid või nähtav kinnitatud sektsioon; tühja valiku korral peidetud |
-| Paneeli pealkiri | 36 px | paneeli nimi |
-| Mõõteriba (all) | 36 px | foto nähtavus (kohe foto all), kontrast, ⟳, ⇋, poole valik, kihid, „Näita kahtlaseid“, suum, mõõtkava, koordinaadid |
+| Kontekstipaneel (parem) | 340 px, muudetav 280–460, alati ülekattena (`O`) | valitud objekti sektsioonid või nähtav kinnitatud sektsioon; peidetud, kui mõlemad puuduvad |
+| Paneeli pealkiri | 36 px | paneeli nimi; omaduste paneelil paremal sulgemisnupp (`O`) |
+| Mõõteriba (all) | 36 px | foto näitamine/peitmine, „Foto sätted“, kalibreerimise nupp; suum − / + ja protsent, „Sobita“, koordinaadid; hiljem lisanduvad poole valik, kihid ja „Näita kahtlaseid“ |
 
-- Minimaalne akna suurus on 1100 × 700. Kontekstipaneel on igal laiusel ülekattena ja avaneb valikul või kinnitatud sektsiooni nähtavaks muutumisel; lõuendi suurus ei muutu.
+- Minimaalne akna suurus on 1100 × 700. Kontekstipaneel on igal laiusel ülekattena; lõuendi suurus ei muutu. Paneeli avab kasutaja ülariba nupust, `O`-ga või valitud jalal `M`-iga. Uus valik ega kinnitatud sektsiooni nähtavaks muutumine kasutaja peidetud paneeli ei ava.
+- Omadused on nähtavad ainult avatud olekus ning valiku või nähtava kinnitatud sektsiooni korral. Ülariba nupp näitab tegeliku nähtavuse järgi „Näita omadusi“ või „Peida omadused“. Kui valikut ega kinnitatud sektsiooni pole, on nupp keelatud pealkirjaga „Omadused · vali komponent või jalg“ ning `O` ei muuda paneeli eelistust.
+- Omaduste päise sulgemisnupp peidab paneeli ja viib fookuse ülariba omaduste nupule. Mõlema ülariba paneelinupu vaskne täide järgib `aria-expanded` olekut; täide on ainult avatud paneelil.
+- Jala valikul on omadustes kinnitatud Mõõda-plokk, ainult valitud jala kaart (tähis, nimi, NC ja „← Komponent“) ning selle jala mõõtmised. Komponendi valikul jääb alles komponendi vorm koos jalgade tabeliga.
 - Paneelide laius ja olek (avatud/kokku pandud) jäävad meelde.
+- Fotota plaadil on alumisel ribal „Lisa foto“. Fotoga plaadil on selles järjekorras foto lüliti, „Foto sätted“ ja kalibreerimise olek („Kalibreerimata“ või px/mm). Kaks Tab-vajutust fotolülitilt viivad kalibreerimiseni. Suumi märkide „−“ ja „+“ ligipääsetavad nimed ning vihjed on „Vähenda“ ja „Suurenda“.
+- „Foto sätted“ avab nupu kohal mittemodaalse paneeli: läbipaistvus, kontrast, „Hall“, „Pööra 90°“, „Peegelda“. Esimene liugur saab fookuse; Tab liigub edasi kalibreerimisnupule fookust lõksustamata. Escape sulgeb paneeli ja tagastab fookuse nupule; välisklõps jätab fookuse klõpsatud kohta. Foto kadumine ja seansivahetus sulgevad paneeli; pööramine ja peegeldamine jätavad selle avatuks. Paneel ei muuda riba ega lõuendi mõõte.
+- Navigaatori vahekaardinimed on ilma loendurita. Aktiivse paneeli kohal on 12 px kokkuvõte: näiteks „12 plaadil · 3 paigutamata“, „1 mõõtmine“ või „1500 mõõtmist“. Nulli korral vastav osa puudub; tühjal paneelil ja Teegis kokkuvõtet pole.
+- Teegi 40 kirjet on kuues rühmas: „Passiivsed“, „Pooljuhid“, „Mikroskeemid“, „Konnektorid“, „Muud“ ja „Punktid plaadil“. Rühma pealkiri on 12 px; otsing filtreerib kõiki rühmi ja peidab tühjad rühmad. Valitud korpuse juures on selle valikud või piiratud arvuväljad (näiteks „Korpus“, „Jalgu“, „Samm“). „Tundmatu komponent“ säilitab laiuse ja kõrguse väljad ning null jalga; punktkomponendil on üks jalg ilma kereta.
+- Avatud teegikirjes on parameetrite all ja „Paiguta“ nupu kohal 120 × 72 px pealtvaade kere, padjandite ning jala 1 märgiga. Pealtvaade muutub koos parameetritega ja säilitab korpuse proportsioonid. Vigaste parameetrite korral asendab seda „Kontrolli parameetreid“; punktkomponendil on ainult padjand.
+- „Komponendid“ all vahetavad filtrinupud „Plaadil (12)“ ja „Paigutamata (3)“ olemasolevaid loendeid. Kui filter on „Plaadil“ ja paigutamata komponente on, märgib neid teisel nupul aktsenditäpp; automaatset filtrivahetust pole. Filter jääb projekti vaates meelde dokumendi revisjoni muutmata; vigane või puuduv väärtus tähendab „Plaadil“.
+- Vana vahekaardi `unplaced` id-d eraldi ei teisendata: tundmatu salvestatud id korral avaneb esimene vahekaart „Teek“.
+- Teegist paigutades jääb sama korpuse tööriist aktiivseks kuni `Esc`-ini või nupuni „Lõpeta paigutamine“. Iga klõps lisab uue komponendi ja on eraldi tagasivõtmise samm; kursori juures püsivad kere katkendkontuur, padjandid ja jala 1 märk, et kuju fotoga joondada. Paigutamata loendi olemasolev komponent paigutatakse ühe korraga.
+- Paigutatud komponendi kokkupandav jaotis „Korpus“ näitab praegust korpust ja jalgade arvu. „Muuda“ avab teegikirjete valiku samade parameetriväljade ja pealtvaatega. Vahetus säilitab komponendi liigi, asendi ning sama numbriga jalgade nimed, NC ja mõõtmiste seose; uued jalad saavad korpuses määratud nimed.
+- Kui kaduval jalal on mõõtmine, nimi või NC-märge, küsib „Vaheta korpus“ kinnitust ning loetleb jalad vahemikena ja mõju. Mõõtmised jäävad ajaloolistena alles. Korpuse uuesti suurendamine neid ei aktiveeri; `Ctrl+Z` taastab senised jalad ja mõõtmiste aktiivsuse. Ilma mõjuta vahetus ei ava dialoogi.
+- „Tundmatu komponent“ sihtkorpusena säilitab kõik senised jalad ja mõõtmiste seosed ning rakendub kinnitusdialoogita.
 - Tahvli paigutus tuleb M5-s (navigaator sahtlina, kontekst alt üles tõusva lehena).
 
 ## Disainitokenid
@@ -41,11 +55,11 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 
 | Omadus | Reegel |
 |---|---|
-| Minimaalne suurus | ekraanil vähemalt 10 px läbimõõt (`max(tegelik, 5 px raadius)`) |
-| Jalg 1 | ruudukujuline marker (ka siis, kui padjand on ümmargune) |
-| Number | nähtav, kui raadius on ≥ 7 px; nimi lisaks, kui raadius on ≥ 14 px |
+| Kuju ja minimaalne suurus | padjandi pööratud ristkülik või ring; ristküliku kumbki külg ja ringi läbimõõt on ekraanil vähemalt 5 px |
+| Jalg 1 | korpuse geomeetria määratud kohal punkt värviga `--body` ja haloga; raadius vähemalt 0,25 mm plaadil ja 2 px ekraanil. Padjandi kuju tuleb generaatorist |
+| Number | nähtav, kui lühema külje pool on ≥ 7 px; nimi lisaks, kui lühema külje pool on ≥ 14 px; font vähemalt 8 px ekraanil |
 | Halo | iga jala ümber 1,5 px kontrastne kontuur (`--halo`), et see paistaks fotol välja |
-| Tabamusala | `max(raadius, 6 px)`; kui kaks jalga on lähestikku, võidab kursorile lähim |
+| Tabamusala | ristkülikul sama pööratud kuju, iga külg vähemalt 5 px ekraanil; ringil jääb raadius `max(tegelik, 6 px ekraanil)`. Sama prioriteedi korral võidab kursorile lähim kese |
 
 | Olek | Täide | Rõngas | Lisaks |
 |---|---|---|---|
@@ -57,6 +71,8 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 | Aegunud mõõtmine | | | silt kriipsutatud ja hall |
 | Valitud | | +2 px `--sel` | kogu võrk esile tõstetud, teised 25 % läbipaistvusega |
 | Piiksu ankur | | 3 px sinine | silt „Must sond“ |
+
+Näidu silt väldib komponendi tähise ja teiste näitude tekstikaste ka pööratud ning peegeldatud plaadil. Kastid arvestavad kasutatava fondi tegelikke mõõte ja halo. Tähis jääb tehniku valitud kohta; automaatne tähis hoiab padjanditest ekraani üles-suunas eemale. Näit proovib esmalt nelja lähedast kohta ning seejärel kaugemaid kohti. Kaugema näidu juurest viib jala rõngani peen viitejoon. Lohistamise ajal liigub näit senise nihkega kaasa; paigutus ei muuda dokumenti ega tähise salvestatud nihet.
 
 ## Ühendused
 
@@ -82,6 +98,22 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 - DNP: kere 40 % läbipaistvusega, tähis läbikriipsutatud.
 - Valitud: kontuur `--sel`, 8 käepidet (8 px ruudud), pöördekäepide üleval (ring, 16 px kaugusel).
 
+## Mõõda-plokk
+
+- Sondid on nimetatud: „Punane sond · U1.4“ ja „Must sond · U1.3“, jala nimi on vihjena. Punane täpp kasutab `--danger` värvi; mustal tumedal täpil on ääris. Tekst eristab sonde ka ilma värvita. Valimata must sond on „määramata“, kustutatud jalg „—“.
+- Musta sondi real on „Vali musta sondi jalg“ ja „Tühjenda“. Valimise ajal on real aktsendivärvi ääris ning juhis „Klõpsa plaadil musta sondi jalal“; pärast valikut on real jälle jala tähis.
+- Sisestatav pinge on 20 px monokirjas ja tabulaarsete numbritega. Ilma viimase salvestuseta on väljal vihje „nt 4,98“.
+- Õnnestunud salvestuse järel jääb pinge sisestusväli tühjaks ja fookusesse. Selle all on ümardatud taustaga eraldi plokk: 12 px pealkiri „Viimati salvestatud“, alumisel real vasakul 18 px monokirjas väärtus (näiteks „4,73 V“) ja paremal 12 px monokirjas salvestatud sondipaar („U1.4 → U1.3“, musta sondita ainult „U1.4“). Väärtus ja paar tulevad salvestatud mõõtmisest, mitte praegustest sondidest; uus tulemus teatatakse ekraanilugejale viisakalt ning plokk asendab vihje „nt 4,98“.
+- Tagasivõetud või kustutatud viimase mõõtmise rida kaob ja vihje taastub; uuesti tegemine toob näidu tagasi. Viimase mõõtmise viide nullitakse seansivahetusel ega kuulu dokumenti.
+- Jala kaardilt saab muuta nime ja NC-d ning nupuga „← Komponent“ valida kogu komponendi. Mõõtmiste sektsioon näitab valitud jala `uid`-ga seotud kummagi sondi mõõtmiste koguarvu ja kuni viit uusimat salvestatud paariga. Tühi olek on „Selle jalaga mõõtmisi pole.“
+- Sisendite ja sekundaarsete nuppude raam kasutab `--control-border` tokenit: heledas teemas `#7d8a82`, tumedas `#63786d`. Kontrast paneeli taustaga on ümardatult 3,38 : 1 ja 3,67 : 1, mõlemas vähemalt 3 : 1; fookuse ning vea värvid säilivad.
+
+## Mõõtmiste loend
+
+- Ajaloo rea esimene rida on 15 px poolpaksus monokirjas väärtus, teine rida 12 px monokirjas sondipaar. Toiteolek ja kellaaeg on kolmandal real 11 px kõrvaltekstina ning jäävad samale reale.
+- Paremal on 28 px veerus prügikastiikooniga kustutamisnupp. Nupu ligipääsetav nimi on „Kustuta mõõtmine {väärtus} {paar}“, kohtspikker „Kustuta mõõtmine“ ja klaviatuurifookus nähtav. Kustutamise, tagasivõtmise ning veateate käitumine säilib.
+- Mõõtevorm ja viimase salvestuse plokk mahuvad 280 px omaduste paani; ajalugu mahub 240 ja 300 px navigaatorisse ilma horisontaalse kerimiseta.
+
 ## Klaviatuur
 
 | Klahv | Tegevus | Klahv | Tegevus |
@@ -96,18 +128,19 @@ Jalg peab olema eristatav igas suumis ja igal taustal.
 | `P` | Punkt plaadil | `Ctrl+Z` / `Ctrl+Y` | tagasi / uuesti |
 | `A` | Joonda kahe jalaga | `Ctrl+K` | käsupalett |
 | `D` | Mõõtjoon | `Ctrl+Tab` | Plaat ↔ Skeem |
-| `O` | Kontuur | `0` / `+` / `−` | sobita / suumi |
+| `N` / `O` | näita/peida navigaatorit / omadusi | `0` / `+` / `−` | sobita / suumi |
 | `K` | Kalibreeri | `Esc` | katkesta → tagasi Vali tööriista → tühjenda valik |
 | `X` | Märgi kahjustatud ala | `?` | kiirklahvide abi |
 
 **Skeemivaates** lisaks: `W` juhe · `L` võrgusilt · `R` pööra sümbolit. „Näita teises vaates“ on kontekstimenüüs ja käsupaletis.
 
 **Väärtuse väljas** (mõõtmine): `Enter` salvesta · `Alt+↓` / `Alt+↑` järgmine/eelmine jalg · `Tab` / `Shift+Tab` järgmine/eelmine vormiväli · `Alt+1…4` režiim · `Alt+P` toide · `Esc` tühjenda mustand ja välju. Sisestusväljas ei käivitu ükski lõuendi täheklahv.
+Mitme jalaga komponendil on „Salvesta“ nupu all nähtav vihje „Alt+↓ järgmine jalg · Alt+↑ eelmine“. Vihje ei lisa fookuspeatust; `Tab` ja `Shift+Tab` liiguvad vormiväljade vahel.
 **Piiksumisrežiimi nuppudel:** `Enter` „Piiksub ja ühenda“ · `Shift+Enter` „Ainult mõõtmine“ · `N` „Ei piiksu“ · `Esc` katkesta (ei salvesta midagi). Klahvid on nuppude peal kirjas.
 
 Kontekstiklahvid (piiksu nupud, raja joonistamine, skeemivaade) kehtivad ainult selles olekus ja on registris kontekstiga seotud.
 
-Klahvid on registreeritud moodulite kaudu (`keymap`). Topeltregistreerimine on käivitusel viga.
+Kesta rakendatud klahvid on ühises `SHELL_KEYS` loendis: `Esc`, `N`, `O`, `V`, `H`, tühik, nooled (ka `Shift`-iga), `Ctrl+Z`, `Ctrl+Y` ja `Ctrl+Shift+Z` (toetatud on ka `Meta`-kombinatsioonid). Sama loend juhib tegelikke käsitlejaid. Mooduli klahv ega tööriista otsetee ei tohi kattuda kesta kombinatsiooniga; register lükkab kattumise tagasi. Ülejäänud mooduliklahvid registreeritakse `keymap`-i kaudu; topeltregistreerimine on käivitusel viga.
 
 ## Hiir ja puude
 

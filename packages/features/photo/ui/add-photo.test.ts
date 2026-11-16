@@ -1,7 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import type { ProjectService } from '@pcbk/contracts';
 import type { BoardDoc } from '@pcbk/domain';
-import { photoUiFixture } from '../__tests__/ui-fixture';
+import { deferred, photoUiFixture } from '../__tests__/ui-fixture';
 import * as photoUi from './index';
 
 const opened: ProjectService[] = [];
@@ -36,7 +36,11 @@ test('added_photo_is_one_undoable_step', async () => {
   const context = await fixture();
   const before = context.engine.snapshot();
   expect(await photoUi.addPhoto(context.file, context)).toEqual({ ok: true, value: undefined });
-  expect(context.importPhoto).toHaveBeenCalledWith({ bytes: context.bytes, name: 'Plaat.PNG' });
+  expect(context.importPhoto).toHaveBeenCalledWith({
+    bytes: context.bytes,
+    name: 'Plaat.PNG',
+    session: before.sessionId,
+  });
   expect(context.engine.snapshot().doc.photos).toEqual([context.photo]);
   expect(context.engine.snapshot().rev).toBe(before.rev + 1);
   expect(context.host.drainJournal()).toHaveLength(1);
@@ -61,7 +65,96 @@ test('add_photo_rejects_limit_before_read_or_import', async () => {
 test('add_photo_normalizes_empty_filename', async () => {
   const context = await fixture();
   await photoUi.addPhoto({ ...context.file, name: '' } as File, context);
-  expect(context.importPhoto).toHaveBeenCalledWith({ bytes: context.bytes, name: 'foto.png' });
+  expect(context.importPhoto).toHaveBeenCalledWith({
+    bytes: context.bytes,
+    name: 'foto.png',
+    session: context.engine.snapshot().sessionId,
+  });
+});
+
+test('photo_import_after_project_switch_writes_nothing_to_new_project', async () => {
+  const readStarted = deferred();
+  const readRelease = deferred();
+  const openStarted = deferred();
+  const openRelease = deferred();
+  const importQueued = deferred();
+  const context = photoUiFixture((repo) => ({
+    ...repo,
+    async open(path) {
+      openStarted.resolve();
+      await openRelease.promise;
+      return repo.open(path);
+    },
+  }));
+  opened.push(context.projects);
+  expect((await context.projects.create({ name: 'B', path: 'B.pcbk' })).ok).toBe(true);
+  expect((await context.projects.close()).ok).toBe(true);
+  const originalB = structuredClone(context.store.files.get('B.pcbk')!.doc);
+  expect((await context.projects.create({ name: 'A', path: 'A.pcbk' })).ok).toBe(true);
+  const originalA = structuredClone(context.engine.snapshot().doc);
+  const logicalA = context.engine.snapshot().sessionId;
+  const storageA = context.store.locks.get('A.pcbk');
+  const bytes = new Uint8Array([137, 80, 78, 71, 65]).buffer;
+  const file = {
+    name: 'A-only.png',
+    async arrayBuffer() {
+      readStarted.resolve();
+      await readRelease.promise;
+      return bytes;
+    },
+  } as File;
+  const projects: ProjectService = {
+    ...context.projects,
+    importPhoto(input) {
+      const pending = context.projects.importPhoto(input);
+      importQueued.resolve();
+      return pending;
+    },
+  };
+  const importing = photoUi.addPhoto(file, { ...context, projects });
+  await readStarted.promise;
+  const openingB = context.projects.open({ path: 'B.pcbk' });
+  await openStarted.promise;
+  expect(context.engine.snapshot().sessionId).toBe(logicalA);
+  readRelease.resolve();
+  await importQueued.promise;
+  expect(context.engine.snapshot().sessionId).toBe(logicalA);
+  expect(context.importBytes).not.toHaveBeenCalled();
+  openRelease.resolve();
+  expect((await openingB).ok).toBe(true);
+  const storageB = context.store.locks.get('B.pcbk');
+  expect(storageB).toBeDefined();
+  expect(storageB).not.toBe(storageA);
+  expect(await importing).toEqual({ ok: false, error: { code: 'stale_session' } });
+  expect(context.importBytes.mock.calls.filter(([session]) => session === storageB)).toEqual([]);
+  expect(context.importBytes.mock.calls.filter(([session]) => session === storageA)).toEqual([]);
+  expect(context.engine.snapshot().doc).toEqual(originalB);
+  expect((await context.projects.flush()).ok).toBe(true);
+  expect(context.store.files.get('A.pcbk')!.doc).toEqual(originalA);
+  expect(context.store.files.get('B.pcbk')!.doc).toEqual(originalB);
+});
+
+test('photo_import_in_same_session_still_works', async () => {
+  const context = photoUiFixture();
+  opened.push(context.projects);
+  const created = await context.projects.create({ name: 'A', path: 'A.pcbk' });
+  expect(created.ok).toBe(true);
+  if (!created.ok) return;
+  const storageA = context.store.locks.get('A.pcbk');
+  expect(storageA).not.toBe(created.value.sessionId);
+  const bytes = new Uint8Array([137, 80, 78, 71, 65]).buffer;
+  const file = { name: 'A-only.png', arrayBuffer: async () => bytes } as File;
+  expect(await photoUi.addPhoto(file, context)).toEqual({ ok: true, value: undefined });
+  const added = context.engine.snapshot().doc.photos[0];
+  expect(added).toMatchObject({ name: 'A-only.png', widthPx: 300, heightPx: 200 });
+  expect(context.importBytes).toHaveBeenCalledExactlyOnceWith(
+    storageA,
+    bytes,
+    added!.id,
+    'A-only.png',
+  );
+  expect((await context.projects.flush()).ok).toBe(true);
+  expect(context.store.files.get('A.pcbk')!.doc).toMatchObject({ photos: [added] });
 });
 
 test('add_photo_returns_read_and_adapter_failures', async () => {

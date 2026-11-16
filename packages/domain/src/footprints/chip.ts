@@ -1,5 +1,5 @@
 import { defineFootprint } from './types';
-import type { PadGeom } from './types';
+import type { FootprintGeom, FootprintParams, PadGeom } from './types';
 
 type ChipDimensions = [offset: number, padW: number, padH: number, bodyW: number, bodyH: number];
 
@@ -13,7 +13,7 @@ const sizes = new Map<string, ChipDimensions>([
   ['2512', [2.95, 1.5, 3.4, 6.3, 3.2]],
 ]);
 
-export const chipFootprint = defineFootprint('chip', 'Chip', { size: '0805' }, ({ size }) => {
+export function chipGeometry({ size }: FootprintParams): FootprintGeom | undefined {
   const dimensions = typeof size === 'string' ? sizes.get(size) : undefined;
   if (!dimensions) return undefined;
 
@@ -30,4 +30,6 @@ export const chipFootprint = defineFootprint('chip', 'Chip', { size: '0805' }, (
     })),
     body: { w: bodyW, h: bodyH },
   };
-});
+}
+
+export const chipFootprint = defineFootprint('chip', 'Chip', { size: '0805' }, chipGeometry);

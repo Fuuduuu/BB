@@ -284,7 +284,7 @@ fn journal_failure_rolls_back_document_and_all_new_entries() {
 }
 
 #[test]
-fn confirmed_create_replaces_file_only_after_building_new_project() {
+fn user_confirmed_replace_still_replaces() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("replace.pcbk");
     let tmp = dir.path().join("replace.pcbk.tmp");
@@ -293,11 +293,15 @@ fn confirmed_create_replaces_file_only_after_building_new_project() {
     store.close(&session).unwrap();
     let before = fs::read(&path).unwrap();
     let modified = fs::metadata(&path).unwrap().modified().unwrap();
-    assert!(store.create(&path, "replacement", "invalid JSON").is_err());
+    assert!(store
+        .create_with_exclusive(&path, "replacement", "invalid JSON", false)
+        .is_err());
     assert_eq!(fs::read(&path).unwrap(), before);
     assert_eq!(fs::metadata(&path).unwrap().modified().unwrap(), modified);
     fs::write(&tmp, b"existing temporary file").unwrap();
-    let opened = store.create(&path, "replacement", &doc(0)).unwrap();
+    let opened = store
+        .create_with_exclusive(&path, "replacement", &doc(0), false)
+        .unwrap();
     assert_eq!(opened.project_id, "replacement");
     assert_eq!(fs::read(&tmp).unwrap(), b"existing temporary file");
     store.close(&opened.session).unwrap();

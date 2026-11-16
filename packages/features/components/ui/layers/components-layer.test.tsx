@@ -88,14 +88,14 @@ afterEach(() => {
   useSessionStore.getState().reset('');
 });
 
-test('pin1_is_square', () => {
+test('custom_circle_pad_stays_circle_even_when_it_is_the_first_pin', () => {
   const pins = mount(circularPadsBoard()).group('pins');
-  expect(pins?.querySelector('[data-pin="GND"] rect')).toBeTruthy();
-  expect(pins?.querySelector('[data-pin="GND"] circle')).toBeNull();
+  expect(pins?.querySelector('[data-pin="GND"] rect')).toBeNull();
+  expect(pins?.querySelector('[data-pin="GND"] circle')).toBeTruthy();
   expect(pins?.querySelector('[data-pin="2"] circle')).toBeTruthy();
 });
 
-test('pin_number_hidden_below_7px_radius_and_name_below_14px', () => {
+test('pin_number_hidden_below_7px_short_half_side_and_name_below_14px', () => {
   const { update } = mount(circularPadsBoard(), 0.69);
   expect(screen.queryByText('GND')).toBeNull();
   expect(screen.queryByText('Ground')).toBeNull();
@@ -110,16 +110,16 @@ test('pin_number_hidden_below_7px_radius_and_name_below_14px', () => {
   expect(screen.getByText('Ground')).toBeTruthy();
 });
 
-test('pad_min_diameter_10px_at_low_zoom', () => {
+test('pad_min_side_5px_at_low_zoom', () => {
   const { engine } = setup();
   add(engine);
   const zoom = 0.25;
   const pins = mount(engine, zoom).group('pins');
-  const square = pins?.querySelector('[data-pin="1"] rect');
-  const circle = pins?.querySelector('[data-pin="2"] circle');
-  expect(square?.getAttribute('width')).toBe('40');
-  expect(square?.getAttribute('height')).toBe('40');
-  expect(circle?.getAttribute('r')).toBe('20');
+  for (const pinId of ['1', '2']) {
+    const rect = pins?.querySelector(`[data-pin="${pinId}"] rect`);
+    expect(rect?.getAttribute('width')).toBe('20');
+    expect(rect?.getAttribute('height')).toBe('20');
+  }
 });
 
 test('bottom_side_component_is_dashed_and_mirrored', () => {
@@ -169,7 +169,7 @@ test('component_rerenders_only_on_own_change', () => {
   expect(engine.execute('components.update', { id: 'cmp_b', ref: 'R20' }).ok).toBe(true);
   update();
   expect(screen.getByText('R20')).toBeTruthy();
-  expect(renderPads.mock.calls.map(([board]) => board.center.x)).toEqual([200, 200]);
+  expect(new Set(renderPads.mock.calls.map(([board]) => board.center.x))).toEqual(new Set([200]));
   renderPads.mockClear();
 
   expect(engine.execute('project.rename', { name: 'Uus nimi' }).ok).toBe(true);
@@ -179,7 +179,7 @@ test('component_rerenders_only_on_own_change', () => {
   expect(engine.execute('components.update', { id: 'cmp_a', ref: 'R10' }).ok).toBe(true);
   update();
   expect(screen.getByText('R10')).toBeTruthy();
-  expect(renderPads.mock.calls.map(([board]) => board.center.x)).toEqual([100, 100]);
+  expect(new Set(renderPads.mock.calls.map(([board]) => board.center.x))).toEqual(new Set([100]));
 });
 
 test('nc_cross_visible_beside_pin_number', () => {
@@ -213,7 +213,7 @@ test('nc_cross_visible_beside_pin_number', () => {
   update(0.25);
   expect(screen.queryByText('2')).toBeNull();
   expect(group('labels')?.querySelector('path[stroke="var(--ink-3)"]')?.getAttribute('d')).toBe(
-    'M128,48 L152,72 M152,48 L128,72',
+    'M118,58 L142,82 M142,58 L118,82',
   );
 });
 

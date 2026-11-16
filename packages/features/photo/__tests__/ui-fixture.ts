@@ -1,10 +1,14 @@
 import { vi } from 'vitest';
 import { createProjectService } from '@pcbk/engine';
+import type { ProjectRepository } from '@pcbk/engine';
 import { createMemoryRepository, createMemoryStore } from '../../../adapters/src/storage-memory';
 import { setup, idGenerator } from '../../__tests__/helpers';
+export { deferred } from '../../../engine/src/__tests__/project-helpers';
 
-export function photoUiFixture() {
+export function photoUiFixture(wrap?: (repo: ProjectRepository) => ProjectRepository) {
   const { engine, host } = setup();
+  const store = createMemoryStore();
+  const memory = createMemoryRepository(store);
   const url = vi.fn(
     (session: string, id: string, variant: string) =>
       `http://example.test/${session}/${id}?v=${variant}`,
@@ -22,11 +26,11 @@ export function photoUiFixture() {
   const projects = createProjectService({
     engine,
     host,
-    repo: createMemoryRepository(createMemoryStore()),
+    repo: wrap ? wrap(memory) : memory,
     photos: { prune: async () => undefined, url, importBytes },
     clock: { now: () => '2026-11-12T12:00:00.000Z' },
     ids: idGenerator(),
     timing: { debounceMs: 60_000, maxWaitMs: 120_000 },
   });
-  return { engine, host, projects, url, importBytes };
+  return { engine, host, projects, store, url, importBytes };
 }

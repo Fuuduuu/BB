@@ -57,6 +57,36 @@ test('bottom_bar_controls_fit_at_minimum_window_size', async ({ page }) => {
         Math.min(bar.y + bar.height, viewport.height),
       );
     }
+
+    const canvasBeforeMenu = await bounds(canvas(page));
+    await footer.getByRole('button', { name: 'Foto sätted', exact: true }).click();
+    const menu = page.getByRole('dialog', { name: 'Foto sätted', exact: true });
+    await expect(menu).toBeVisible();
+    expect(await bounds(footer)).toEqual(bar);
+    expect(await bounds(canvas(page))).toEqual(canvasBeforeMenu);
+
+    for (const control of await menu.locator('button, input[type="range"]').all()) {
+      const box = await bounds(control);
+      const name = (await control.getAttribute('aria-label')) ?? (await control.textContent());
+      expect(box.x, `${theme}: menu ${name} left`).toBeGreaterThanOrEqual(0);
+      expect(box.y, `${theme}: menu ${name} top`).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width, `${theme}: menu ${name} right`).toBeLessThanOrEqual(viewport.width);
+      expect(box.y + box.height, `${theme}: menu ${name} bottom`).toBeLessThanOrEqual(
+        viewport.height,
+      );
+    }
     await page.getByRole('button', { name: 'Tagasi avalehele', exact: true }).click();
   }
+});
+
+test('calibration_reached_in_two_tabs_from_photo_toggle', async ({ page }) => {
+  await createBoard(page, 'Kalibreerimise otsetee');
+  await dropPhoto(page, canvas(page), await syntheticPhoto(page));
+  const toggle = page.getByRole('button', { name: 'Peida foto', exact: true });
+  await toggle.focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(
+    page.getByRole('button', { name: 'Kalibreeri mõõtkava (K)', exact: true }),
+  ).toBeFocused();
 });

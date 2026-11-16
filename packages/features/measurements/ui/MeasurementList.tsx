@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
 import type { Measurement } from '@pcbk/domain';
 import { formatReading } from '@pcbk/domain/measure/reading';
-import { Button } from '@pcbk/ui';
+import { Button, TrashIcon } from '@pcbk/ui';
 import { resolveContact } from './contacts';
 import { commandError, measureEt, measurementListText } from './i18n/et';
 import './measurement-list.css';
@@ -42,31 +42,36 @@ export function MeasurementList() {
         {sorted.map((measurement) => {
           const { id, at, atLabel, ref, refLabel, mode, power, takenAt } = measurement;
           const removed = !resolveContact(snapshot, at) || (ref && !resolveContact(snapshot, ref));
+          const value = displayValue(measurement);
+          const pair = `${atLabel}${refLabel ? ` → ${refLabel}` : ''}`;
           return (
             <li className="pcbk-measurement-row" key={id}>
               <div className="pcbk-measurement-row__details">
-                {mode !== 'voltage' && <span>{measurementListText.modes[mode]}</span>}
+                <strong className="pcbk-measurement-row__value bb-mono">{value}</strong>
                 <div className="pcbk-measurement-row__contacts bb-mono">
                   <span>{atLabel}</span>
                   {refLabel && <span>→ {refLabel}</span>}
                 </div>
                 <div className="pcbk-measurement-row__metadata">
-                  <strong className="bb-mono">{displayValue(measurement)}</strong>
                   <span>{measureEt.powerLabels[power]}</span>
                   <time className="bb-mono" dateTime={takenAt}>
                     {localTime.format(new Date(takenAt))}
                   </time>
                 </div>
+                {mode !== 'voltage' && <span>{measurementListText.modes[mode]}</span>}
                 {removed && <span>{measurementListText.removedContact}</span>}
               </div>
               <Button
                 variant="ghost"
+                className="pcbk-measurement-row__delete"
+                aria-label={measurementListText.removeLabel(value, pair)}
+                title={measurementListText.remove}
                 onClick={() => {
                   const result = engine.execute('measurements.remove', { id });
                   setError(result.ok ? undefined : commandError(result.error));
                 }}
               >
-                {measurementListText.remove}
+                <TrashIcon />
               </Button>
             </li>
           );

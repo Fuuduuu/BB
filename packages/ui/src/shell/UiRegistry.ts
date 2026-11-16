@@ -2,6 +2,7 @@ import type { Snapshot } from '@pcbk/contracts';
 import type { ReactNode } from 'react';
 import type { LayerSpec, ToolApi, ToolSpec } from '../canvas/tools';
 import type { Selection } from './session-store';
+import { isShellShortcut } from './keymap';
 
 export interface SlotSpec {
   id: string;
@@ -11,7 +12,7 @@ export interface SlotSpec {
 
 export interface PanelSpec extends SlotSpec {
   title: string;
-  count?(snapshot: Snapshot): number;
+  summary?(snapshot: Snapshot): string | null;
 }
 
 export interface KeySpec {
@@ -104,13 +105,24 @@ export class UiRegistry {
       );
     }
     const tools = [
-      { id: 'select', key: 'V' },
-      { id: 'pan', key: 'H' },
+      { id: 'select', key: undefined },
+      { id: 'pan', key: undefined },
       ...candidate.flatMap((item) => item.tools ?? []),
     ];
     uniqueIds(tools, 'tools');
     const keys = candidate.flatMap((item) => item.keys ?? []);
     uniqueIds(keys, 'keys');
+    for (const shortcut of candidate.flatMap((item) => [
+      ...(item.tools ?? []),
+      ...(item.keys ?? []),
+    ])) {
+      if (
+        shortcut.key !== undefined &&
+        isShellShortcut(shortcut.key, 'shift' in shortcut && shortcut.shift === true)
+      ) {
+        throw new Error(`Reserved shell keyboard shortcut: ${shortcut.key}`);
+      }
+    }
     uniqueIds(
       [
         ...tools.flatMap(({ key }) => (key === undefined ? [] : [{ id: key.toLowerCase() }])),

@@ -245,6 +245,7 @@ export interface ProjectService {
     importPhoto(file: {
         bytes: ArrayBuffer;
         name: string;
+        session: string;
     }): Promise<Result<PhotoRef, EngineError>>;
     photoUrl(id: string, variant: 'display' | 'original'): string | null;
     copy(req: CopyReq): Promise<Result<ProjectInfo & {
@@ -287,6 +288,14 @@ export type Result<T, E> = {
     ok: false;
     error: E;
 };
+```
+
+### `sameViewState`
+
+Compare the persisted JSON value, including opaque module settings and future fields.
+
+```ts
+export function sameViewState(a: ViewState, b: ViewState): boolean;
 ```
 
 ### `SaveStatus`

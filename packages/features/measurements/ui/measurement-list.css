@@ -15,21 +15,42 @@
 
 .pcbk-measurement-row__details {
   min-width: 0;
+  flex: 1;
   display: grid;
   gap: 3px;
   color: var(--ink-2);
   font-size: 12px;
 }
 
-.pcbk-measurement-row__contacts,
-.pcbk-measurement-row__metadata {
+.pcbk-measurement-row__contacts {
   display: flex;
   flex-wrap: wrap;
   gap: 2px 6px;
   overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 12px;
 }
 
-.pcbk-measurement-row__contacts,
-.pcbk-measurement-row__metadata strong {
+.pcbk-measurement-row__value {
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pcbk-measurement-row__metadata {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.pcbk-measurement-row__delete {
+  flex: 0 0 28px;
+  width: 28px;
+  min-height: 28px;
+  padding: 5px;
 }

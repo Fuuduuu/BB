@@ -113,8 +113,9 @@ pub fn project_create(
     path: String,
     project_id: String,
     doc_json: String,
+    exclusive: bool,
 ) -> Result<OpenedProjectDto, StorageErrorDto> {
-    store.create(project_file(&path)?, &project_id, &doc_json)
+    store.create_with_exclusive(project_file(&path)?, &project_id, &doc_json, exclusive)
 }
 
 #[tauri::command(rename_all = "snake_case")]

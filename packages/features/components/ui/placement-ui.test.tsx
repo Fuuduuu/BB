@@ -73,19 +73,20 @@ function select(ref: string) {
   fireEvent.click(screen.getByRole('button', { name: `Vali ${ref}` }));
 }
 
-test('old_navigator_tab_components_opens_placed_list', () => {
+test('navigator_tab_components_opens_placed_filter', () => {
   useViewStore.getState().setNavigatorTab('components');
   mount([component('cmp_a', 'R10'), component('cmp_b', 'R2'), component('cmp_c', 'R3', false)]);
-  expect(screen.getByRole('tab', { name: 'Plaadil', selected: true }).id).toBe(
+  expect(screen.getByRole('tab', { name: 'Komponendid', selected: true }).id).toBe(
     'pcbk-tab-components',
   );
-  const pane = screen.getByRole('tabpanel', { name: 'Plaadil' });
+  const pane = screen.getByRole('tabpanel', { name: 'Komponendid' });
+  expect(within(pane).getByRole('radio', { name: 'Plaadil (2)', checked: true })).toBeTruthy();
   expect(
     within(pane)
-      .getAllByRole('button')
+      .getAllByRole('button', { name: /^Vali / })
       .map((button) => button.getAttribute('aria-label')),
   ).toEqual(['Vali R2', 'Vali R10']);
-  expect(screen.getByRole('tab', { name: 'Plaadile paigutamata (1)' })).toBeTruthy();
+  expect(within(pane).getByRole('radio', { name: 'Paigutamata (1)' })).toBeTruthy();
 });
 
 test('rotate_and_flip_keys_dispatch_commands', () => {
@@ -141,7 +142,7 @@ test('remove_from_board_moves_component_to_unplaced', () => {
   expect(engine.snapshot().doc.components[0]?.pins).toEqual(original.pins);
   expect(useSessionStore.getState().selection.items).toEqual([{ kind: 'component', id: 'cmp_a' }]);
   expect(screen.queryByRole('heading', { name: 'Korpus ja asend' })).toBeNull();
-  fireEvent.click(screen.getByRole('tab', { name: 'Plaadile paigutamata (1)' }));
+  fireEvent.click(screen.getByRole('radio', { name: 'Paigutamata (1)' }));
   expect(screen.getByRole('button', { name: 'Vali R1' })).toBeTruthy();
   expect(host.drainJournal().map((row) => row.commandId)).toEqual(['components.removeFromBoard']);
 });

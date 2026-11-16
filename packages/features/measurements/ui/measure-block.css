@@ -10,9 +10,7 @@
   border-bottom: 1px solid var(--line);
 }
 
-.pcbk-measure-block h2,
-.pcbk-measure-block dl,
-.pcbk-measure-block dd {
+.pcbk-measure-block h2 {
   margin: 0;
 }
 
@@ -20,22 +18,106 @@
   font-size: 14px;
 }
 
-.pcbk-measure-block dl {
+.pcbk-measure-value {
+  font-family: var(--f-mono);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pcbk-last-saved-live:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.pcbk-last-saved {
+  min-width: 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--well);
+}
+
+.pcbk-last-saved__title {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.pcbk-last-saved__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pcbk-last-saved__value {
+  min-width: 0;
+  flex-shrink: 1;
+  font-family: var(--f-mono);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.pcbk-last-saved__pair {
+  min-width: 0;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.pcbk-probe-rows,
+.pcbk-probe-row {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 6px 12px;
+  gap: 6px;
   font-size: 13px;
 }
 
-.pcbk-measure-block dd {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 6px;
+.pcbk-probe-row {
+  padding: 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   overflow-wrap: anywhere;
+}
+
+.pcbk-probe-row[data-picking='true'] {
+  border-color: var(--accent);
+}
+
+.pcbk-probe-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pcbk-probe-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.pcbk-probe-dot--red {
+  background: var(--danger);
+}
+
+.pcbk-probe-dot--black {
+  background: var(--drill);
+  border: 1px solid var(--ink-2);
 }
 
 .pcbk-measure-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.pcbk-measure-keys {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-2);
 }

@@ -11,6 +11,7 @@ interface MeasureState {
   drafts: Record<PairKey, Draft>;
   lastPower: Power;
   focusTick: number;
+  lastSavedId: string | null;
 }
 
 interface MeasureStore extends MeasureState {
@@ -19,6 +20,7 @@ interface MeasureStore extends MeasureState {
   setDraft(pair: PairKey, draft: Draft): void;
   clearDraft(pair: PairKey, savedPower?: Power): void;
   requestFocus(): void;
+  setLastSaved(id: string): void;
   reset(): void;
 }
 
@@ -28,6 +30,7 @@ const initial: MeasureState = {
   drafts: {},
   lastPower: 'unknown',
   focusTick: 0,
+  lastSavedId: null,
 };
 
 export function pairKey(at: MeasuredPin, ref: MeasuredPin | null): PairKey {
@@ -47,5 +50,6 @@ export const useMeasureStore = create<MeasureStore>((set) => ({
       return { drafts: next, lastPower: savedPower ?? lastPower };
     }),
   requestFocus: () => set(({ focusTick }) => ({ focusTick: focusTick + 1 })),
+  setLastSaved: (lastSavedId) => set({ lastSavedId }),
   reset: () => set(initial),
 }));

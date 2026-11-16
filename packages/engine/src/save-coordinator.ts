@@ -1,5 +1,5 @@
 import { SAVE_DEBOUNCE_MS, SAVE_MAX_WAIT_MS } from '@pcbk/domain';
-import { err, ok } from '@pcbk/contracts';
+import { err, ok, sameViewState } from '@pcbk/contracts';
 import type { DocumentEngine, EngineError, Result, SaveStatus, ViewState } from '@pcbk/contracts';
 import { StorageError } from './ports';
 import type { ProjectRepository } from './ports';
@@ -189,17 +189,7 @@ export function createSaveCoordinator(opts: {
     isClean: () => active() && !running && !dirty(),
     saveView(next: ViewState) {
       if (!active()) return;
-      if (
-        view?.navigatorWidth === next.navigatorWidth &&
-        view.navigatorTab === next.navigatorTab &&
-        view.contextWidth === next.contextWidth &&
-        view.contextOpen === next.contextOpen &&
-        view.boardView?.zoom === next.boardView?.zoom &&
-        view.boardView?.pan.x === next.boardView?.pan.x &&
-        view.boardView?.pan.y === next.boardView?.pan.y &&
-        JSON.stringify(view.modules ?? {}) === JSON.stringify(next.modules ?? {})
-      )
-        return;
+      if (view && sameViewState(view, next)) return;
       view = copyView(next);
       // Read-only viewing remains local; a writable rescue copy can retain this view.
       if (opts.readOnly) return;

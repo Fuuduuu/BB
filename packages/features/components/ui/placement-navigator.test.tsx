@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test } from 'vitest';
 import { EngineProvider } from '@pcbk/client';
-import { useSessionStore } from '@pcbk/ui';
+import { useSessionStore, useViewStore } from '@pcbk/ui';
 import { FakeProjects } from '../../../client/src/__tests__/fakes';
 import { idGenerator, setup } from '../../__tests__/helpers';
 import { createComponentsUi } from './index';
@@ -10,9 +10,15 @@ import { usePlaceStore } from './place-store';
 
 beforeEach(() => {
   useSessionStore.getState().reset('feature-test');
+  useViewStore.getState().reset();
   usePlaceStore.getState().reset();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  useSessionStore.getState().reset('');
+  useViewStore.getState().reset();
+  usePlaceStore.getState().reset();
+});
 
 function mount(tabId: string, engine = setup().engine) {
   const module = createComponentsUi(idGenerator());
@@ -25,7 +31,7 @@ function mount(tabId: string, engine = setup().engine) {
   );
 }
 
-test('library_lists_five_footprint_families_and_unknown', () => {
+test('expanded_library_keeps_original_entries_and_unknown_subtitle', () => {
   mount('library');
   const rows = screen.getAllByRole('listitem');
   const names = [
@@ -37,9 +43,9 @@ test('library_lists_five_footprint_families_and_unknown', () => {
     'Pinnirida 1×N',
     'Tundmatu komponent',
   ];
-  expect(rows).toHaveLength(names.length);
-  names.forEach((name, index) => {
-    expect(within(rows[index]!).getByRole('button', { name })).toBeTruthy();
+  expect(rows).toHaveLength(40);
+  names.forEach((name) => {
+    expect(screen.getByRole('button', { name })).toBeTruthy();
   });
   expect(
     screen.getByRole('button', {
@@ -59,7 +65,8 @@ test('search_filters_by_keyword_and_shows_empty_state', () => {
   fireEvent.change(search, { target: { value: 'mosfet' } });
   expect(screen.getByRole('button', { name: 'SOT-23' })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'TO-220' })).toBeTruthy();
-  expect(screen.getAllByRole('listitem')).toHaveLength(2);
+  expect(screen.getByRole('button', { name: 'DPAK' })).toBeTruthy();
+  expect(screen.getAllByRole('listitem')).toHaveLength(3);
 
   fireEvent.change(search, { target: { value: 'takisti mosfet' } });
   expect(screen.queryByRole('listitem')).toBeNull();
@@ -83,6 +90,27 @@ test('search_filters_by_keyword_and_shows_empty_state', () => {
   });
 });
 
+test('library_button_ends_stamping', () => {
+  mount('library');
+  fireEvent.click(screen.getByRole('button', { name: 'Takisti SMD' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Paiguta' }));
+  act(() => {
+    useSessionStore.getState().setPreview({
+      owner: 'components.place',
+      data: { footprint: 'chip', params: { size: '0805' }, center: { x: 100, y: 80 } },
+    });
+    usePlaceStore.setState({ error: 'Proovi uuesti.' });
+  });
+
+  const stop = screen.getByRole('button', { name: 'Lõpeta paigutamine' });
+  expect(stop.title).toBe('Lõpeta paigutamine · Esc');
+  fireEvent.click(stop);
+
+  expect(usePlaceStore.getState()).toMatchObject({ request: null, error: null });
+  expect(useSessionStore.getState()).toMatchObject({ toolId: 'select', preview: null });
+  expect(screen.getByRole('button', { name: 'Paiguta' })).toBeTruthy();
+});
+
 function mountUnplaced(pinIds: string[]) {
   const { engine } = setup();
   const result = engine.execute('components.add', {
@@ -91,7 +119,8 @@ function mountUnplaced(pinIds: string[]) {
     pins: pinIds.map((id, index) => ({ id, uid: `pin_${index}` })),
   });
   expect(result.ok).toBe(true);
-  mount('unplaced', engine);
+  mount('components', engine);
+  fireEvent.click(screen.getByRole('radio', { name: 'Paigutamata (1)' }));
   fireEvent.click(screen.getByRole('button', { name: 'Paiguta plaadile' }));
   return engine;
 }

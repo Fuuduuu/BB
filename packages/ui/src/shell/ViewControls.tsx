@@ -17,11 +17,21 @@ export function ViewControls() {
   const zoom = useViewStore((state) => state.boardView.zoom);
   return (
     <div className="pcbk-view-controls">
-      <Button onClick={() => useViewStore.getState().requestZoom(1 / 1.25)}>
-        {et.shell.zoomOut}
+      <Button
+        aria-label={et.shell.zoomOut}
+        title={et.shell.zoomOut}
+        onClick={() => useViewStore.getState().requestZoom(1 / 1.25)}
+      >
+        −
       </Button>
       <span>{et.shell.zoomPercent(zoom)}</span>
-      <Button onClick={() => useViewStore.getState().requestZoom(1.25)}>{et.shell.zoomIn}</Button>
+      <Button
+        aria-label={et.shell.zoomIn}
+        title={et.shell.zoomIn}
+        onClick={() => useViewStore.getState().requestZoom(1.25)}
+      >
+        +
+      </Button>
       <Button onClick={() => useViewStore.getState().requestFit()}>{et.shell.fit}</Button>
       <CursorReadout />
     </div>

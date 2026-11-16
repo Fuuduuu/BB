@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useEngine, useProjects } from '@pcbk/client';
+import { sameViewState } from '@pcbk/contracts';
 import type {
   AppHost,
   BackupsReq,
@@ -164,18 +165,13 @@ export function useWorkbench(
 
   useEffect(() => {
     if (!info) return;
-    return useViewStore.subscribe((next, previous) => {
+    let previousView = useViewStore.getState().getView();
+    return useViewStore.subscribe((next) => {
       if (engine.snapshot().sessionId !== info.sessionId) return;
-      if (
-        next.navigatorWidth !== previous.navigatorWidth ||
-        next.navigatorOpen !== previous.navigatorOpen ||
-        next.navigatorTab !== previous.navigatorTab ||
-        next.contextWidth !== previous.contextWidth ||
-        next.contextOpen !== previous.contextOpen ||
-        next.boardView !== previous.boardView ||
-        next.modules !== previous.modules
-      ) {
-        projects.saveView(next.getView());
+      const view = next.getView();
+      if (!sameViewState(view, previousView)) {
+        previousView = view;
+        projects.saveView(view);
       }
     });
   }, [engine, projects, info]);

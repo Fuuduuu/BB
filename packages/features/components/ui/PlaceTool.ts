@@ -71,6 +71,7 @@ function createPlaceTool(ids: IdGen): CanvasTool {
       const rotationDeg = placementRotation(api.sceneTransform());
       let id: string;
       let result: ReturnType<ToolApi['execute']>;
+      let preview: PlacePreviewData | undefined;
       if (request.mode === 'new') {
         const entry = entries.get(request.entryId);
         if (!entry) {
@@ -81,6 +82,11 @@ function createPlaceTool(ids: IdGen): CanvasTool {
         params.board = { ...params.board!, rotationDeg };
         id = params.id;
         result = api.execute('components.add', params);
+        preview = {
+          footprint: entry.footprint,
+          params: { ...entry.params, ...request.params },
+          center,
+        };
       } else {
         id = request.componentId;
         const { footprint, params } = request;
@@ -94,7 +100,12 @@ function createPlaceTool(ids: IdGen): CanvasTool {
         return;
       }
       api.select({ items: [{ kind: 'component', id }] });
-      endPlacement(api);
+      if (preview) {
+        usePlaceStore.setState({ error: null });
+        api.setPreview({ owner: PLACE_TOOL_ID, data: preview });
+      } else {
+        endPlacement(api);
+      }
     },
     onCancel: endPlacement,
   };

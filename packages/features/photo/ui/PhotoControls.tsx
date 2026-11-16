@@ -5,6 +5,7 @@ import { mirrorHorizontal, rotateClockwise } from '../transform';
 import { photoEt as text } from './i18n/et';
 import { readPhotoView } from './photo-view';
 import type { PhotoView } from './photo-view';
+import { PhotoSettingsMenu } from './PhotoSettingsMenu';
 import { CALIBRATE_TOOL_ID } from './CalibrateTool';
 import { queuePhotoImport, usePhotoImportStore } from './photo-import-store';
 import './photo-controls.css';
@@ -72,49 +73,13 @@ export function PhotoControls() {
           >
             {view.visible ? text.hide : text.show}
           </Button>
-          <label className="pcbk-photo-range">
-            <span>{text.opacity}</span>
-            <input
-              type="range"
-              min={10}
-              max={100}
-              step={1}
-              value={Math.round(view.opacity * 100)}
-              aria-label={text.opacity}
-              aria-valuetext={text.percent(view.opacity)}
-              onChange={(event) => changeView({ opacity: Number(event.currentTarget.value) / 100 })}
-            />
-            <span>{text.percent(view.opacity)}</span>
-          </label>
-          <label className="pcbk-photo-range">
-            <span>{text.contrast}</span>
-            <input
-              type="range"
-              min={50}
-              max={200}
-              step={1}
-              value={Math.round(view.contrast * 100)}
-              aria-label={text.contrast}
-              aria-valuetext={text.percent(view.contrast)}
-              onChange={(event) =>
-                changeView({ contrast: Number(event.currentTarget.value) / 100 })
-              }
-            />
-            <span>{text.percent(view.contrast)}</span>
-          </label>
-          <Button
-            variant="ghost"
-            aria-pressed={view.gray}
-            onClick={() => changeView({ gray: !view.gray })}
-          >
-            {text.gray}
-          </Button>
-          <Button variant="ghost" onClick={() => transform(rotateClockwise)}>
-            {text.rotate}
-          </Button>
-          <Button variant="ghost" onClick={() => transform(mirrorHorizontal)}>
-            {text.mirror}
-          </Button>
+          <PhotoSettingsMenu
+            key={`${sessionId}:${photo.id}`}
+            view={view}
+            onViewChange={changeView}
+            onRotate={() => transform(rotateClockwise)}
+            onMirror={() => transform(mirrorHorizontal)}
+          />
         </>
       )}
       <Button

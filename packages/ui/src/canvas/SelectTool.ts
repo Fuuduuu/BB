@@ -1,6 +1,7 @@
 import type { ParamsOf, Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
 import { et } from '../shell/i18n/et';
+import { SHELL_KEYS } from '../shell/keymap';
 import type { Selection, SelectionItem } from '../shell/session-store';
 import type { HitItem } from './hit-index';
 import { screenToSceneVector } from './stage';
@@ -19,10 +20,10 @@ interface Gesture {
 const SELECT_ID = 'select';
 const DRAG_THRESHOLD = 3;
 const nudgeDirections = new Map<string, Vec2>([
-  ['ArrowLeft', { x: -1, y: 0 }],
-  ['ArrowRight', { x: 1, y: 0 }],
-  ['ArrowUp', { x: 0, y: -1 }],
-  ['ArrowDown', { x: 0, y: 1 }],
+  [SHELL_KEYS.nudgeLeft.key, { x: -1, y: 0 }],
+  [SHELL_KEYS.nudgeRight.key, { x: 1, y: 0 }],
+  [SHELL_KEYS.nudgeUp.key, { x: 0, y: -1 }],
+  [SHELL_KEYS.nudgeDown.key, { x: 0, y: 1 }],
 ]);
 
 function selectedBoardComponents(selection: Selection, snapshot: Snapshot): Translation['items'] {
@@ -131,7 +132,7 @@ export function createSelectToolSpec(getSelection: () => Selection): ToolSpec {
     id: SELECT_ID,
     label: et.shell.selectTool,
     icon: SELECT_ID,
-    key: 'V',
+    key: SHELL_KEYS.select.key,
     group: 'select',
     create: () => createSelectTool(getSelection),
   };

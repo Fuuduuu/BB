@@ -99,7 +99,12 @@ export async function mountWithComponent(name: string) {
   await openWorkbenchProject(runtime, host, project.path);
   expect(await screen.findByText(project.name)).toBeTruthy();
 
-  fireEvent.click(screen.getByRole('tab', { name: 'Plaadile paigutamata' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Komponendid' }));
+  fireEvent.click(
+    within(screen.getByRole('radiogroup', { name: 'Filter' })).getByRole('radio', {
+      name: 'Paigutamata (0)',
+    }),
+  );
   fireEvent.click(screen.getByRole('button', { name: componentEt.add }));
   const dialog = within(screen.getByRole('dialog', { name: componentEt.addTitle }));
   fireEvent.click(dialog.getByRole('button', { name: componentEt.add }));

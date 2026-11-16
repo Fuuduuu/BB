@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useEngine, useSaveStatus, useSnapshot } from '@pcbk/client';
 import type { Snapshot } from '@pcbk/contracts';
 import { useShallow } from 'zustand/react/shallow';
 import { TopBar } from './TopBar';
+import { Button } from '../kit/Button';
 import { ViewControls } from './ViewControls';
 import { ErrorBar } from './ErrorBar';
 import type { SaveRecoveryActions } from './ErrorBar';
@@ -67,11 +68,11 @@ function Navigator({ registry }: { registry: UiRegistry }) {
         <p className="pcbk-empty-pane">{et.shell.navigatorEmpty}</p>
       </>
     );
+  const summary = active.summary?.(snapshot);
   return (
     <>
       <div className="pcbk-tabs" role="tablist" aria-label={et.shell.navigator}>
         {tabs.map((tab, index) => {
-          const count = tab.count?.(snapshot) ?? 0;
           return (
             <button
               type="button"
@@ -96,11 +97,11 @@ function Navigator({ registry }: { registry: UiRegistry }) {
               }}
             >
               {tab.title}
-              {count > 0 && ` (${count})`}
             </button>
           );
         })}
       </div>
+      {summary && <div className="pcbk-pane-summary">{summary}</div>}
       <div
         className="pcbk-pane-content"
         role="tabpanel"
@@ -124,7 +125,21 @@ function Context({
   const sections = registry.contextSections(selection);
   return (
     <>
-      <div className="pcbk-pane-heading">{et.shell.context}</div>
+      <div className="pcbk-pane-heading">
+        {et.shell.context}
+        <Button
+          variant="ghost"
+          className="pcbk-context-close"
+          aria-label={et.shell.hideContext}
+          title={`${et.shell.hideContext} · O`}
+          onClick={() => {
+            useViewStore.getState().setContextOpen(false);
+            document.getElementById('pcbk-context-toggle')?.focus();
+          }}
+        >
+          <span aria-hidden="true">×</span>
+        </Button>
+      </div>
       <div className="pcbk-pane-content">
         {pinned.map((section) => (
           <section key={section.id}>{section.render()}</section>
@@ -144,6 +159,7 @@ interface ContextPaneProps {
   open: boolean;
   width: number;
   onResize(width: number): void;
+  onAvailabilityChange(available: boolean): void;
 }
 function ContextPane({
   registry,
@@ -153,12 +169,15 @@ function ContextPane({
   open,
   width,
   onResize,
+  onAvailabilityChange,
 }: ContextPaneProps) {
-  const shown = open && (selection.items.length > 0 || pinned.length > 0);
+  const available = selection.items.length > 0 || pinned.length > 0;
+  const shown = open && available;
   useLayoutEffect(() => {
+    onAvailabilityChange(available);
     useViewStore.getState().setContextShown(shown);
     return () => useViewStore.getState().setContextShown(false);
-  }, [sessionId, shown]);
+  }, [available, onAvailabilityChange, sessionId, shown]);
   if (!shown) return null;
   return (
     <>
@@ -184,10 +203,6 @@ function createPinnedContextPane(registry: UiRegistry) {
   return registry.contextPinned().reduceRight((Next, section) => {
     return function PinnedContextPane({ pinned, ...props }: ContextPaneProps) {
       const visible = section.useVisible();
-      useEffect(() => {
-        const view = useViewStore.getState();
-        if (visible && !view.contextOpen) view.setContextOpen(true);
-      }, [visible]);
       return <Next {...props} pinned={visible ? [...pinned, section] : pinned} />;
     };
   }, ContextPane);
@@ -225,6 +240,7 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
   );
   useTheme(props.manageTheme !== false);
   const selection = useSelection(sessionId, components);
+  const [contextAvailable, setContextAvailable] = useState(false);
   const PinnedContextPane = useMemo(() => createPinnedContextPane(registry), [registry]);
   const activeSession = useRef<string>();
   useLayoutEffect(() => {
@@ -252,26 +268,12 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
         view.setNavigatorOpen(!view.navigatorOpen);
       },
       context: () => {
+        if (!contextAvailable) return;
         const view = useViewStore.getState();
-        view.setContextOpen(!view.contextOpen);
+        view.setContextOpen(!view.contextShown);
       },
     });
-  }, []);
-  const previousSelection = useRef<Selection>(noSelection);
-  useEffect(() => {
-    const previous = previousSelection.current;
-    previousSelection.current = selection;
-    const changed =
-      previous.items.length !== selection.items.length ||
-      selection.items.some(
-        (item) =>
-          !previous.items.some(
-            (old) =>
-              old.kind === item.kind && old.id === item.id && old.componentId === item.componentId,
-          ),
-      );
-    if (changed && selection.items.length > 0) useViewStore.getState().setContextOpen(true);
-  }, [selection]);
+  }, [contextAvailable]);
   const style = {
     '--navigator-width': `${view.navigatorOpen ? view.navigatorWidth : 0}px`,
     '--context-width': `${view.contextWidth}px`,
@@ -283,6 +285,7 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
         status={status}
         canUndo={history.canUndo}
         canRedo={history.canRedo}
+        contextAvailable={contextAvailable}
         onUndo={() => engine.undo()}
         onRedo={() => engine.redo()}
       >
@@ -343,6 +346,7 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
           open={view.contextOpen}
           width={view.contextWidth}
           onResize={view.setContextWidth}
+          onAvailabilityChange={setContextAvailable}
         />
       </div>
       <footer className="pcbk-bottom-bar" aria-label={et.shell.bottomBar}>

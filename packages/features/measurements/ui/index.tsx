@@ -10,6 +10,7 @@ import { MeasureBlock } from './MeasureBlock';
 import { MeasurementList } from './MeasurementList';
 import { useMeasureStore } from './measure-store';
 import { pickRefToolSpec } from './PickRefTool';
+import { PinMeasurements } from './PinMeasurements';
 
 function useMeasureVisible(): boolean {
   const engine = useEngine();
@@ -36,7 +37,7 @@ export function createMeasurementsUi(ids: IdGen): UiModule {
         id: 'measurements',
         title: measureEt.list.title,
         order: 3,
-        count: (snapshot) => snapshot.doc.measurements.length,
+        summary: (snapshot) => measureEt.summary(snapshot.doc.measurements.length),
         render: () => <MeasurementList />,
       },
     ],
@@ -46,6 +47,14 @@ export function createMeasurementsUi(ids: IdGen): UiModule {
         order: 0,
         useVisible: useMeasureVisible,
         render: () => <MeasureBlock ids={ids} suggestions={[]} />,
+      },
+    ],
+    contextSections: [
+      {
+        id: 'pin-measurements',
+        appliesTo: ['pin'],
+        order: 10,
+        render: ({ selection }) => <PinMeasurements selection={selection} />,
       },
     ],
     tools: [pickRefToolSpec()],

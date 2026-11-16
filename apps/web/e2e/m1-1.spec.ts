@@ -38,12 +38,13 @@ async function placeSoic(page: Page) {
   await page.getByRole('tab', { name: 'Teek', exact: true }).click();
   const library = page.getByRole('tabpanel', { name: 'Teek', exact: true });
   await library.getByRole('button', { name: 'SOIC', exact: true }).click();
-  await library.getByRole('combobox', { name: 'Jalgade arv', exact: true }).selectOption('8');
+  await library.getByRole('combobox', { name: 'Jalgu', exact: true }).selectOption('8');
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
   const { x, y } = await center(canvas(page));
   await page.mouse.click(x, y);
   await expect(body(page)).toBeVisible();
   await expect(page.locator('[data-layer="components.pins"] [data-pin]')).toHaveCount(8);
+  await page.keyboard.press('Escape');
 }
 
 async function clickPin(page: Page, id: string) {
@@ -74,10 +75,9 @@ test('first_through_flow_measurement_survives_reopen', async ({ page }) => {
   expect(ring.y).toBeCloseTo(measuredPin.y, 1);
   await expect(reading).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Mõõtmised (1)', exact: true }).click();
-  const row = page
-    .getByRole('tabpanel', { name: 'Mõõtmised (1)', exact: true })
-    .getByRole('listitem');
+  await page.getByRole('tab', { name: 'Mõõtmised', exact: true }).click();
+  await expect(page.locator('.pcbk-pane-summary')).toHaveText('1 mõõtmine');
+  const row = page.getByRole('tabpanel', { name: 'Mõõtmised', exact: true }).getByRole('listitem');
   await expect(row.getByText('U1.3', { exact: true })).toBeVisible();
   await expect(row.getByText('4,98 V', { exact: true })).toBeVisible();
 });
@@ -105,10 +105,12 @@ test('blank_click_and_tab_keep_measure_location', async ({ page }) => {
   await clickPin(page, '3');
   await voltage(page).fill('4,98');
 
-  const componentRef = page.getByRole('textbox', { name: 'Tähis', exact: true });
-  await expect(componentRef).toBeVisible();
+  const pinHeading = page
+    .getByRole('complementary', { name: 'Omadused', exact: true })
+    .getByRole('heading', { name: 'U1.3', exact: true });
+  await expect(pinHeading).toBeVisible();
   await canvas(page).click({ position: { x: 30, y: 30 } });
-  await expect(componentRef).toHaveCount(0);
+  await expect(pinHeading).toHaveCount(0);
   await expect(measure(page).getByText('U1.3', { exact: true })).toBeVisible();
   await expect(voltage(page)).toHaveValue('4,98');
 
@@ -174,8 +176,14 @@ test('undo_redo_of_placement_and_measurement', async ({ page }) => {
   await expect(readings(page).getByText('4,98 V', { exact: true })).toHaveCount(0);
   await redo.click();
   await expect(readings(page).getByText('4,98 V', { exact: true })).toBeVisible();
-  await page.getByRole('tab', { name: 'Mõõtmised (1)', exact: true }).click();
-  await expect(page.getByRole('listitem').getByText('U1.3', { exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: 'Mõõtmised', exact: true }).click();
+  await expect(page.locator('.pcbk-pane-summary')).toHaveText('1 mõõtmine');
+  await expect(
+    page
+      .getByRole('tabpanel', { name: 'Mõõtmised', exact: true })
+      .getByRole('listitem')
+      .getByText('U1.3', { exact: true }),
+  ).toBeVisible();
 });
 
 test('board_zoom_pan_survive_view_only_close_and_reopen', async ({ page }) => {

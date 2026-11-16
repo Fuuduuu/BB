@@ -82,3 +82,8 @@ export interface ToastProps {
     onDismiss: (id: string) => void;
 }
 ```
+
+### `TrashIcon`
+```ts
+export function TrashIcon(): import("react").JSX.Element;
+```

@@ -1,11 +1,11 @@
 import type { IdGen } from '@pcbk/contracts';
 import type { UiModule } from '@pcbk/ui';
 import { ComponentDetails } from './ComponentDetails';
+import { ComponentsPanel } from './ComponentsPanel';
+import { PinCard } from './PinCard';
 import { Library } from './Library';
 import { createPlaceToolSpec } from './PlaceTool';
 import { PlacementSection, placementKeys } from './PlacementSection';
-import { PlacedList } from './PlacedList';
-import { UnplacedList } from './UnplacedList';
 import { componentEt, placementEt } from './i18n/et';
 import { COMPONENTS_LAYERS } from './layers';
 import { usePlaceStore } from './place-store';
@@ -21,13 +21,16 @@ export function createComponentsUi(ids: IdGen): UiModule {
     onSessionReset: () => usePlaceStore.getState().reset(),
     navigatorTabs: [
       { id: 'library', title: placementEt.tabs.library, order: 0, render: () => <Library /> },
-      { id: 'components', title: placementEt.tabs.placed, order: 1, render: () => <PlacedList /> },
       {
-        id: 'unplaced',
-        title: placementEt.tabs.unplaced,
-        order: 2,
-        count: (snapshot) => snapshot.derived.unplacedBoard.length,
-        render: () => <UnplacedList ids={ids} />,
+        id: 'components',
+        title: placementEt.tabs.components,
+        order: 1,
+        summary: (snapshot) =>
+          placementEt.summary(
+            snapshot.doc.components.filter((component) => component.board).length,
+            snapshot.derived.unplacedBoard.length,
+          ),
+        render: () => <ComponentsPanel ids={ids} />,
       },
     ],
     contextSections: [
@@ -37,8 +40,12 @@ export function createComponentsUi(ids: IdGen): UiModule {
         appliesTo: ['component', 'pin'],
         render: ({ selection }) => {
           const [item] = selection.items;
-          const id = item?.kind === 'component' ? item.id : item?.componentId;
-          return id ? <ComponentDetails key={id} id={id} ids={ids} /> : null;
+          if (item?.kind === 'pin' && item.componentId) {
+            return <PinCard componentId={item.componentId} pinId={item.id} />;
+          }
+          return item?.kind === 'component' ? (
+            <ComponentDetails key={item.id} id={item.id} ids={ids} />
+          ) : null;
         },
       },
       {
@@ -47,7 +54,7 @@ export function createComponentsUi(ids: IdGen): UiModule {
         appliesTo: ['component'],
         render: ({ selection }) => {
           const [item] = selection.items;
-          return item ? <PlacementSection key={item.id} id={item.id} /> : null;
+          return item ? <PlacementSection key={item.id} id={item.id} ids={ids} /> : null;
         },
       },
     ],

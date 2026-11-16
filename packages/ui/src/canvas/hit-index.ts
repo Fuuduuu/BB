@@ -4,6 +4,7 @@ import type { ToolApi } from './tools';
 
 export type HitShape =
   | { type: 'point'; at: Vec2; r: number }
+  | { type: 'rect'; at: Vec2; half: Vec2; angleDeg: number }
   | { type: 'segment'; a: Vec2; b: Vec2; width: number }
   | { type: 'area'; polygon: Vec2[] };
 
@@ -33,6 +34,8 @@ function nativeRadius(shape: HitShape): number {
   switch (shape.type) {
     case 'point':
       return shape.r;
+    case 'rect':
+      return Math.hypot(shape.half.x, shape.half.y);
     case 'segment':
       return shape.width / 2;
     case 'area':
@@ -43,6 +46,7 @@ function nativeRadius(shape: HitShape): number {
 function shapePoints(shape: HitShape): Vec2[] {
   switch (shape.type) {
     case 'point':
+    case 'rect':
       return [shape.at];
     case 'segment':
       return [shape.a, shape.b];
@@ -107,10 +111,37 @@ function polygonDistance(point: Vec2, polygon: Vec2[]): number {
   return inside ? 0 : nearest;
 }
 
-function shapeDistance(world: Vec2, shape: HitShape): number {
+function shapeDistance(world: Vec2, shape: HitShape, zoom: number): number {
   switch (shape.type) {
     case 'point':
       return Math.hypot(world.x - shape.at.x, world.y - shape.at.y);
+    case 'rect': {
+      const dx = world.x - shape.at.x;
+      const dy = world.y - shape.at.y;
+      const angle = (shape.angleDeg * Math.PI) / 180;
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      const x = dx * cos + dy * sin;
+      const y = -dx * sin + dy * cos;
+      const hx = Math.max(shape.half.x, 2.5 / zoom);
+      const hy = Math.max(shape.half.y, 2.5 / zoom);
+      // Keep boundary points eligible despite floating-point rotation error.
+      const epsilon =
+        4 *
+        Number.EPSILON *
+        Math.max(
+          1,
+          Math.abs(world.x),
+          Math.abs(world.y),
+          Math.abs(shape.at.x),
+          Math.abs(shape.at.y),
+          hx,
+          hy,
+        );
+      return Math.abs(x) <= hx + epsilon && Math.abs(y) <= hy + epsilon
+        ? Math.hypot(dx, dy)
+        : Infinity;
+    }
     case 'segment':
       return segmentDistance(world, shape.a, shape.b);
     case 'area':
@@ -156,10 +187,10 @@ export function createHitIndex(items: HitItem[], cellPx = 32): HitIndex {
       for (const item of candidates) {
         const priority = item.priority ?? 0;
         if (priority < bestPriority) continue;
-        const distance = shapeDistance(world, item.shape);
+        const distance = shapeDistance(world, item.shape, zoom);
         if (
           !Number.isFinite(distance) ||
-          distance > Math.max(minRadius, nativeRadius(item.shape))
+          (item.shape.type !== 'rect' && distance > Math.max(minRadius, nativeRadius(item.shape)))
         ) {
           continue;
         }

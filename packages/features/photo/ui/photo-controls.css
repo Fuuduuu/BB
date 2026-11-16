@@ -1,7 +1,7 @@
 .pcbk-photo-controls {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
   font-size: 11px;
 }
@@ -17,15 +17,42 @@
   background: var(--accent-soft);
 }
 
+.pcbk-photo-settings {
+  position: relative;
+}
+
+.pcbk-photo-settings-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 30;
+  display: grid;
+  gap: 8px;
+  width: max-content;
+  margin-bottom: 6px;
+  padding: 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
 .pcbk-photo-range {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 160px 4ch;
   align-items: center;
-  gap: 3px;
+  gap: 4px 8px;
   white-space: nowrap;
 }
 
+.pcbk-photo-range > span:first-child {
+  grid-column: 1 / -1;
+}
+
 .pcbk-photo-range input {
-  width: 52px;
+  width: 160px;
+  min-width: 160px;
   margin: 0;
 }
 

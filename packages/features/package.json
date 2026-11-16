@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./composition": "./composition.ts",
     "./engine": "./engine.ts",
     "./ui": "./ui.ts",
     "./*/contract": "./*/contract.ts",

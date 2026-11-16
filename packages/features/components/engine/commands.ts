@@ -1,4 +1,4 @@
-import { FOOTPRINTS, footprintPinIds, nextRef } from '@pcbk/domain';
+import { FOOTPRINTS, footprintGeometry, footprintPinIds, nextRef } from '@pcbk/domain';
 import type { BoardDoc, BoardPlacement, Component, Pin } from '@pcbk/domain';
 import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec } from '@pcbk/engine';
@@ -6,6 +6,7 @@ import {
   AddComponentSchema,
   UpdateComponentSchema,
   AddPinSchema,
+  ChangeFootprintSchema,
   ComponentTargetSchema,
   PinTargetSchema,
   PlaceOnBoardSchema,
@@ -19,6 +20,7 @@ import type {
   UpdateComponentParams,
   AddPinParams,
   BoardInput,
+  ChangeFootprintParams,
   ComponentTargetParams,
   PinTargetParams,
   PlaceOnBoardParams,
@@ -165,6 +167,48 @@ const removeFromBoard: CommandSpec<ComponentTargetParams> = {
     if (target.board) delete target.board;
   },
 };
+const changeFootprint: CommandSpec<ChangeFootprintParams> = {
+  id: 'components.changeFootprint',
+  title: 'components.changeFootprint',
+  params: ChangeFootprintSchema,
+  run(doc, params) {
+    const target = component(doc, params.id);
+    const board = placedBoard(doc, params.id);
+    const definition = FOOTPRINTS.find((entry) => entry.key === params.footprint);
+    if (!definition) reject('invalid_footprint');
+    const footprintParams = { ...definition.defaults, ...params.params };
+    const padIds = footprintPinIds(params.footprint, footprintParams);
+    const geometry = footprintGeometry(params.footprint, footprintParams);
+    if (!padIds || !geometry) reject('invalid_footprint');
+    if (params.footprint === 'area') {
+      board.footprint = params.footprint;
+      board.params = footprintParams;
+      return;
+    }
+    const existing = new Map(target.pins.map((pin) => [pin.id, pin]));
+    const remaining = new Set(padIds);
+    const removed = new Set(target.pins.filter(({ id }) => !remaining.has(id)).map(({ id }) => id));
+    target.pins = geometry.pads.map(({ id, name }) => {
+      const retained = existing.get(id);
+      if (retained) return retained;
+      if (!Object.hasOwn(params.newPinUids, id)) reject('missing_pin_uid');
+      return {
+        id,
+        uid: params.newPinUids[id]!,
+        nc: false,
+        ...(name === undefined ? {} : { name }),
+      };
+    });
+    board.footprint = params.footprint;
+    board.params = footprintParams;
+    for (const id of removed) delete board.customPads[id];
+    if (board.padMap) {
+      for (const [padId, pinId] of Object.entries(board.padMap)) {
+        if (removed.has(padId) || removed.has(pinId)) delete board.padMap[padId];
+      }
+    }
+  },
+};
 const rotate: CommandSpec<RotateParams> = {
   id: 'components.rotate',
   title: 'components.rotate',
@@ -202,6 +246,7 @@ export const commands = [
   setNc,
   removePin,
   placeOnBoard,
+  changeFootprint,
   removeFromBoard,
   rotate,
   flipSide,

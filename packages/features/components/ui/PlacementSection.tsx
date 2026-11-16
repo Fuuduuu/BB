@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
 import { Button } from '@pcbk/ui';
+import type { IdGen } from '@pcbk/contracts';
 import type { KeySpec, Selection, ToolApi } from '@pcbk/ui';
 import { selectComponent } from '../contract';
 import { commandError } from './errors';
 import { placementEt } from './i18n/et';
 import { footprintName } from './placement';
+import { ChangeFootprint } from './ChangeFootprint';
 
 const number = new Intl.NumberFormat('et', { useGrouping: false, maximumSignificantDigits: 21 });
 
@@ -24,10 +26,12 @@ function parameterText(key: string, value: string | number): string {
   return `${name} ${amount}`;
 }
 
-export function PlacementSection({ id }: { id: string }) {
+export function PlacementSection({ id, ids }: { id: string; ids: IdGen }) {
   const engine = useEngine();
-  const board = useSnapshot((snapshot) => selectComponent(snapshot, id)?.board);
+  const component = useSnapshot((snapshot) => selectComponent(snapshot, id));
+  const board = component?.board;
   const [error, setError] = useState<string>();
+  const [editing, setEditing] = useState(false);
   if (!board) return null;
 
   const text = placementEt.section;
@@ -40,9 +44,15 @@ export function PlacementSection({ id }: { id: string }) {
   return (
     <div className="pcbk-component-details">
       <h2>{text.title}</h2>
+      <details className="pcbk-component-footprint">
+        <summary>{`${text.footprint} · ${footprintName(board.footprint)} · ${placementEt.change.pinCount(component.pins.length)}`}</summary>
+        {editing ? (
+          <ChangeFootprint id={id} ids={ids} onClose={() => setEditing(false)} />
+        ) : (
+          <Button onClick={() => setEditing(true)}>{placementEt.change.edit}</Button>
+        )}
+      </details>
       <dl>
-        <dt>{text.footprint}</dt>
-        <dd>{footprintName(board.footprint)}</dd>
         {params.length > 0 && (
           <>
             <dt>{text.parameters}</dt>

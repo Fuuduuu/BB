@@ -1,4 +1,5 @@
 import type { Vec2 } from '@pcbk/domain';
+import { SHELL_KEYS } from '../shell/keymap';
 import { et } from '../shell/i18n/et';
 import type { CanvasTool, ToolSpec } from './tools';
 
@@ -39,7 +40,7 @@ export function createPanToolSpec(panByScreen: (delta: Vec2) => void): ToolSpec 
     id: PAN_ID,
     label: et.shell.panTool,
     icon: PAN_ID,
-    key: 'H',
+    key: SHELL_KEYS.pan.key,
     group: 'select',
     create: () => createPanTool(panByScreen),
   };

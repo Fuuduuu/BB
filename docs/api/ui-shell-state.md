@@ -2,37 +2,11 @@
 
 # @pcbk/ui
 
-Sisenemispunkt: `packages/ui/src/shell/index.ts`
-
-### `AppShell`
-```ts
-export function AppShell(props: AppShellProps): import("react").JSX.Element;
-```
-
-### `AppShellProps`
-```ts
-export interface AppShellProps extends SaveRecoveryActions, RootRecoveryActions {
-    registry?: UiRegistry;
-    canvas?: ReactNode;
-    manageTheme?: boolean;
-}
-```
+Sisenemispunkt: `packages/ui/src/shell-state.ts`
 
 ### `bindHistoryKeys`
 ```ts
 export function bindHistoryKeys(target: Window, actions: HistoryActions): () => void;
-```
-
-### `CloseDialog`
-```ts
-export function CloseDialog({ open, reason, opening, busy, copyAvailable, onCancel, onDiscard, onRetrySave, onSaveElsewhere, }: SaveRecoveryActions & {
-    open: boolean;
-    reason: StorageReason;
-    opening?: boolean;
-    busy?: boolean;
-    onCancel(): void;
-    onDiscard(): void;
-}): import("react").JSX.Element;
 ```
 
 ### `ContextSectionSpec`
@@ -45,13 +19,6 @@ export interface ContextSectionSpec {
         selection: Selection;
     }): ReactNode;
 }
-```
-
-### `ErrorBar`
-```ts
-export function ErrorBar({ reason, onRetrySave, onSaveElsewhere, copyAvailable, }: SaveRecoveryActions & {
-    reason: StorageReason;
-}): import("react").JSX.Element;
 ```
 
 ### `et`
@@ -93,7 +60,7 @@ export const et: {
         readonly components: "Komponendid";
         readonly navigatorEmpty: "Siia ilmuvad plaadi komponendid.";
         readonly context: "Omadused";
-        readonly contextEmpty: "Vali komponent, et näha selle omadusi.";
+        readonly contextEmpty: "Omadused · vali komponent või jalg";
         readonly showContext: "Näita omadusi";
         readonly hideContext: "Peida omadused";
         readonly resizeNavigator: "Navigaatori laius";
@@ -177,16 +144,6 @@ export const et: {
 };
 ```
 
-### `HistoryActions`
-```ts
-export interface HistoryActions {
-    canUndo: boolean;
-    canRedo: boolean;
-    onUndo(): void;
-    onRedo(): void;
-}
-```
-
 ### `KeySpec`
 ```ts
 export interface KeySpec {
@@ -198,21 +155,11 @@ export interface KeySpec {
 }
 ```
 
-### `NewBoardDialog`
-```ts
-export function NewBoardDialog({ open, busy, error, onClose, onCreate, }: NewBoardDialogProps): import("react").JSX.Element;
-```
-
-### `PanelErrorBoundary`
-```ts
-export function PanelErrorBoundary({ children }: PropsWithChildren): import("react").JSX.Element;
-```
-
 ### `PanelSpec`
 ```ts
 export interface PanelSpec extends SlotSpec {
     title: string;
-    count?(snapshot: Snapshot): number;
+    summary?(snapshot: Snapshot): string | null;
 }
 ```
 
@@ -234,41 +181,6 @@ export type Preview = {
 };
 ```
 
-### `RecentProjectCard`
-```ts
-export type RecentProjectCard = RecentProject;
-```
-
-### `RootErrorBoundary`
-```ts
-export function RootErrorBoundary({ children, onCopyAndReload, onExportDiagnostics, copyAvailable, }: PropsWithChildren<RootRecoveryActions>): import("react").JSX.Element;
-```
-
-### `RootRecoveryActions`
-```ts
-export interface RootRecoveryActions {
-    copyAvailable?: boolean;
-    onCopyAndReload(): void;
-    onExportDiagnostics(): void;
-}
-```
-
-### `SaveRecoveryActions`
-```ts
-export interface SaveRecoveryActions {
-    copyAvailable?: boolean;
-    onRetrySave(): void;
-    onSaveElsewhere(): void;
-}
-```
-
-### `SaveStatus`
-```ts
-export function SaveStatus({ status }: {
-    status: Status;
-}): import("react").JSX.Element | null;
-```
-
 ### `Selection`
 ```ts
 export type Selection = {
@@ -285,6 +197,62 @@ export type SelectionItem = {
 };
 ```
 
+### `SHELL_KEYS`
+```ts
+export const SHELL_KEYS: {
+    readonly cancel: {
+        readonly key: "Escape";
+        readonly shift: "any";
+        readonly alt: "any";
+    };
+    readonly navigator: {
+        readonly key: "N";
+    };
+    readonly context: {
+        readonly key: "O";
+    };
+    readonly undo: {
+        readonly key: "Z";
+        readonly primary: true;
+    };
+    readonly redo: {
+        readonly key: "Y";
+        readonly primary: true;
+    };
+    readonly redoShift: {
+        readonly key: "Z";
+        readonly primary: true;
+        readonly shift: true;
+    };
+    readonly select: {
+        readonly key: "V";
+    };
+    readonly pan: {
+        readonly key: "H";
+    };
+    readonly temporaryPan: {
+        readonly key: " ";
+        readonly shift: "any";
+    };
+    readonly nudgeLeft: {
+        readonly key: "ArrowLeft";
+        readonly shift: "any";
+    };
+    readonly nudgeRight: {
+        readonly key: "ArrowRight";
+        readonly shift: "any";
+    };
+    readonly nudgeUp: {
+        readonly key: "ArrowUp";
+        readonly shift: "any";
+    };
+    readonly nudgeDown: {
+        readonly key: "ArrowDown";
+        readonly shift: "any";
+    };
+};
+```
+
 ### `SlotSpec`
 ```ts
 export interface SlotSpec {
@@ -294,23 +262,9 @@ export interface SlotSpec {
 }
 ```
 
-### `StartScreen`
-```ts
-export function StartScreen({ recent, availableProjects, openAvailable, onPickProjectFile, showBrowserStorage, busy, onPhotoFiles, onNew, onOpen, onRestore, onRemoveRecent, }: StartScreenProps): import("react").JSX.Element;
-```
-
 ### `Theme`
 ```ts
 export type Theme = 'system' | 'light' | 'dark';
-```
-
-### `TopBar`
-```ts
-export function TopBar({ name, status, canUndo, canRedo, onUndo, onRedo, children, }: HistoryActions & {
-    name: string;
-    status: Status;
-    children?: ReactNode;
-}): import("react").JSX.Element;
 ```
 
 ### `UiModule`

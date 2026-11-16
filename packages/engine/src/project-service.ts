@@ -266,7 +266,7 @@ export function createProjectService(opts: {
     },
     importPhoto(file) {
       return serial(async () => {
-        if (!active) return err({ code: 'stale_session' });
+        if (!active || active.sessionId !== file.session) return err({ code: 'stale_session' });
         return ok(
           await opts.photos.importBytes(
             active.opened.session,

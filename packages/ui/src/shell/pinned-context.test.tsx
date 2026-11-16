@@ -85,7 +85,7 @@ test('the selection prompt stays hidden when a selected kind has no sections', (
 });
 
 test.each([true, false])(
-  'a newly visible pinned section opens the panel even if another is already visible (wide=%s)',
+  'a newly visible pinned section respects the hidden panel choice (wide=%s)',
   (wide) => {
     vi.stubGlobal('matchMedia', () => ({
       matches: wide,
@@ -110,11 +110,15 @@ test.each([true, false])(
         },
       ]),
     );
-    fireEvent.click(screen.getByRole('button', { name: et.shell.hideContext }));
+    fireEvent.click(
+      within(screen.getByRole('banner')).getByRole('button', { name: et.shell.hideContext }),
+    );
     expect(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
     act(() => useVisible.setState({ second: false }));
     expect(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
     act(() => useVisible.setState({ second: true }));
+    expect(screen.queryByRole('complementary', { name: et.shell.context })).toBeNull();
+    fireEvent.keyDown(window, { key: 'o' });
     const pane = screen.getByRole('complementary', { name: et.shell.context });
     expect(within(pane).getByText('Teine')).toBeTruthy();
   },

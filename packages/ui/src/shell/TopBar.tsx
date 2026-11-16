@@ -34,15 +34,20 @@ export function TopBar({
   canRedo,
   onUndo,
   onRedo,
+  contextAvailable,
   children,
-}: HistoryActions & { name: string; status: Status; children?: ReactNode }) {
-  const contextOpen = useViewStore((s) => s.contextOpen);
+}: HistoryActions & {
+  name: string;
+  status: Status;
+  contextAvailable: boolean;
+  children?: ReactNode;
+}) {
   const contextShown = useViewStore((s) => s.contextShown);
   const setContextOpen = useViewStore((s) => s.setContextOpen);
   const navigatorOpen = useViewStore((s) => s.navigatorOpen);
   const setNavigatorOpen = useViewStore((s) => s.setNavigatorOpen);
   const navigatorLabel = navigatorOpen ? et.shell.hideNavigator : et.shell.showNavigator;
-  const contextLabel = contextOpen ? et.shell.hideContext : et.shell.showContext;
+  const contextLabel = contextShown ? et.shell.hideContext : et.shell.showContext;
   return (
     <header className="pcbk-topbar">
       <a className="pcbk-brand" href="#workspace" aria-label={et.appName}>
@@ -96,11 +101,13 @@ export function TopBar({
         <Button
           variant="ghost"
           className="pcbk-panel-toggle"
-          onClick={() => setContextOpen(!contextOpen)}
+          id="pcbk-context-toggle"
+          disabled={!contextAvailable}
+          onClick={() => setContextOpen(!contextShown)}
           aria-label={contextLabel}
           aria-expanded={contextShown}
           aria-controls="pcbk-context"
-          title={`${contextLabel} · O`}
+          title={contextAvailable ? `${contextLabel} · O` : et.shell.contextEmpty}
         >
           <PanelIcon side="right" />
         </Button>

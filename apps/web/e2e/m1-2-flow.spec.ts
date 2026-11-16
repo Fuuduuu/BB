@@ -61,6 +61,7 @@ test('pin_stays_on_photo_mark_after_rotate_and_mirror', async ({ page }) => {
   await library.getByRole('button', { name: 'Takisti SMD', exact: true }).click();
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
   await page.mouse.click(mark!.x, mark!.y);
+  await page.keyboard.press('Escape');
   const body = page.locator('[data-layer="components.bodies"] [data-component]');
   const pin = page.locator('[data-layer="components.pins"] [data-pin="1"]');
   const bodyAt = await center(body);
@@ -70,7 +71,13 @@ test('pin_stays_on_photo_mark_after_rotate_and_mirror', async ({ page }) => {
   await page.mouse.move(bodyAt.x + mark!.x - pinAt.x, bodyAt.y + mark!.y - pinAt.y, { steps: 5 });
   await page.mouse.up();
   for (const action of [null, 'Pööra 90°', 'Peegelda']) {
-    if (action) await page.getByRole('button', { name: action, exact: true }).click();
+    if (action) {
+      await page.getByRole('button', { name: 'Foto sätted', exact: true }).click();
+      const menu = page.getByRole('dialog', { name: 'Foto sätted', exact: true });
+      await menu.getByRole('button', { name: action, exact: true }).click();
+      await page.keyboard.press('Escape');
+      await expect(menu).toBeHidden();
+    }
     const [red] = await screenshotMarks(page);
     const foot = await center(pin);
     expect(
@@ -119,21 +126,26 @@ test('photo_and_view_settings_survive_reopen', async ({ page }) => {
   await createBoard(page, name);
   await dropPhoto(page, canvas(page), await syntheticPhoto(page));
   const original = await bounds(photo(page));
-  const opacity = page.getByRole('slider', { name: 'Läbipaistvus', exact: true });
+  await page.getByRole('button', { name: 'Foto sätted', exact: true }).click();
+  const menu = page.getByRole('dialog', { name: 'Foto sätted', exact: true });
+  const opacity = menu.getByRole('slider', { name: 'Läbipaistvus', exact: true });
   await opacity.focus();
   await page.keyboard.press('Home');
   await page.keyboard.press('ArrowRight', { delay: 0 });
   for (let value = 11; value < 50; value++) await page.keyboard.press('ArrowRight');
   await expect(opacity).toHaveValue('50');
-  await page.getByRole('button', { name: 'Hall', exact: true }).click();
-  await page.getByRole('button', { name: 'Pööra 90°', exact: true }).click();
+  await menu.getByRole('button', { name: 'Hall', exact: true }).click();
+  await menu.getByRole('button', { name: 'Pööra 90°', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
   const rotated = await bounds(photo(page));
   expect(rotated.width).toBeCloseTo(original.height, 1);
   expect(rotated.height).toBeCloseTo(original.width, 1);
   await reopen(page, name);
   await expect(photo(page)).toBeVisible();
+  await page.getByRole('button', { name: 'Foto sätted', exact: true }).click();
   await expect(opacity).toHaveValue('50');
-  await expect(page.getByRole('button', { name: 'Hall', exact: true })).toHaveAttribute(
+  await expect(menu.getByRole('button', { name: 'Hall', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
@@ -144,10 +156,12 @@ test('photo_and_view_settings_survive_reopen', async ({ page }) => {
 
   // The SVG bounds and settings survive even when its image URL is broken.
   // After proving their persistence, restore full colour to measure actual pixels.
-  await page.getByRole('button', { name: 'Hall', exact: true }).click();
+  await menu.getByRole('button', { name: 'Hall', exact: true }).click();
   await opacity.focus();
   await page.keyboard.press('End');
   await expect(opacity).toHaveValue('100');
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
   const [red, blue] = await screenshotMarks(page);
   // Independent clockwise rotation: (x,y) -> (600-y,x).
   expect(red!.x - reopened.x).toBeCloseTo(410, 0);

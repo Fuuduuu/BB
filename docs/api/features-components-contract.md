@@ -9,7 +9,7 @@ Sisenemispunkt: `packages/features/components/contract.ts`
 export type AddComponentParams = {
     id: string;
     kind: "resistor" | "capacitor" | "capacitor_polarized" | "inductor" | "diode" | "led" | "zener" | "npn" | "pnp" | "nmos" | "pmos" | "regulator" | "ic" | "connector" | "crystal" | "switch" | "fuse" | "testpoint" | "via" | "pad" | "wire_point" | "hole" | "other";
-    pins: { uid: string; id: string; }[];
+    pins: { uid: string; id: string; name?: string | undefined; }[];
     ref?: string | undefined;
     marking?: string | undefined;
     value?: string | undefined;
@@ -51,6 +51,21 @@ export type BoardInput = {
 export const BoardInputSchema: ZodType<BoardInput>;
 ```
 
+### `ChangeFootprintParams`
+```ts
+export type ChangeFootprintParams = {
+    id: string;
+    footprint: string;
+    params: Record<string, string | number>;
+    newPinUids: Record<string, string>;
+};
+```
+
+### `ChangeFootprintSchema`
+```ts
+export const ChangeFootprintSchema: ZodType<ChangeFootprintParams>;
+```
+
 ### `COMPONENT_LIBRARY`
 ```ts
 export const COMPONENT_LIBRARY: readonly LibraryEntry[];
@@ -68,6 +83,11 @@ export type ComponentTargetParams = {
 export const ComponentTargetSchema: ZodType<ComponentTargetParams>;
 ```
 
+### `LibraryCategory`
+```ts
+export type LibraryCategory = 'pass' | 'semi' | 'ic' | 'conn' | 'misc' | 'point';
+```
+
 ### `LibraryEntry`
 ```ts
 export interface LibraryEntry {
@@ -76,6 +96,8 @@ export interface LibraryEntry {
     footprint: string;
     params: FootprintParams;
     kw: string;
+    category: LibraryCategory;
+    paramSpec: readonly ParamSpec[];
 }
 ```
 
@@ -87,6 +109,21 @@ export function makeAddComponent(ids: IdGen, kind: ComponentKind, pinCount?: num
 ### `makePlacedComponent`
 ```ts
 export function makePlacedComponent(ids: IdGen, entry: LibraryEntry, params: FootprintParams, center: Vec2): AddComponentParams;
+```
+
+### `ParamSpec`
+```ts
+export type ParamSpec = {
+    key: string;
+    label: string;
+    choices: readonly (string | number)[];
+} | {
+    key: string;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+};
 ```
 
 ### `PinTargetParams`

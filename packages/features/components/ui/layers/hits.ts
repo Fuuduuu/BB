@@ -25,12 +25,14 @@ function defaultLabelOffset(
   ];
   let padTop = -Infinity;
   for (const { at, halfPx, angleDeg, shape } of boardPads(board, pinIds, pxPerMm)) {
+    const halfX = Math.max(halfPx.x, 2.5 / zoom);
+    const halfY = Math.max(halfPx.y, 2.5 / zoom);
     const radians = (angleDeg * Math.PI) / 180;
     const halfHeight =
       shape === 'circle'
-        ? halfPx.x
-        : Math.abs(up.x * Math.cos(radians) + up.y * Math.sin(radians)) * halfPx.x +
-          Math.abs(-up.x * Math.sin(radians) + up.y * Math.cos(radians)) * halfPx.y;
+        ? halfX
+        : Math.abs(up.x * Math.cos(radians) + up.y * Math.sin(radians)) * halfX +
+          Math.abs(-up.x * Math.sin(radians) + up.y * Math.cos(radians)) * halfY;
     padTop = Math.max(padTop, project(at) + halfHeight);
   }
   const valueOffset = hasValue ? 1.2 * 1.6 * pxPerMm : 0;

@@ -22,11 +22,23 @@ function textBounds(text: Locator) {
 
 async function expectSeparated(page: Page) {
   const label = page.locator('[data-layer="components.labels"] text').filter({ hasText: 'J29' });
+  const value = page
+    .locator('[data-layer="components.labels"] text')
+    .filter({ hasText: 'LONG CONNECTOR VALUE' });
   const reading = page
     .locator('[data-layer="measurements.readings"] text')
     .filter({ hasText: '3,651 V' });
   await expect(label).toBeVisible();
+  await expect(value).toBeVisible();
   await expect(reading).toBeVisible();
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  const componentId = await label.evaluate((element) =>
+    element.closest('[data-component]')!.getAttribute('data-component'),
+  );
+  const numbers = page
+    .locator(`[data-layer="components.labels"] [data-component="${componentId}"] text`)
+    .filter({ hasText: /^\d+$/ });
+  await expect(numbers).toHaveCount(15);
   await expect
     .poll(async () => {
       const a = await textBounds(label);
@@ -37,6 +49,25 @@ async function expectSeparated(page: Page) {
       );
     })
     .toBe(0);
+  const textBoxes = await Promise.all([textBounds(label), textBounds(value)]);
+  for (const number of await numbers.all()) {
+    const pinBox = await textBounds(number);
+    for (const textBox of textBoxes) {
+      expect(
+        Math.max(
+          0,
+          Math.min(textBox.x + textBox.width, pinBox.x + pinBox.width) -
+            Math.max(textBox.x, pinBox.x),
+        ) *
+          Math.max(
+            0,
+            Math.min(textBox.y + textBox.height, pinBox.y + pinBox.height) -
+              Math.max(textBox.y, pinBox.y),
+          ),
+        `Automatic reference/value must clear pin ${await number.textContent()}`,
+      ).toBe(0);
+    }
+  }
 }
 
 test('j29_reading_does_not_overlap_ref_label', async ({ page }) => {
@@ -46,7 +77,7 @@ test('j29_reading_does_not_overlap_ref_label', async ({ page }) => {
   await library.getByRole('button', { name: 'Pinnirida 1×N', exact: true }).click();
   await library.getByRole('textbox', { name: 'Jalgu', exact: true }).fill('15');
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
-  // Pin 15 is at the upper end, next to the automatic reference label.
+  // The photo transform loop below covers all eight directions of the committed pin row.
   await page.keyboard.press('r');
   await page.keyboard.press('r');
   await page.keyboard.press('r');
@@ -59,6 +90,9 @@ test('j29_reading_does_not_overlap_ref_label', async ({ page }) => {
   const ref = page.getByRole('textbox', { name: 'Tähis', exact: true });
   await ref.fill('J29');
   await ref.press('Enter');
+  const value = page.getByRole('textbox', { name: 'Väärtus või mudel', exact: true });
+  await value.fill('LONG CONNECTOR VALUE');
+  await value.press('Enter');
   const pin = await center(page.locator('[data-layer="components.pins"] [data-pin="15"]'));
   await page.mouse.click(pin.x, pin.y);
   const input = page

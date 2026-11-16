@@ -2,37 +2,11 @@
 
 # @pcbk/ui
 
-Sisenemispunkt: `packages/ui/src/shell/index.ts`
-
-### `AppShell`
-```ts
-export function AppShell(props: AppShellProps): import("react").JSX.Element;
-```
-
-### `AppShellProps`
-```ts
-export interface AppShellProps extends SaveRecoveryActions, RootRecoveryActions {
-    registry?: UiRegistry;
-    canvas?: ReactNode;
-    manageTheme?: boolean;
-}
-```
+Sisenemispunkt: `packages/ui/src/shell-state.ts`
 
 ### `bindHistoryKeys`
 ```ts
 export function bindHistoryKeys(target: Window, actions: HistoryActions): () => void;
-```
-
-### `CloseDialog`
-```ts
-export function CloseDialog({ open, reason, opening, busy, copyAvailable, onCancel, onDiscard, onRetrySave, onSaveElsewhere, }: SaveRecoveryActions & {
-    open: boolean;
-    reason: StorageReason;
-    opening?: boolean;
-    busy?: boolean;
-    onCancel(): void;
-    onDiscard(): void;
-}): import("react").JSX.Element;
 ```
 
 ### `ContextSectionSpec`
@@ -45,13 +19,6 @@ export interface ContextSectionSpec {
         selection: Selection;
     }): ReactNode;
 }
-```
-
-### `ErrorBar`
-```ts
-export function ErrorBar({ reason, onRetrySave, onSaveElsewhere, copyAvailable, }: SaveRecoveryActions & {
-    reason: StorageReason;
-}): import("react").JSX.Element;
 ```
 
 ### `et`
@@ -177,16 +144,6 @@ export const et: {
 };
 ```
 
-### `HistoryActions`
-```ts
-export interface HistoryActions {
-    canUndo: boolean;
-    canRedo: boolean;
-    onUndo(): void;
-    onRedo(): void;
-}
-```
-
 ### `KeySpec`
 ```ts
 export interface KeySpec {
@@ -196,16 +153,6 @@ export interface KeySpec {
     repeat?: boolean;
     run(api: ToolApi, selection: Selection): boolean;
 }
-```
-
-### `NewBoardDialog`
-```ts
-export function NewBoardDialog({ open, busy, error, onClose, onCreate, }: NewBoardDialogProps): import("react").JSX.Element;
-```
-
-### `PanelErrorBoundary`
-```ts
-export function PanelErrorBoundary({ children }: PropsWithChildren): import("react").JSX.Element;
 ```
 
 ### `PanelSpec`
@@ -232,41 +179,6 @@ export type Preview = {
     owner: string;
     data: unknown;
 };
-```
-
-### `RecentProjectCard`
-```ts
-export type RecentProjectCard = RecentProject;
-```
-
-### `RootErrorBoundary`
-```ts
-export function RootErrorBoundary({ children, onCopyAndReload, onExportDiagnostics, copyAvailable, }: PropsWithChildren<RootRecoveryActions>): import("react").JSX.Element;
-```
-
-### `RootRecoveryActions`
-```ts
-export interface RootRecoveryActions {
-    copyAvailable?: boolean;
-    onCopyAndReload(): void;
-    onExportDiagnostics(): void;
-}
-```
-
-### `SaveRecoveryActions`
-```ts
-export interface SaveRecoveryActions {
-    copyAvailable?: boolean;
-    onRetrySave(): void;
-    onSaveElsewhere(): void;
-}
-```
-
-### `SaveStatus`
-```ts
-export function SaveStatus({ status }: {
-    status: Status;
-}): import("react").JSX.Element | null;
 ```
 
 ### `Selection`
@@ -350,24 +262,9 @@ export interface SlotSpec {
 }
 ```
 
-### `StartScreen`
-```ts
-export function StartScreen({ recent, availableProjects, openAvailable, onPickProjectFile, showBrowserStorage, busy, onPhotoFiles, onNew, onOpen, onRestore, onRemoveRecent, }: StartScreenProps): import("react").JSX.Element;
-```
-
 ### `Theme`
 ```ts
 export type Theme = 'system' | 'light' | 'dark';
-```
-
-### `TopBar`
-```ts
-export function TopBar({ name, status, canUndo, canRedo, onUndo, onRedo, contextAvailable, children, }: HistoryActions & {
-    name: string;
-    status: Status;
-    contextAvailable: boolean;
-    children?: ReactNode;
-}): import("react").JSX.Element;
 ```
 
 ### `UiModule`

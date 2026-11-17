@@ -35,7 +35,7 @@ export function j29RefPinOverlap(labels: LabelBox[]): number | null {
 
 // Runs inside Chromium. Observe the accepted E2E's real rotate/mirror actions without
 // copying its project setup, gesture sequence or IDB fixture into this tool.
-function installProbe() {
+export function installProbe() {
   const box = (element: Element) => {
     const { left, top, right, bottom } = element.getBoundingClientRect();
     return { left, top, right, bottom };
@@ -51,16 +51,17 @@ function installProbe() {
   const scene = () => document.querySelector('[data-scene]');
   new MutationObserver(() => {
     const stage = scene();
-    const svg = stage?.closest('svg');
+    // The SVG includes overscan; its parent clips it to the visible canvas.
+    const viewport = stage?.closest('svg')?.parentElement;
     const matrix = stage?.getAttribute('transform');
-    if (!svg || !matrix || !document.querySelector('image[data-layer="photo.image"]')) return;
+    if (!viewport || !matrix || !document.querySelector('image[data-layer="photo.image"]')) return;
     const reference = textBoxes('components.labels').find((item) => item.text === 'J29 ?');
     const reading = textBoxes('measurements.readings').find((item) => item.text === '3,651 V');
     if (reference && reading)
-      scenes.set(matrix, { canvas: box(svg), reference: reference.box, reading: reading.box });
+      scenes.set(matrix, { canvas: box(viewport), reference: reference.box, reading: reading.box });
   }).observe(document, { childList: true, attributes: true, subtree: true });
   function measure() {
-    const svg = scene()?.closest('svg');
+    const viewport = scene()?.closest('svg')?.parentElement;
     const leaders = Array.from(
       document.querySelectorAll('[data-layer="measurements.readings"] line'),
       (line) => {
@@ -92,7 +93,7 @@ function installProbe() {
       },
       theme: document.documentElement.dataset.theme,
       colorScheme: getComputedStyle(document.documentElement).colorScheme,
-      canvas: svg ? box(svg) : null,
+      canvas: viewport ? box(viewport) : null,
       labels: textBoxes('components.labels'),
       readings: textBoxes('measurements.readings'),
       leaders,
@@ -140,7 +141,7 @@ async function restorePhotoOrientation(page: Page) {
   assert.deepEqual(await matrix(), [1, 0, 0, 1], 'Foto peab olema pööramata ja peegeldamata.');
 }
 
-function onCanvas(canvas: Box | null, item: Box) {
+export function onCanvas(canvas: Box | null, item: Box) {
   return (
     canvas &&
     item.left >= canvas.left &&

@@ -22,8 +22,8 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 - [Plaan](plans/M1-4-suurus-joondus-joudlus.md) on kinnitatud (kasutaja 2026-11-17: O1 jõudlus enne, O2 `R`/`Shift+R` jääb, O3 ühe telje venitus lubatud).
 - Tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m1-4/BB`, haru `codex/m1-4`, alus `3953382`.
 - Kaartide järjekord:
-  1. [M1-4-1](tasks/M1-4-1.md) žesti ajal bitmap-teisendus (A): **ülevaatusel, vajab üht parandust** (`m1-3-labels.spec.ts` paigutus nähtava konteineri järgi, et J29 brauseritõend läbiks). Servapuhver 0,25: pan 57,1 fps, suum 57,8 fps, rahunemine 283,3 ms.
-  2. [M1-4-1b](tasks/M1-4-1b.md) vaate muutus ei renderda kesta paneele (A).
+  1. [M1-4-1](tasks/M1-4-1.md) žesti ajal bitmap-teisendus (A): **vastu võetud** `09383e4` (proof 4/4, `bb-review-card` läbis). Servapuhver 0,25: pan 57,1 fps, suum 57,8 fps, rahunemine 283,3 ms.
+  2. [M1-4-1b](tasks/M1-4-1b.md) vaate muutus ei renderda kesta paneele (A): järgmine, alus `09383e4`.
   3. [M1-4-H](tasks/M1-4-H.md) vormingu versiooni kaitse ja täis ketas koopial (B), M1.4 ainus hooldusvoor.
   4. Plaani ülesanded 2–11; kaart kirjutatakse vahetult enne ülesannet.
 - Lahtine arhitektile: 02 §16 uuendamine `R`/`Shift+R` otsuse järgi (O2).
@@ -48,6 +48,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 ## Tööriistad
 
 - [`pnpm bb-review-card <ID>`](tasks/README.md#kaardi-ülevaatus-ühe-käsuga) seob kaardi testinimed käigu tulemustega; [`pnpm proof M1-3-10`](tasks/README.md#m1-3-10-brauseritõend) kordab näitude brauserikatset mõlemas teemas.
+- J29 tõend mõõdab nähtavust SVG nähtava konteineri järgi, nii et servapuhver seda ei lõdvenda (Astra 2026-11-17, `tooling/proof/proof.test.ts`).
 - Oskused: [salvestuse ülevaatus](../tools/skills/bb-review-storage/SKILL.md) ja [foto ja lõuendi joondus](../tools/skills/bb-check-canvas/SKILL.md); valik [SKILLS-is](SKILLS.md).
 - [BB MCP server](../tools/mcp-bb/README.md): Git-i ja seisu vaade, dokumentide lugemine ja kontroll. Dokumendikontroll pole CI-s; käivita `bb_check_docs` pärast dokumentide muutmist.
 - CI (`.github/workflows/ci.yml`): `check`, `coverage`, `format:check`, e2e, Rusti `fmt`/`test`/`clippy`; `main` ja `v*` siltidel ka `.msi` ja Release. `gh` on sisse logitud.

@@ -1,9 +1,48 @@
+// @vitest-environment jsdom
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { inspectProof } from './run.mjs';
-import { j29RefPinOverlap } from './j29';
+import { installProbe, j29RefPinOverlap, onCanvas } from './j29';
+
+test('proof uses the visible viewport for snapshots and transforms with a 1.5x overscanned SVG', async () => {
+  document.body.innerHTML = `
+    <div><svg><g data-scene transform="matrix(1 0 0 1 0 0)">
+      <image data-layer="photo.image" />
+      <g data-layer="components.labels"><text>J29 ?</text></g>
+      <g data-layer="measurements.readings"><text>3,651 V</text></g>
+    </g></svg></div>`;
+  const viewport = document.querySelector('div')!;
+  const svg = document.querySelector('svg')!;
+  const stage = document.querySelector('[data-scene]')!;
+  const reference = document.querySelector('[data-layer="components.labels"] text')!;
+  const reading = document.querySelector('[data-layer="measurements.readings"] text')!;
+  vi.spyOn(viewport, 'getBoundingClientRect').mockReturnValue(new DOMRect(100, 80, 400, 300));
+  vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 5, 600, 450));
+  vi.spyOn(reference, 'getBoundingClientRect').mockReturnValue(new DOMRect(100, 80, 40, 20));
+  vi.spyOn(reading, 'getBoundingClientRect').mockReturnValue(new DOMRect(510, 100, 30, 20));
+  const visible = { left: 100, top: 80, right: 500, bottom: 380 };
+  const probe = installProbe();
+  stage.setAttribute('transform', 'matrix(0 1 -1 0 0 0)');
+  await Promise.resolve();
+
+  const sample = probe.measure();
+  expect(sample.canvas).toEqual(visible);
+  expect(onCanvas(sample.canvas, sample.labels[0]!.box)).toBe(true);
+  expect(onCanvas(sample.canvas, sample.readings[0]!.box)).toBe(false);
+  expect(probe.scenes()).toHaveLength(1);
+  const scene = probe.scenes()[0]!;
+  expect(scene.canvas).toEqual(visible);
+  expect(onCanvas(scene.canvas, scene.reference)).toBe(true);
+  expect(onCanvas(scene.canvas, scene.reading)).toBe(false);
+
+  vi.spyOn(svg, 'parentElement', 'get').mockReturnValue(null);
+  stage.setAttribute('transform', 'matrix(-1 0 0 -1 0 0)');
+  await Promise.resolve();
+  expect(probe.measure().canvas).toBeNull();
+  expect(probe.scenes()).toHaveLength(1);
+});
 
 test('J29 overlap sums both label rows against its own 15 pin numbers in screen pixels', () => {
   const label = (text: string, left: number, right: number, componentId = 'J') => ({
@@ -27,6 +66,9 @@ test('J29 overlap sums both label rows against its own 15 pin numbers in screen 
 
 let dir: string;
 afterEach(() => {
+  document.body.replaceChildren();
+  delete window.bbCardProof;
+  vi.restoreAllMocks();
   if (dir) rmSync(dir, { recursive: true, force: true });
 });
 

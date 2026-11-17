@@ -79,7 +79,14 @@ export function Canvas({
   const svg = useRef<SVGSVGElement>(null);
   const viewGroup = useRef<SVGGElement>(null);
   const scene = useRef<SVGGElement>(null);
-  const { viewRef, lodZoom, applyView, configureBuffer } = useCanvasView(view, svg, viewGroup);
+  const gesture = useRef<{ pointerId: number; tool: CanvasTool } | null>(null);
+  const isGesturing = useCallback(() => gesture.current !== null, []);
+  const { viewRef, lodZoom, applyView, configureBuffer, pauseLod } = useCanvasView(
+    view,
+    svg,
+    viewGroup,
+    isGesturing,
+  );
   const current = useRef({ snapshot, execute, onViewChange });
   // Snapshot identity may change for selection/preview; geometry changes with its revision/session.
   const layerData = useMemo(
@@ -94,7 +101,6 @@ export function Canvas({
     [layers, snapshot.rev, snapshot.sessionId, lodZoom, sceneTransform],
   );
   const cache = useRef(layerData);
-  const gesture = useRef<{ pointerId: number; tool: CanvasTool } | null>(null);
   const space = useRef(false);
   const preview = useSessionStore((store) => store.preview);
   const toolId = useSessionStore((store) => store.toolId);
@@ -120,7 +126,7 @@ export function Canvas({
     fitInsets,
     sceneTransform,
     sessionId: snapshot.sessionId,
-    isGesturing: () => gesture.current !== null,
+    isGesturing,
     onResize: configureBuffer,
   });
   const panByScreen = useCallback(
@@ -326,6 +332,7 @@ export function Canvas({
         svg.current?.focus({ preventScroll: true });
         svg.current?.setPointerCapture(event.pointerId);
         gesture.current = { pointerId: event.pointerId, tool };
+        pauseLod();
         tool.onPointerDown(at, api);
       }}
       onPointerMove={(event) => {

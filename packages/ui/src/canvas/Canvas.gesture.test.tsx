@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
+import { Suspense } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { snapshot } from '../../../client/src/__tests__/fakes';
 import { useSessionStore } from '../shell/session-store';
@@ -13,7 +14,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function setup() {
+function setup(layer: LayerSpec['render'] = () => null) {
   const bounds = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
     x: 17,
     y: 29,
@@ -27,7 +28,7 @@ function setup() {
   });
   vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(800);
   vi.spyOn(Element.prototype, 'clientHeight', 'get').mockReturnValue(600);
-  const renderLayer = vi.fn<LayerSpec['render']>(() => null);
+  const renderLayer = vi.fn<LayerSpec['render']>(layer);
   const hits = vi.fn<NonNullable<LayerSpec['hits']>>(() => []);
   const onViewChange = vi.fn<CanvasProps['onViewChange']>();
   let props: CanvasProps = {
@@ -39,7 +40,12 @@ function setup() {
     onViewChange,
     execute: () => ({ ok: true, value: { rev: 0 } }),
   };
-  const result = render(<Canvas {...props} />);
+  const canvas = () => (
+    <Suspense fallback={<div data-testid="lod-fallback" />}>
+      <Canvas {...props} />
+    </Suspense>
+  );
+  const result = render(canvas());
   const svg = result.container.querySelector('svg')!;
   const group = svg.querySelector('[data-view]')!;
   const scene = svg.querySelector('[data-scene]')!;
@@ -60,9 +66,10 @@ function setup() {
     hits,
     renderLayer,
     onViewChange,
+    fallback: () => result.queryByTestId('lod-fallback'),
     update(view: CanvasProps['view']) {
       props = { ...props, view };
-      result.rerender(<Canvas {...props} />);
+      result.rerender(canvas());
     },
   };
 }
@@ -208,6 +215,112 @@ test('early_commit_keeps_lod_until_settle', () => {
   expect(renderLayer.mock.lastCall?.[0].zoom).toBe(1.4);
   expect(svg.style.transform).toBe('');
   expect(svg.style.willChange).toBe('');
+});
+
+function setupPendingLod() {
+  vi.useFakeTimers();
+  let blocked = true;
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const canvas = setup(({ zoom }) => {
+    if (zoom !== 2 && blocked) throw pending;
+    return <text data-lod-zoom={zoom} />;
+  });
+  return {
+    ...canvas,
+    zoomDisplayed: () =>
+      Number(canvas.svg.querySelector('[data-lod-zoom]')?.getAttribute('data-lod-zoom')),
+    async releaseLod() {
+      await act(async () => {
+        blocked = false;
+        release();
+      });
+    },
+  };
+}
+
+function settle() {
+  act(() => vi.advanceTimersByTime(120));
+  act(() => vi.advanceTimersToNextFrame());
+}
+
+test('settle_commits_geometry_before_lod_render', () => {
+  const { update, group, svg, zoomDisplayed, fallback, renderLayer } = setupPendingLod();
+  update({ zoom: 4, pan: { x: 20, y: 10 } });
+  expect(svg.style.transform).toMatch(/^matrix\(/);
+  settle();
+
+  expect(group.getAttribute('transform')).toBe('matrix(4 0 0 4 20 10)');
+  expect(svg.style.transform).toBe('');
+  expect(svg.style.willChange).toBe('');
+  expect(renderLayer.mock.lastCall?.[0].zoom).toBe(4);
+  expect(fallback()).toBeNull();
+  expect(zoomDisplayed()).toBe(2);
+});
+
+test('lod_render_reaches_final_state_after_settle', async () => {
+  const { update, zoomDisplayed, fallback, releaseLod } = setupPendingLod();
+  update({ zoom: 4, pan: { x: 20, y: 10 } });
+  settle();
+  await releaseLod();
+
+  expect(fallback()).toBeNull();
+  expect(zoomDisplayed()).toBe(4);
+});
+
+test('new_gesture_interrupts_pending_lod_render', async () => {
+  const { svg, onViewChange, zoomDisplayed, releaseLod } = setupPendingLod();
+  const wheel = () => fireEvent.wheel(svg, { clientX: 97, clientY: 129, deltaY: -100 });
+  wheel();
+  settle();
+  wheel();
+  expect(onViewChange).toHaveBeenCalledTimes(2);
+  await releaseLod();
+
+  expect(zoomDisplayed()).toBe(2);
+  settle();
+  expect(zoomDisplayed()).toBe(onViewChange.mock.lastCall![0].zoom);
+});
+
+function middlePointer(svg: SVGSVGElement, type: string) {
+  const event = new MouseEvent(type, { bubbles: true, clientX: 97, clientY: 129, button: 1 });
+  Object.defineProperty(event, 'pointerId', { value: 1 });
+  fireEvent(svg, event);
+}
+
+test('settle_defers_lod_while_pointer_gesture_is_active', () => {
+  vi.useFakeTimers();
+  const { svg, group, update, hits, renderLayer } = setup();
+  update({ zoom: 4, pan: { x: 20, y: 10 } });
+  middlePointer(svg, 'pointerdown');
+  settle();
+  expect(group.getAttribute('transform')).toBe('matrix(4 0 0 4 20 10)');
+  expect(svg.style.transform).toBe('');
+  expect(renderLayer.mock.lastCall?.[0].zoom).toBe(2);
+  expect(hits).toHaveBeenCalledTimes(1);
+
+  middlePointer(svg, 'pointerup');
+  act(() => vi.advanceTimersToNextFrame());
+  expect(renderLayer.mock.lastCall?.[0].zoom).toBe(4);
+  expect(hits.mock.lastCall?.[1]).toBe(4);
+});
+
+test('pointer_gesture_interrupts_pending_lod_render', async () => {
+  const { svg, update, zoomDisplayed, renderLayer, releaseLod } = setupPendingLod();
+  update({ zoom: 4, pan: { x: 20, y: 10 } });
+  settle();
+  expect(renderLayer.mock.lastCall?.[0].zoom).toBe(4);
+
+  middlePointer(svg, 'pointerdown');
+  await releaseLod();
+  act(() => vi.advanceTimersToNextFrame());
+  expect(zoomDisplayed()).toBe(2);
+
+  middlePointer(svg, 'pointerup');
+  act(() => vi.advanceTimersToNextFrame());
+  expect(zoomDisplayed()).toBe(4);
 });
 
 test('wheel_zoom_does_not_force_layout', async () => {

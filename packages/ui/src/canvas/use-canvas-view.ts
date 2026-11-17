@@ -1,6 +1,5 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { startTransition, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
-import { flushSync } from 'react-dom';
 import type { BoardView } from '@pcbk/contracts';
 import { viewMatrix } from './stage';
 
@@ -11,10 +10,13 @@ export function useCanvasView(
   view: BoardView,
   svg: RefObject<SVGSVGElement>,
   group: RefObject<SVGGElement>,
+  isGesturing: () => boolean,
 ) {
   const viewRef = useRef(view);
   const committedView = useRef(view);
   const [lodZoom, setLodZoom] = useState(view.zoom);
+  const committedLodZoom = useRef(lodZoom);
+  const pendingLod = useRef(false);
   const delay = useRef<number>();
   const frame = useRef<number>();
   const buffer = useRef({ width: 0, height: 0, x: 0, y: 0 });
@@ -24,10 +26,21 @@ export function useCanvasView(
     delay.current = undefined;
     frame.current = undefined;
   }, []);
+  const discardPendingLod = useCallback(() => {
+    if (!pendingLod.current) return false;
+    // This update supersedes the queued LOD when React rebases the transition.
+    pendingLod.current = false;
+    setLodZoom(committedLodZoom.current);
+    return true;
+  }, []);
   useLayoutEffect(() => {
     group.current?.setAttribute('transform', viewMatrix(committedView.current));
     return cancelLod;
   }, [cancelLod, group]);
+  useLayoutEffect(() => {
+    committedLodZoom.current = lodZoom;
+    pendingLod.current = false;
+  }, [lodZoom]);
   const renderGesture = useCallback(
     (next: BoardView) => {
       const committed = committedView.current;
@@ -66,6 +79,25 @@ export function useCanvasView(
     },
     [renderGesture, svg],
   );
+  const renderLod = useCallback(
+    function renderLod(zoom: number) {
+      frame.current = undefined;
+      if (zoom === committedLodZoom.current) return;
+      if (isGesturing()) {
+        // Synchronous preview updates would repeatedly restart the LOD render.
+        frame.current = window.requestAnimationFrame(() => renderLod(zoom));
+        return;
+      }
+      pendingLod.current = true;
+      startTransition(() => setLodZoom(zoom));
+    },
+    [isGesturing],
+  );
+  const pauseLod = useCallback(() => {
+    if (discardPendingLod()) {
+      frame.current = window.requestAnimationFrame(() => renderLod(committedView.current.zoom));
+    }
+  }, [discardPendingLod, renderLod]);
   const applyView = useCallback(
     (next: BoardView) => {
       const previous = viewRef.current;
@@ -78,23 +110,21 @@ export function useCanvasView(
         return;
       renderGesture(next);
       cancelLod();
+      discardPendingLod();
       delay.current = window.setTimeout(() => {
         delay.current = undefined;
         frame.current = window.requestAnimationFrame(() => {
           frame.current = undefined;
           const live = viewRef.current;
-          // Commit geometry, compositor cleanup and LOD before the same paint.
-          flushSync(() => {
-            committedView.current = live;
-            group.current?.setAttribute('transform', viewMatrix(live));
-            svg.current?.style.removeProperty('transform');
-            svg.current?.style.removeProperty('will-change');
-            setLodZoom(live.zoom);
-          });
+          committedView.current = live;
+          group.current?.setAttribute('transform', viewMatrix(live));
+          svg.current?.style.removeProperty('transform');
+          svg.current?.style.removeProperty('will-change');
+          renderLod(live.zoom);
         });
       }, 120);
     },
-    [cancelLod, group, renderGesture, svg],
+    [cancelLod, discardPendingLod, group, renderGesture, renderLod, svg],
   );
-  return { viewRef, lodZoom, applyView, configureBuffer };
+  return { viewRef, lodZoom, applyView, configureBuffer, pauseLod };
 }

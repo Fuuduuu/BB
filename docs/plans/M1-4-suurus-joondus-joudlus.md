@@ -105,6 +105,7 @@ Rajad: ülesanded 4 ja 11 on **rada B** (jõudluseelarve ja vastuvõtt), ülejä
 3. **Kitsam lohistuse eelvaade.**
    - Ainult lohistatava komponendi grupp saab nihke. Teised kihid uut `preview` propi ei saa.
    - Test: `drag_preview_rerenders_only_dragged_group`.
+3b. **LOD-rahunemise skriptikulu** (M1-4-1 profiil). Pärast LOD-taimerit renderdab React kõik kihid uue `lodZoom`-iga: ühe suumi järel 243 ms Script. LOD-muutus peab renderdama ainult kihte ja komponente, mille väljund sõltub LOD-lävedest. Näiteks muutuvad jalanumbrid, kui lühema külje pool ületab 7 või 14 px; kered ei muutu. Mõõt on rahunemise pikim kaader enne/pärast.
 4. **Kordusmõõtmine ja `perf.spec.ts`** (rada B).
    - Sama generaator ja Tauri proov nagu M1-2-7; tulemus tabelina enne/pärast.
    - `tests/e2e/perf.spec.ts` (03 § 7.3) jääb regressioonikaitseks.

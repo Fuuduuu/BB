@@ -1,4 +1,4 @@
-import { Fragment, memo, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useLayoutEffect, useMemo, useRef } from 'react';
 import type { PointerEvent } from 'react';
 import type { DocumentEngine, Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
@@ -33,6 +33,11 @@ export interface CanvasProps {
   fitInsets?: { left?: number; right?: number; top?: number; bottom?: number };
 }
 
+const LayerView = memo(
+  ({ layer, snapshot, preview, zoom }: Parameters<LayerSpec['render']>[0] & { layer: LayerSpec }) =>
+    layer.render({ snapshot, preview, zoom }),
+);
+
 const Layers = memo(
   ({
     layers,
@@ -46,7 +51,13 @@ const Layers = memo(
     lodZoom: number;
   }) =>
     layers.map((layer) => (
-      <Fragment key={layer.id}>{layer.render({ snapshot, preview, zoom: lodZoom })}</Fragment>
+      <LayerView
+        key={layer.id}
+        layer={layer}
+        snapshot={snapshot}
+        preview={preview && layer.previewOwners?.includes(preview.owner) ? preview : null}
+        zoom={lodZoom}
+      />
     )),
 );
 

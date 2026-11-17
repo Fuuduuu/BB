@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
+import type { Vec2 } from '@pcbk/domain';
 import { boardPads } from '@pcbk/domain/geometry';
 import { formatReading } from '@pcbk/domain/measure/reading';
 import {
@@ -10,6 +11,77 @@ import {
 } from '@pcbk/ui';
 import type { LabelObstacle, LayerSpec, TranslatePreviewData } from '@pcbk/ui';
 import { placeReadingLabel } from './reading-placement';
+import type { ReadingPlacement } from './reading-placement';
+
+interface ReadingLayout {
+  key: string;
+  componentId: string;
+  at: Vec2;
+  radius: number;
+  text: string;
+  placement: ReadingPlacement;
+  showText: boolean;
+  textSize: number;
+  textInset: number;
+}
+
+const ReadingLabel = memo(function ReadingLabel({
+  layout,
+  dx,
+  dy,
+}: {
+  layout: ReadingLayout;
+  dx: number;
+  dy: number;
+}) {
+  const { at, radius, text, placement, showText, textSize, textInset } = layout;
+  return (
+    <g>
+      <circle
+        cx={at.x + dx}
+        cy={at.y + dy}
+        r={radius}
+        fill="none"
+        stroke="var(--ink-2)"
+        strokeWidth={2.5}
+        vectorEffect="non-scaling-stroke"
+      />
+      {showText && (
+        <>
+          {placement.leader && (
+            <line
+              x1={placement.leader.start.x + dx}
+              y1={placement.leader.start.y + dy}
+              x2={placement.leader.end.x + dx}
+              y2={placement.leader.end.y + dy}
+              stroke="var(--ink-2)"
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+          <SceneText
+            x={at.x + dx}
+            y={at.y + dy}
+            dx={placement.offset.x + (placement.textAnchor === 'end' ? -textInset : textInset)}
+            dy={placement.offset.y}
+            textAnchor={placement.textAnchor}
+            dominantBaseline="central"
+            fontSize={textSize}
+            fontFamily="var(--f-mono)"
+            fill="var(--ink)"
+            stroke="var(--halo)"
+            strokeWidth={2}
+            paintOrder="stroke"
+            vectorEffect="non-scaling-stroke"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
+            {text}
+          </SceneText>
+        </>
+      )}
+    </g>
+  );
+});
 
 function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render']>[0]) {
   const transform = useSceneTransform();
@@ -19,7 +91,7 @@ function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render
   const showText = textSize * zoom >= 8;
   const textInset = monoLabelHalf('', 0, zoom).x;
   // Committed layout ignores gesture previews: every label retains its chosen pin-relative offset.
-  const labels = useMemo(() => {
+  const labels = useMemo<ReadingLayout[]>(() => {
     const placed: LabelObstacle[] = [];
     return snapshot.doc.components.flatMap(({ id, board, pins }) => {
       if (!board) return [];
@@ -53,11 +125,25 @@ function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render
               transform,
             });
             if (showText) placed.push(placement.box);
-            return { key: `${id}:${pinId}:${index}`, componentId: id, at, radius, text, placement };
+            return {
+              key: `${id}:${pinId}:${index}`,
+              componentId: id,
+              at,
+              radius,
+              text,
+              placement,
+              showText,
+              textSize,
+              textInset,
+            };
           });
       });
     });
-  }, [snapshot, zoom, transform, obstacles, pxPerMm, textSize, showText]);
+  }, [snapshot, zoom, transform, obstacles, pxPerMm, textSize, showText, textInset]);
+  const stationaryLabels = useMemo(
+    () => labels.map((layout) => <ReadingLabel key={layout.key} layout={layout} dx={0} dy={0} />),
+    [labels],
+  );
   const translation = preview?.owner === 'select' ? (preview.data as TranslatePreviewData) : null;
   const translated = new Set(
     translation?.items.filter(({ kind }) => kind === 'component').map(({ id }) => id),
@@ -65,59 +151,20 @@ function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render
 
   return (
     <g data-layer="measurements.readings" pointerEvents="none">
-      {labels.map(({ key, componentId, at, radius, text, placement }) => {
-        const offset = translated.has(componentId) ? translation : null;
-        const dx = offset?.dx ?? 0;
-        const dy = offset?.dy ?? 0;
-        return (
-          <g key={key}>
-            <circle
-              cx={at.x + dx}
-              cy={at.y + dy}
-              r={radius}
-              fill="none"
-              stroke="var(--ink-2)"
-              strokeWidth={2.5}
-              vectorEffect="non-scaling-stroke"
-            />
-            {showText && (
-              <>
-                {placement.leader && (
-                  <line
-                    x1={placement.leader.start.x + dx}
-                    y1={placement.leader.start.y + dy}
-                    x2={placement.leader.end.x + dx}
-                    y2={placement.leader.end.y + dy}
-                    stroke="var(--ink-2)"
-                    strokeWidth={1}
-                    vectorEffect="non-scaling-stroke"
-                  />
-                )}
-                <SceneText
-                  x={at.x + dx}
-                  y={at.y + dy}
-                  dx={
-                    placement.offset.x + (placement.textAnchor === 'end' ? -textInset : textInset)
-                  }
-                  dy={placement.offset.y}
-                  textAnchor={placement.textAnchor}
-                  dominantBaseline="central"
-                  fontSize={textSize}
-                  fontFamily="var(--f-mono)"
-                  fill="var(--ink)"
-                  stroke="var(--halo)"
-                  strokeWidth={2}
-                  paintOrder="stroke"
-                  vectorEffect="non-scaling-stroke"
-                  style={{ fontVariantNumeric: 'tabular-nums' }}
-                >
-                  {text}
-                </SceneText>
-              </>
-            )}
-          </g>
-        );
-      })}
+      {translation
+        ? labels.map((layout, index) =>
+            translated.has(layout.componentId) ? (
+              <ReadingLabel
+                key={layout.key}
+                layout={layout}
+                dx={translation.dx}
+                dy={translation.dy}
+              />
+            ) : (
+              stationaryLabels[index]
+            ),
+          )
+        : stationaryLabels}
     </g>
   );
 }
@@ -125,5 +172,6 @@ function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render
 export const READING_LABELS_LAYER: LayerSpec = {
   id: 'measurements.readings',
   z: 80,
+  previewOwners: ['select'],
   render: (props) => <ReadingLabels {...props} />,
 };

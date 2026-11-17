@@ -138,6 +138,7 @@ export const LabelObstaclesContext: import("react").Context<readonly LabelObstac
 export type LayerSpec = {
     id: string;
     z: number;
+    previewOwners?: readonly string[];
     render(props: {
         snapshot: Snapshot;
         preview: Preview | null;

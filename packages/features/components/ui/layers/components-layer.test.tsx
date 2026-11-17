@@ -256,6 +256,58 @@ test('drag_preview_moves_only_dragged_components', () => {
   expect(engine.snapshot()).toBe(before);
 });
 
+test('drag_preview_rerenders_only_dragged_group', () => {
+  const { engine } = setup();
+  const draggedId = 'cmp_0';
+  for (let index = 0; index < 20; index++) {
+    add(engine, { id: `cmp_${index}`, board: { ...chip, center: { x: 100 + 40 * index, y: 80 } } });
+  }
+  // An explicit label offset keeps the geometry counters specific to the shape render paths.
+  expect(
+    engine.execute('components.setLabelOffset', { id: draggedId, offset: { x: 0, y: -24 } }).ok,
+  ).toBe(true);
+  const snapshot = engine.snapshot();
+  const renderBody = vi.spyOn(geometry, 'bodyOutline');
+  const renderPads = vi.spyOn(geometry, 'boardPads');
+  const { container } = render(
+    <Canvas
+      layers={layers}
+      tools={[]}
+      snapshot={snapshot}
+      execute={engine.execute}
+      sceneTransform="none"
+      view={{ zoom: 1, pan: { x: 0, y: 0 } }}
+      onViewChange={() => {}}
+    />,
+  );
+  renderBody.mockClear();
+  renderPads.mockClear();
+
+  for (let frame = 1; frame <= 10; frame++) {
+    act(() =>
+      useSessionStore.getState().setPreview({
+        owner: 'select',
+        data: { items: [{ kind: 'component', id: draggedId }], dx: frame, dy: -frame },
+      }),
+    );
+  }
+
+  for (const layer of ['bodies', 'pins', 'labels']) {
+    const groups = container.querySelectorAll(
+      `[data-layer="components.${layer}"] [data-component]`,
+    );
+    expect(groups).toHaveLength(20);
+    for (const group of groups) {
+      expect(group.getAttribute('transform')).toBe(
+        group.getAttribute('data-component') === draggedId ? 'translate(10 -10)' : null,
+      );
+    }
+  }
+  expect(renderBody.mock.calls.map(([board]) => board.center.x)).toEqual(Array(10).fill(100));
+  expect(renderPads.mock.calls.map(([board]) => board.center.x)).toEqual(Array(20).fill(100));
+  expect(engine.snapshot()).toBe(snapshot);
+});
+
 test('component_labels_use_scene_text', () => {
   const { engine } = setup();
   add(engine, { ref: 'R1', value: '10 kΩ' });

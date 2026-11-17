@@ -2,6 +2,7 @@
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
 import { snapshot } from '../../../client/src/__tests__/fakes';
+import { useSessionStore } from '../shell/session-store';
 import { useCursorStore } from './cursor-store';
 import { Canvas, type CanvasProps } from './Canvas';
 import type { LayerSpec } from './tools';
@@ -65,6 +66,19 @@ function setup() {
     },
   };
 }
+
+test('layer_without_preview_owner_gets_null_preview', () => {
+  const { renderLayer } = setup();
+  expect(renderLayer).toHaveBeenCalledWith(expect.objectContaining({ preview: null }));
+  try {
+    for (const dx of [1, 2]) {
+      act(() => useSessionStore.getState().setPreview({ owner: 'select', data: { dx, dy: 0 } }));
+    }
+    expect(renderLayer).toHaveBeenCalledTimes(1);
+  } finally {
+    act(() => useSessionStore.getState().setPreview(null));
+  }
+});
 
 test('wheel_zoom_keeps_cursor_point_fixed', () => {
   vi.useFakeTimers();

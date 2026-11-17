@@ -35,8 +35,9 @@ export async function dragComponent(runtime: Runtime, svg: SVGSVGElement, id: st
   const center = before.doc.components.find((component) => component.id === id)?.board?.center;
   if (!matrix || !center) throw new Error('Drag target or scene matrix missing');
   const start = new DOMPoint(center.x, center.y).matrixTransform(matrix);
-  const bounds = svg.getBoundingClientRect();
+  const bounds = svg.parentElement?.getBoundingClientRect();
   if (
+    !bounds ||
     start.x < bounds.left ||
     start.x > bounds.right ||
     start.y < bounds.top ||

@@ -24,8 +24,8 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 - Kaartide järjekord:
   1. [M1-4-1](tasks/M1-4-1.md) žesti ajal bitmap-teisendus (A): **vastu võetud** `09383e4` (proof 4/4, `bb-review-card` läbis). Servapuhver 0,25: pan 57,1 fps, suum 57,8 fps, rahunemine 283,3 ms.
   2. [M1-4-1b](tasks/M1-4-1b.md) vaate muutus ei renderda kesta paneele (A): **vastu võetud** `d126c09` (sh probe-testi CI parandus).
-  3. [M1-4-H](tasks/M1-4-H.md) vormingu versiooni kaitse, täis ketas koopial ja pinge sisestus (B), M1.4 ainus hooldusvoor: järgmine, alus `d126c09`.
-  4. Edasi plaani järjekorras: 3 → 3b → 5 → 6 → 9b → 7 → 8 → 9 → 10 → 11 (ülesanne 2 tingimuslik, 4 liidetud 11-ga; kasutaja otsus 2026-11-17). Kaart kirjutatakse vahetult enne ülesannet.
+  3. [M1-4-H](tasks/M1-4-H.md) vormingu versiooni kaitse, täis ketas koopial ja pinge sisestus (B), M1.4 ainus hooldusvoor: **vastu võetud** `7fb0de2`.
+  4. Järgmine: ülesanne 3 (kitsam lohistuse eelvaade), alus `7fb0de2`. Edasi plaani järjekorras: 3 → 3b → 5 → 6 → 9b → 7 → 8 → 9 → 10 → 11 (ülesanne 2 tingimuslik, 4 liidetud 11-ga; kasutaja otsus 2026-11-17). Kaart kirjutatakse vahetult enne ülesannet.
 - Lahtine arhitektile: 02 §16 uuendamine `R`/`Shift+R` otsuse järgi (O2).
 
 ## Kehtivad otsused, mis pole veel koodis näha

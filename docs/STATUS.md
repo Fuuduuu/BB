@@ -23,7 +23,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 - Tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m1-4/BB`, haru `codex/m1-4`, alus `3953382`.
 - Kaartide järjekord:
   1. [M1-4-1](tasks/M1-4-1.md) žesti ajal bitmap-teisendus (A): **vastu võetud** `09383e4` (proof 4/4, `bb-review-card` läbis). Servapuhver 0,25: pan 57,1 fps, suum 57,8 fps, rahunemine 283,3 ms.
-  2. [M1-4-1b](tasks/M1-4-1b.md) vaate muutus ei renderda kesta paneele (A): järgmine, alus `09383e4`.
+  2. [M1-4-1b](tasks/M1-4-1b.md) vaate muutus ei renderda kesta paneele (A): ülevaatusel, kaart sobib; puudub punkt 0 (probe-testi ajapiir katvusega, haru CI `09383e4`-l punane).
   3. [M1-4-H](tasks/M1-4-H.md) vormingu versiooni kaitse ja täis ketas koopial (B), M1.4 ainus hooldusvoor.
   4. Plaani ülesanded 2–11; kaart kirjutatakse vahetult enne ülesannet.
 - Lahtine arhitektile: 02 §16 uuendamine `R`/`Shift+R` otsuse järgi (O2).

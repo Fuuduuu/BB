@@ -27,7 +27,8 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
   3. [M1-4-H](tasks/M1-4-H.md) vormingu versiooni kaitse, täis ketas koopial ja pinge sisestus (B), M1.4 ainus hooldusvoor: **vastu võetud** `7fb0de2`.
   4. [M1-4-3](tasks/M1-4-3.md) lohistamisel renderdub ainult liigutatav komponent (A): **vastu võetud** `9f25688` (lohistus 23 → 50 fps).
   5. [M1-4-3b](tasks/M1-4-3b.md) suumi rahunemine ilma nõksuta (A): **vastu võetud** `dde0424` (rahunemine 267 → 67 ms). M1.4 jõudluse osa on tehtud.
-  6. Järgmine: [M1-4-5](tasks/M1-4-5.md) komponendi suurus käepidemete ja numbritega (A), alus `dde0424`. Edasi plaani järjekorras: 5 → 6 → 9b → 7 → 8 → 9 → 10 → 11 (ülesanne 2 tingimuslik, 4 liidetud 11-ga; kasutaja otsus 2026-11-17). Kaart kirjutatakse vahetult enne ülesannet.
+  6. [M1-4-5](tasks/M1-4-5.md) komponendi suurus käepidemete ja numbritega (A): **vastu võetud** `8f3d54f`.
+  7. Järgmine: ülesanne 6 (kahe jala joondus), alus `8f3d54f`. Edasi plaani järjekorras: 6 → 9b → 7 → 8 → 9 → 10 → 11 (ülesanne 2 tingimuslik, 4 liidetud 11-ga; kasutaja otsus 2026-11-17). Kaart kirjutatakse vahetult enne ülesannet.
 - Lahtine arhitektile: 02 §16 uuendamine `R`/`Shift+R` otsuse järgi (O2).
 
 ## Kehtivad otsused, mis pole veel koodis näha

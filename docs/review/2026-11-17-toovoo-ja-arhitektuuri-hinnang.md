@@ -1,0 +1,27 @@
+# BB v0.3.0 töövoog ja arhitektuur
+
+17.11.2026 · Testide alus oli põhiharu `9b7ec91`. Ülevaatuse lõpus oli põhiharu `0530585`. Mõlema rakenduse ja ühispakettide tootekood vastas sildile `v0.3.0`. M1.4 esimene jõudlusparandus võeti arendusharus vastu commit’iga `09383e4`.
+
+**Jätkaksin praeguse arhitektuuriga.** Tehnik saab juba foto kalibreerida, komponendi paigutada, jalal pinget mõõta ja sama plaati järgmisel korral avades näitu õiges kohas näha. Ühenduste ja võrkude loomine, skeem ning remondiraport on järgmiste verstapostide töö. [Teekaart](../07-teekaart.md)
+
+## Mis töötab
+
+- **Tehnik saab jalalt jalale liikuda.** Sisestatud mustand kuulub sondipaarile. Järgmisele jalale liikudes on sisend tühi, eelmisele tagasi tulles ilmub selle mustand uuesti. Kustutatud jala asemele sama numbriga loodud uus jalg ei päri vana näitu. [Mõõtepaneeli testid](../../packages/features/measurements/ui/MeasureBlock.test.tsx) · [Brauseri töövood](../../apps/web/e2e/m1-1.spec.ts)
+- **Taasavamine säilitab poolelioleva kaardistuse.** Brauserikatses püsis 4,98 V näit pärast sulgemist ja taasavamist jala U1.3 küljes ning mõõtmisajaloos. Eraldi katses säilisid suum ja vaate asukoht. Salvestaja lõpetab poolelioleva kirjutuse enne projekti sulgemist ja hoiab ebaõnnestunud kirjutuse andmed korduskatseks alles. [Salvestuse testid](../../packages/engine/src/save-coordinator.test.ts)
+- **Moodulil on selge töökoht.** Mõõtmiste moodul deklareerib oma käsud ja andmed. Selle kasutajaliides lisab registri kaudu mõõtepaneeli, ajaloo ja lõuendil kuvatavad näidud. Sama reeglit saavad kasutada nii brauseri- kui töölauaversioon. [Mõõtmiste mootor](../../packages/features/measurements/engine/index.ts) · [Mõõtmiste kasutajaliides](../../packages/features/measurements/ui/index.tsx)
+
+## Mida muudaksin
+
+| Koht | Praegune käitumine ja mõju | Ettepanek |
+| --- | --- | --- |
+| Pinge sisestamine | Käivitatud parser luges `3 5 V` väärtuseks **35 V**. Praegune andmereegel käsib kõik tühikud eemaldada. Üks ekslik tühik jätab ajalukku usutava arvu. | Lubada tühikut ühiku ees, näiteks `5 mV`. Kahe numbri vahele jäänud tühiku korral jätta sisend alles ja paluda täpsustada. See vajab andmereegli otsust. [Parser](../../packages/domain/src/measure/reading.ts) · [Andmereegel](../04-andmemudel.md) |
+| Näidu tõlgendamine plaadil | Lõuend kuvab punase sondi jala juures viimase sobiva näidu. Kui punane on 5 V ja must 12 V siinil, on mõõdetud **−7 V** õige. Silt üksi ei ütle, kus must sond oli. Sondipaari näeb juba jala mõõtmiste loendis. | Näidu juurest võiks ühe toiminguga näha just selle salvestuse punast ja musta sondi ning toiteolekut. Määramata must sond tuleb nii ka nimetada. Viide konkreetsele mõõtmisele on juba olemas. [Näidu valik](../../packages/domain/src/measure/pin-readings.ts) · [Lõuendisilt](../../packages/features/measurements/ui/layers/ReadingLabels.tsx) · [Jala mõõtmised](../../packages/features/measurements/ui/PinMeasurements.tsx) |
+| Varukoopia valimine | „Salvesta mujale…“ koopia ja algfail jagavad projekti tunnust. Taastamisdialoog koondab nende varukoopiad ja valib vaikimisi uusima. Loendis on aeg ja koopia liik. Algfaili kaardilt taastades võib avaneda teise tööfaili seis. Taastamine loob uue faili. | Eelistada avatud kaardi faili uusimat varukoopiat ning näidata teiste lähtefailide taastepunkte eristatavalt. Vastuvõtuks piisab kahest sama päritolu failist, milles on eri mõõtenäidud. [Koopia loomine](../../packages/ui/src/app/use-workbench.ts) · [Varukoopiate loend](../../apps/desktop/src-tauri/src/storage/backup/mod.rs) · [Taastamisdialoog](../../packages/ui/src/shell/RestoreDialog.tsx) |
+
+## Arenduse järjekord
+
+1. **M1.4 ajal prooviksin üht tervet remonditööd oma tiheda plaadi fotoga.** Leia kaks kõrvutist komponenti, mõõda ühise musta sondiga kolm jalga, sulge projekt ja leia taasavamisel viimane sondipaar. V0.3.0 sünteetilises töölauakatses läbis täielikult 10 sammu 12-st. Osaliseks jäid Explorerist foto lohistamine ja viitejoone kontroll. Katses nähti ka pika väärtuse kattumist naaberkorpusega. See on M1.4 tiheduse ülesandes juba sees. [Töölauakatse](../plans/M1-3-uleandmine.md) · [M1.4 plaan](../plans/M1-4-suurus-joondus-joudlus.md)
+2. **Jõudlust hindaksin ka žesti lõpus.** M1.4 kaardil dokumenteeritud suure plaadi Tauri katses paranes suum 7,3-lt 57,8 kaadrini sekundis. Žestile järgnenud sekundi pikim kaadrivahe oli endiselt 283 ms. Järgmise optimeerimise mõju tasub mõõta selles faasis. [M1-4-1 mõõtmised](../tasks/M1-4-1.md)
+3. **M2.1 alguses prooviksin moodulipiiri päris toiminguga.** Praegu oskab ühine liigutamiskäsk liigutada vaid komponente ja valiku kehtivust kontrollib kest. Kinnitatud ADR-005 määrab neile reeglitele uue koha. Kui ühendused on olemas, kustuta ühendatud ja mõõdetud jalgadega komponent ning võta kustutamine tagasi. Üks katse näitab, kas ühenduse ots, mõõtmisajalugu ja taastatud komponent püsivad kooskõlas. [Ühised käsud](../../packages/engine/src/items.ts) · [ADR-005](../adr/ADR-005-tuuma-ja-moodulite-piir.md)
+
+**Kontrollitud selles ülevaatuses.** Põhiharu rakendusega läbisid Chromiumis kõik seitse M1.1 töövootesti. Salvestaja, mõõtepaneeli ning moodulite registreerimise neljas testifailis läbis 45 testi. Pingesisendi näited prooviti tegeliku parseriga. Varukoopia valiku hinnang põhineb Rusti ja kasutajaliidese koodil. Töölaua jõudlusarvud pärinevad M1.4 kaardilt. Oma plaadi ja füüsilise multimeetriga katse on veel tegemata.

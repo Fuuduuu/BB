@@ -152,12 +152,14 @@ Rajad: ülesanded 4, 11 ja H on **rada B** (jõudluseelarve, vastuvõtt ja salve
 9b. **Leia komponent valikut muutmata** ([BenchBeepi disainivõrdlus](../review/2026-11-17-benchbeepi-disainivordlus.md), 2026-11-17).
    - „Plaadil“ loendi reale osutamine või klaviatuuriga reale liikumine näitab plaadil komponendi ümber ajutist kontuuri. Kontuur erineb valikust joone kuju poolest. Valik, vaade, mõõtmise mustand ja dokument ei muutu. Klõps valib komponendi nagu praegu.
    - Omaduste päis näitab valitud objekti tähist: „Omadused · J29“ või „Omadused · J29.15“. Tähis uueneb samas kohas ja on loetav 280 px laiuses paneelis.
+   - Plaadil oleva näidu juurest saab ühe toiminguga näha selle mõõtmise sondipaari ja toiteoleku (näiteks −7 V: punane 5 V siinil, must 12 V siinil). Üldvaates jääb näit lühikeseks ([töövoo hinnang](../review/2026-11-17-toovoo-ja-arhitektuuri-hinnang.md)).
    - Testid:
      - `list_row_hover_previews_component_without_selecting`
      - `keyboard_row_focus_previews_component`
      - `preview_keeps_measure_draft_and_view`
      - `leaving_row_clears_preview`
      - `properties_header_shows_selected_ref`
+     - `reading_reveals_probe_pair_and_power`
 
 **Osa D · Tihedus**
 
@@ -171,11 +173,12 @@ Rajad: ülesanded 4, 11 ja H on **rada B** (jõudluseelarve, vastuvõtt ja salve
 11. **E2e, jõudluseelarve, suitsukatse ja väljalase** (rada B).
     - `apps/web/e2e/full-flow.spec.ts`: 02 § 16 sammud 1–5 sünteetilise plaadifotoga.
     - `perf.spec.ts`, `v0.3.0` näidisfail, kasutaja suitsukatse ja versioon `v0.4.0`.
+    - Kasutaja katse oma tiheda plaadi fotoga (Codex sinu fotosid ei ava): mõõda sama musta sondiga kolm jalga, sulge projekt ja ava see järgmisel päeval. Tõend on see, kas ekraanilt saab kohe vastuse küsimusele „mida ma mõõtsin ja mille suhtes?“ ([töövoo hinnang](../review/2026-11-17-toovoo-ja-arhitektuuri-hinnang.md)).
     - Versioon ühest allikast: `Cargo.toml` on `0.0.0`, seepärast on faili `meta.app_version` ja diagnostika kokkuvõte (`use-workbench-host.ts`) alati `0.0.0` (koodi ülevaatus 2026-11-17).
 
 **Osa F · Hooldus**
 
-H. **Vormingu versiooni kaitse ja „Salvesta mujale…“ täis kettaga** ([M1-4-H](../tasks/M1-4-H.md), rada B, koodi ülevaatus 2026-11-17). Rust ei kirjuta dokumenti, mille vorming on tema konstandist uuem, ja tooling-test võrdleb Rusti ja TS-i konstanti. Täis sihtketas annab koopial vea, mitte fotodeta päästekoopia. See on M1.4 ainus hooldusvoor.
+H. **Vormingu versiooni kaitse ja „Salvesta mujale…“ täis kettaga** ([M1-4-H](../tasks/M1-4-H.md), rada B, koodi ülevaatus 2026-11-17). Rust ei kirjuta dokumenti, mille vorming on tema konstandist uuem, ja tooling-test võrdleb Rusti ja TS-i konstanti. Täis sihtketas annab koopial vea, mitte fotodeta päästekoopia. Pinge sisestus lükkab numbrite vahel oleva tühiku tagasi (`3 5 V` ei salvestu kui 35 V; [töövoo hinnang](../review/2026-11-17-toovoo-ja-arhitektuuri-hinnang.md)). See on M1.4 ainus hooldusvoor.
 
 ## M1.4 vastuvõtt: tingimus → tõend
 
@@ -192,12 +195,14 @@ H. **Vormingu versiooni kaitse ja „Salvesta mujale…“ täis kettaga** ([M1-
 ## Mis jääb järgmistesse plaanidesse
 
 - **M2:** ühendused ja rajad, skeem, piiks, võrgud ja rollid.
+  - ADR-005 teostuse vastuvõtukatse M2.1-s: kustuta mõõdetud ja ühendatud komponent ning võta kustutamine tagasi; komponent, ühenduse ots ja mõõtmisajalugu peavad jääma kooskõlla ([töövoo hinnang](../review/2026-11-17-toovoo-ja-arhitektuuri-hinnang.md)).
 - **Hiljem:**
   - foto vahetus ja teine foto koos joondusega (`toBoard`);
   - PNG-ekspordi funktsioon ja tootmise CORS (M4).
   - avalehe sondimotiiv algse BenchBeepi märgi järgi vasevärvis, kujunduskatse heledas ja tumedas teemas ([disainivõrdlus](../review/2026-11-17-benchbeepi-disainivordlus.md); M4.3).
 - **Väiksemad lahtised asjad (M1.3-st):**
   - katkenud impordi integratsioonitest (järgmine raja B salvestuskaart);
+  - taastamisdialoog eelistab selle faili varukoopiaid, mille kaardilt taastamine avati, ja näitab iga taastepunkti juures, kas see on sama fail või teine koopia. Vajab välja `RecentProject.fileId` (lepingu muudatus), seepärast järgmises raja B salvestuskaardis. Andmed ei kao, sest taastus kirjutatakse uude faili ([töövoo hinnang](../review/2026-11-17-toovoo-ja-arhitektuuri-hinnang.md));
   - `photo_orientation` tavaliseks mooduliks järgmisel Rusti puudutusel.
 - **Koodi ülevaatusest 2026-11-17 (`main` `e4ca06a`), märkusteks järgmistele kaartidele:**
   - kirjutuskaitstud projektil puudub märguanne ja lõuendi tegevused eiravad käsu tulemust (`SelectTool.ts`, `hits.ts`, `PlacementSection.tsx` klahvid), nii et komponent hüppab selgituseta tagasi; hiljemalt enne näidisprojekti (M4.3);

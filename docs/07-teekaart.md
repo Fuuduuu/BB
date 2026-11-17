@@ -68,6 +68,8 @@ M0 ehitab **ühe päris mooduli**, `components`, läbi kõigi kolme osa: kompone
 M1 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja esimene läbiv töövoog ei oota ära kõiki korpusi.
 
 ### M1.1 · Komponent fotol ja mõõtmine
+**Olek: valmis ja avaldatud** versioonina `v0.1.1` (2026-11-10). Tõendid: [plaani vastuvõtutabel](plans/M1-1-louend-ja-mootmine.md#m11-vastuvõtt-tingimus--tõend) ja kasutaja suitsukontroll 11/11 ([STATUS](STATUS.md)).
+
 _M1.1 töötab virtuaalsel tööpinnal ilma fotota ([03 § 7.1](03-arhitektuur.md#71-koordinaadid)); foto tuleb M1.2-s. Lõuendi stseeniteisendus (`PhotoRef.transform`, M1.1-s identne) ja tekstide vastuteisendus on M1.1-s olemas, et M1.2 ei kirjutaks lõuendit ümber._
 
 **Sisu:**
@@ -83,13 +85,15 @@ _M1.1 töötab virtuaalsel tööpinnal ilma fotota ([03 § 7.1](03-arhitektuur.m
   - `Alt+↓` järgmisele jalale.
 
 **Valmis kui:**
-- [ ] **Esimene läbiv töövoog** päris äpis: loo projekt → lisa komponent → vali jalg → salvesta mõõtmine → sulge → ava uuesti. Mõõtmine on alles samal jalal.
-- [ ] Jalale kirjutatud, aga salvestamata väärtus ei salvestu teisele jalale minnes (`Alt+↓` või klõps); `Tab` ei muuda Kohta; tagasi tulles on väärtus alles ([03 § 5](03-arhitektuur.md#5-olek-kolm-eraldi-hoidlat)).
-- [ ] Musta sondi ei vali äpp kasutaja eest; GND on ainult ühe klõpsuga soovitus.
-- [ ] Uue komponendi väärtus ja märgistus on tühjad.
-- [ ] Lohistamine `Esc`-iga või `pointercancel`-iga ei jäta dokumenti, ajalukku ega salvestusse jälge.
+- [x] **Esimene läbiv töövoog** päris äpis: loo projekt → lisa komponent → vali jalg → salvesta mõõtmine → sulge → ava uuesti. Mõõtmine on alles samal jalal.
+- [x] Jalale kirjutatud, aga salvestamata väärtus ei salvestu teisele jalale minnes (`Alt+↓` või klõps); `Tab` ei muuda Kohta; tagasi tulles on väärtus alles ([03 § 5](03-arhitektuur.md#5-olek-kolm-eraldi-hoidlat)).
+- [x] Musta sondi ei vali äpp kasutaja eest; GND on ainult ühe klõpsuga soovitus. _(Soovitus on M1.1-s kaetud testisisendiga; päris GND soovitus tuleb võrgurollidega M2.1-s.)_
+- [x] Uue komponendi väärtus ja märgistus on tühjad.
+- [x] Lohistamine `Esc`-iga või `pointercancel`-iga ei jäta dokumenti, ajalukku ega salvestusse jälge.
 
 ### M1.2 · Foto ja kalibreerimine
+**Olek: valmis ja avaldatud** versioonina `v0.2.0` (2026-11-14). Tõendid: [plaani vastuvõtutabel](plans/M1-2-foto-ja-kalibreerimine.md#m12-vastuvõtt-tingimus--tõend) ja kaardi [M1-2-9](tasks/M1-2-9.md) ülevaatus.
+
 **Sisu:**
 - terviklik foto import Rustis (failist ja kleepimisel baitidest, EXIF, kuvamisvariant, `pcbk://photo`);
 - nähtavus ja kontrast, pööramine ja peegeldamine kogu stseenile;
@@ -101,22 +105,24 @@ _M1.1 töötab virtuaalsel tööpinnal ilma fotota ([03 § 7.1](03-arhitektuur.m
 - foto ekspordi proov PNG-sse (kuidas fotobaidid frontendini jõuavad) ja otsus, kas töölaua suitsukontrolli viis põhivoogu automatiseeritakse.
 
 **Valmis kui:**
-- [ ] Esimene komponent on paigas kõige rohkem 3 tegevusega pärast foto valimist.
-- [ ] Portreefoto, millel on EXIF-pööre, on lõuendil ja ekspordis ühtemoodi õigetpidi.
-- [ ] Foto pööramine ja peegeldamine ei muuda jalgade asendit foto suhtes (invariantsustest kõigi 8 teisendusega).
-- [ ] 48 MP foto avaneb ilma, et kuvatakse üle 12 MP pilti; „Salvesta mujale…“ koopia avaneb koos originaalfotoga.
-- [ ] Katkenud foto import ei jäta dokumenti viidet puuduvale fotole.
-- [ ] Jõudlusproovi tulemus on kirja pandud: kas SVG kannab välja või kavandatakse jalgadele Canvas-kiht.
-- [ ] Taastatud ja algne sama `project_id`-ga fail ei sega teineteise varukoopiaid (eri `file_id`); dokumendikoopia taastub ainult oma faili aluse peale.
-- [ ] Foto lohistamine avalehele avab uue plaadi selle fotoga.
+- [x] Esimene komponent on paigas kõige rohkem 3 tegevusega pärast foto valimist.
+- [x] Portreefoto, millel on EXIF-pööre, on lõuendil ja ekspordis ühtemoodi õigetpidi.
+- [x] Foto pööramine ja peegeldamine ei muuda jalgade asendit foto suhtes (invariantsustest kõigi 8 teisendusega).
+- [x] 48 MP foto avaneb ilma, et kuvatakse üle 12 MP pilti; „Salvesta mujale…“ koopia avaneb koos originaalfotoga.
+- [x] Katkenud foto import ei jäta dokumenti viidet puuduvale fotole. _(Protsessi katkestamise integratsioonitest on lahtine, vt [M1.4 plaan](plans/M1-4-suurus-joondus-joudlus.md#mis-jääb-järgmistesse-plaanidesse).)_
+- [x] Jõudlusproovi tulemus on kirja pandud: kas SVG kannab välja või kavandatakse jalgadele Canvas-kiht.
+- [x] Taastatud ja algne sama `project_id`-ga fail ei sega teineteise varukoopiaid (eri `file_id`); dokumendikoopia taastub ainult oma faili aluse peale.
+- [x] Foto lohistamine avalehele avab uue plaadi selle fotoga.
 
 ### M1.3 · Korpuste teek
+**Olek: valmis ja avaldatud** versioonina `v0.3.0` (2026-11-17). Tegelik sisu oli laiem (tööpind, valik ja mõõtmise loetavus): [plaan ja vastuvõtutabel](plans/M1-3-toopind-ja-korpused.md#m13-vastuvõtt-tingimus--tõend). Ehitaja sünteetiline suitsukatse läbis 10/12 täielikult; kasutaja oma fotoga kontroll jäi vahele ([STATUS](STATUS.md)).
+
 **Sisu:** kõik ~40 korpust prototüübist (samad arvud), sh **punktkomponendid** (testpunkt, via, padjand, ava), ja korpuse vahetus koos jalgade vastavusega ([04 › Kustutamise reeglid](04-andmemudel.md#kustutamise-reeglid)). Via on vajalik M2.1 kihireegli jaoks.
 
 **Valmis kui:**
-- [ ] SOIC-8 jalg 1 on (−2,775; −1,905) mm ja jalg 8 (2,775; −1,905) mm. QFP-44 jalg 12 on alumisel küljel (ühiktest).
+- [x] SOIC-8 jalg 1 on (−2,775; −1,905) mm ja jalg 8 (2,775; −1,905) mm. QFP-44 jalg 12 on alumisel küljel (ühiktest).
   SOIC-8 x-koordinaadi absoluutväärtus 2,775 mm tuleb prototüübi `gSop` valemist `3,9 / 2 + 1,55 / 2 + 0,05`.
-- [ ] SOIC-8 → SOIC-14 vahetus hoiab jalad 1–8 seotuna (sama `uid`); SOIC-14 → SOIC-8 küsib kinnitust ja loetleb kaduvate jalgade mõju; nende jalgade mõõtmised muutuvad ajaloolisteks. SOIC-8 → SOIC-14 tagasi ei aktiveeri vanu mõõtmisi (uus `uid`), aga `Ctrl+Z` aktiveerib.
+- [x] SOIC-8 → SOIC-14 vahetus hoiab jalad 1–8 seotuna (sama `uid`); SOIC-14 → SOIC-8 küsib kinnitust ja loetleb kaduvate jalgade mõju; nende jalgade mõõtmised muutuvad ajaloolisteks. SOIC-8 → SOIC-14 tagasi ei aktiveeri vanu mõõtmisi (uus `uid`), aga `Ctrl+Z` aktiveerib.
 
 ### M1.4 · Suurus ja joondus
 **Sisu:** suuruse muutmine käepidemetega ja numbritega, kahe jala joondus, oma jalad, jõudluseelarve, paremklõpsu kontekstimenüü baas ([06 › Hiir ja puude](06-kasutajaliides.md#hiir-ja-puude)): komponent (pööra, pool, dubleeri, kustuta), jalg (mõõda, nimeta, NC), tühi ala (lisa komponent siia); hilisemad osad lisavad oma kirjed.

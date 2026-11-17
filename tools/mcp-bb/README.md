@@ -40,6 +40,6 @@ Server ootab sisendit stdin-ist, nii et see käsk jääb lihtsalt ootama (`Ctrl+
 
 ## Piirangud
 
-- `python` peab olema PATH-is. Praegu tuleb see Codexi kaasa pandud Pythonist. Kui Codexi uuendus selle eemaldab, paigalda eraldi Python 3.10+ ja server töötab muutmata kujul edasi.
+- `python` (3.10+) peab olema PATH-is. Arendusmasinas on selleks eraldi paigaldatud Python; versioon on [STATUS-e arenduskeskkonna jaotises](../../docs/STATUS.md#arenduskeskkond).
 - Server loeb ainult repo faile ja käivitab `git status` ning `git log` käske. Võrku see ei kasuta.
-- Kui rakenduse kood tekib (M0+), saab samasse serverisse lisada tööriistad testide ja kontrollide jaoks. AI ligipääs päris projektiandmetele on eraldi teema ([03 § 13](../../docs/03-arhitektuur.md#13-ai-liides-hilisem)).
+- Rakenduse testid ja kontrollid käivad `pnpm` käskudega (`pnpm check`, `pnpm bb-review-card <ID>`), mitte selle serveri kaudu. AI ligipääs päris projektiandmetele on eraldi teema ([03 § 13](../../docs/03-arhitektuur.md#13-ai-liides-hilisem)).

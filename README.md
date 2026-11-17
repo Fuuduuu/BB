@@ -15,7 +15,7 @@ Arhitekti, ehitaja ja kasutaja vastutused on kirjas [teekaardi rollijaotuses](do
 | [docs/](docs/README.md) | ehituse dokumentatsioon: põhimõtted, kasutaja teekond, arhitektuur, andmemudel, moodulid, kasutajaliides, teekaart |
 | [prototype/](prototype/) | veebiprototüüp (üks HTML-fail), mille põhjal töövoog on läbi proovitud |
 | [tools/mcp-bb/](tools/mcp-bb/README.md) | ühised repo lugemis- ja dokumendikontrolli tööriistad AI-dele; kasutus [WORKFLOW-s](docs/WORKFLOW.md#bb-mcp-ühised-repo-tööriistad) |
-| `apps/desktop/`, `apps/web/`, `packages/` | töölauarakendus (Tauri), brauseriversioon ja ühispaketid; [ADR-003 v2](docs/adr/ADR-003-frontend-backend.md) ja [ADR-004](docs/adr/ADR-004-kaks-vaadet-ja-uhendused.md) järgi. M0 on avaldatud versioonina `v0.1.0` (GitHubi Release koos `.msi`-ga) |
+| `apps/desktop/`, `apps/web/`, `packages/` | töölauarakendus (Tauri), brauseriversioon ja ühispaketid; [ADR-003 v2](docs/adr/ADR-003-frontend-backend.md) ja [ADR-004](docs/adr/ADR-004-kaks-vaadet-ja-uhendused.md) järgi. Väljalasked on GitHubi Release'ides koos `.msi`-ga; viimane versioon on [STATUS-es](docs/STATUS.md) |
 
 ## Rakenduse käivitamine arenduses
 

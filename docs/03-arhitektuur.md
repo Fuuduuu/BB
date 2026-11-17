@@ -110,6 +110,8 @@ pcb-kaardistaja/
 
 Iga võimalus on kaust `packages/features/<nimi>/`. Selles on kolm osa: `contract.ts` (avalik leping), `engine/` (backendi pool) ja `ui/` (frontendi pool). Mõlemad pooled kannavad sama `id`-d. Moodul ei muuda kesta ega mootori koodi: ta annab kaastöid, mille registrid kokku koguvad.
 
+Allolev näide on sihtkuju. Kommentaariga „plaanis“ väljad lisanduvad koos vastava mooduliga; praegu koodis olevad liidesed on genereeritud kokkuvõtetes [engine](api/engine.md) ja [ui-shell-state](api/ui-shell-state.md). Migratsioonid on ühes kohas paketis `@pcbk/domain`, mitte moodulis.
+
 ```ts
 // packages/engine — backendi pool
 export interface EngineModule {
@@ -118,9 +120,8 @@ export interface EngineModule {
   owns?: DocKey[];                     // BoardDoc väljad, mille omanik see moodul on
   commands?: CommandSpec<any>[];       // tagasivõetavad muudatused
   derive?: DeriveSpec[];               // arvutatud andmed, mida moodul lisab hetktõmmisesse (nt hinnangud)
-  importers?: ImporterSpec[];          // failitüübid, mida „Ava“ tunneb (parsimine + kontroll)
-  migrations?: Migration[];
-  onEvent?: EventHandlerSpec[];        // kõrvalmõjud; dokumenti muudab ainult käsk
+  importers?: ImporterSpec[];          // plaanis: failitüübid, mida „Ava“ tunneb (parsimine + kontroll)
+  onEvent?: EventHandlerSpec[];        // plaanis: kõrvalmõjud; dokumenti muudab ainult käsk
 }
 
 // packages/ui — frontendi pool
@@ -130,17 +131,17 @@ export interface UiModule {
   tools?: ToolSpec[];                  // lõuendi tööriistad
   canvasLayers?: LayerSpec[];          // lõuendi kihid, z-järjekord
   onSessionReset?(): void;             // mooduli seansi oleku lähtestamine
-  schematicLayers?: LayerSpec[];
+  schematicLayers?: LayerSpec[];       // plaanis (M2.3)
   navigatorTabs?: PanelSpec[];
   contextSections?: ContextSectionSpec[];
   contextPinned?: PinnedSpec[];
   bottomBar?: SlotSpec[];
   topBar?: SlotSpec[];
-  exporters?: ExporterSpec[];          // ekspordi akna valikud
-  guideSteps?: GuideStepSpec[];        // „Järgmine samm“ read
-  progressMetrics?: ProgressMetricSpec[];
-  settings?: SettingSpec[];
-  keymap?: KeyBinding[];
+  keys?: KeySpec[];                    // mooduli kiirklahvid; kesta klahvid on reserveeritud
+  exporters?: ExporterSpec[];          // plaanis: ekspordi akna valikud
+  guideSteps?: GuideStepSpec[];        // plaanis: „Järgmine samm“ read
+  progressMetrics?: ProgressMetricSpec[];  // plaanis
+  settings?: SettingSpec[];            // plaanis
 }
 
 export interface ContextSectionSpec {
@@ -331,7 +332,7 @@ Komponentide moodul hoiab paigutuse režiimi oma seansihoidlas. Paigutustöörii
 - `HitItem.target` määrab klõpsuga valitava objekti. `HitItem.drag` määrab lohistamise eelvaate omaniku ja vabastamisel tehtava toimingu. Tähise lohistamine saadab ühe `components.setLabelOffset` käsu. Revisjoni muutus katkestab aktiivse žesti, eemaldab eelvaate ja jätab käsu saatmata.
 - **Jõudluseelarve** (keskmine sülearvuti, kuni 12 MP kuvatav foto): 300 komponenti, 3000 jalga ja 1000 rada; pan ja suum 60 fps; lohistamine ≥ 45 fps; projekti avamine < 1,5 s. Seda kontrollitakse kahel viisil:
   - **varajane proov päris Tauri aknas** tiheda sünteetilise plaadiga (siltide, valiku ja fotoga) M1.2-s;
-  - e2e jõudlustest `tests/e2e/perf.spec.ts`.
+  - e2e jõudlustest `apps/web/e2e/perf.spec.ts`.
 
   Kui eelarve ei pea, viiakse jalgade kiht Canvas-elemendile (otsus M1.4 lõpus).
 
@@ -466,20 +467,21 @@ Mootor räägib välismaailmaga ainult portide kaudu. Iga port on liides paketis
 
 ```ts
 export interface ProjectRepository {
-  create(req: CreateReq): Promise<OpenedProject>;
-  open(path: string): Promise<OpenedProject>;            // session, projectId, doc, view, photosMeta, formatVersion, readOnly
+  create(req: CreateProjectReq): Promise<OpenedProject>;
+  open(path: string): Promise<OpenedProject>;            // session, projectId, fileId, path, doc, view, formatVersion, readOnly, savedAt
   save(req: SaveReq): Promise<void>;                     // base_rev võrdlusega
   saveView(session: string, view: ViewState): Promise<void>;
-  copy(req: CopyReq): Promise<OpenedProject>;
+  copy(req: CopyProjectReq): Promise<OpenedProject & { fromMemory: boolean }>;
   backupFull(session: string, reason: 'migration'): Promise<void>;   // päevane täiskoopia tehakse avamisel hostis
   backups(projectId: string): Promise<BackupInfo[]>;
   restore(req: RestoreReq): Promise<OpenedProject>;
   close(session: string): Promise<void>;
 }
 export interface PhotoStore {
-  importPath(session: string, path: string): Promise<PhotoRef>;
-  importBytes(session: string, bytes: ArrayBuffer): Promise<PhotoRef>;
-  url(id: string, variant: 'display' | 'original'): string;   // pcbk://photo/…
+  importPath(session: string, path: string, id: string): Promise<PhotoRef>;
+  importBytes(session: string, bytes: ArrayBuffer, id: string, name: string): Promise<PhotoRef>;
+  prune(session: string, keep: string[]): Promise<void>;       // viitamata fotod kustutatakse avamisel
+  url(session: string, id: string, variant: 'display' | 'original'): string;   // pcbk://photo/…
 }
 export interface Clock { now(): string }
 export interface IdGen { newId(prefix: string): string }
@@ -500,7 +502,7 @@ export interface IdGen { newId(prefix: string): string }
   - iga paneeli ja kihi ümber: „Selle osa kuvamisel tekkis viga. [Proovi uuesti]“;
   - kogu äpi juures: „Midagi läks valesti. [Salvesta koopia ja lae uuesti] [Salvesta diagnostika…]“. Esimene teeb `ProjectService.copy` ja laeb vaate uuesti.
 - **Diagnostika** (`log_export`) salvestab logid ja äpi versiooni kasutaja valitud faili. Midagi ei saadeta automaatselt.
-- Kõik tekstid on failis `packages/ui/shell/i18n/et.ts` (võtmed mooduli kaupa), nii et inglise keele saab hiljem lisada.
+- Kesta tekstid on failis `packages/ui/src/shell/i18n/et.ts` ja iga mooduli tekstid tema enda failis `packages/features/<moodul>/ui/i18n/et.ts`, nii et inglise keele saab hiljem lisada.
 
 ## 12. Testimine ja kvaliteediväravad
 

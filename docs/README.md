@@ -36,6 +36,8 @@ Kui BB MCP on seansis saadaval, kasuta jaotiste lugemiseks ja ühisteks kontroll
 | [tasks/](tasks/README.md) | ühe ülesande kaart koos otsuste, testide ja üleandmisega | arhitekt kirjutab, ehitaja täidab üleandmise |
 | [api/](api/) | koodist genereeritud avalike liideste kokkuvõte (`pnpm api`), ära muuda käsitsi | tööriist |
 
+Verstapostide koondüleandmised: [M0](plans/M0-uleandmine.md), [M1.1](plans/M1-1-uleandmine.md), [M1.2](plans/M1-2-uleandmine.md) ja [M1.3](plans/M1-3-uleandmine.md). [M1 ja edasiste tööde ülevaatuspakett](review/2026-11-09-m1-ja-edasine-ulevaatuspakett.md) on ajalooline lähtematerjal. Neid ei loeta vaikimisi.
+
 Otsused: [ADR-002 TypeScript + Tauri](adr/ADR-002-typescript-tauri.md) (kehtiv), [ADR-003 frontend ja backend eraldi](adr/ADR-003-frontend-backend.md) (kehtiv), [ADR-004 Plaat ja Skeem ühel mudelil](adr/ADR-004-kaks-vaadet-ja-uhendused.md) (kehtiv), [ADR-001 Flutter](adr/ADR-001-keel-ja-platvorm.md) (asendatud).
 
 Kasutaja tellitud [Codexi iseseisev tervikettepanek](review/2026-11-07-codex-tervikplaan.md): foto → komponendid → muudetav skeem → mõõtmised → märgistatud rajad. Uuring ja soovitus; ei asenda vastuvõetud otsuseid ega muuda 01–08 automaatselt.

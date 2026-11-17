@@ -41,8 +41,8 @@ DEFAULT_STALE_TERMS = [
 VERDICTS = ["JAH", "JAH, PÄRAST PARANDUSI", "EI"]
 
 INSTRUCTIONS = (
-    "BB is a local PCB mapping and repair desktop app (TypeScript + Tauri), currently in the "
-    "documentation stage. Documents are in Estonian. Start with bb_status. For a build task with a "
+    "BB is a local PCB mapping and repair desktop app (TypeScript + Tauri) in active development; "
+    "the live state is docs/STATUS.md. Documents are in Estonian. Start with bb_status. For a build task with a "
     "card, call bb_task with its id: the card and its listed sections are all you need to read. "
     "Otherwise read only the sections you need with bb_outline and bb_read_section. Run "
     "bb_check_docs after editing docs. External reviewers file findings with bb_submit_review."

@@ -111,7 +111,7 @@ Rajad: ülesanded 4, 11 ja H on **rada B** (jõudluseelarve, vastuvõtt ja salve
 3b. **LOD-rahunemise skriptikulu** (M1-4-1 profiil). Pärast LOD-taimerit renderdab React kõik kihid uue `lodZoom`-iga: ühe suumi järel 243 ms Script. LOD-muutus peab renderdama ainult kihte ja komponente, mille väljund sõltub LOD-lävedest. Näiteks muutuvad jalanumbrid, kui lühema külje pool ületab 7 või 14 px; kered ei muutu. Mõõt on rahunemise pikim kaader enne/pärast.
 4. **Kordusmõõtmine ja `perf.spec.ts`** (rada B).
    - Sama generaator ja Tauri proov nagu M1-2-7; tulemus tabelina enne/pärast.
-   - `tests/e2e/perf.spec.ts` (03 § 7.3) jääb regressioonikaitseks.
+   - `apps/web/e2e/perf.spec.ts` (03 § 7.3) jääb regressioonikaitseks.
    - Arhitekt otsustab, kas jalad lähevad Canvas'ele.
    - Žestifaasi Script enne ja pärast M1-4-1b (algprofiilis 35 ms ühe rattasündmuse kohta).
    - Mõõda samas proovis `project_open` ja `project_save` kestus. Need käsud on sünkroonsed ja jooksevad Tauri peaniidis koos täiskoopiaga (päeva esimene avamine, salvestus pärast foto lisamist). Kui kestus ületab 100 ms, tuleb eraldi kaart käskude viimiseks `spawn_blocking`-ule nagu fotoimpordil (koodi ülevaatus 2026-11-17, mõõtmata).
@@ -159,7 +159,7 @@ Rajad: ülesanded 4, 11 ja H on **rada B** (jõudluseelarve, vastuvõtt ja salve
 **Osa E · Vastuvõtt**
 
 11. **E2e, jõudluseelarve, suitsukatse ja väljalase** (rada B).
-    - `tests/e2e/full-flow.spec.ts`: 02 § 16 sammud 1–5 sünteetilise plaadifotoga.
+    - `apps/web/e2e/full-flow.spec.ts`: 02 § 16 sammud 1–5 sünteetilise plaadifotoga.
     - `perf.spec.ts`, `v0.3.0` näidisfail, kasutaja suitsukatse ja versioon `v0.4.0`.
     - Versioon ühest allikast: `Cargo.toml` on `0.0.0`, seepärast on faili `meta.app_version` ja diagnostika kokkuvõte (`use-workbench-host.ts`) alati `0.0.0` (koodi ülevaatus 2026-11-17).
 

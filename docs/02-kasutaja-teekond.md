@@ -361,7 +361,7 @@ CSV formaat: eraldaja `;`, kümnendkoma, UTF-8 BOM (avaneb eestikeelses Excelis 
 
 ## 16. Vastuvõtustsenaarium (e2e-test „Plaat algusest lõpuni“)
 
-V1 on valmis siis, kui see stsenaarium läheb päris äpis läbi ilma terminali, käsitsi failide muutmise ja AI-ta. Sama stsenaarium on automaatne Playwrighti test (`tests/e2e/full-flow.spec.ts`), mis kasutab näidisplaadi fotot.
+V1 on valmis siis, kui see stsenaarium läheb päris äpis läbi ilma terminali, käsitsi failide muutmise ja AI-ta. Sama stsenaarium on automaatne Playwrighti test (`apps/web/e2e/full-flow.spec.ts`), mis kasutab näidisplaadi fotot.
 
 1. Ava äpp, lohista foto avalehele → töölaud avaneb, fotoga.
 2. Kalibreeri plaadi laiusega 76 mm → kiip näitab ±0,5 % täpsusega õiget px/mm väärtust.

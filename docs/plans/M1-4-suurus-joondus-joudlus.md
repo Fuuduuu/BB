@@ -149,6 +149,16 @@ Rajad: ülesanded 4, 11 ja H on **rada B** (jõudluseelarve, vastuvõtt ja salve
      - `escape_closes_menu_without_change`
      - `shift_f10_opens_menu_for_selection`
 
+9b. **Leia komponent valikut muutmata** ([BenchBeepi disainivõrdlus](../review/2026-11-17-benchbeepi-disainivordlus.md), 2026-11-17).
+   - „Plaadil“ loendi reale osutamine või klaviatuuriga reale liikumine näitab plaadil komponendi ümber ajutist kontuuri. Kontuur erineb valikust joone kuju poolest. Valik, vaade, mõõtmise mustand ja dokument ei muutu. Klõps valib komponendi nagu praegu.
+   - Omaduste päis näitab valitud objekti tähist: „Omadused · J29“ või „Omadused · J29.15“. Tähis uueneb samas kohas ja on loetav 280 px laiuses paneelis.
+   - Testid:
+     - `list_row_hover_previews_component_without_selecting`
+     - `keyboard_row_focus_previews_component`
+     - `preview_keeps_measure_draft_and_view`
+     - `leaving_row_clears_preview`
+     - `properties_header_shows_selected_ref`
+
 **Osa D · Tihedus**
 
 10. **Tiheduse ülevaatus.** Naaberkomponentide kered ja padjandid on siltide takistused, teegis on siluetid ja paneelide tihedus vaadatakse üle.
@@ -185,6 +195,7 @@ H. **Vormingu versiooni kaitse ja „Salvesta mujale…“ täis kettaga** ([M1-
 - **Hiljem:**
   - foto vahetus ja teine foto koos joondusega (`toBoard`);
   - PNG-ekspordi funktsioon ja tootmise CORS (M4).
+  - avalehe sondimotiiv algse BenchBeepi märgi järgi vasevärvis, kujunduskatse heledas ja tumedas teemas ([disainivõrdlus](../review/2026-11-17-benchbeepi-disainivordlus.md); M4.3).
 - **Väiksemad lahtised asjad (M1.3-st):**
   - katkenud impordi integratsioonitest (järgmine raja B salvestuskaart);
   - `photo_orientation` tavaliseks mooduliks järgmisel Rusti puudutusel.

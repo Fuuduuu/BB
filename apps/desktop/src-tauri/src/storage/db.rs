@@ -11,6 +11,13 @@ use std::{
 pub(super) const MAX_JS_REV: i64 = 9_007_199_254_740_991;
 const CURRENT_FORMAT_VERSION: u32 = 1;
 
+pub(super) fn supported_format(format: u32) -> StorageResult<()> {
+    if format > CURRENT_FORMAT_VERSION {
+        return Err(StorageErrorDto::new(Reason::TooNew));
+    }
+    Ok(())
+}
+
 pub(super) fn document_header(json: &str) -> StorageResult<(u32, i64)> {
     let value: Value =
         serde_json::from_str(json).map_err(|_| StorageErrorDto::new(Reason::Unknown))?;
@@ -54,9 +61,7 @@ fn project_meta(conn: &Connection) -> StorageResult<(String, u32)> {
     if id.is_empty() {
         return Err(StorageErrorDto::new(Reason::NotProject));
     }
-    if format > CURRENT_FORMAT_VERSION {
-        return Err(StorageErrorDto::new(Reason::TooNew));
-    }
+    supported_format(format)?;
     Ok((id, format))
 }
 
@@ -217,6 +222,7 @@ impl ProjectDb {
     ) -> StorageResult<()> {
         self.writable()?;
         let (format, document_rev) = document_header(doc_json)?;
+        supported_format(format)?;
         if document_rev != rev || !(0..=MAX_JS_REV).contains(&base_rev) || rev < base_rev {
             return Err(StorageErrorDto::new(Reason::Unknown));
         }

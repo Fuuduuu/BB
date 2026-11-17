@@ -443,6 +443,7 @@ Projekti faili kirjutab ainult `SaveCoordinator`, mis on mootoris `ProjectServic
   - Iga koopia saab uue `file_id`; `identity: 'new'` loob lisaks uue `project_id`. `ProjectService.copy` tagastab `ProjectInfo & { fromMemory: boolean }` ning `ProjectInfo.fileId` on ainult loetav failitunnus.
   - „Salvesta oma koopiana“ (näidisprojekt) ja „Tee koopia“ (`identity: 'new'`) annavad uue `project_id` ja salvestavad `copied_from_project_id`.
   - Pärast õnnestumist jätkab äpp uues failis ja see lisatakse viimaste projektide hulka.
+  - Kui `VACUUM INTO` sihtkettal saab ruum otsa, tagastab kopeerimine vea `disk_full`. Ajutine fail koristatakse ja kasutaja jääb algsesse projekti. Mälust päästekoopiat sel juhul ei tehta.
   - Kui algne fail pole loetav (nt mälupulk eemaldati), luuakse uus fail mälus olevast dokumendist, vaatest ja logist ning äpp ütleb selgelt, et fotod jäid algsesse faili.
   - Mälust päästekoopia (`fromMemory: true`) järel jääb ekraanile teade „Koopia tehti mälus olevast seisust, sest algset faili ei saanud lugeda. Fotod ja manused jäid algsesse faili.“ Teade säilib ka koopia järel sihtprojekti avamisel, kuni kasutaja selle sulgeb. Kui koopia järel pidi aken sulguma või leht taaslaaditama, oodatakse esmalt teate sulgemist ning jätkatakse seejärel algset tegevust. Tavaline koopia seda teadet ei tekita ega vaja lisakinnitust.
 - **Varukoopiad** (kaust `%APPDATA%\PCB Kaardistaja\backups\<project_id>\<file_id>\`, sama ajutise faili ja ümbernimetamise võttega):

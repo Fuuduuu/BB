@@ -1,4 +1,7 @@
-use super::{db::document_header, Reason, StorageErrorDto, StorageResult};
+use super::{
+    db::{document_header, supported_format},
+    Reason, StorageErrorDto, StorageResult,
+};
 use rusqlite::{params, Connection, TransactionBehavior};
 
 const SCHEMA: &str = "
@@ -26,6 +29,7 @@ pub(super) fn configure(conn: &Connection) -> StorageResult<()> {
 
 pub(super) fn initialize(conn: &mut Connection, project_id: &str, doc: &str) -> StorageResult<()> {
     let (format, rev) = document_header(doc)?;
+    supported_format(format)?;
     if project_id.trim().is_empty() {
         return Err(StorageErrorDto::new(Reason::Unknown));
     }

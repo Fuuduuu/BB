@@ -1,9 +1,9 @@
 mod common;
 
-use common::{doc, journal, meta, read_db, rev, summaries, Fixture, PROJECT_ID};
+use common::{doc, journal, meta, name, read_db, rev, summaries, Fixture, PROJECT_ID};
 use pcbk_desktop::storage::{BackupKind, CopyRequest, OpenedProjectDto, Reason};
 use rusqlite::Connection;
-use std::{fs, path::Path};
+use std::{collections::BTreeSet, fs, path::Path};
 
 fn request<'a>(source: &'a OpenedProjectDto, dest: &'a Path, doc_json: &'a str) -> CopyRequest<'a> {
     CopyRequest {
@@ -132,6 +132,67 @@ fn copy_includes_unsaved_doc_view_and_journal() {
     let original = read_db(f.path("original.pcbk"));
     assert_eq!(rev(&original), 1);
     assert_eq!(summaries(&original), ["saved"]);
+}
+
+#[test]
+fn copy_rejects_newer_format() {
+    let f = Fixture::new();
+    let source = f.create("original.pcbk");
+    let dest = f.path("existing.pcbk");
+    let previous = f.store.create(&dest, "previous", &doc(0)).unwrap();
+    f.store.close(&previous.session).unwrap();
+    let before = fs::read(&dest).unwrap();
+    let mut future: serde_json::Value = serde_json::from_str(&doc(1)).unwrap();
+    future["format_version"] = (future["format_version"].as_u64().unwrap() + 1).into();
+
+    let result = f.store.copy(request(&source, &dest, &future.to_string()));
+    assert_eq!(result.unwrap_err().reason, Reason::TooNew);
+    assert_eq!(fs::read(&dest).unwrap(), before);
+    assert!(!fs::read_dir(f.path("")).unwrap().any(|entry| entry
+        .unwrap()
+        .path()
+        .extension()
+        .is_some_and(|ext| ext == "tmp")));
+    f.store.close(&source.session).unwrap();
+}
+
+#[test]
+fn restore_rejects_newer_document_backup_without_leaving_a_file() {
+    let f = Fixture::new();
+    let source = f.open_with_daily_backup("original.pcbk");
+    f.store.close(&source.session).unwrap();
+    let original = f.path("original.pcbk");
+    let original_before = fs::read(&original).unwrap();
+    let full = f.backups(BackupKind::Full).remove(0);
+    let base = Path::new(&full.file);
+    let base_before = fs::read(base).unwrap();
+    let backup = base.with_file_name("20261109-103000.doc.json");
+    let mut future: serde_json::Value = serde_json::from_str(&doc(1)).unwrap();
+    future["format_version"] = (source.format_version + 1).into();
+    let backup_before = serde_json::to_vec(&serde_json::json!({
+        "base": name(&full.file),
+        "rev": 1,
+        "doc": future,
+        "view": null,
+    }))
+    .unwrap();
+    fs::write(&backup, &backup_before).unwrap();
+    let destination_entries = || {
+        fs::read_dir(f.path(""))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect::<BTreeSet<_>>()
+    };
+    let entries_before = destination_entries();
+    let dest = f.path("restored.pcbk");
+
+    let result = f.store.restore(&backup, &dest);
+    assert_eq!(result.unwrap_err().reason, Reason::TooNew);
+    assert!(!dest.exists());
+    assert_eq!(destination_entries(), entries_before);
+    assert_eq!(fs::read(original).unwrap(), original_before);
+    assert_eq!(fs::read(base).unwrap(), base_before);
+    assert_eq!(fs::read(backup).unwrap(), backup_before);
 }
 
 // SQLite's Windows file handle denies delete sharing. The Windows counterpart

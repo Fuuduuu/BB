@@ -12,6 +12,7 @@ const millivoltFormatter = new Intl.NumberFormat('en-US', {
 
 export function parseReading(text: string, mode: ReadingMode): { value: number } | null {
   if (mode !== 'voltage') return null;
+  if (/\d\s+[\d.,]|[.,]\s+\d/.test(text)) return null;
 
   const normalized = text
     .replace(/\s/g, '')

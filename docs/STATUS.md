@@ -22,7 +22,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 - [Plaan](plans/M1-4-suurus-joondus-joudlus.md) on kinnitatud (kasutaja 2026-11-17: O1 jõudlus enne, O2 `R`/`Shift+R` jääb, O3 ühe telje venitus lubatud).
 - Tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m1-4/BB`, haru `codex/m1-4`, alus `3953382`.
 - Kaartide järjekord:
-  1. [M1-4-1](tasks/M1-4-1.md) žesti ajal bitmap-teisendus (A): **ehitamisel**. Arhitekt lubas piiratud servapuhvri; värav on pan ≥ 35 fps ja suum ≥ 15 fps, muidu varuplaan kaardil.
+  1. [M1-4-1](tasks/M1-4-1.md) žesti ajal bitmap-teisendus (A): **ülevaatusel, vajab üht parandust** (`m1-3-labels.spec.ts` paigutus nähtava konteineri järgi, et J29 brauseritõend läbiks). Servapuhver 0,25: pan 57,1 fps, suum 57,8 fps, rahunemine 283,3 ms.
   2. [M1-4-1b](tasks/M1-4-1b.md) vaate muutus ei renderda kesta paneele (A).
   3. [M1-4-H](tasks/M1-4-H.md) vormingu versiooni kaitse ja täis ketas koopial (B), M1.4 ainus hooldusvoor.
   4. Plaani ülesanded 2–11; kaart kirjutatakse vahetult enne ülesannet.

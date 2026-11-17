@@ -88,7 +88,7 @@ Lisaks:
 - brauseri muudatustele lisandub võimalusel `pnpm proof` juhtum;
 - uusi sõltuvusi ei lisata ilma kasutaja loata.
 
-Rajad: ülesanded 4 ja 11 on **rada B** (jõudluseelarve ja vastuvõtt), ülejäänud **rada A**.
+Rajad: ülesanded 4, 11 ja H on **rada B** (jõudluseelarve, vastuvõtt ja salvestuse hooldus), ülejäänud **rada A**.
 
 ## Ülesanded
 
@@ -98,6 +98,9 @@ Rajad: ülesanded 4 ja 11 on **rada B** (jõudluseelarve ja vastuvõtt), ülejä
    - Enne muudatust tehakse WebView2 Performance-profiil ühest suumist.
    - Pani ja suumi ajal saab tööpinna grupp CSS `transform` + `will-change` ja SVG `transform`-atribuuti ei muudeta. Terav joonistus tuleb sama 120 ms LOD-viite järel.
    - Testid: `gesture_does_not_touch_svg_transform`, `sharp_redraw_after_lod_delay`.
+
+1b. **Vaate muutus ei renderda kesta paneele** ([M1-4-1b](../tasks/M1-4-1b.md), koodi ülevaatus 2026-11-17). Salvestuse olekuteade renderdab praegu iga pani- ja suumikaadriga navigaatori ja omaduste paneeli. Test: `pan_frames_do_not_rerender_shell_panels`.
+
 2. **Foto eraldi kihina.**
    - Foto on `<img>` või `<canvas>` SVG all ja sama teisendusega.
    - EXIF-reegel (M1-2-9) ja kõigi 8 teisenduse joondus kehtivad edasi: `bb-check-canvas` tsentroidikontroll ≤ 2 px.
@@ -110,6 +113,8 @@ Rajad: ülesanded 4 ja 11 on **rada B** (jõudluseelarve ja vastuvõtt), ülejä
    - Sama generaator ja Tauri proov nagu M1-2-7; tulemus tabelina enne/pärast.
    - `tests/e2e/perf.spec.ts` (03 § 7.3) jääb regressioonikaitseks.
    - Arhitekt otsustab, kas jalad lähevad Canvas'ele.
+   - Žestifaasi Script enne ja pärast M1-4-1b (algprofiilis 35 ms ühe rattasündmuse kohta).
+   - Mõõda samas proovis `project_open` ja `project_save` kestus. Need käsud on sünkroonsed ja jooksevad Tauri peaniidis koos täiskoopiaga (päeva esimene avamine, salvestus pärast foto lisamist). Kui kestus ületab 100 ms, tuleb eraldi kaart käskude viimiseks `spawn_blocking`-ule nagu fotoimpordil (koodi ülevaatus 2026-11-17, mõõtmata).
 
 **Osa B · Suurus, joondus ja oma jalad**
 
@@ -126,6 +131,7 @@ Rajad: ülesanded 4 ja 11 on **rada B** (jõudluseelarve ja vastuvõtt), ülejä
      - `align_handles_mirrored_bottom_side`
      - `align_cancel_with_escape_changes_nothing`
 7. **Oma jalad.** „Lisa jalg siia“ (`customPads`) ja jala eemaldamisel `customPads`/`padMap` koristus (M1 võlg A6).
+   - Jalgade ja padjandite vastavus (koodi ülevaatus 2026-11-17, tõendatud testiga): paigutatud tavakorpusel lubavad `components.addPin` ja `components.removePin` praegu padjandita jala ja jalata padjandi. Pärast „Eemalda paigutus plaadilt“ lükkab `placeOnBoard` sama korpuse tagasi (`footprint_pins_mismatch`). Kaart otsustab reegli ja lisab testi `placed_footprint_pins_and_pads_stay_matched`.
    - Testid:
      - `add_own_pin_places_pad_at_click`
      - `own_pin_survives_rotate_scale_and_reopen`
@@ -155,6 +161,11 @@ Rajad: ülesanded 4 ja 11 on **rada B** (jõudluseelarve ja vastuvõtt), ülejä
 11. **E2e, jõudluseelarve, suitsukatse ja väljalase** (rada B).
     - `tests/e2e/full-flow.spec.ts`: 02 § 16 sammud 1–5 sünteetilise plaadifotoga.
     - `perf.spec.ts`, `v0.3.0` näidisfail, kasutaja suitsukatse ja versioon `v0.4.0`.
+    - Versioon ühest allikast: `Cargo.toml` on `0.0.0`, seepärast on faili `meta.app_version` ja diagnostika kokkuvõte (`use-workbench-host.ts`) alati `0.0.0` (koodi ülevaatus 2026-11-17).
+
+**Osa F · Hooldus**
+
+H. **Vormingu versiooni kaitse ja „Salvesta mujale…“ täis kettaga** ([M1-4-H](../tasks/M1-4-H.md), rada B, koodi ülevaatus 2026-11-17). Rust ei kirjuta dokumenti, mille vorming on tema konstandist uuem, ja tooling-test võrdleb Rusti ja TS-i konstanti. Täis sihtketas annab koopial vea, mitte fotodeta päästekoopia. See on M1.4 ainus hooldusvoor.
 
 ## M1.4 vastuvõtt: tingimus → tõend
 
@@ -177,3 +188,7 @@ Rajad: ülesanded 4 ja 11 on **rada B** (jõudluseelarve ja vastuvõtt), ülejä
 - **Väiksemad lahtised asjad (M1.3-st):**
   - katkenud impordi integratsioonitest (järgmine raja B salvestuskaart);
   - `photo_orientation` tavaliseks mooduliks järgmisel Rusti puudutusel.
+- **Koodi ülevaatusest 2026-11-17 (`main` `e4ca06a`), märkusteks järgmistele kaartidele:**
+  - kirjutuskaitstud projektil puudub märguanne ja lõuendi tegevused eiravad käsu tulemust (`SelectTool.ts`, `hits.ts`, `PlacementSection.tsx` klahvid), nii et komponent hüppab selgituseta tagasi; hiljemalt enne näidisprojekti (M4.3);
+  - mootori sisevead lähevad töölaual ainult konsooli (`apps/desktop/src/runtime.ts`), mitte logifaili, seega diagnostika ekspordis neid pole; järgmisel töölaua puudutusel;
+  - `useSnapshot` selektor ei piira renderdusi, iga tarbija renderdab iga käsu järel; koos ülesandega 3b, kui mõõtmine näitab vajadust.

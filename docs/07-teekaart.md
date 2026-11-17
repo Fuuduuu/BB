@@ -139,6 +139,7 @@ M2 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse jär
 
 ### M2.1 · Ühendused ja võrgud plaadil
 **Sisu:** moodulid `connections` ja `nets`.
+- **esmalt [ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md):** olemasolevad üldkäsud, invariandid ja „paigutamata“ tuletis viiakse domeeni reegliteks ning valiku kehtivus registrisse; käitumine ei muutu;
 - **ühendused ja liitepunktid:**
   - rada fotol kihiga, juhe, kiirühendus ja õhujoon;
   - haru loob liitepunkti, lahtine ots on liitepunkt;

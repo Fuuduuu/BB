@@ -31,6 +31,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 ## Kehtivad otsused, mis pole veel koodis näha
 
 - Failivorming ei muutu ilma kasutaja loata (M1.3 O2).
+- [ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md) (kasutaja 2026-11-17): moodulitevahelised reeglid ja invariandid lähevad domeeni, valiku kehtivus registrisse. Teostus on M2.1 esimesed ülesanded; kaardid tulevad M2.1 plaaniga.
 - SVG jääb lõuendi aluseks; jõudluse parandus ja kordusmõõtmine on M1.4 osa A. Canvas-kihi otsus jalgadele tehakse M1.4 ülesandes 4.
 - PNG-eksport (M4) komponeeritakse veebivaates; fotoprotokoll saab tootmises oma päritolu CORS-päise.
 - Windowsi eelkontroll jääb kasutaja suitsuloendiks; uut automaatikat ei lisata.

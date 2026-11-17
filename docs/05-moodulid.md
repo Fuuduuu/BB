@@ -45,7 +45,7 @@ Nool tähendab `dependsOn` seost. `guide` ja `export` ei sõltu teistest mooduli
 
 **Valik ja üldkäsud ei ole moodul.**
 - Valimine, raamvalik ja nihutamine nooltega on `packages/ui/src/canvas`-is ja toimivad mõlemas vaates. Sinna kuuluvad tööriistad Vali (`V`) ja Liiguta vaadet (`H`) ning valikuraami kiht (90).
-- Käsud `items.translate` ja `items.delete` on mootori üldkäsud (`packages/engine`), sest need puudutavad mitut objektitüüpi. M1.1-s nihutab `items.translate` plaadile paigutatud komponente.
+- Käsud `items.translate` ja `items.delete` on mootori üldkäsud (`packages/engine`), sest need puudutavad mitut objektitüüpi. M1.1-s nihutab `items.translate` plaadile paigutatud komponente. Reeglid ise on puhtad funktsioonid alamtees `@pcbk/domain/rules` ja mootori käsk ainult kutsub neid ([ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md), teostus M2.1 alguses).
 - Kustutamise reeglid on failis [04 › Kustutamise reeglid](04-andmemudel.md#kustutamise-reeglid).
 
 **Skeemil lisamine** kasutab sama käsku `components.add` (ainult skeemipaigutusega) ja **skeemil ühendamine** sama käsku `connections.add` (ainult skeemijoonistusega). Objekte on üks komplekt, vaateid kaks.
@@ -130,8 +130,8 @@ export const engineModules = [ /* … */, componentsEngine ];   export const uiM
    - `ui/` impordib ainult `@pcbk/ui`, `@pcbk/client`, `@pcbk/contracts` ja lepinguid;
    - `ui/` ei impordi kunagi mootorit.
 2. **Uus dokumendi väli:** zod-skeemi laiendus, `owns`, `format_version` tõus, migratsioon vaikeväärtusega ja migratsiooni test.
-3. **Muudatused:** iga dokumendi muudatus on käsk, mis käib `engine.execute` kaudu. UI kirjutab ainult `SessionStore`'i ja `ViewStore`'i.
-4. **Teise mooduli väljad:** neid muudetakse ainult `alsoWrites` kaudu ning siinne omanike tabel uuendatakse.
+3. **Muudatused:** iga dokumendi muudatus on käsk, mis käib `engine.execute` kaudu. UI kirjutab ainult `SessionStore`'i ja `ViewStore`'i. Uus valitav objektitüüp registreerib `selectionKinds` kirje: kas objekt on alles ja kas seda saab liigutada ([ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md)).
+4. **Teise mooduli väljad:** neid muudetakse ainult `alsoWrites` kaudu ning siinne omanike tabel uuendatakse. Mitut objektitüüpi puudutav reegel (kustutamine, nihutamine) ja invariant lähevad alamteele `@pcbk/domain/rules`, mitte mooduli ega mootori koodi.
 5. **Tekstid:** lähevad faili `i18n/et.ts` mooduli võtme alla. Mootor tagastab ainult koode.
 6. **Testid:** mootori pool ühiktestidega Node'is, UI pool vähemalt ühe Testing Library testiga võltsmootori peal. Ohtlikud reeglid (sihtmärk, topoloogia, andmete säilimine) saavad invariandi testi ([03 § 12](03-arhitektuur.md#kohustuslikud-invariandid)).
 7. **Dokumentatsioon:** uuenda selle faili tabeleid.

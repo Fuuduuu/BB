@@ -138,6 +138,7 @@ export interface UiModule {
   bottomBar?: SlotSpec[];
   topBar?: SlotSpec[];
   keys?: KeySpec[];                    // mooduli kiirklahvid; kesta klahvid on reserveeritud
+  selectionKinds?: SelectionKindSpec[];  // plaanis (ADR-005): kas valitud objekt on alles ja liigutatav
   exporters?: ExporterSpec[];          // plaanis: ekspordi akna valikud
   guideSteps?: GuideStepSpec[];        // plaanis: „Järgmine samm“ read
   progressMetrics?: ProgressMetricSpec[];  // plaanis
@@ -187,6 +188,8 @@ Kest joonistab nähtavad `contextPinned` sektsioonid kontekstipaneeli ülaossa `
 - Käsk muudab ainult oma mooduli välju ja neid, mis on tema `alsoWrites` loendis. Erandid on käsupõhised ja põhjendatud.
 - Mootor kontrollib käsu paiku **enne** muudatuse avaldamist (paiga tee esimene osa). Lubamatu käsk lükatakse tagasi veaga `ownership` **ka väljalaskes**: dokument, ajalugu ja salvestusjärjekord jäävad muutmata, viga läheb logisse.
 - Kui peaaegu igal käsul tekib pikk erandite loend, vaadatakse moodulite vastutused uuesti üle.
+
+**Moodulitevahelised reeglid ([ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md)).** Reegel, mis puudutab mitut objektitüüpi (kustutamine, nihutamine), on puhas funktsioon alamtees `@pcbk/domain/rules`. Mootori üldkäsud `items.delete` ja `items.translate` ning mooduli käsud kutsuvad sama funktsiooni; objektitüübi koodi mootori tuumas ei ole. Kest küsib valitud objekti olemasolu ja liigutatavust registrist (`UiModule.selectionKinds`). Teostus tuleb M2.1 esimeste ülesannetena; seni on komponentide reeglid mootori failides `items.ts`, `invariants.ts` ja `derivation.ts`.
 
 Uue mooduli mall ja moodulite kirjeldused on failis [05-moodulid.md](05-moodulid.md).
 
@@ -261,7 +264,7 @@ export interface Snapshot {
 1. kontrollib parameetrid zod-skeemiga (viga `validation`) ja kirjutuskaitse (viga `read_only`);
 2. käivitab `produceWithPatches` külmutatud dokumendi peal;
 3. kontrollib paikade järgi omandi (§ 4). Rikkumisel ei muutu midagi ja tagastatakse viga `ownership`;
-4. kontrollib tulemuse invariante: ühenduste otsad ja sildi ankrud viitavad olemasolevale jalale või liitepunktile, ühenduseta liitepunkte ei jää ja tähised on unikaalsed. Rikkumisel ei avaldata midagi ja tagastatakse viga `validation`;
+4. kontrollib tulemuse invariante: ühenduste otsad ja sildi ankrud viitavad olemasolevale jalale või liitepunktile, ühenduseta liitepunkte ei jää ja tähised on unikaalsed. Reeglid tulevad domeenist valdkonna kaupa ja mootor ainult käivitab need ([ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md)). Rikkumisel ei avaldata midagi ja tagastatakse viga `validation`;
 5. avaldab uue dokumendi;
 6. lisab ajalukku `{patches, inversePatches, label}`;
 7. paneb logirea (aeg, käsu id, `requestId`, allikas, kokkuvõte) salvestusjärjekorda;
@@ -347,7 +350,7 @@ Arvutatud andmed arvutab **mootor**:
 
 Skeemi automaatne paigutus (M4) on eraldi abiline, mis pakub paigutust ainult paigutamata või valitud sümbolitele.
 - Mootor avaldab arvutused hetktõmmise `derived` väljal koos sama `rev`-iga. Käsud saavad kasutada sama tulemust (nt `repair.add` vajab võrke).
-- `Derived` tuum sisaldab paigutamata komponentide loendeid. Moodul lisab oma võtme lepingus mooduliaugmentatsiooniga ja registreerib `DeriveSpec`-i koos dokumendiväljade `inputs`, skeemi, algväärtuse ja arvutusega. Tühi hetktõmmis kasutab algväärtusi. Register keelab korduvad võtmed.
+- `Derived` tuumas mooduli võtmeid ei ole ([ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md)): paigutamata komponentide loendid annab moodul `components`. Kuni M2.1 esimese ülesandeni arvutab need veel mootori tuum. Moodul lisab oma võtme lepingus mooduliaugmentatsiooniga ja registreerib `DeriveSpec`-i koos dokumendiväljade `inputs`, skeemi, algväärtuse ja arvutusega. Tühi hetktõmmis kasutab algväärtusi. Register keelab korduvad võtmed.
 - Mootor taaskasutab sama seansi eelmist tulemust, kui ühegi `inputs` välja viide pole muutunud. `pinReadings` sõltub väljadest `components` ja `measurements`. Mootor valideerib uue tulemuse skeemiga. Vigane tuletis annab `validation` enne ajaloo ja hetktõmmise avaldamist.
 - Frontend arvutab joonistusgeomeetriat, loeb näidu sisendit ja vormindab tekste. Domeeni käituskoodi impordid on lubatud `geometry/`, `footprints/` ja `measure/reading.ts` kaudu. Jala viimase näidu saab frontend hetktõmmisest.
 - Kui kasutajale nähtav viivitus (käsk → uus pilt) ületab 100 ms või lohistamine langeb alla 45 fps, viiakse rasked **puhtad** arvutused Web Workerisse. Tulemust kontrollitakse `sessionId` ja `baseRev` vastu. Dokumendimootor jääb sünkroonseks; kogu mootori teise lõime viimine muudaks lepingut ja vajaks uut otsust.

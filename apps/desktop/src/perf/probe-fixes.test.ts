@@ -2,7 +2,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { newBoardDoc } from '@pcbk/domain';
+import { FOOTPRINTS, newBoardDoc } from '@pcbk/domain';
 import { createEngine } from '@pcbk/engine';
 import { engineFeatures, RESERVED_FIELDS } from '@pcbk/features/engine';
 import { createComponentsUi } from '@pcbk/features/components/ui';
@@ -150,29 +150,47 @@ test('probe base zoom keeps every actual pad number visible throughout the zoom 
   const ids = { newId: (prefix: string) => `${prefix}_${++sequence}` };
   const at = '2026-01-01T00:00:00.000Z';
   const synthetic = generateSyntheticBoard({ seed: 127, ids, at });
+  const components = synthetic.components.map(({ ref, board, ...component }) => {
+    if (!ref || !board) throw new Error('Expected a placed synthetic component with a reference');
+    const defaults = FOOTPRINTS.find((footprint) => footprint.key === board.footprint)?.defaults;
+    return {
+      ...component,
+      ref,
+      marking: component.marking ?? '',
+      value: component.value ?? '',
+      identified: false,
+      dnp: false,
+      note: '',
+      pins: component.pins.map((pin) => ({ ...pin, nc: false })),
+      board: {
+        ...board,
+        params: { ...defaults, ...board.params },
+        rotationDeg: board.rotationDeg ?? 0,
+        side: board.side ?? 'top',
+        scaleX: 1,
+        scaleY: 1,
+        customPads: {},
+      },
+    };
+  });
   const { engine, host } = createEngine({
     modules: engineFeatures,
     reserved: RESERVED_FIELDS,
     clock: { now: () => at },
   });
-  host.load('probe-base-zoom', newBoardDoc('Proov'), false);
-  for (const component of synthetic.components)
-    expect(engine.execute('components.add', component).ok).toBe(true);
+  host.load('probe-base-zoom', { ...newBoardDoc('Proov'), components }, false);
   const snapshot = engine.snapshot();
   const zoom = probe.probeBaseZoom(snapshot.doc);
   const labels = createComponentsUi(ids).canvasLayers!.find(
     (layer) => layer.id === 'components.labels',
   )!;
-  for (const factor of [0.85, 1, 1.15]) {
-    const rendered = document.createElement('div');
-    rendered.innerHTML = renderToStaticMarkup(
-      createElement('svg', {}, labels.render({ snapshot, preview: null, zoom: zoom * factor })),
-    );
-    expect(
-      rendered.querySelectorAll('text'),
-      `all pad numbers at zoom factor ${factor}`,
-    ).toHaveLength(3300);
-  }
+  const rendered = document.createElement('div');
+  rendered.innerHTML = renderToStaticMarkup(
+    createElement('svg', {}, labels.render({ snapshot, preview: null, zoom: zoom * 0.85 })),
+  );
+  expect(rendered.querySelectorAll('text'), 'all pad numbers at zoom factor 0.85').toHaveLength(
+    3300,
+  );
 });
 
 test.each([

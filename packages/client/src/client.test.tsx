@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { StrictMode } from 'react';
+import { StrictMode, useEffect } from 'react';
 import type { PropsWithChildren } from 'react';
+import type { SaveStatus } from '@pcbk/contracts';
 import { act, cleanup, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import * as api from './index';
@@ -126,6 +127,60 @@ test('no status notice means pending, without an invented saved time', () => {
   const { wrapper } = fixture();
   const { result } = renderHook(() => api.useSaveStatus(), { wrapper });
   expect(result.current).toEqual({ state: 'pending' });
+});
+function observeSaveStatus() {
+  const { projects, wrapper } = fixture();
+  const committed = vi.fn<(status: SaveStatus) => void>();
+  renderHook(
+    () => {
+      const status = api.useSaveStatus();
+      useEffect(() => {
+        committed(status);
+      });
+    },
+    { wrapper },
+  );
+  return { projects, committed };
+}
+test('repeated_identical_status_notice_does_not_rerender', () => {
+  const { projects, committed } = observeSaveStatus();
+  act(() => projects.emit(saved()));
+  committed.mockClear();
+
+  for (let notice = 0; notice < 3; notice++) {
+    act(() => projects.emit({ sessionId: 'session-a', state: 'pending' }));
+  }
+
+  expect(committed).toHaveBeenCalledExactlyOnceWith({ state: 'pending' });
+});
+test('changed_status_notice_still_rerenders', () => {
+  const { projects, committed } = observeSaveStatus();
+  const original = {
+    sessionId: 'session-a',
+    state: 'saved',
+    rev: 1,
+    at: '2026-11-08T10:00:00Z',
+  } as const;
+  const notices = [
+    { sessionId: 'session-a', state: 'saving' },
+    original,
+    { ...original },
+    { ...original, rev: 2 },
+    { ...original, rev: 2, at: '2026-11-08T10:00:01Z' },
+    { sessionId: 'session-a', state: 'error', reason: 'disk_full' },
+    { sessionId: 'session-a', state: 'error', reason: 'read_only' },
+  ] as const;
+  for (const notice of notices) act(() => projects.emit(notice));
+
+  expect(committed.mock.calls.map(([status]) => status)).toEqual([
+    { state: 'pending' },
+    { state: 'saving' },
+    { state: 'saved', rev: 1, at: original.at },
+    { state: 'saved', rev: 2, at: original.at },
+    { state: 'saved', rev: 2, at: '2026-11-08T10:00:01Z' },
+    { state: 'error', reason: 'disk_full' },
+    { state: 'error', reason: 'read_only' },
+  ]);
 });
 test('the current error is replayed when a consumer mounts after project opening', () => {
   const { projects, wrapper } = fixture();

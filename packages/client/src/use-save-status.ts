@@ -12,6 +12,17 @@ type Entry = {
   status: SaveStatus;
 };
 
+function sameStatus(a: SaveStatus, b: SaveStatus): boolean {
+  switch (a.state) {
+    case 'saved':
+      return b.state === 'saved' && a.rev === b.rev && a.at === b.at;
+    case 'error':
+      return b.state === 'error' && a.reason === b.reason;
+    default:
+      return a.state === b.state;
+  }
+}
+
 export function useSaveStatus(): SaveStatus {
   const engine = useEngine();
   const projects = useProjects();
@@ -23,7 +34,16 @@ export function useSaveStatus(): SaveStatus {
       const current = engine.snapshot();
       if (!listening || !isCurrentSession(current.sessionId, sessionId)) return;
       if (notice.state === 'saved' && notice.rev < current.rev) return;
-      setEntry({ engine, projects, sessionId, status: Object.freeze(notice) });
+      setEntry((previous) => {
+        if (
+          previous?.engine === engine &&
+          previous.projects === projects &&
+          previous.sessionId === sessionId &&
+          sameStatus(previous.status, notice)
+        )
+          return previous;
+        return { engine, projects, sessionId, status: Object.freeze(notice) };
+      });
     });
     return () => {
       listening = false;

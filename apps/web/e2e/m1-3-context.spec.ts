@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { bounds, canvas, center, createBoard } from './photo-flow-helpers';
+import { bounds, canvas, canvasViewport, center, createBoard } from './photo-flow-helpers';
 
 test.use({ viewport: { width: 1100, height: 700 } });
 
@@ -10,7 +10,7 @@ test('second_pin_at_right_edge_is_selectable_with_context_hidden', async ({ page
   await library.getByRole('button', { name: 'SOIC', exact: true }).click();
   await library.getByRole('combobox', { name: 'Jalgu', exact: true }).selectOption('8');
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
-  const area = await bounds(canvas(page));
+  const area = await bounds(canvasViewport(page));
   await page.mouse.click(area.x + area.width - 80, area.y + 250);
   const pins = page.locator('[data-layer="components.pins"] [data-pin]');
   await expect(pins).toHaveCount(8);

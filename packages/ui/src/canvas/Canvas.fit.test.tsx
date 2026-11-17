@@ -34,6 +34,12 @@ function setup(fitInsets?: CanvasProps['fitInsets']) {
       value: () => ({ inverse: () => ({ a: 0.5, b: 0, c: 0, d: 0.5, e: -8.5, f: -14.5 }) }),
     },
   });
+  Object.defineProperties(svg.parentElement!, {
+    getBoundingClientRect: { value: () => svg.getBoundingClientRect() },
+    clientWidth: { value: 800 },
+    clientHeight: { value: 600 },
+  });
+  fireEvent(window, new Event('resize'));
   return { svg, onViewChange };
 }
 

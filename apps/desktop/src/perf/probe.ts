@@ -2,7 +2,7 @@ import { info } from '@tauri-apps/plugin-log';
 import { boardPads } from '@pcbk/domain';
 import { addPhoto } from '@pcbk/features/photo/ui';
 import { et, useSessionStore, useViewStore } from '@pcbk/ui';
-import type { Result, SaveStatus } from '@pcbk/contracts';
+import type { Result, SaveStatus, Snapshot } from '@pcbk/contracts';
 import type { createRuntime } from '../runtime';
 import { frameStats } from './frame-stats';
 import { generateSyntheticBoard } from './synthetic-board';
@@ -21,6 +21,43 @@ import { dragComponent } from './probe-input';
 import { awaitProbeReady, environment, failureResult, selectDenseTarget } from './probe-setup';
 
 type Runtime = ReturnType<typeof createRuntime>;
+
+export function probeViewportCenter(canvas: SVGSVGElement) {
+  const viewport = canvas.parentElement ?? canvas;
+  return { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 };
+}
+
+export function probeBaseZoom(doc: Snapshot['doc']): number {
+  const minimumShortHalf = Math.min(
+    ...doc.components.flatMap((component) =>
+      component.board
+        ? boardPads(
+            component.board,
+            component.pins.map((pin) => pin.id),
+            doc.scale.pxPerMm,
+          ).map((pad) => Math.min(pad.halfPx.x, pad.halfPx.y))
+        : [],
+    ),
+  );
+  return Math.max(8 / (1.6 * doc.scale.pxPerMm), 7 / minimumShortHalf) * 1.2;
+}
+
+// Observe the same post-zoom window before and after the rendering change.
+// Starting immediately preserves the first frame gap; an initial rAF would drop it.
+export async function measureZoomSettle() {
+  const windowMs = 1000;
+  const started = performance.now();
+  let previous = started;
+  let worstMs = 0;
+  let frames = 0;
+  do {
+    const now = await nextFrame();
+    worstMs = Math.max(worstMs, now - previous);
+    frames++;
+    previous = now;
+  } while (previous - started < windowMs);
+  return { windowMs, elapsedMs: previous - started, frames, worstMs };
+}
 
 function unwrap<T>(result: Result<T, unknown>, label: string): T {
   if (!result.ok) throw new Error(`${label}: ${JSON.stringify(result.error)}`);
@@ -139,19 +176,8 @@ async function measure(runtime: Runtime) {
     const snapshot = runtime.engine.snapshot();
     const target = selectDenseTarget(snapshot.doc.components, synthetic.surface);
     if (!target?.board) throw new Error('No placed drag target');
-    const minimumRadius = Math.min(
-      ...snapshot.doc.components.flatMap((component) =>
-        component.board
-          ? boardPads(
-              component.board,
-              component.pins.map((pin) => pin.id),
-              snapshot.doc.scale.pxPerMm,
-            ).map((pad) => pad.radiusPx)
-          : [],
-      ),
-    );
-    const baseZoom = Math.max(8 / (1.6 * snapshot.doc.scale.pxPerMm), 7 / minimumRadius) * 1.2;
-    const center = { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 };
+    const baseZoom = probeBaseZoom(snapshot.doc);
+    const center = probeViewportCenter(canvas);
     const boardCenter = target.board.center;
     const view = (zoom: number, dx = 0, dy = 0) => ({
       zoom,
@@ -181,6 +207,7 @@ async function measure(runtime: Runtime) {
         setView(view(baseZoom * (1 + 0.15 * Math.sin((frame / 180) * Math.PI * 2)))),
       ),
     );
+    const zoomSettle = await measureZoomSettle();
     await saveQuiet(runtime);
     setView(view(baseZoom));
     await nextFrame();
@@ -198,6 +225,7 @@ async function measure(runtime: Runtime) {
       open: { runsMs: openMs, medianMs: [...openMs].sort((a, b) => a - b)[1]!, budgetMs: 1500 },
       pan: { ...pan, budgetFps: 60 },
       zoom: { ...zoom, budgetFps: 60 },
+      zoomSettle,
       drag: {
         ...frameStats(drag.intervals),
         budgetFps: 45,
@@ -225,7 +253,11 @@ export async function runPerfProbe(runtime: Runtime) {
     const json = JSON.stringify(result);
     console.info(`[perf] ${json}`);
     await info(`[perf] ${json}`);
-    showResult(formatResult(result));
+    const settle =
+      'zoomSettle' in result
+        ? `\n\nRahunemise pikim kaader: ${result.zoomSettle.worstMs.toFixed(1)} ms (${result.zoomSettle.windowMs} ms vaatlus, fps-ist eraldi)`
+        : '';
+    showResult(`${formatResult(result)}${settle}`);
   } catch (error) {
     console.error('[perf] probe/log failed', error);
     showResult(`Jõudlusproov ebaõnnestus: ${String(error)}`);

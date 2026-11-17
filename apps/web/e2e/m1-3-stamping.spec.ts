@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { bounds, canvas, createBoard } from './photo-flow-helpers';
+import { bounds, canvasViewport, createBoard } from './photo-flow-helpers';
 
 test('stamp_three_resistors_then_escape', async ({ page }) => {
   await createBoard(page, 'Kolm takistit templiga');
@@ -7,7 +7,7 @@ test('stamp_three_resistors_then_escape', async ({ page }) => {
   const library = page.getByRole('tabpanel', { name: 'Teek', exact: true });
   await library.getByRole('button', { name: 'Takisti SMD', exact: true }).click();
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
-  const area = await bounds(canvas(page));
+  const area = await bounds(canvasViewport(page));
   for (const x of [100, 200, 300]) await page.mouse.click(area.x + x, area.y + 150);
 
   const bodies = page.locator('[data-layer="components.bodies"] [data-component]');

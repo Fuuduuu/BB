@@ -1,5 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test, vi } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { newBoardDoc } from '@pcbk/domain';
+import { createEngine } from '@pcbk/engine';
+import { engineFeatures, RESERVED_FIELDS } from '@pcbk/features/engine';
+import { createComponentsUi } from '@pcbk/features/components/ui';
+import * as probe from './probe';
+import { generateSyntheticBoard } from './synthetic-board';
 import { awaitProbeReady, failureResult, selectDenseTarget } from './probe-setup';
 import { observeSvgPhoto } from './probe-dom';
 import { requireBodySelection } from './probe-input';
@@ -16,6 +24,21 @@ function photo() {
   document.body.append(svg);
   return { svg, image: svg.querySelector('image')! };
 }
+
+test('probe centres the target in the fixed viewport rather than the padded SVG', () => {
+  const viewport = document.createElement('div');
+  const { svg } = photo();
+  viewport.append(svg);
+  Object.defineProperties(viewport, {
+    clientWidth: { value: 800 },
+    clientHeight: { value: 600 },
+  });
+  Object.defineProperties(svg, {
+    clientWidth: { value: 1200 },
+    clientHeight: { value: 900 },
+  });
+  expect(probe.probeViewportCenter(svg)).toEqual({ x: 400, y: 300 });
+});
 
 test('opening observes the displayed SVG photo load before readiness and rejects unrelated nodes', () => {
   const observer = observeSvgPhoto();
@@ -121,3 +144,74 @@ test('focus can recover before initial deadline without invalidating the later m
   await vi.advanceTimersByTimeAsync(20);
   await expect(ready).resolves.toBeUndefined();
 });
+
+test('probe base zoom keeps every actual pad number visible throughout the zoom wave', () => {
+  let sequence = 0;
+  const ids = { newId: (prefix: string) => `${prefix}_${++sequence}` };
+  const at = '2026-01-01T00:00:00.000Z';
+  const synthetic = generateSyntheticBoard({ seed: 127, ids, at });
+  const { engine, host } = createEngine({
+    modules: engineFeatures,
+    reserved: RESERVED_FIELDS,
+    clock: { now: () => at },
+  });
+  host.load('probe-base-zoom', newBoardDoc('Proov'), false);
+  for (const component of synthetic.components)
+    expect(engine.execute('components.add', component).ok).toBe(true);
+  const snapshot = engine.snapshot();
+  const zoom = probe.probeBaseZoom(snapshot.doc);
+  const labels = createComponentsUi(ids).canvasLayers!.find(
+    (layer) => layer.id === 'components.labels',
+  )!;
+  for (const factor of [0.85, 1, 1.15]) {
+    const rendered = document.createElement('div');
+    rendered.innerHTML = renderToStaticMarkup(
+      createElement('svg', {}, labels.render({ snapshot, preview: null, zoom: zoom * factor })),
+    );
+    expect(
+      rendered.querySelectorAll('text'),
+      `all pad numbers at zoom factor ${factor}`,
+    ).toHaveLength(3300);
+  }
+});
+
+test.each([
+  [
+    'the first post-gesture frame',
+    [300, ...Array.from({ length: 44 }, (_, index) => 316 + index * 16)],
+  ],
+  [
+    'the delayed LOD redraw',
+    [
+      16,
+      32,
+      48,
+      64,
+      80,
+      96,
+      112,
+      128,
+      428,
+      ...Array.from({ length: 36 }, (_, index) => 444 + index * 16),
+    ],
+  ],
+] as const)(
+  'settle measurement includes %s without adding it to gesture fps',
+  async (_, timestamps) => {
+    vi.spyOn(performance, 'now').mockReturnValue(0);
+    let index = 0;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      const timestamp = timestamps[index++];
+      if (timestamp === undefined)
+        throw new Error('Settle sampler exceeded the observation window');
+      queueMicrotask(() => callback(timestamp));
+      return index;
+    });
+    expect(await probe.measureZoomSettle()).toEqual({
+      windowMs: 1000,
+      elapsedMs: 1004,
+      frames: 45,
+      worstMs: 300,
+    });
+  },
+);

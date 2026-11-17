@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { bounds, canvas, center, createBoard } from './photo-flow-helpers';
+import { bounds, canvasViewport, center, createBoard } from './photo-flow-helpers';
 
 test('library_places_qfp44_and_testpoint', async ({ page }) => {
   await createBoard(page, 'QFP ja testpunkt teegist');
@@ -9,7 +9,7 @@ test('library_places_qfp44_and_testpoint', async ({ page }) => {
   await search.fill('QFP');
   await library.getByRole('button', { name: 'QFP', exact: true }).click();
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
-  const qfpAt = await center(canvas(page));
+  const qfpAt = await center(canvasViewport(page));
   await page.mouse.click(qfpAt.x, qfpAt.y);
   const pinGroups = page.locator('[data-layer="components.pins"] [data-component]');
   await expect(pinGroups).toHaveCount(1);
@@ -21,7 +21,7 @@ test('library_places_qfp44_and_testpoint', async ({ page }) => {
   await search.fill('testpunkt');
   await library.getByRole('button', { name: 'Testpunkt', exact: true }).click();
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
-  const area = await bounds(canvas(page));
+  const area = await bounds(canvasViewport(page));
   await page.mouse.click(area.x + 150, area.y + 150);
   await expect(pinGroups).toHaveCount(2);
   const testpoint = page.locator(

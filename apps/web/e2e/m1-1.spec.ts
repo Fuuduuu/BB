@@ -109,7 +109,9 @@ test('blank_click_and_tab_keep_measure_location', async ({ page }) => {
     .getByRole('complementary', { name: 'Omadused', exact: true })
     .getByRole('heading', { name: 'U1.3', exact: true });
   await expect(pinHeading).toBeVisible();
-  await canvas(page).click({ position: { x: 30, y: 30 } });
+  await canvas(page)
+    .locator('..')
+    .click({ position: { x: 30, y: 30 } });
   await expect(pinHeading).toHaveCount(0);
   await expect(measure(page).getByText('U1.3', { exact: true })).toBeVisible();
   await expect(voltage(page)).toHaveValue('4,98');
@@ -206,6 +208,15 @@ test('board_zoom_pan_survive_view_only_close_and_reopen', async ({ page }) => {
   await page.mouse.down({ button: 'middle' });
   await page.mouse.move(x + 80, y + 50, { steps: 5 });
   await page.mouse.up({ button: 'middle' });
+  // Observe the committed SVG after the real compositor/LOD settling delay.
+  await expect
+    .poll(async () => {
+      const position = await viewPosition();
+      return (
+        Math.abs(position.x - zoomed.x - 80) < 0.1 && Math.abs(position.y - zoomed.y - 50) < 0.1
+      );
+    })
+    .toBe(true);
   const panned = await viewPosition();
   expect(panned.zoom).toBe(zoomed.zoom);
   expect(panned.x - zoomed.x).toBeCloseTo(80, 1);

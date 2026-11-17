@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   bounds,
   canvas,
+  canvasViewport,
   createBoard,
   dropPhoto,
   photo,
@@ -22,7 +23,7 @@ test('bottom_bar_controls_fit_at_minimum_window_size', async ({ page }) => {
     const library = page.getByRole('tabpanel', { name: 'Teek', exact: true });
     await library.getByRole('button', { name: 'Takisti SMD', exact: true }).click();
     await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
-    await canvas(page).click({ position: { x: 100, y: 100 } });
+    await canvasViewport(page).click({ position: { x: 100, y: 100 } });
     await page.evaluate(() => document.fonts.ready);
 
     const header = await bounds(page.getByRole('banner'));
@@ -58,12 +59,12 @@ test('bottom_bar_controls_fit_at_minimum_window_size', async ({ page }) => {
       );
     }
 
-    const canvasBeforeMenu = await bounds(canvas(page));
+    const canvasBeforeMenu = await bounds(canvasViewport(page));
     await footer.getByRole('button', { name: 'Foto sätted', exact: true }).click();
     const menu = page.getByRole('dialog', { name: 'Foto sätted', exact: true });
     await expect(menu).toBeVisible();
     expect(await bounds(footer)).toEqual(bar);
-    expect(await bounds(canvas(page))).toEqual(canvasBeforeMenu);
+    expect(await bounds(canvasViewport(page))).toEqual(canvasBeforeMenu);
 
     for (const control of await menu.locator('button, input[type="range"]').all()) {
       const box = await bounds(control);

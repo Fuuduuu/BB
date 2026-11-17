@@ -159,6 +159,60 @@ test('setLabelOffset stores an offset and null removes it', () => {
   expect(engine.snapshot().doc.components[0]!.board?.labelOffset).toEqual(offset);
 });
 
+test('setScale changes only the scale axes and supports undo and redo', () => {
+  const { engine } = setup();
+  const id = 'cmp_a';
+  const board = { ...chipBoard, rotationDeg: 37, side: 'bottom' } as const;
+  expect(engine.execute('components.add', { ...add(id), board }).ok).toBe(true);
+  expect(engine.execute('components.add', { ...add('cmp_b'), board: chipBoard }).ok).toBe(true);
+  expect(engine.execute('components.setLabelOffset', { id, offset: { x: 3, y: -4 } }).ok).toBe(
+    true,
+  );
+  const before = engine.snapshot().doc.components;
+  const [target, other] = before;
+  const expected = [{ ...target, board: { ...target!.board, scaleX: 0.2, scaleY: 5 } }, other];
+
+  expect(engine.execute('components.setScale', { id, scaleX: 0.2, scaleY: 5 }).ok).toBe(true);
+  expect(engine.snapshot().doc.components).toEqual(expected);
+  expect(engine.undo().ok).toBe(true);
+  expect(engine.snapshot().doc.components).toEqual(before);
+  expect(engine.redo().ok).toBe(true);
+  expect(engine.snapshot().doc.components).toEqual(expected);
+});
+
+test.each([
+  [0.19, 1, 'scaleX'],
+  [5.01, 1, 'scaleX'],
+  [1, 0.19, 'scaleY'],
+  [1, 5.01, 'scaleY'],
+  [Number.NaN, 1, 'scaleX'],
+  [1, Number.POSITIVE_INFINITY, 'scaleY'],
+])('setScale rejects invalid axes (%s, %s)', (scaleX, scaleY, axis) => {
+  const { engine } = setup();
+  const id = 'cmp_a';
+  expect(engine.execute('components.add', { ...add(id), board: chipBoard }).ok).toBe(true);
+  const before = engine.snapshot();
+
+  expect(engine.execute('components.setScale', { id, scaleX, scaleY })).toMatchObject({
+    ok: false,
+    error: { code: 'validation', issues: [{ path: [axis] }] },
+  });
+  expect(engine.snapshot()).toBe(before);
+});
+
+test('setScale requires a placed component', () => {
+  const { engine } = setup();
+  const id = 'cmp_a';
+  expect(engine.execute('components.add', add(id)).ok).toBe(true);
+  const before = engine.snapshot();
+
+  expect(engine.execute('components.setScale', { id, scaleX: 2, scaleY: 3 })).toMatchObject({
+    ok: false,
+    error: { code: 'validation', issues: [{ message: 'component_not_placed' }] },
+  });
+  expect(engine.snapshot()).toBe(before);
+});
+
 test('board commands reject non-finite rotation and label offset', () => {
   const { engine } = setup();
   engine.execute('components.add', { ...add(), board: chipBoard });

@@ -149,6 +149,7 @@ test('unplaced_component_not_drawn', () => {
     ['components.bodies', 30],
     ['components.pins', 50],
     ['components.labels', 60],
+    ['components.handles', 90],
   ]);
   for (const layer of ['bodies', 'pins', 'labels']) {
     expect(group(layer)).toBeTruthy();
@@ -254,6 +255,30 @@ test('drag_preview_moves_only_dragged_components', () => {
   expect(label.closest('[transform="translate(4 -3)"]')).toBeTruthy();
   expect(screen.getByText('R2').closest('[transform="translate(4 -3)"]')).toBeNull();
   expect(engine.snapshot()).toBe(before);
+});
+
+test('scale_preview_rerenders_only_scaled_component', () => {
+  const { engine } = setup();
+  add(engine);
+  add(engine, { id: 'cmp_b', board: { ...chip, center: { x: 200, y: 80 } } });
+  const { group, update } = mount(engine);
+  const snapshot = engine.snapshot();
+  const points = (id: string) =>
+    group('bodies', id)?.querySelector('polygon')?.getAttribute('points');
+  const before = points('cmp_a');
+  const stationary = points('cmp_b');
+  const renderBody = vi.spyOn(geometry, 'bodyOutline');
+  const renderPads = vi.spyOn(geometry, 'boardPads');
+  for (let dx = 2; dx <= 10; dx += 2) {
+    update(1, { owner: 'components.scale', data: { id: 'cmp_a:e', dx, dy: 0 } });
+  }
+  expect(points('cmp_a')).not.toBe(before);
+  expect(points('cmp_b')).toBe(stationary);
+  for (const render of [renderBody, renderPads]) {
+    expect(render).toHaveBeenCalled();
+    expect(new Set(render.mock.calls.map(([board]) => board.center.x))).toEqual(new Set([100]));
+  }
+  expect(engine.snapshot()).toBe(snapshot);
 });
 
 test('drag_preview_rerenders_only_dragged_group', () => {

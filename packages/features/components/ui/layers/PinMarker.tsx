@@ -25,18 +25,24 @@ export function PadOutline({
   strokeWidth,
 }: PadOutlineProps) {
   const style = { fill: 'none', stroke, strokeWidth, vectorEffect: 'non-scaling-stroke' };
-  return shape !== 'circle' ? (
+  const transform = `rotate(${angleDeg} ${x} ${y})`;
+  if (shape === 'circle') {
+    return halfPx.x === halfPx.y ? (
+      <circle cx={x} cy={y} r={halfPx.x} {...style} />
+    ) : (
+      <ellipse cx={x} cy={y} rx={halfPx.x} ry={halfPx.y} transform={transform} {...style} />
+    );
+  }
+  return (
     <rect
       x={x - halfPx.x}
       y={y - halfPx.y}
       width={2 * halfPx.x}
       height={2 * halfPx.y}
       rx={shape === 'oval' ? Math.min(halfPx.x, halfPx.y) : undefined}
-      transform={`rotate(${angleDeg} ${x} ${y})`}
+      transform={transform}
       {...style}
     />
-  ) : (
-    <circle cx={x} cy={y} r={halfPx.x} {...style} />
   );
 }
 
@@ -73,10 +79,10 @@ export const PinMarker = memo(function PinMarker({
   );
 });
 
-function NcCross({ x, y, halfPx, angleDeg, shape, zoom }: PinGeometry) {
+function NcCross({ x, y, halfPx, angleDeg, zoom }: PinGeometry) {
   const halfLength = 3 / zoom;
   const centerX = x + halfPx.x;
-  const centerY = y - (shape === 'circle' ? halfPx.x : halfPx.y);
+  const centerY = y - halfPx.y;
   const left = centerX - halfLength;
   const right = centerX + halfLength;
   const top = centerY - halfLength;
@@ -105,7 +111,8 @@ export const PinLabels = memo(function PinLabels({
   zoom,
 }: PinGeometry & { pin: Readonly<Pin> }) {
   const shortHalf = Math.min(halfPx.x, halfPx.y);
-  const nameOffset = (shape === 'circle' ? halfPx.x : Math.hypot(halfPx.x, halfPx.y)) + 2 / zoom;
+  const nameOffset =
+    (shape === 'circle' ? Math.max(halfPx.x, halfPx.y) : Math.hypot(halfPx.x, halfPx.y)) + 2 / zoom;
   const screenHalf = shortHalf * zoom;
   const showNumber = screenHalf >= 7;
   if (!showNumber && !pin.nc) return null;

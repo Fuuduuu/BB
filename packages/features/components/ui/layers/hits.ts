@@ -28,11 +28,14 @@ function defaultLabelOffset(
     const halfX = Math.max(halfPx.x, 2.5 / zoom);
     const halfY = Math.max(halfPx.y, 2.5 / zoom);
     const radians = (angleDeg * Math.PI) / 180;
+    const alongX = up.x * Math.cos(radians) + up.y * Math.sin(radians);
+    const alongY = -up.x * Math.sin(radians) + up.y * Math.cos(radians);
     const halfHeight =
       shape === 'circle'
-        ? halfX
-        : Math.abs(up.x * Math.cos(radians) + up.y * Math.sin(radians)) * halfX +
-          Math.abs(-up.x * Math.sin(radians) + up.y * Math.cos(radians)) * halfY;
+        ? halfX === halfY
+          ? halfX
+          : Math.hypot(alongX * halfX, alongY * halfY)
+        : Math.abs(alongX) * halfX + Math.abs(alongY) * halfY;
     padTop = Math.max(padTop, project(at) + halfHeight);
   }
   const valueOffset = hasValue ? 1.2 * 1.6 * pxPerMm : 0;
@@ -110,9 +113,9 @@ export function componentPinHits({ doc }: Snapshot): HitItem[] {
       id: pinId,
       componentId: id,
       shape:
-        shape !== 'circle'
-          ? { type: 'rect', at, half: halfPx, angleDeg }
-          : { type: 'point', at, r: halfPx.x },
+        shape === 'circle' && halfPx.x === halfPx.y
+          ? { type: 'point', at, r: halfPx.x }
+          : { type: 'rect', at, half: halfPx, angleDeg },
       priority: 2,
     }));
   });

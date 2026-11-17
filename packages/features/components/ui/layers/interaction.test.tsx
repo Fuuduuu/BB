@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 import { newBoardDoc } from '@pcbk/domain';
 import type { BoardPlacement } from '@pcbk/domain';
 import { Canvas, UiRegistry, useSessionStore } from '@pcbk/ui';
@@ -53,15 +53,18 @@ function mount(
     },
   });
   const { engine } = setup(doc);
-  const layers = new UiRegistry([createComponentsUi(idGenerator())]).canvasLayers();
+  const registry = new UiRegistry([createComponentsUi(idGenerator())]);
+  const layers = registry.canvasLayers();
   const execute = vi.fn<ToolApi['execute']>((...args) => engine.execute(...args));
   const view = { zoom, pan: { x: 0, y: 0 } };
   useSessionStore.getState().reset(engine.snapshot().sessionId);
   function Board() {
     const snapshot = useSyncExternalStore(engine.subscribe, engine.snapshot, engine.snapshot);
+    const selection = useSessionStore((state) => state.selection);
+    const currentLayers = useMemo(() => registry.canvasLayers(), [selection]);
     return (
       <Canvas
-        layers={layers}
+        layers={currentLayers}
         tools={[]}
         sceneTransform={sceneTransform}
         view={view}
@@ -95,6 +98,100 @@ function click(svg: SVGSVGElement, x: number, y: number) {
   pointer(svg, 'pointerdown', x, y);
   pointer(svg, 'pointerup', x, y);
 }
+
+const area = { footprint: 'area', params: {} };
+
+function selectComponent() {
+  act(() => useSessionStore.getState().setSelection({ items: [component] }));
+}
+
+function scaleHandle(svg: SVGSVGElement, handle: string) {
+  const node = svg.querySelector<SVGRectElement>(`[data-scale-handle="${handle}"]`);
+  if (!node) throw new Error(`Expected visible scale handle ${handle}`);
+  return {
+    x: Number(node.getAttribute('x')) + Number(node.getAttribute('width')) / 2,
+    y: Number(node.getAttribute('y')) + Number(node.getAttribute('height')) / 2,
+  };
+}
+
+function dragHandle(svg: SVGSVGElement, handle: string, dx: number, dy: number) {
+  const at = scaleHandle(svg, handle);
+  pointer(svg, 'pointerdown', at.x, at.y);
+  pointer(svg, 'pointermove', at.x + dx, at.y + dy);
+  pointer(svg, 'pointerup', at.x + dx, at.y + dy);
+}
+
+test('corner_handle_scales_uniformly', () => {
+  for (const { rotationDeg, side, dx, dy } of [
+    { rotationDeg: 0, side: 'top', dx: 20, dy: 20 },
+    { rotationDeg: 90, side: 'top', dx: -20, dy: 20 },
+    { rotationDeg: 90, side: 'bottom', dx: -20, dy: -20 },
+  ] as const) {
+    const { svg, engine } = mount({ ...area, scaleY: 0.8, rotationDeg, side });
+    selectComponent();
+    dragHandle(svg, 'se', dx, dy);
+    const board = engine.snapshot().doc.components[0]!.board!;
+    expect(board.scaleX).toBeCloseTo(1.5);
+    expect(board.scaleY).toBeCloseTo(1.2);
+    cleanup();
+  }
+});
+
+test('side_handle_scales_one_axis', () => {
+  const { svg, engine } = mount({ ...area, rotationDeg: 90, side: 'bottom' });
+  selectComponent();
+  dragHandle(svg, 'e', 15, -20);
+  expect(engine.snapshot().doc.components[0]!.board).toMatchObject({ scaleX: 1.5, scaleY: 1 });
+});
+
+test('scale_is_one_undo_step', () => {
+  const { svg, engine, execute } = mount(area);
+  const before = engine.snapshot().doc.components[0]!.board!;
+  selectComponent();
+  const at = scaleHandle(svg, 'e');
+  pointer(svg, 'pointerdown', at.x, at.y);
+  pointer(svg, 'pointermove', at.x + 20, at.y);
+  expect(useSessionStore.getState().preview).toMatchObject({ owner: 'components.scale' });
+  expect(engine.snapshot().doc.components[0]!.board).toBe(before);
+  expect(execute).not.toHaveBeenCalled();
+  expect(scaleHandle(svg, 'e').x).toBeCloseTo(at.x + 20);
+  pointer(svg, 'pointerup', at.x + 20, at.y);
+  expect(execute).toHaveBeenCalledExactlyOnceWith('components.setScale', {
+    id,
+    scaleX: 1.5,
+    scaleY: 1,
+  });
+  expect(engine.snapshot().doc.components[0]!.board?.center).toEqual(before.center);
+  expect(engine.undo().ok).toBe(true);
+  expect(engine.snapshot().doc.components[0]!.board).toEqual(before);
+});
+
+test('scale_clamped_to_schema_limits', () => {
+  const { svg, engine } = mount({ ...area, scaleY: 0.5 });
+  selectComponent();
+  dragHandle(svg, 'se', 1000, 1000);
+  expect(engine.snapshot().doc.components[0]!.board).toMatchObject({ scaleX: 5, scaleY: 2.5 });
+  dragHandle(svg, 'se', -1000, -1000);
+  expect(engine.snapshot().doc.components[0]!.board).toMatchObject({ scaleX: 0.4, scaleY: 0.2 });
+});
+
+test('scale_handles_are_available_only_for_one_selected_component', () => {
+  const { svg, engine, layers } = mount(area, 2);
+  const handles = () => svg.querySelectorAll('[data-scale-handle]');
+  expect(handles()).toHaveLength(0);
+  selectComponent();
+  expect(handles()).toHaveLength(8);
+  expect(Number(handles()[0]?.getAttribute('width')) * 2).toBe(8);
+  const layer = layers.find(({ id }) => id === 'components.handles');
+  expect(layer?.hits?.(engine.snapshot(), 2, 'none')).toHaveLength(8);
+  act(() =>
+    useSessionStore
+      .getState()
+      .setSelection({ items: [component, { kind: 'component', id: 'other' }] }),
+  );
+  expect(handles()).toHaveLength(0);
+  expect(layer?.hits?.(engine.snapshot(), 2, 'none')).toEqual([]);
+});
 
 test('rotated_component_pin_hit_selects_that_pin', () => {
   const { svg } = mount({ rotationDeg: 90 });

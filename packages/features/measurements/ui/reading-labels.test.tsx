@@ -58,6 +58,56 @@ test('reading_label_insets_glyph_inside_halo_box', () => {
   expect(Math.abs(dx) - Math.abs(dy)).toBeCloseTo(2);
 });
 
+test('scale_preview_hides_only_the_scaled_components_readings', () => {
+  const placeLabel = vi.spyOn(placement, 'placeReadingLabel');
+  try {
+    const { engine, pinPoint, svg } = mountMeasurements({
+      seed(doc) {
+        seed(doc);
+        const original = doc.components[0]!;
+        const other = {
+          ...original,
+          id: 'cmp_u2',
+          ref: 'U2',
+          pins: original.pins.map((pin) => ({ ...pin, uid: `pin_u2_${pin.id}` })),
+          board: { ...original.board!, center: { x: 410, y: 100 } },
+        };
+        doc.components.push(other);
+        doc.measurements.push({
+          ...doc.measurements[0]!,
+          id: 'msr_u2_voltage',
+          at: { c: other.id, p: '1', uid: other.pins[0]!.uid },
+          atLabel: 'U2.1',
+          value: 3.3,
+        });
+      },
+    });
+    const id = pinRef('1').c;
+    const stationary = screen.getByText('3,3 V');
+    const placementCalls = placeLabel.mock.calls.length;
+    act(() =>
+      ui.useSessionStore.getState().setPreview({
+        owner: 'components.scale',
+        data: { id: `${id}:e`, dx: 10, dy: 0 },
+      }),
+    );
+    expect(screen.queryByText('4,98 V')).toBeNull();
+    expect(screen.getByText('3,3 V')).toBe(stationary);
+    expect(placeLabel).toHaveBeenCalledTimes(placementCalls);
+
+    act(() => {
+      ui.useSessionStore.getState().setPreview(null);
+      expect(engine.execute('components.setScale', { id, scaleX: 1.5, scaleY: 1 }).ok).toBe(true);
+    });
+    const reading = screen.getByText('4,98 V');
+    const ring = reading.closest('g')?.querySelector('circle');
+    expect(svg.contains(reading)).toBe(true);
+    expect(Number(ring?.getAttribute('cx'))).toBeCloseTo(pinPoint('1').x);
+  } finally {
+    placeLabel.mockRestore();
+  }
+});
+
 test('reading_label_points_away_from_component_body', () => {
   const { engine } = mountMeasurements({
     seed(doc) {

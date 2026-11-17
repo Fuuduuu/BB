@@ -14,6 +14,7 @@ import {
   RotateSchema,
   SetLabelOffsetSchema,
   SetNcSchema,
+  SetScaleSchema,
 } from '../contract';
 import type {
   AddComponentParams,
@@ -28,6 +29,7 @@ import type {
   RotateParams,
   SetLabelOffsetParams,
   SetNcParams,
+  SetScaleParams,
 } from '../contract';
 
 function component(doc: BoardDoc, id: string): Component {
@@ -227,6 +229,16 @@ const flipSide: CommandSpec<ComponentTargetParams> = {
     board.side = board.side === 'top' ? 'bottom' : 'top';
   },
 };
+const setScale: CommandSpec<SetScaleParams> = {
+  id: 'components.setScale',
+  title: 'components.setScale',
+  params: SetScaleSchema,
+  run(doc, params) {
+    const board = placedBoard(doc, params.id);
+    board.scaleX = params.scaleX;
+    board.scaleY = params.scaleY;
+  },
+};
 const setLabelOffset: CommandSpec<SetLabelOffsetParams> = {
   id: 'components.setLabelOffset',
   title: 'components.setLabelOffset',
@@ -250,5 +262,6 @@ export const commands = [
   removeFromBoard,
   rotate,
   flipSide,
+  setScale,
   setLabelOffset,
 ];

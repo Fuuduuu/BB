@@ -235,6 +235,8 @@ export const placementEt = {
     side: 'Pool',
     top: 'Pealmine',
     bottom: 'Alumine',
+    scaleX: 'Mõõtkava X',
+    scaleY: 'Mõõtkava Y',
     rotateClockwise: 'Pööra +90°',
     rotateCounterclockwise: 'Pööra −90°',
     flip: 'Teisele poolele',

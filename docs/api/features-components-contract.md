@@ -71,6 +71,16 @@ export const ChangeFootprintSchema: ZodType<ChangeFootprintParams>;
 export const COMPONENT_LIBRARY: readonly LibraryEntry[];
 ```
 
+### `COMPONENT_SCALE_MAX`
+```ts
+export const COMPONENT_SCALE_MAX: number;
+```
+
+### `COMPONENT_SCALE_MIN`
+```ts
+export const COMPONENT_SCALE_MIN: number;
+```
+
 ### `ComponentTargetParams`
 ```ts
 export type ComponentTargetParams = {
@@ -342,6 +352,20 @@ export type SetNcParams = {
 ### `SetNcSchema`
 ```ts
 export const SetNcSchema: ZodType<SetNcParams>;
+```
+
+### `SetScaleParams`
+```ts
+export type SetScaleParams = {
+    id: string;
+    scaleX: number;
+    scaleY: number;
+};
+```
+
+### `SetScaleSchema`
+```ts
+export const SetScaleSchema: ZodType<SetScaleParams>;
 ```
 
 ### `UpdateComponentParams`

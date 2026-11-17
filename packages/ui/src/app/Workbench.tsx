@@ -12,6 +12,7 @@ import { RestoreDialog } from '../shell/RestoreDialog';
 import { StartScreen } from '../shell/StartScreen';
 import { UiRegistry, type UiModule } from '../shell/UiRegistry';
 import { et } from '../shell/i18n/et';
+import { useSessionStore } from '../shell/session-store';
 import { useTheme } from '../shell/use-theme';
 import { useViewStore } from '../shell/view-store';
 import { useWorkbench } from './use-workbench';
@@ -22,7 +23,9 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
   const engine = useEngine();
   const snapshot = useSnapshot((current) => current);
   const execute = useMemo(() => engine.execute.bind(engine), [engine]);
-  const layers = useMemo(() => registry.canvasLayers(), [registry]);
+  // Some layer hits are available only for the current selection.
+  const selection = useSessionStore((state) => state.selection);
+  const layers = useMemo(() => registry.canvasLayers(), [registry, selection]);
   const tools = useMemo(() => registry.tools(), [registry]);
   const keys = useMemo(() => registry.keys(), [registry]);
   const view = useViewStore((state) => state.boardView);

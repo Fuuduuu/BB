@@ -33,9 +33,10 @@ export function positiveDecimal(text: string): number | undefined {
   return number !== undefined && number > 0 ? number : undefined;
 }
 
-function decimalValue(text: string): number | undefined {
+export function decimalValue(text: string, allowNegative = false): number | undefined {
   const decimal = text.trim();
-  if (!/^\+?(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(decimal)) return undefined;
+  if (!allowNegative && decimal.startsWith('-')) return undefined;
+  if (!/^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(decimal)) return undefined;
   const number = Number(decimal.replace(',', '.'));
   return Number.isFinite(number) ? number : undefined;
 }

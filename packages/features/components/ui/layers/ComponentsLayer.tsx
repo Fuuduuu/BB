@@ -10,6 +10,7 @@ import { ComponentShape } from './ComponentShape';
 import type { ComponentLayerKind } from './ComponentShape';
 import { LABEL_DRAG_OWNER } from './hits';
 import { PadOutline } from './PinMarker';
+import { previewBoardScale, readScaleDrag, SCALE_DRAG_OWNER } from './scale-handles';
 
 type ComponentsLayerProps = Parameters<LayerSpec['render']>[0] & { kind: ComponentLayerKind };
 type LabelPreview = { id: string; dx: number; dy: number };
@@ -106,6 +107,8 @@ export function ComponentsLayer({ kind, snapshot, zoom, preview }: ComponentsLay
     kind === 'bodies' && preview?.owner === PLACE_TOOL_ID
       ? (preview.data as PlacePreviewData)
       : null;
+  const scaleDrag = preview?.owner === SCALE_DRAG_OWNER ? readScaleDrag(preview.data) : null;
+  const { pxPerMm } = snapshot.doc.scale;
 
   return (
     <g data-layer={`components.${kind}`} pointerEvents="none">
@@ -113,14 +116,17 @@ export function ComponentsLayer({ kind, snapshot, zoom, preview }: ComponentsLay
         if (!component.board) return null;
         const movement = translated.has(component.id) ? translation : null;
         const labelMovement = labelPreview?.id === component.id ? labelPreview : null;
+        const board = previewBoardScale(component.board, component.id, scaleDrag, pxPerMm);
         return (
           <ComponentShape
             key={component.id}
             kind={kind}
             component={
-              component as typeof component & { board: NonNullable<typeof component.board> }
+              board === component.board
+                ? (component as typeof component & { board: typeof board })
+                : { ...component, board }
             }
-            pxPerMm={snapshot.doc.scale.pxPerMm}
+            pxPerMm={pxPerMm}
             zoom={zoom}
             selected={kind === 'bodies' && selected.has(component.id)}
             selectedPinId={kind === 'pins' ? (selectedPins.get(component.id) ?? null) : null}

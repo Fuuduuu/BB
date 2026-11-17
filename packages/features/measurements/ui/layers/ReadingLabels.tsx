@@ -13,6 +13,8 @@ import type { LabelObstacle, LayerSpec, TranslatePreviewData } from '@pcbk/ui';
 import { placeReadingLabel } from './reading-placement';
 import type { ReadingPlacement } from './reading-placement';
 
+const SCALE_DRAG_OWNER = 'components.scale';
+
 interface ReadingLayout {
   key: string;
   componentId: string;
@@ -145,15 +147,20 @@ function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render
     [labels],
   );
   const translation = preview?.owner === 'select' ? (preview.data as TranslatePreviewData) : null;
+  // SelectTool puts the hit ID (`componentId:handle`) into the scale preview.
+  const scaleHitId =
+    preview?.owner === SCALE_DRAG_OWNER ? (preview.data as { id: string }).id : undefined;
+  const hiddenId = scaleHitId?.slice(0, scaleHitId.lastIndexOf(':'));
   const translated = new Set(
     translation?.items.filter(({ kind }) => kind === 'component').map(({ id }) => id),
   );
 
   return (
     <g data-layer="measurements.readings" pointerEvents="none">
-      {translation
-        ? labels.map((layout, index) =>
-            translated.has(layout.componentId) ? (
+      {translation || hiddenId
+        ? labels.map((layout, index) => {
+            if (layout.componentId === hiddenId) return null;
+            return translation && translated.has(layout.componentId) ? (
               <ReadingLabel
                 key={layout.key}
                 layout={layout}
@@ -162,8 +169,8 @@ function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render
               />
             ) : (
               stationaryLabels[index]
-            ),
-          )
+            );
+          })
         : stationaryLabels}
     </g>
   );
@@ -172,6 +179,6 @@ function ReadingLabels({ snapshot, zoom, preview }: Parameters<LayerSpec['render
 export const READING_LABELS_LAYER: LayerSpec = {
   id: 'measurements.readings',
   z: 80,
-  previewOwners: ['select'],
+  previewOwners: ['select', SCALE_DRAG_OWNER],
   render: (props) => <ReadingLabels {...props} />,
 };

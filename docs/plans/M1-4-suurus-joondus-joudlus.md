@@ -88,7 +88,9 @@ Lisaks:
 - brauseri muudatustele lisandub võimalusel `pnpm proof` juhtum;
 - uusi sõltuvusi ei lisata ilma kasutaja loata.
 
-Rajad: ülesanded 4, 11 ja H on **rada B** (jõudluseelarve, vastuvõtt ja salvestuse hooldus), ülejäänud **rada A**.
+Rajad: ülesanded 11 (koos endise 4-ga) ja H on **rada B** (jõudluseelarve, vastuvõtt ja salvestuse hooldus), ülejäänud **rada A**.
+
+**Järjekord pärast M1-4-1 tulemust** (kasutaja otsus 2026-11-17, vähem testiringe): H → 3 → 3b → 5 → 6 → 9b → 7 → 8 → 9 → 10 → 11. Suum on servapuhvriga 58 fps, seega tehakse ülesanne 2 ainult siis, kui ülesande 11 kordusmõõt jääb eelarvest välja. Ülesanne 4 on liidetud ülesandega 11.
 
 ## Ülesanded
 
@@ -101,7 +103,7 @@ Rajad: ülesanded 4, 11 ja H on **rada B** (jõudluseelarve, vastuvõtt ja salve
 
 1b. **Vaate muutus ei renderda kesta paneele** ([M1-4-1b](../tasks/M1-4-1b.md), koodi ülevaatus 2026-11-17). Salvestuse olekuteade renderdab praegu iga pani- ja suumikaadriga navigaatori ja omaduste paneeli. Test: `pan_frames_do_not_rerender_shell_panels`.
 
-2. **Foto eraldi kihina.**
+2. **Foto eraldi kihina** (tingimuslik, vt järjekord).
    - Foto on `<img>` või `<canvas>` SVG all ja sama teisendusega.
    - EXIF-reegel (M1-2-9) ja kõigi 8 teisenduse joondus kehtivad edasi: `bb-check-canvas` tsentroidikontroll ≤ 2 px.
    - Testid: `photo_layer_aligns_with_pins_under_all_8_transforms`, `photo_layer_outside_svg`.
@@ -109,7 +111,7 @@ Rajad: ülesanded 4, 11 ja H on **rada B** (jõudluseelarve, vastuvõtt ja salve
    - Ainult lohistatava komponendi grupp saab nihke. Teised kihid uut `preview` propi ei saa.
    - Test: `drag_preview_rerenders_only_dragged_group`.
 3b. **LOD-rahunemise skriptikulu** (M1-4-1 profiil). Pärast LOD-taimerit renderdab React kõik kihid uue `lodZoom`-iga: ühe suumi järel 243 ms Script. LOD-muutus peab renderdama ainult kihte ja komponente, mille väljund sõltub LOD-lävedest. Näiteks muutuvad jalanumbrid, kui lühema külje pool ületab 7 või 14 px; kered ei muutu. Mõõt on rahunemise pikim kaader enne/pärast.
-4. **Kordusmõõtmine ja `perf.spec.ts`** (rada B).
+4. **Kordusmõõtmine ja `perf.spec.ts`** (rada B). **Liidetud ülesandega 11**; allolev sisu on ülesande 11 mõõtmise osa.
    - Sama generaator ja Tauri proov nagu M1-2-7; tulemus tabelina enne/pärast.
    - `apps/web/e2e/perf.spec.ts` (03 § 7.3) jääb regressioonikaitseks.
    - Arhitekt otsustab, kas jalad lähevad Canvas'ele.
@@ -186,7 +188,7 @@ H. **Vormingu versiooni kaitse ja „Salvesta mujale…“ täis kettaga** ([M1-
 |---|---|
 | 02 § 16 sammud 1–5 lähevad läbi | Ül. 11 `full-flow.spec.ts` |
 | Kahe jala joondus taastab asendi < 0,01 px ja < 0,01° | Ül. 6 |
-| Jõudluseelarve on täidetud (03 § 7.3) | Ül. 4 kordusmõõtmine, `perf.spec.ts` |
+| Jõudluseelarve on täidetud (03 § 7.3) | Ül. 11 kordusmõõtmine (endine ül. 4), `perf.spec.ts` |
 | Paremklõps komponendil, jalal ja tühjal alal; `Esc` sulgeb muudatusteta | Ül. 9 |
 | Suurus käepidemetega ja numbritega | Ül. 5 |
 | Oma jalg ja kohandatud korpus | Ül. 7, 8 |

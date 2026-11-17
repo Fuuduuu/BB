@@ -8,7 +8,7 @@ Claude loeb selle faili **iga vastuse alguses esimesena**. Fail on lühike ja ai
 2. Määra töö liik: **kaart**, **ülevaatus**, **commit/väljalase** või **küsimus**. Iga liigi käik on allpool.
 3. Määra rada ([WORKFLOW › Kaks rada](WORKFLOW.md#kaks-rada-tavaline-ja-kaitstud-töö)): **A** tavaline või **B** kaitstud. Rada määrab lugemise ja kontrolli mahu.
 
-**Toode ees.** Eesmärk on kasutajale nähtav töövõime, mitte testide ega hoolduse ring. Hooldus- või testikaart tuleb ainult siis, kui see blokeerib järgmist verstaposti või kaitseb andmeid. Muul juhul pane see märkusena järgmise ehituskaardi juurde. Ühele verstapostile on kuni üks hooldusvoor. Kontroll on raja suurune: rada A puhul piisab kaardi testidest ja `pnpm check`-ist, täisring tehakse ainult rajal B ja enne liitmist. Ülevaatus ei lisa uusi teste, mida kaart ei nõudnud, välja arvatud leitud vea jaoks.
+**Toode ees.** Eesmärk on kasutajale nähtav töövõime, mitte testide ega hoolduse ring. Hooldus- või testikaart tuleb ainult siis, kui see blokeerib järgmist verstaposti või kaitseb andmeid. Muul juhul pane see märkusena järgmise ehituskaardi juurde. Ühele verstapostile on kuni üks hooldusvoor. Kontroll on raja suurune: rada A puhul piisab kaardi testidest ja `pnpm check`-ist, täisring tehakse ainult rajal B ja enne liitmist. Ülevaatus ei lisa uusi teste, mida kaart ei nõudnud, välja arvatud leitud vea jaoks. Väliseid ülevaatusi verstaposti keskel ei tellita; järgmine tuleb enne väljalaset (kasutaja otsus 2026-11-17).
 
 STATUS-e ja vestluse kokkuvõtte väited kontrolli Git-i vastu. Ära kanna commit'e, testide arve ega haru seisu mälust.
 
@@ -24,7 +24,7 @@ STATUS-e ja vestluse kokkuvõtte väited kontrolli Git-i vastu. Ära kanna commi
 
 1. Loe plaani vastav ülesanne (`bb_read_section`) ja ainult need liidesed, mida kaart muudab.
 2. Kontrolli **tegelikku** koodi: olemasolevad nimed, failid, ekspordid (`grep -n`). Kaardi vead tulid varem eeldustest (`doc.board.scale` vs `doc.scale`, puuduv alamtee).
-3. Kirjuta kaart [malli](tasks/README.md#mall) järgi; päisesse **Rada: A/B**. Otsused, signatuurid, tekstid ja testinimed välja kirjutatud; „Loe“ ≤ 5 viidet, iga viide eraldi real (`bb_task` loeb rea esimese viite).
+3. Kirjuta kaart [malli](tasks/README.md#mall) järgi; päisesse **Rada: A/B**. Otsused, signatuurid, tekstid ja testinimed välja kirjutatud; rajal A kuni 5 nimega testi, rohkem ainult rajal B või leitud vea korral; „Loe“ ≤ 5 viidet, iga viide eraldi real (`bb_task` loeb rea esimese viite).
 4. `bb_task <id>` (kas „Loe“ laheneb?) ja `bb_check_docs`.
 5. **Commit kaart `main`-i enne, kui Codex tööpuu loob** (kasutaja loal), siis anna kasutajale Codexi ülesande tekst ühes koodiplokis. Ehitaja küsimuse vastus läheb kaardile („Arhitekti vastus ehitajale“).
 
@@ -33,7 +33,7 @@ STATUS-e ja vestluse kokkuvõtte väited kontrolli Git-i vastu. Ära kanna commi
 1. Loe kaardi üleanne **põhikaustas** ja `git status` tööpuus. Kui ehitaja kirjutas kaardi/STATUS-e tööpuusse, kanna sisu põhikausta ja eemalda tööpuu koopia enne commit'i.
 2. `git diff` ainult põhifailidele (mitte genereeritud `docs/api`, mitte testid tervikuna); testidest kontrolli, et kaardi testinimed on olemas (`grep -c`).
 3. Kontrolli kaardi otsuseid koodis, eriti: andmete säilimine, ajalugu üks samm, katkestus jäljetult, tekstid, sõltuvuse suund.
-4. Käsud (rada A: `check`; rada B ja enne liitmist: kõik) — kasuta allolevaid lühiväljundiga käske.
+4. Käsud: kui ehitaja `bb-review-card` kokkuvõte (`output/review-card/<ID>-*/summary.json`) on uuem kui tööpuu viimati muudetud fail, loe kokkuvõtet ja ära käivita uuesti. Ise käivita ainult kahtlane või UI-s nähtav osa (nt `pnpm proof` lõuendi muutuse järel). Rada B ja enne liitmist: täisring (allolevad lühiväljundiga käsud).
 5. Kui UI muutus ja ekraanipilti pole, kontrolli brauseris (veebiäpp tööpuust) või DOM-i mõõtudega; nimeta, kumba tegid.
 6. Kirjuta kaardile „Arhitekti ülevaatus (kuupäev)“: mida kontrollisid, tegelikud tulemused, **Otsus: sobib / vajab parandust** (parandused nummerdatult koos testinimedega), mitteblokeerivad märkused. Uuenda STATUS-e üks rida.
 7. Üks paranduse ring; ära loo eraldi „kinnitus“- või „sulgemis“-samme.

@@ -30,7 +30,8 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
   6. [M1-4-5](tasks/M1-4-5.md) komponendi suurus käepidemete ja numbritega (A): **vastu võetud** `8f3d54f`.
   7. [M1-4-6](tasks/M1-4-6.md) joonda kahe jalaga (A): **vastu võetud** `345791a`.
   8. [M1-4-9b](tasks/M1-4-9b.md) leia komponent ja tea, mida mõõtsid (A): **vastu võetud** `8193de7`.
-  9. [M1-4-7](tasks/M1-4-7.md) oma jalad ja jalgade-padjandite vastavus (A): **ehitamiseks**, alus `8193de7`. Edasi plaani järjekorras: 8 → 9 → 10 → 11 (ülesanne 2 tingimuslik, 4 liidetud 11-ga; kasutaja otsus 2026-11-17). Kaart kirjutatakse vahetult enne ülesannet.
+  9. [M1-4-7](tasks/M1-4-7.md) oma jalad ja jalgade-padjandite vastavus (A): **vastu võetud** `d275566`.
+  10. Järgmine: M1.4 ülesanne 8 kohandatud korpus (`unknown` kirje paigutused: 2 rida, 1 rida, 4 külge, tühi), alus `d275566`. Edasi plaani järjekorras: 8 → 9 → 10 → 11 (ülesanne 2 tingimuslik, 4 liidetud 11-ga; kasutaja otsus 2026-11-17). Kaart kirjutatakse vahetult enne ülesannet.
 - Lahtine arhitektile: 02 §16 uuendamine `R`/`Shift+R` otsuse järgi (O2).
 
 ## Kehtivad otsused, mis pole veel koodis näha

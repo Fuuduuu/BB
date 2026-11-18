@@ -34,7 +34,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
   10. [M1-4-8](tasks/M1-4-8.md) kohandatud korpus (A): **vastu võetud** `dc124bf`.
   11. [M1-4-9](tasks/M1-4-9.md) paremklõpsu menüü (A): **vastu võetud** `d909fe9`. Dubleerimine (käsk ja `Ctrl+D`) läheb M2 plaani.
   12. [M1-4-10](tasks/M1-4-10.md) tihedus: sildid naabrite kõrval ja teegi siluetid (A): **vastu võetud** `ea60389`.
-  13. [M1-4-11](tasks/M1-4-11.md) M1.4 vastuvõtt: läbiv e2e, jõudlus, ühilduvus, versioon ja suitsukatse (B): **ehitamiseks**, alus `ea60389`. Sisaldab endist ülesannet 4. Ülesanne 2 tehakse ainult siis, kui kordusmõõtmine jääb eelarvest välja. Pärast kasutaja suitsukatset teeb arhitekt kasutaja loal väljalaske `v0.4.0` ja uuendab `ARHITEKT.md` § 6 versiooniallika (`Cargo.toml`).
+  13. [M1-4-11](tasks/M1-4-11.md) M1.4 vastuvõtt: läbiv e2e, jõudlus, ühilduvus, versioon ja suitsukatse (B): **vastu võetud** `bbb0920`. Järgmine on kasutaja suitsukatse (`%TEMP%/bb-m1-4-katse/pcbk-m1-4-11-katse.exe`, 12 sammu haru failis `docs/plans/M1-4-uleandmine.md`). Liitmine `main`-iga ainult rohelise haru CI järel. Raja B kontroll ja Tauri eelarve läbisid (pan 59,3, suum 60,0, lohistus 50,7 fps, avamine 714,5 ms). Sisaldab endist ülesannet 4. Kasutaja suitsukatse järgneb arhitekti ülevaatusele. Pärast suitsukatset teeb arhitekt kasutaja loal väljalaske `v0.4.0` ja uuendab `ARHITEKT.md` § 6 versiooniallika (`Cargo.toml`).
 - 02 § 16 ja § 6.2 kasutavad nüüd pööramiseks `R`/`Shift+R`-i (O2). 03 § 7.3 kirjeldab M1-4-10 sildi külje valikut.
 
 ## Kehtivad otsused, mis pole veel koodis näha

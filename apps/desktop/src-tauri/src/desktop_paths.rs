@@ -1,3 +1,4 @@
+use crate::storage::sidecars;
 use std::{
     fs, io,
     path::{Path, PathBuf},
@@ -19,10 +20,8 @@ pub(crate) fn available_project_path(directory: &Path, name: &str) -> io::Result
             format!("{stem} ({number}).pcbk")
         };
         let path = directory.join(filename);
-        match fs::symlink_metadata(&path) {
-            Ok(_) => continue,
-            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(path),
-            Err(error) => return Err(error),
+        if !sidecars::occupied(&path)? {
+            return Ok(path);
         }
     }
     unreachable!()

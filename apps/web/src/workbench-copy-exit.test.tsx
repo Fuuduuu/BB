@@ -13,6 +13,102 @@ function silenceExpectedCrash() {
   return () => window.removeEventListener('error', handler);
 }
 
+async function mountCrashedWorkbench(recoveryCopyPath: (near: string) => Promise<string>) {
+  const restoreErrors = silenceExpectedCrash();
+  let crash = false;
+  const app = await mountFailedSwitch(
+    undefined,
+    () => [
+      {
+        id: 'recovery-test',
+        title: 'Taastamise proov',
+        contextPinned: [
+          {
+            id: 'crashing-slot',
+            order: 0,
+            useVisible() {
+              if (crash) throw new Error('Synthetic workbench failure');
+              return false;
+            },
+            render: () => null,
+          },
+        ],
+      },
+    ],
+    { recoveryCopyPath },
+  );
+  crash = true;
+  act(() => {
+    expect(app.engine.execute('project.rename', { name: 'Katkine vaade' }).ok).toBe(true);
+  });
+  return {
+    ...app,
+    async dispose() {
+      restoreErrors();
+      await app.dispose();
+    },
+  };
+}
+
+test('rescue_copy_retries_next_name_when_path_taken', async () => {
+  const paths = ['rescue-1.pcbk', 'rescue-2.pcbk', 'rescue-3.pcbk'];
+  for (const { collisionCount, candidates } of [
+    { collisionCount: 1, candidates: paths.slice(0, 2) },
+    { collisionCount: 1, candidates: [paths[0]!, paths[0]!, paths[1]!] },
+    { collisionCount: 3, candidates: paths },
+  ]) {
+    const recoveryCopyPath = vi.fn<(near: string) => Promise<string>>();
+    for (const path of candidates) recoveryCopyPath.mockResolvedValueOnce(path);
+    const app = await mountCrashedWorkbench(recoveryCopyPath);
+    const copying = vi.spyOn(app.projects, 'copy');
+    for (let retry = 0; retry < collisionCount; retry++) {
+      copying.mockResolvedValueOnce({ ok: false, error: { code: 'storage', reason: 'exists' } });
+    }
+    try {
+      const recover = await screen.findByRole('button', { name: et.error.copyReload });
+      await act(async () => fireEvent.click(recover));
+      const attempted = paths.slice(0, collisionCount + 1);
+      expect(recoveryCopyPath.mock.calls).toEqual(candidates.map(() => [app.current.path]));
+      expect(copying.mock.calls).toEqual(
+        attempted.map((dest) => [{ dest, identity: 'same', exclusive: true }]),
+      );
+      expect(app.pickSavePath).not.toHaveBeenCalled();
+      expect(app.store.files.has(paths[0]!)).toBe(false);
+      if (collisionCount === 1) {
+        expect(app.host.reload).toHaveBeenCalledOnce();
+        expect(app.store.files.has(paths[1]!)).toBe(true);
+      } else {
+        expect(app.host.reload).not.toHaveBeenCalled();
+        expect(screen.getByText(et.reason.exists)).toBeTruthy();
+        expect(attempted.every((path) => !app.store.files.has(path))).toBe(true);
+      }
+    } finally {
+      await app.dispose();
+    }
+  }
+});
+
+test('crash_view_offers_picker_after_failed_rescue', async () => {
+  const app = await mountCrashedWorkbench(vi.fn().mockResolvedValue('full-disk/rescue.pcbk'));
+  const copying = vi.spyOn(app.projects, 'copy').mockResolvedValueOnce({
+    ok: false,
+    error: { code: 'storage', reason: 'disk_full' },
+  });
+  try {
+    fireEvent.click(await screen.findByRole('button', { name: et.error.copyReload }));
+    await screen.findByText(et.reason.disk_full);
+    expect(screen.getByRole('heading', { name: et.error.root })).toBeTruthy();
+    expect(app.host.reload).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Vali koopia koht…' }));
+    await waitFor(() => expect(app.host.reload).toHaveBeenCalledOnce());
+    expect(app.pickSavePath).toHaveBeenCalledOnce();
+    expect(copying).toHaveBeenLastCalledWith({ dest: 'rescue.pcbk', identity: 'same' });
+    expect(app.store.files.has('rescue.pcbk')).toBe(true);
+  } finally {
+    await app.dispose();
+  }
+});
+
 test.each(['host', 'reload'] as const)(
   'rescue copy waits for acknowledgement before %s and preserves close errors',
   async (intent) => {

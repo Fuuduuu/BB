@@ -26,7 +26,11 @@ const createSchema = z.strictObject({
   path: z.string().min(1).optional(),
 });
 const openSchema = z.strictObject({ path: z.string().min(1) });
-const copySchema = z.strictObject({ dest: z.string().min(1), identity: z.enum(['same', 'new']) });
+const copySchema = z.strictObject({
+  dest: z.string().min(1),
+  identity: z.enum(['same', 'new']),
+  exclusive: z.boolean().optional(),
+});
 const restoreSchema = z.strictObject({ backup: z.string().min(1), dest: z.string().min(1) });
 type Context = { opened: OpenedProject; sessionId: string; saver: SaveCoordinator };
 

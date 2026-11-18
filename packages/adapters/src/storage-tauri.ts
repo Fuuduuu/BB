@@ -166,6 +166,7 @@ export function createTauriRepository({
         dest: req.dest,
         project_id: req.projectId,
         copied_from_project_id: req.copiedFromProjectId ?? null,
+        exclusive: req.exclusive ?? false,
         doc_json: JSON.stringify(req.doc),
         rev: req.rev,
         view_json: req.view === null ? null : JSON.stringify(req.view),

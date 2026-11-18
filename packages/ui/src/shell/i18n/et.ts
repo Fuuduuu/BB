@@ -70,6 +70,7 @@ export const et = {
     saved: (time: string) => `Salvestatud · ${time}`,
     failed: (why: string) => `Salvestamine ebaõnnestus: ${why}.`,
     closeTitle: (why: string) => `Viimaseid muudatusi ei õnnestunud salvestada: ${why}`,
+    copyFailed: (why: string) => `Koopia salvestamine ebaõnnestus: ${why}`,
     discard: 'Sulge salvestamata',
     openDiscard: 'Ava salvestamata',
     discardHint: 'Viimased muudatused kaovad',
@@ -78,6 +79,7 @@ export const et = {
     root: 'Midagi läks valesti.',
     panel: 'Selle osa kuvamisel tekkis viga.',
     copyReload: 'Salvesta koopia ja lae uuesti',
+    copyElsewhere: 'Vali koopia koht…',
     diagnostics: 'Salvesta diagnostika…',
   },
   project: {

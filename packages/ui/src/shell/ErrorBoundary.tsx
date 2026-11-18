@@ -20,11 +20,13 @@ class Boundary extends Component<
 export interface RootRecoveryActions {
   copyAvailable?: boolean;
   onCopyAndReload(): void;
+  onPickCopyAndReload?(): void;
   onExportDiagnostics(): void;
 }
 export function RootErrorBoundary({
   children,
   onCopyAndReload,
+  onPickCopyAndReload,
   onExportDiagnostics,
   copyAvailable = true,
 }: PropsWithChildren<RootRecoveryActions>) {
@@ -43,6 +45,9 @@ export function RootErrorBoundary({
               >
                 {et.error.copyReload}
               </Button>
+              {onPickCopyAndReload && (
+                <Button onClick={onPickCopyAndReload}>{et.error.copyElsewhere}</Button>
+              )}
               <Button onClick={onExportDiagnostics}>{et.error.diagnostics}</Button>
             </div>
           </div>

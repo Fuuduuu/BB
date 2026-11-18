@@ -1,22 +1,11 @@
 mod common;
 
-use common::{doc, journal, meta, name, read_db, rev, summaries, Fixture, PROJECT_ID};
-use pcbk_desktop::storage::{BackupKind, CopyRequest, OpenedProjectDto, Reason};
+use common::{
+    copy_request as request, doc, journal, meta, name, read_db, rev, summaries, Fixture, PROJECT_ID,
+};
+use pcbk_desktop::storage::{BackupKind, CopyRequest, Reason};
 use rusqlite::Connection;
 use std::{collections::BTreeSet, fs, path::Path};
-
-fn request<'a>(source: &'a OpenedProjectDto, dest: &'a Path, doc_json: &'a str) -> CopyRequest<'a> {
-    CopyRequest {
-        session: &source.session,
-        dest,
-        project_id: &source.project_id,
-        copied_from_project_id: None,
-        doc_json,
-        rev: 1,
-        view_json: None,
-        journal: &[],
-    }
-}
 
 #[test]
 fn stale_tmp_from_crash_does_not_block_create_copy_restore() {

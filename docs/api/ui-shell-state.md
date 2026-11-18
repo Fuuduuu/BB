@@ -107,6 +107,7 @@ export const et: {
         readonly saved: (time: string) => string;
         readonly failed: (why: string) => string;
         readonly closeTitle: (why: string) => string;
+        readonly copyFailed: (why: string) => string;
         readonly discard: "Sulge salvestamata";
         readonly openDiscard: "Ava salvestamata";
         readonly discardHint: "Viimased muudatused kaovad";
@@ -115,6 +116,7 @@ export const et: {
         readonly root: "Midagi läks valesti.";
         readonly panel: "Selle osa kuvamisel tekkis viga.";
         readonly copyReload: "Salvesta koopia ja lae uuesti";
+        readonly copyElsewhere: "Vali koopia koht…";
         readonly diagnostics: "Salvesta diagnostika…";
     };
     readonly project: {

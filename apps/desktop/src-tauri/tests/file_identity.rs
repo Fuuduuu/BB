@@ -70,6 +70,7 @@ fn copy_and_restore_get_new_file_id() {
                 dest: &f.path(filename),
                 project_id,
                 copied_from_project_id: (project_id != PROJECT_ID).then_some(PROJECT_ID),
+                exclusive: false,
                 doc_json: &doc(0),
                 rev: 0,
                 view_json: None,

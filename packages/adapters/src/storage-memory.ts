@@ -122,11 +122,19 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
       const source = sessions.get(req.session);
       if (!source) throw new StorageError('missing');
       const original = store.files.get(source);
-      return {
-        ...install(req.dest, {
+      const destination = store.files.get(req.dest);
+      if (req.exclusive && destination) throw new StorageError('exists');
+      if (store.locks.has(req.dest)) throw new StorageError('locked');
+      if (destination?.readOnly) throw new StorageError('read_only');
+      store.files.set(
+        req.dest,
+        clone({
           projectId: req.projectId,
           fileId: crypto.randomUUID(),
-          copiedFromProjectId: req.copiedFromProjectId ?? original?.copiedFromProjectId,
+          copiedFromProjectId:
+            req.identity === 'same'
+              ? original?.copiedFromProjectId
+              : (req.copiedFromProjectId ?? original?.projectId),
           doc: req.doc,
           rev: req.rev,
           view: req.view,
@@ -135,8 +143,8 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
           readOnly: false,
           savedAt: new Date().toISOString(),
         }),
-        fromMemory: !original,
-      };
+      );
+      return { ...acquire(req.dest), fromMemory: !original };
     },
     async backupFull(session) {
       checkFailure();

@@ -2,7 +2,7 @@ use super::{
     backup::{install_new, DocumentBackup},
     copy::replace_snapshot,
     db::ProjectDb,
-    OpenedProjectDto, PendingFile, Reason, StorageErrorDto, StorageResult,
+    sidecars, OpenedProjectDto, PendingFile, Reason, StorageErrorDto, StorageResult,
 };
 use std::{
     fs::{self, File, OpenOptions},
@@ -11,8 +11,6 @@ use std::{
 };
 
 mod open_guard;
-
-const SIDECARS: [&str; 3] = ["-journal", "-wal", "-shm"];
 
 pub(super) fn destination(path: &Path) -> StorageResult<PathBuf> {
     let path = std::path::absolute(path)?;
@@ -32,10 +30,8 @@ fn require_absent(path: &Path) -> StorageResult<()> {
 }
 
 fn check_sidecars(dest: &Path) -> StorageResult<()> {
-    for suffix in SIDECARS {
-        let mut sidecar = dest.as_os_str().to_owned();
-        sidecar.push(suffix);
-        require_absent(Path::new(&sidecar))?;
+    if sidecars::any(dest)? {
+        return Err(StorageErrorDto::new(Reason::Exists));
     }
     Ok(())
 }

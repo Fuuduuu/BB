@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, fireEvent, screen, within } from '@testing-library/react';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { et } from '@pcbk/ui';
 import { mountFailedSwitch } from './test-support/workbench';
 
@@ -52,6 +52,30 @@ test('normal_copy_shows_no_rescue_notice', async () => {
     expect(app.store.files.has(app.current.path)).toBe(true);
     expect(screen.queryByText(rescueCopy)).toBeNull();
     expect(screen.queryByRole('alert')).toBeNull();
+  } finally {
+    await app.dispose();
+  }
+});
+
+test('close_dialog_shows_copy_error_inside_dialog', async () => {
+  const app = await mountFailedSwitch();
+  vi.spyOn(app.projects, 'copy').mockResolvedValueOnce({
+    ok: false,
+    error: { code: 'storage', reason: 'read_only' },
+  });
+  try {
+    await act(async () => app.openPath(app.target.path));
+    const dialog = await screen.findByRole('dialog', {
+      name: et.save.closeTitle(et.reason.disk_full),
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: et.common.saveElsewhere }));
+    const error = await within(dialog).findByRole('alert');
+    expect(error.textContent).toBe(`Koopia salvestamine ebaõnnestus: ${et.reason.read_only}`);
+    expect(screen.getAllByText(error.textContent!)).toEqual([error]);
+    expect(screen.queryByText(et.reason.read_only)).toBeNull();
+    expect(screen.getByRole('dialog', { name: et.save.closeTitle(et.reason.disk_full) })).toBe(
+      dialog,
+    );
   } finally {
     await app.dispose();
   }

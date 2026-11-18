@@ -1,4 +1,5 @@
-use super::{Reason, StorageErrorDto, StorageResult, SIDECARS};
+use super::{Reason, StorageErrorDto, StorageResult};
+use crate::storage::sidecars::SIDECARS;
 use rusqlite::ffi;
 use std::{
     cell::Cell,

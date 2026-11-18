@@ -83,6 +83,7 @@ export type CommandOk = {
 export type CopyReq = {
     dest: string;
     identity: 'same' | 'new';
+    exclusive?: boolean;
 };
 ```
 

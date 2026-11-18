@@ -81,12 +81,14 @@ export function Workbench({
     ]);
   }, [uiModules, validateModules, goHome]);
   const copyAvailable = Boolean(workbench.info && host.pickSavePath);
+  const onPickCopyAndReload = copyAvailable ? () => workbench.copy('reload-picker') : undefined;
   const restoreAvailable = host.kind === 'desktop' && Boolean(host.pickSavePath);
 
   return (
     <>
       <RootErrorBoundary
         onCopyAndReload={() => workbench.copy('reload')}
+        onPickCopyAndReload={onPickCopyAndReload}
         onExportDiagnostics={workbench.diagnose}
         copyAvailable={Boolean(workbench.info && (host.recoveryCopyPath || host.pickSavePath))}
       >
@@ -123,6 +125,7 @@ export function Workbench({
                 onRetrySave={workbench.retrySave}
                 onSaveElsewhere={() => workbench.copy('stay')}
                 onCopyAndReload={() => workbench.copy('reload')}
+                onPickCopyAndReload={onPickCopyAndReload}
                 onExportDiagnostics={workbench.diagnose}
               />
             ) : (
@@ -161,6 +164,7 @@ export function Workbench({
       <CloseDialog
         open={workbench.closeError !== null}
         reason={workbench.closeError?.reason ?? 'unknown'}
+        copyError={workbench.closeError?.copyError}
         opening={typeof workbench.closeError?.intent === 'object'}
         busy={workbench.busy}
         copyAvailable={copyAvailable}

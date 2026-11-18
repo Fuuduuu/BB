@@ -121,6 +121,7 @@ export async function mountWithComponent(name: string) {
 export async function mountFailedSwitch(
   error = new StorageError('disk_full'),
   uiModules?: ComponentProps<typeof Workbench>['uiModules'],
+  recovery?: Pick<AppHost, 'recoveryCopyPath'>,
 ) {
   const clock = { now: () => new Date().toISOString() };
   const ids = { newId };
@@ -152,7 +153,7 @@ export async function mountFailedSwitch(
   const pickSavePath = vi.fn().mockResolvedValue('rescue.pcbk');
   const app = mount(
     runtime,
-    { ...host, kind: 'desktop', pickSavePath },
+    { ...host, kind: 'desktop', pickSavePath, ...recovery },
     uiModules ?? ((onHome) => uiFeatures(ids, onHome)),
   );
   const openPath = host.onOpenPath.mock.lastCall![0];

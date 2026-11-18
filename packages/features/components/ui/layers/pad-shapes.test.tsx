@@ -6,6 +6,7 @@ import type { BoardPlacement, Component } from '@pcbk/domain';
 import { boardPads } from '@pcbk/domain/geometry';
 import { createHitIndex } from '@pcbk/ui';
 import { setup } from '../../../__tests__/helpers';
+import { ComponentsLayer } from './ComponentsLayer';
 import { ComponentShape } from './ComponentShape';
 import type { ComponentLayerKind } from './ComponentShape';
 import { componentPinHits } from './hits';
@@ -48,6 +49,17 @@ function mount(
   selectedPinId: string | null = null,
   pxPerMm = newBoardDoc('Plaat').scale.pxPerMm,
 ) {
+  if (kind === 'labels') {
+    const doc = newBoardDoc('Plaat');
+    doc.scale.pxPerMm = pxPerMm;
+    doc.components.push(part);
+    const snapshot = setup(doc).engine.snapshot();
+    return render(
+      <svg>
+        <ComponentsLayer kind="labels" snapshot={snapshot} zoom={zoom} preview={null} />
+      </svg>,
+    ).container;
+  }
   return render(
     <svg>
       <ComponentShape

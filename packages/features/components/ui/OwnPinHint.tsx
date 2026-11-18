@@ -14,7 +14,7 @@ function ActiveOwnPinHint() {
   const hasTarget = useSnapshot((snapshot) => Boolean(ownPinTarget(snapshot, selection)));
   const error = useOwnPinError((state) => state.error);
   return (
-    <span role="status" data-own-pin-hint="" style={{ color: error ? 'var(--danger)' : undefined }}>
+    <span role="status" data-own-pin-hint="" data-error={error ? '' : undefined}>
       {error ?? (hasTarget ? ownPinEt.clickBoard : ownPinEt.selectComponent)}
     </span>
   );

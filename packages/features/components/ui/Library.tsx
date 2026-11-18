@@ -5,7 +5,7 @@ import { Button, Field, useSessionStore } from '@pcbk/ui';
 import { footprintGeometry, type FootprintParams } from '@pcbk/domain/footprints';
 import type { LibraryEntry } from '../contract';
 import { placementEt } from './i18n/et';
-import { FootprintPreview } from './FootprintPreview';
+import { FootprintPreview, FootprintSilhouette } from './FootprintPreview';
 import { FootprintParameters, validatedFootprintParams } from './FootprintParameters';
 import { addPlacedComponent } from './PlaceTool';
 import { beginPlacement, usePlaceStore } from './place-store';
@@ -29,7 +29,7 @@ function AnchoredPlacementActions({
 }) {
   const engine = useEngine();
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8 }}>
+    <div className="pcbk-library__anchor-actions">
       <Button
         variant="primary"
         disabled={!params}
@@ -146,7 +146,7 @@ export function Library({ ids }: { ids?: IdGen }) {
                     <li key={entry.id}>
                       <button
                         type="button"
-                        className="pcbk-component-row"
+                        className="pcbk-component-row pcbk-library__row"
                         aria-label={libraryName(entry.id)}
                         aria-describedby={entry.id === 'unknown' ? subtitleId : undefined}
                         aria-expanded={entryId === entry.id}
@@ -154,6 +154,9 @@ export function Library({ ids }: { ids?: IdGen }) {
                           setEntryId((previous) => (previous === entry.id ? undefined : entry.id))
                         }
                       >
+                        <span className="pcbk-library__silhouette-slot">
+                          <FootprintSilhouette entryId={entry.id} />
+                        </span>
                         <span className="pcbk-component-row__body">
                           <span>{libraryName(entry.id)}</span>
                           {entry.id === 'unknown' && (

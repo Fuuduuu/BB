@@ -1,7 +1,7 @@
 import type { Snapshot } from '@pcbk/contracts';
 import type { ReactNode } from 'react';
 import type { LayerSpec, ToolApi, ToolSpec } from '../canvas/tools';
-import type { Selection } from './session-store';
+import type { Selection, SelectionItem } from './session-store';
 import { isShellShortcut } from './keymap';
 
 export interface SlotSpec {
@@ -37,12 +37,18 @@ export interface PinnedSpec {
   render(): ReactNode;
 }
 
+export interface SelectionKindSpec {
+  kind: SelectionItem['kind'];
+  label(snapshot: Snapshot, item: SelectionItem): string | null;
+}
+
 export interface UiModule {
   id: string;
   title: string;
   navigatorTabs?: PanelSpec[];
   contextSections?: ContextSectionSpec[];
   contextPinned?: PinnedSpec[];
+  selectionKinds?: SelectionKindSpec[];
   topBar?: SlotSpec[];
   bottomBar?: SlotSpec[];
   canvasLayers?: LayerSpec[];
@@ -60,6 +66,7 @@ function copyModule(module: UiModule): UiModule {
       appliesTo: [...item.appliesTo],
     })),
     contextPinned: module.contextPinned?.map((item) => ({ ...item })),
+    selectionKinds: module.selectionKinds?.map((item) => ({ ...item })),
     topBar: module.topBar?.map((item) => ({ ...item })),
     bottomBar: module.bottomBar?.map((item) => ({ ...item })),
     canvasLayers: module.canvasLayers?.map((item) => ({ ...item })),
@@ -149,6 +156,18 @@ export class UiRegistry {
   }
   contextPinned(): PinnedSpec[] {
     return ordered(this.modules().flatMap((module) => module.contextPinned ?? []));
+  }
+  selectionLabel(snapshot: Snapshot, selection: Selection): string | null {
+    const [item] = selection.items;
+    if (selection.items.length !== 1 || !item) return null;
+    for (const module of this.registered) {
+      for (const spec of module.selectionKinds ?? []) {
+        if (spec.kind !== item.kind) continue;
+        const label = spec.label(snapshot, item);
+        if (label !== null) return label;
+      }
+    }
+    return null;
   }
   topBar(): SlotSpec[] {
     return ordered(this.modules().flatMap((module) => module.topBar ?? []));

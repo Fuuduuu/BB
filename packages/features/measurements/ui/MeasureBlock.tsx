@@ -5,7 +5,7 @@ import type { IdGen } from '@pcbk/contracts';
 import type { MeasuredPin } from '@pcbk/domain';
 import { formatReading, parseReading } from '@pcbk/domain/measure/reading';
 import { Button, Field, useSessionStore } from '@pcbk/ui';
-import { resolveContact } from './contacts';
+import { contactFromSelection, resolveContact } from './contacts';
 import { commandError, measureEt as text } from './i18n/et';
 import { pairKey, useMeasureStore } from './measure-store';
 import type { Power } from './measure-store';
@@ -17,6 +17,7 @@ const nextPower: Record<Power, Power> = { unknown: 'on', on: 'off', off: 'unknow
 export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: MeasuredPin[] }) {
   const engine = useEngine();
   const snapshot = useSnapshot((value) => value);
+  const selection = useSessionStore((state) => state.selection);
   const { measureAt, blackProbe, drafts, lastPower, focusTick, lastSavedId, ...actions } =
     useMeasureStore();
   const [error, setError] = useState<{ pair: string; message: string; invalid?: boolean }>();
@@ -38,6 +39,10 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
   const pair = pairKey(at, blackProbe);
   const draft = drafts[pair] ?? { text: '', power: lastPower };
   const activeError = error?.pair === pair ? error : undefined;
+  const selectedPin = contactFromSelection(snapshot, selection);
+  const reading = selectedPin && snapshot.derived.pinReadings[selectedPin.uid];
+  const readingMeasurement =
+    reading && snapshot.doc.measurements.find(({ id }) => id === reading.measurementId);
   const saved = snapshot.doc.measurements.find(({ id }) => id === lastSavedId);
   const lastSaved =
     saved?.mode === 'voltage' && saved.value !== undefined
@@ -113,6 +118,15 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
   return (
     <section className="pcbk-measure-block" aria-labelledby={`${id}-heading`}>
       <h2 id={`${id}-heading`}>{text.title}</h2>
+      {reading && readingMeasurement && (
+        <p className="pcbk-board-reading">
+          {text.boardReading(
+            formatReading(reading, reading.mode),
+            readingMeasurement.refLabel || text.unset,
+            text.powerLabels[readingMeasurement.power],
+          )}
+        </p>
+      )}
       <ProbeRows snapshot={snapshot} at={at} blackProbe={blackProbe} suggestions={suggestions} />
       {blocked && (
         <div className="bb-field bb-field__error" id={`${id}-deleted`} role="alert">

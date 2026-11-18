@@ -1,9 +1,11 @@
 import type { IdGen } from '@pcbk/contracts';
 import type { UiModule } from '@pcbk/ui';
+import { selectComponent } from '../contract';
 import { alignToolSpec } from './AlignTool';
 import { useAlignStore } from './align-store';
 import { ComponentDetails } from './ComponentDetails';
 import { ComponentsPanel } from './ComponentsPanel';
+import { useHoverStore } from './hover-store';
 import { PinCard } from './PinCard';
 import { Library } from './Library';
 import { createPlaceToolSpec } from './PlaceTool';
@@ -11,6 +13,7 @@ import { PlacementSection, placementKeys } from './PlacementSection';
 import { componentEt, placementEt } from './i18n/et';
 import { COMPONENTS_LAYERS } from './layers';
 import { ALIGN_LAYER, AlignHint } from './layers/AlignLayer';
+import { HOVER_LAYER } from './layers/HoverLayer';
 import { usePlaceStore } from './place-store';
 import './components.css';
 
@@ -18,13 +21,14 @@ export function createComponentsUi(ids: IdGen): UiModule {
   return {
     id: 'components',
     title: componentEt.title,
-    canvasLayers: [...COMPONENTS_LAYERS, ALIGN_LAYER],
+    canvasLayers: [...COMPONENTS_LAYERS, HOVER_LAYER, ALIGN_LAYER],
     tools: [createPlaceToolSpec(ids), alignToolSpec()],
     keys: placementKeys,
     bottomBar: [{ id: 'components.align', render: () => <AlignHint /> }],
     onSessionReset: () => {
       usePlaceStore.getState().reset();
       useAlignStore.getState().reset();
+      useHoverStore.getState().setComponentId(null);
     },
     navigatorTabs: [
       { id: 'library', title: placementEt.tabs.library, order: 0, render: () => <Library /> },
@@ -38,6 +42,21 @@ export function createComponentsUi(ids: IdGen): UiModule {
             snapshot.derived.unplacedBoard.length,
           ),
         render: () => <ComponentsPanel ids={ids} />,
+      },
+    ],
+    selectionKinds: [
+      {
+        kind: 'component',
+        label: (snapshot, item) => selectComponent(snapshot, item.id)?.ref ?? null,
+      },
+      {
+        kind: 'pin',
+        label: (snapshot, item) => {
+          if (!item.componentId) return null;
+          const component = selectComponent(snapshot, item.componentId);
+          const pin = component?.pins.find(({ id }) => id === item.id);
+          return component && pin ? `${component.ref}.${pin.name || pin.id}` : null;
+        },
       },
     ],
     contextSections: [

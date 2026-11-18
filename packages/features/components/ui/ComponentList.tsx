@@ -1,7 +1,9 @@
 import { componentEt } from './i18n/et';
+import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Snapshot } from '@pcbk/contracts';
 import { useSessionStore } from '@pcbk/ui';
+import { useHoverStore } from './hover-store';
 
 type ListedComponent = Snapshot['doc']['components'][number];
 
@@ -13,6 +15,31 @@ export function ComponentList({
   renderActions?(component: ListedComponent): ReactNode;
 }) {
   const selection = useSessionStore((s) => s.selection);
+  const previewed = useRef<string | null>(null);
+  useEffect(
+    () => () => {
+      if (previewed.current !== null) useHoverStore.getState().clear(previewed.current);
+    },
+    [],
+  );
+  useEffect(() => {
+    const id = previewed.current;
+    if (id !== null && !components.some((component) => component.id === id)) {
+      previewed.current = null;
+      useHoverStore.getState().clear(id);
+    }
+  }, [components]);
+
+  function showPreview(id: string) {
+    previewed.current = id;
+    useHoverStore.getState().setComponentId(id);
+  }
+
+  function clearPreview(id: string) {
+    if (previewed.current === id) previewed.current = null;
+    useHoverStore.getState().clear(id);
+  }
+
   return (
     <ul className="pcbk-components__list">
       {components.map((component) => (
@@ -26,6 +53,10 @@ export function ComponentList({
                 (item.kind === 'component' && item.id === component.id) ||
                 (item.kind === 'pin' && item.componentId === component.id),
             )}
+            onPointerEnter={() => showPreview(component.id)}
+            onPointerLeave={() => clearPreview(component.id)}
+            onFocus={() => showPreview(component.id)}
+            onBlur={() => clearPreview(component.id)}
             onClick={() =>
               useSessionStore
                 .getState()

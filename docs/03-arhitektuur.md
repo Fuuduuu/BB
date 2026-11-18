@@ -133,6 +133,7 @@ export interface UiModule {
   schematicLayers?: LayerSpec[];
   navigatorTabs?: PanelSpec[];
   contextSections?: ContextSectionSpec[];
+  selectionKinds?: SelectionKindSpec[]; // label on olemas, olemasolu ja liigutatavus lisanduvad M2.1-s
   contextPinned?: PinnedSpec[];
   bottomBar?: SlotSpec[];
   topBar?: SlotSpec[];

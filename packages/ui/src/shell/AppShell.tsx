@@ -123,10 +123,14 @@ function Context({
   pinned: PinnedSpec[];
 }) {
   const sections = registry.contextSections(selection);
+  const label = useSnapshot((snapshot) => registry.selectionLabel(snapshot, selection));
+  const heading = label === null ? et.shell.context : `${et.shell.context} · ${label}`;
   return (
     <>
       <div className="pcbk-pane-heading">
-        {et.shell.context}
+        <span className="pcbk-context-heading-label" title={label === null ? undefined : heading}>
+          {heading}
+        </span>
         <Button
           variant="ghost"
           className="pcbk-context-close"

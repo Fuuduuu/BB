@@ -31,6 +31,56 @@ function chooseReference(clickPin: (pinId: string) => void, pinId: string) {
   clickPin(pinId);
 }
 
+test('reading_reveals_probe_pair_and_power', () => {
+  const { clickBlank, clickPin } = mountMeasurements({
+    seed: (doc) => {
+      const reading = {
+        id: 'msr_shown',
+        mode: 'voltage',
+        at: pinRef('1'),
+        atLabel: 'U1.1',
+        ref: pinRef('4'),
+        refLabel: '12V siin',
+        value: -7,
+        power: 'on',
+        takenAt: '2026-11-10T10:00:00.000Z',
+        source: 'manual',
+      } as const;
+      doc.measurements.push(
+        reading,
+        {
+          ...reading,
+          id: 'msr_resistance',
+          mode: 'resistance',
+          ref: pinRef('3'),
+          refLabel: 'U1.3',
+          value: 10,
+          power: 'off',
+          takenAt: '2026-11-10T10:01:00.000Z',
+        },
+        {
+          id: 'msr_no_ref',
+          mode: 'voltage',
+          at: pinRef('2'),
+          atLabel: 'U1.2',
+          value: 0,
+          power: 'unknown',
+          takenAt: '2026-11-10T10:02:00.000Z',
+          source: 'manual',
+        },
+      );
+    },
+  });
+  clickPin('1');
+  expect(measureBlock().getByText('Plaadil: -7 V · must 12V siin · toide sees')).toBeTruthy();
+  clickBlank();
+  expect(measureBlock().queryByText(/^Plaadil:/)).toBeNull();
+  clickPin('2');
+  expect(measureBlock().getByText('Plaadil: 0 V · must määramata · toide teadmata')).toBeTruthy();
+  clickPin('3');
+  expect(measureBlock().queryByText(/^Plaadil:/)).toBeNull();
+});
+
 test('black_probe_is_never_chosen_automatically', () => {
   const { clickPin, engine } = mountMeasurements();
   expect(screen.queryByRole('region', { name: 'Mõõda' })).toBeNull();

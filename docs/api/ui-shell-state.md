@@ -197,6 +197,14 @@ export type SelectionItem = {
 };
 ```
 
+### `SelectionKindSpec`
+```ts
+export interface SelectionKindSpec {
+    kind: SelectionItem['kind'];
+    label(snapshot: Snapshot, item: SelectionItem): string | null;
+}
+```
+
 ### `SHELL_KEYS`
 ```ts
 export const SHELL_KEYS: {
@@ -275,6 +283,7 @@ export interface UiModule {
     navigatorTabs?: PanelSpec[];
     contextSections?: ContextSectionSpec[];
     contextPinned?: PinnedSpec[];
+    selectionKinds?: SelectionKindSpec[];
     topBar?: SlotSpec[];
     bottomBar?: SlotSpec[];
     canvasLayers?: LayerSpec[];
@@ -293,6 +302,7 @@ export class UiRegistry {
     navigatorTabs(): PanelSpec[];
     contextSections(selection: Selection): ContextSectionSpec[];
     contextPinned(): PinnedSpec[];
+    selectionLabel(snapshot: Snapshot, selection: Selection): string | null;
     topBar(): SlotSpec[];
     bottomBar(): SlotSpec[];
     canvasLayers(): LayerSpec[];

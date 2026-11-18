@@ -121,7 +121,14 @@
   padding: 16px;
   overflow: auto;
 }
+.pcbk-context-heading-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .pcbk-context-close {
+  flex: none;
   margin-left: auto;
   width: 32px;
   padding: 0;

@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { footprintGeometry } from '@pcbk/domain/footprints';
 import { COMPONENT_LIBRARY } from './contract';
 
-// Counts read from the prototype generators, independent of the BB implementations.
+// Counts from the prototype generators, with BB's additional unknown entry.
 const prototypePinCounts: Readonly<Record<string, number>> = {
   r_smd: 2,
   c_smd: 2,
@@ -38,7 +38,8 @@ const prototypePinCounts: Readonly<Record<string, number>> = {
   xtal_smd: 4,
   btn: 4,
   pot: 3,
-  unknown: 0, // prototüübi `custom` paigutused tulevad M1.4-s (oma jalad)
+  custom: 8,
+  unknown: 0,
   tp: 1,
   via: 1,
   pad: 1,
@@ -53,4 +54,22 @@ test('every_library_entry_matches_prototype_pin_count', () => {
     expect(geometry, id).toBeDefined();
     expect(geometry!.pads.length, id).toBe(prototypePinCounts[id]);
   }
+});
+
+test('custom library entry exposes the supported layout choices and dimensions', () => {
+  expect(COMPONENT_LIBRARY.find(({ id }) => id === 'custom')).toEqual({
+    id: 'custom',
+    kind: 'ic',
+    category: 'misc',
+    footprint: 'custom',
+    kw: 'custom kohandatud generic moodul',
+    params: { layout: 'two_rows', pins: 8, pitch: 2.54, w: 8, h: 10 },
+    paramSpec: [
+      { key: 'layout', label: 'layout', choices: ['two_rows', 'one_row', 'four_sides', 'empty'] },
+      { key: 'pins', label: 'pins', min: 0, max: 200, step: 1 },
+      { key: 'pitch', label: 'pitchMm', min: 0.3, max: 10, step: 0.01 },
+      { key: 'w', label: 'width', min: 1, max: 200, step: 0.1 },
+      { key: 'h', label: 'height', min: 1, max: 200, step: 0.1 },
+    ],
+  });
 });

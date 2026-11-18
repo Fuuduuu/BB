@@ -3,14 +3,21 @@ import { Field } from '@pcbk/ui';
 import type { FootprintParams } from '@pcbk/domain/footprints';
 import type { LibraryEntry } from '../contract';
 import { placementEt } from './i18n/et';
-import { numericParameter, parameterLabel, positiveDecimal } from './placement';
+import {
+  numericParameter,
+  parameterChoiceLabel,
+  parameterLabel,
+  positiveDecimal,
+} from './placement';
 
 function OptionField<T extends string | number>({
+  paramKey,
   label,
   value,
   choices,
   onChange,
 }: {
+  paramKey: string;
   label: string;
   value: string | number | undefined;
   choices: readonly T[];
@@ -31,11 +38,14 @@ function OptionField<T extends string | number>({
           if (next !== undefined) onChange(next);
         }}
       >
-        {choices.map((choice) => (
-          <option key={choice} value={choice}>
-            {typeof choice === 'number' ? choice.toLocaleString('et') : choice}
-          </option>
-        ))}
+        {choices.map((choice) => {
+          const text = parameterChoiceLabel(paramKey, choice);
+          return (
+            <option key={choice} value={choice}>
+              {typeof text === 'number' ? text.toLocaleString('et') : text}
+            </option>
+          );
+        })}
       </select>
     </div>
   );
@@ -76,6 +86,7 @@ export function FootprintParameters({
         'choices' in spec ? (
           <OptionField
             key={spec.key}
+            paramKey={spec.key}
             label={parameterLabel(spec.label)}
             value={params[spec.key]}
             choices={spec.choices}

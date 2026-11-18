@@ -218,6 +218,20 @@ export const COMPONENT_LIBRARY: readonly LibraryEntry[] = [
     ['xtal_smd', 'crystal', 'xtal_smd', {}, 'crystal 3225'],
     ['btn', 'switch', 'button', {}, 'button switch tact'],
     ['pot', 'resistor', 'trimmer', {}, 'potentiometer'],
+    [
+      'custom',
+      'ic',
+      'custom',
+      { layout: 'two_rows', pins: 8, pitch: 2.54, w: 8, h: 10 },
+      'custom kohandatud generic moodul',
+      [
+        choice('layout', ['two_rows', 'one_row', 'four_sides', 'empty']),
+        range('pins', 0, 200, 1),
+        range('pitch', 0.3, 10, 0.01, 'pitchMm'),
+        range('w', 1, 200, 0.1, 'width'),
+        range('h', 1, 200, 0.1, 'height'),
+      ],
+    ],
     ['unknown', 'other', 'area', { w: 8, h: 10 }, 'unknown generic custom moodul'],
   ]),
   ...entries('point', [

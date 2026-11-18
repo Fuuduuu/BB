@@ -261,7 +261,7 @@ test('editor_offers_all_groups_preserves_kind_and_rejects_invalid_numeric_draft'
   const { engine } = mount(fixture(8));
   const editor = edit();
   const choices = editor.getByRole('combobox', { name: 'Vali korpus' });
-  expect(within(choices).getAllByRole('option')).toHaveLength(40);
+  expect(within(choices).getAllByRole('option')).toHaveLength(41);
   expect(
     within(choices)
       .getAllByRole<HTMLOptGroupElement>('group')

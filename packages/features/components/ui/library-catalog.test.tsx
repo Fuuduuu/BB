@@ -49,6 +49,7 @@ test('library_has_40_entries_in_prototype_order', () => {
     'xtal_smd',
     'btn',
     'pot',
+    'custom',
     'unknown',
     'tp',
     'via',
@@ -68,7 +69,7 @@ test('library_groups_entries_by_category_and_hides_empty_groups_on_search', () =
     'Muud',
     'Punktid plaadil',
   ]);
-  expect(screen.getAllByRole('listitem')).toHaveLength(40);
+  expect(screen.getAllByRole('listitem')).toHaveLength(41);
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'testpunkt' } });
   expect(screen.getAllByRole('heading').map(({ textContent }) => textContent)).toEqual([
     'Punktid plaadil',

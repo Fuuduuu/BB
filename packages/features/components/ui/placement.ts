@@ -20,6 +20,13 @@ export function parameterLabel(key: string): string {
   return typeof label === 'string' ? label : key;
 }
 
+export function parameterChoiceLabel(key: string, choice: string | number): string | number {
+  if (key === 'layout' && typeof choice === 'string') {
+    return nameFor(placementEt.params.layouts, choice);
+  }
+  return choice;
+}
+
 export function searchLibrary(query: string): readonly LibraryEntry[] {
   const words = query.trim().toLocaleLowerCase('et').split(/\s+/);
   return COMPONENT_LIBRARY.filter((entry) => {

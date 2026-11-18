@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitest/config';
+import { appVersionDefine } from './tooling/app-version.mjs';
 
 export default defineConfig({
+  define: appVersionDefine,
   test: {
     environment: 'node',
     maxWorkers: 4,

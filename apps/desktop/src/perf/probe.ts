@@ -5,6 +5,7 @@ import { et, useSessionStore, useViewStore } from '@pcbk/ui';
 import type { Result, SaveStatus, Snapshot } from '@pcbk/contracts';
 import type { createRuntime } from '../runtime';
 import { frameStats } from './frame-stats';
+import { measureProjectIpc } from './ipc-timing';
 import { generateSyntheticBoard } from './synthetic-board';
 import { createSyntheticPhoto } from './synthetic-photo';
 import {
@@ -215,6 +216,9 @@ async function measure(runtime: Runtime) {
     await saveQuiet(runtime);
     const drag = await dragComponent(runtime, canvas, target.id);
     await saveQuiet(runtime);
+    const dom = canvasCounts(canvas);
+    await closeWorkbench(runtime);
+    const ipc = { stage: 'after_gestures', samples: await measureProjectIpc(created.path) };
     const reasons = foreground.reasons();
     return {
       valid: reasons.length === 0,
@@ -235,7 +239,8 @@ async function measure(runtime: Runtime) {
         previewFrames: drag.previewFrames,
       },
       ...environment(),
-      dom: canvasCounts(canvas),
+      dom,
+      ipc,
       baseZoom,
       target: { id: target.id, footprint: target.board.footprint, center: target.board.center },
     };

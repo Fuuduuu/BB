@@ -59,6 +59,14 @@ function drop(file: File, target: Element = dropZone()) {
   fireEvent.drop(target, { dataTransfer: { files: [file] } });
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((finish) => {
+    resolve = finish;
+  });
+  return { promise, resolve };
+}
+
 test('home_drop_creates_board_named_after_file_with_photo', async () => {
   const { runtime } = mount();
   drop(photo());
@@ -185,21 +193,39 @@ test('theme_select_on_home_not_in_top_bar', async () => {
 
 test('home_photo_import_disables_workspace_and_queues_second_drop', async () => {
   const { runtime } = mount();
-  let decode!: (value: { width: number; height: number; close(): void }) => void;
-  vi.mocked(createImageBitmap).mockReturnValueOnce(
-    new Promise((resolve) => {
-      decode = resolve;
-    }),
-  );
-  const zone = dropZone();
-  drop(photo('First.png'), zone);
-  drop(photo('Second.png'), zone);
-  await screen.findByRole('heading', { name: 'First' });
-  expect(screen.getByRole('button', { name: 'Tagasi avalehele' }).matches(':disabled')).toBe(true);
-  act(() => decode({ width: 1, height: 1, close() {} }));
-  await screen.findByRole('heading', { name: 'Second' });
-  await waitFor(() => expect(runtime.engine.snapshot().doc.photos).toHaveLength(1));
-  expect(runtime.engine.snapshot().doc.photos[0]?.name).toBe('Second.png');
+  const firstDecodeStarted = deferred<void>();
+  const firstDecode = deferred<ImageBitmap>();
+  const secondImported = deferred<void>();
+  vi.mocked(createImageBitmap).mockImplementationOnce(() => {
+    firstDecodeStarted.resolve();
+    return firstDecode.promise;
+  });
+  const unsubscribe = runtime.engine.subscribe(({ doc }) => {
+    if (doc.name === 'Second' && doc.photos[0]?.name === 'Second.png') secondImported.resolve();
+  });
+  const bitmap = { width: 1, height: 1, close() {} };
+  try {
+    const zone = dropZone();
+    await act(async () => {
+      drop(photo('First.png'), zone);
+      drop(photo('Second.png'), zone);
+      await firstDecodeStarted.promise;
+    });
+    expect(screen.getByRole('heading', { name: 'First' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Tagasi avalehele' }).matches(':disabled')).toBe(
+      true,
+    );
+
+    await act(async () => {
+      firstDecode.resolve(bitmap);
+      await secondImported.promise;
+    });
+    expect(screen.getByRole('heading', { name: 'Second' })).toBeTruthy();
+    expect(runtime.engine.snapshot().doc.photos.map(({ name }) => name)).toEqual(['Second.png']);
+  } finally {
+    firstDecode.resolve(bitmap);
+    unsubscribe();
+  }
 });
 
 test('paste_ignores_dialog_inputs_and_is_removed_after_home', async () => {

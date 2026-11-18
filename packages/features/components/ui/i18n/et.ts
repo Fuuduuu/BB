@@ -243,3 +243,21 @@ export const placementEt = {
     remove: 'Eemalda paigutus plaadilt',
   },
 } as const;
+export const alignEt = {
+  tool: 'Joonda',
+  steps: {
+    1: 'Joonda: vali jalg 1 · Esc katkestab',
+    2: 'Joonda: klõpsa jala 1 kohta fotol · Esc katkestab',
+    3: 'Joonda: vali jalg 2 · Esc katkestab',
+    4: 'Joonda: klõpsa jala 2 kohta fotol · Esc katkestab',
+  },
+  pickPin: 'Vali komponendi jalg.',
+  sameComponent: 'Vali teine jalg samalt komponendilt.',
+  pinPosition: 'Jala asukohta ei saa üheselt määrata.',
+  errors: {
+    same_pin: 'Vali teine jalg.',
+    pins_coincide: 'Jalad on samas kohas või nende asukoht on ebaselge.',
+    targets_coincide: 'Sihtpunktid on liiga lähestikku.',
+    scale_out_of_range: 'Joondus viiks mõõtkava lubatud vahemikust (0,2–5) välja.',
+  },
+} as const;

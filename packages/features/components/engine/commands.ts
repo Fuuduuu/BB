@@ -6,6 +6,7 @@ import {
   AddComponentSchema,
   UpdateComponentSchema,
   AddPinSchema,
+  AlignSchema,
   ChangeFootprintSchema,
   ComponentTargetSchema,
   PinTargetSchema,
@@ -20,6 +21,7 @@ import type {
   AddComponentParams,
   UpdateComponentParams,
   AddPinParams,
+  AlignParams,
   BoardInput,
   ChangeFootprintParams,
   ComponentTargetParams,
@@ -239,6 +241,18 @@ const setScale: CommandSpec<SetScaleParams> = {
     board.scaleY = params.scaleY;
   },
 };
+const align: CommandSpec<AlignParams> = {
+  id: 'components.align',
+  title: 'components.align',
+  params: AlignSchema,
+  run(doc, params) {
+    const board = placedBoard(doc, params.id);
+    board.center = params.center;
+    board.rotationDeg = normalizeAngle(params.rotationDeg);
+    board.scaleX = params.scaleX;
+    board.scaleY = params.scaleY;
+  },
+};
 const setLabelOffset: CommandSpec<SetLabelOffsetParams> = {
   id: 'components.setLabelOffset',
   title: 'components.setLabelOffset',
@@ -263,5 +277,6 @@ export const commands = [
   rotate,
   flipSide,
   setScale,
+  align,
   setLabelOffset,
 ];

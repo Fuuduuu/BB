@@ -294,6 +294,10 @@ export const SetScaleSchema = ComponentTargetSchema.extend({
   scaleX: BoardPlacementSchema.shape.scaleX,
   scaleY: BoardPlacementSchema.shape.scaleY,
 });
+export const AlignSchema = SetScaleSchema.extend({
+  center: Vec2Schema,
+  rotationDeg: z.number(),
+});
 export const COMPONENT_SCALE_MIN = SetScaleSchema.shape.scaleX.minValue ?? 0.2;
 export const COMPONENT_SCALE_MAX = SetScaleSchema.shape.scaleX.maxValue ?? 5;
 export const SetLabelOffsetSchema = ComponentTargetSchema.extend({ offset: Vec2Schema.nullable() });
@@ -310,6 +314,7 @@ export type PlaceOnBoardParams = z.infer<typeof PlaceOnBoardSchema>;
 export type ChangeFootprintParams = z.infer<typeof ChangeFootprintSchema>;
 export type RotateParams = z.infer<typeof RotateSchema>;
 export type SetScaleParams = z.infer<typeof SetScaleSchema>;
+export type AlignParams = z.infer<typeof AlignSchema>;
 export type SetLabelOffsetParams = z.infer<typeof SetLabelOffsetSchema>;
 
 declare module '@pcbk/contracts' {
@@ -326,6 +331,7 @@ declare module '@pcbk/contracts' {
     'components.rotate': RotateParams;
     'components.flipSide': ComponentTargetParams;
     'components.setScale': SetScaleParams;
+    'components.align': AlignParams;
     'components.setLabelOffset': SetLabelOffsetParams;
   }
 }

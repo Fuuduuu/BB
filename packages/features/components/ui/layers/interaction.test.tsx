@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, expect, test, vi } from 'vitest';
-import { useMemo, useSyncExternalStore } from 'react';
+import { Fragment, useMemo, useSyncExternalStore } from 'react';
 import { newBoardDoc } from '@pcbk/domain';
 import type { BoardPlacement } from '@pcbk/domain';
-import { Canvas, UiRegistry, useSessionStore } from '@pcbk/ui';
+import { boardPads } from '@pcbk/domain/geometry';
+import { bindHistoryKeys, Canvas, UiRegistry, useSessionStore, useViewStore } from '@pcbk/ui';
 import type { SceneTransform, ToolApi } from '@pcbk/ui';
 import { idGenerator, setup } from '../../../__tests__/helpers';
 import { createComponentsUi } from '..';
@@ -18,6 +19,7 @@ const labelAt = { x: 160, y: 40 };
 afterEach(() => {
   cleanup();
   useSessionStore.getState().reset('');
+  useViewStore.getState().setBoardView({ zoom: 1, pan: { x: 0, y: 0 } });
 });
 
 function mount(
@@ -55,23 +57,31 @@ function mount(
   const { engine } = setup(doc);
   const registry = new UiRegistry([createComponentsUi(idGenerator())]);
   const layers = registry.canvasLayers();
+  const tools = registry.tools();
+  const bottomBar = registry.bottomBar();
   const execute = vi.fn<ToolApi['execute']>((...args) => engine.execute(...args));
   const view = { zoom, pan: { x: 0, y: 0 } };
   useSessionStore.getState().reset(engine.snapshot().sessionId);
+  useViewStore.getState().setBoardView(view);
   function Board() {
     const snapshot = useSyncExternalStore(engine.subscribe, engine.snapshot, engine.snapshot);
     const selection = useSessionStore((state) => state.selection);
     const currentLayers = useMemo(() => registry.canvasLayers(), [selection]);
     return (
-      <Canvas
-        layers={currentLayers}
-        tools={[]}
-        sceneTransform={sceneTransform}
-        view={view}
-        onViewChange={() => {}}
-        snapshot={snapshot}
-        execute={execute}
-      />
+      <>
+        <Canvas
+          layers={currentLayers}
+          tools={tools}
+          sceneTransform={sceneTransform}
+          view={view}
+          onViewChange={() => {}}
+          snapshot={snapshot}
+          execute={execute}
+        />
+        {bottomBar.map(({ id, render }) => (
+          <Fragment key={id}>{render()}</Fragment>
+        ))}
+      </>
     );
   }
   const rendered = render(<Board />);
@@ -85,7 +95,7 @@ function mount(
   Object.defineProperty(scene, 'getScreenCTM', {
     value: () => ({ inverse: () => ({ a: 1 / zoom, b: 0, c: 0, d: 1 / zoom, e: 0, f: 0 }) }),
   });
-  return { ...rendered, svg, engine, execute, layers };
+  return { ...rendered, svg, engine, execute, layers, registry };
 }
 
 function pointer(svg: SVGSVGElement, type: string, x: number, y: number) {
@@ -98,6 +108,129 @@ function click(svg: SVGSVGElement, x: number, y: number) {
   pointer(svg, 'pointerdown', x, y);
   pointer(svg, 'pointerup', x, y);
 }
+
+function beginAlignment(svg: SVGSVGElement, zoom = 1) {
+  fireEvent.keyDown(window, { key: 'a' });
+  expect(useSessionStore.getState().toolId).toBe('components.align');
+  click(svg, 90 * zoom, 80 * zoom);
+  click(svg, 180 * zoom, 120 * zoom);
+}
+
+test('align_is_one_undo_step', () => {
+  const { svg, engine, execute, getByRole } = mount();
+  const before = engine.snapshot();
+  beginAlignment(svg);
+  click(svg, 110, 80);
+  expect(svg.querySelectorAll('[data-align-target]')).toHaveLength(2);
+  pointer(svg, 'pointermove', 180, 150);
+  expect(getByRole('status').textContent).toContain('jala 2 kohta fotol');
+  expect(svg.querySelectorAll('[data-align-pin]')).toHaveLength(2);
+  expect(svg.querySelectorAll('[data-align-target]')).toHaveLength(2);
+  expect(
+    svg.querySelectorAll('[data-layer="components.align"] line[stroke-dasharray]'),
+  ).toHaveLength(2);
+  expect(engine.snapshot()).toBe(before);
+  expect(execute).not.toHaveBeenCalled();
+
+  click(svg, 180, 150);
+  expect(execute).toHaveBeenCalledTimes(1);
+  expect(execute.mock.lastCall?.[0]).toBe('components.align');
+  expect(getByRole('status').textContent).toContain('vali jalg 1');
+  expect(useSessionStore.getState().selection.items).toEqual([component]);
+  const board = engine.snapshot().doc.components[0]!.board!;
+  const [a, b] = boardPads(board, ['1', '2'], 10);
+  expect(a!.at.x).toBeCloseTo(180);
+  expect(a!.at.y).toBeCloseTo(120);
+  expect(b!.at.x).toBeCloseTo(180);
+  expect(b!.at.y).toBeCloseTo(150);
+
+  const unbind = bindHistoryKeys(window, { undo: () => engine.undo(), redo: () => engine.redo() });
+  try {
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(engine.snapshot().doc).toEqual({ ...before.doc, rev: before.doc.rev + 2 });
+    expect(engine.snapshot().history).toMatchObject({ canUndo: false, canRedo: true });
+  } finally {
+    unbind();
+  }
+});
+
+test('align_cancel_with_escape_changes_nothing', () => {
+  const { svg, engine, execute, queryByRole } = mount();
+  const before = engine.snapshot();
+  beginAlignment(svg);
+  click(svg, 110, 80);
+  fireEvent.keyDown(window, { key: 'Escape' });
+  expect(queryByRole('status')).toBeNull();
+  expect(svg.querySelector('[data-layer="components.align"]')).toBeNull();
+  expect(engine.snapshot()).toBe(before);
+  expect(execute).not.toHaveBeenCalled();
+  fireEvent.keyDown(window, { key: 'a' });
+  expect(queryByRole('status')?.textContent).toContain('vali jalg 1');
+});
+
+test('align_uses_the_physical_pad_clicked_on_a_multi_pad_pin', () => {
+  const { svg, engine } = mount({
+    padMap: { '2': '1' },
+    customPads: { '2': { local: { x: 0, y: 2 }, sizeMm: 1, shape: 'circle', through: false } },
+  });
+  fireEvent.keyDown(window, { key: 'a' });
+  click(svg, 110, 80);
+  click(svg, 180, 120);
+  click(svg, 100, 100);
+  click(svg, 170, 140);
+  const board = engine.snapshot().doc.components[0]!.board!;
+  const [, chosen, other] = boardPads(board, ['1', '2'], 10);
+  expect(chosen?.at).toEqual({ x: 180, y: 120 });
+  expect(other?.at).toEqual({ x: 170, y: 140 });
+});
+
+test('align_rejects_scale_outside_limits', () => {
+  const { svg, engine, execute, getByRole } = mount();
+  const before = engine.snapshot();
+  beginAlignment(svg);
+  click(svg, 110, 80);
+  click(svg, 330, 120);
+  expect(getByRole('status').textContent).toContain('mõõtkava lubatud vahemikust');
+  expect(engine.snapshot()).toBe(before);
+  expect(execute).not.toHaveBeenCalled();
+  click(svg, 180, 150);
+  expect(execute.mock.lastCall?.[0]).toBe('components.align');
+});
+
+test('align_uses_a_five_screen_pixel_target_limit', () => {
+  const { svg, execute, getByRole } = mount({}, 2);
+  beginAlignment(svg, 2);
+  click(svg, 220, 160);
+  click(svg, 364, 240);
+  expect(getByRole('status').textContent).toContain('Sihtpunktid on liiga lähestikku');
+  expect(execute).not.toHaveBeenCalled();
+});
+
+test('align_rejects_a_pin_from_another_component_and_resets_on_session_change', () => {
+  const { svg, engine, registry, getByRole } = mount();
+  act(() => {
+    expect(
+      engine.execute('components.add', {
+        id: 'cmp_other',
+        kind: 'resistor',
+        pins: [
+          { id: '1', uid: 'pin_other_1' },
+          { id: '2', uid: 'pin_other_2' },
+        ],
+        board: { footprint: 'chip', params: { size: '0805' }, center: { x: 250, y: 80 } },
+      }).ok,
+    ).toBe(true);
+  });
+  beginAlignment(svg);
+  click(svg, 240, 80);
+  expect(getByRole('status').textContent).toContain('samalt komponendilt');
+  expect(svg.querySelectorAll('[data-align-pin]')).toHaveLength(1);
+  click(svg, 110, 80);
+  expect(getByRole('status').textContent).toContain('jala 2 kohta fotol');
+  act(() => registry.resetSession());
+  expect(getByRole('status').textContent).toContain('vali jalg 1');
+  expect(svg.querySelector('[data-layer="components.align"]')).toBeNull();
+});
 
 const area = { footprint: 'area', params: {} };
 

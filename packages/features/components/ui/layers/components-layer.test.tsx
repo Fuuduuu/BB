@@ -150,6 +150,7 @@ test('unplaced_component_not_drawn', () => {
     ['components.pins', 50],
     ['components.labels', 60],
     ['components.handles', 90],
+    ['components.align', 100],
   ]);
   for (const layer of ['bodies', 'pins', 'labels']) {
     expect(group(layer)).toBeTruthy();

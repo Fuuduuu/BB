@@ -213,6 +213,76 @@ test('setScale requires a placed component', () => {
   expect(engine.snapshot()).toBe(before);
 });
 
+const alignPose = {
+  center: { x: -50, y: 13 },
+  rotationDeg: -450.5,
+  scaleX: 0.2,
+  scaleY: 5,
+};
+
+test('align command applies the whole pose in one undoable change', () => {
+  const { engine } = setup();
+  const id = 'cmp_a';
+  const board = { ...chipBoard, rotationDeg: 37, side: 'bottom' } as const;
+  expect(engine.execute('components.add', { ...add(id), board }).ok).toBe(true);
+  expect(engine.execute('components.add', { ...add('cmp_b'), board: chipBoard }).ok).toBe(true);
+  expect(engine.execute('components.setLabelOffset', { id, offset: { x: 3, y: -4 } }).ok).toBe(
+    true,
+  );
+  const before = engine.snapshot();
+  const [target, other] = before.doc.components;
+  const expected = [
+    { ...target, board: { ...target!.board, ...alignPose, rotationDeg: 269.5 } },
+    other,
+  ];
+
+  expect(engine.execute('components.align', { id, ...alignPose })).toEqual({
+    ok: true,
+    value: { rev: before.rev + 1 },
+  });
+  expect(engine.snapshot().doc.components).toEqual(expected);
+  expect(engine.undo().ok).toBe(true);
+  expect(engine.snapshot().doc.components).toEqual(before.doc.components);
+  expect(engine.redo().ok).toBe(true);
+  expect(engine.snapshot().doc.components).toEqual(expected);
+});
+
+test.each([
+  { patch: { scaleX: 0.19 }, path: ['scaleX'] },
+  { patch: { scaleY: 5.01 }, path: ['scaleY'] },
+  { patch: { rotationDeg: Number.POSITIVE_INFINITY }, path: ['rotationDeg'] },
+  { patch: { center: { x: Number.NaN, y: 13 } }, path: ['center', 'x'] },
+])('align command validates $path before changing the document', ({ patch, path }) => {
+  const { engine } = setup();
+  const id = 'cmp_a';
+  expect(engine.execute('components.add', { ...add(id), board: chipBoard }).ok).toBe(true);
+  const before = engine.snapshot();
+
+  expect(engine.execute('components.align', { id, ...alignPose, ...patch })).toMatchObject({
+    ok: false,
+    error: { code: 'validation', issues: [{ path }] },
+  });
+  expect(engine.snapshot()).toBe(before);
+});
+
+test('align command requires an existing board placement', () => {
+  const { engine } = setup();
+  const id = 'cmp_a';
+  const missing = 'cmp_missing';
+  expect(engine.execute('components.add', add(id)).ok).toBe(true);
+  const before = engine.snapshot();
+
+  expect(engine.execute('components.align', { id: missing, ...alignPose })).toEqual({
+    ok: false,
+    error: { code: 'not_found', id: missing },
+  });
+  expect(engine.execute('components.align', { id, ...alignPose })).toMatchObject({
+    ok: false,
+    error: { code: 'validation', issues: [{ message: 'component_not_placed' }] },
+  });
+  expect(engine.snapshot()).toBe(before);
+});
+
 test('board commands reject non-finite rotation and label offset', () => {
   const { engine } = setup();
   engine.execute('components.add', { ...add(), board: chipBoard });

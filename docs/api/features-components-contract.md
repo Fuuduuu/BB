@@ -35,6 +35,22 @@ export type AddPinParams = {
 export const AddPinSchema: ZodType<AddPinParams>;
 ```
 
+### `AlignParams`
+```ts
+export type AlignParams = {
+    id: string;
+    scaleX: number;
+    scaleY: number;
+    center: { x: number; y: number; };
+    rotationDeg: number;
+};
+```
+
+### `AlignSchema`
+```ts
+export const AlignSchema: ZodType<AlignParams>;
+```
+
 ### `BoardInput`
 ```ts
 export type BoardInput = {

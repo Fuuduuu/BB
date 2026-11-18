@@ -1,5 +1,7 @@
 import type { IdGen } from '@pcbk/contracts';
 import type { UiModule } from '@pcbk/ui';
+import { alignToolSpec } from './AlignTool';
+import { useAlignStore } from './align-store';
 import { ComponentDetails } from './ComponentDetails';
 import { ComponentsPanel } from './ComponentsPanel';
 import { PinCard } from './PinCard';
@@ -8,6 +10,7 @@ import { createPlaceToolSpec } from './PlaceTool';
 import { PlacementSection, placementKeys } from './PlacementSection';
 import { componentEt, placementEt } from './i18n/et';
 import { COMPONENTS_LAYERS } from './layers';
+import { ALIGN_LAYER, AlignHint } from './layers/AlignLayer';
 import { usePlaceStore } from './place-store';
 import './components.css';
 
@@ -15,10 +18,14 @@ export function createComponentsUi(ids: IdGen): UiModule {
   return {
     id: 'components',
     title: componentEt.title,
-    canvasLayers: COMPONENTS_LAYERS,
-    tools: [createPlaceToolSpec(ids)],
+    canvasLayers: [...COMPONENTS_LAYERS, ALIGN_LAYER],
+    tools: [createPlaceToolSpec(ids), alignToolSpec()],
     keys: placementKeys,
-    onSessionReset: () => usePlaceStore.getState().reset(),
+    bottomBar: [{ id: 'components.align', render: () => <AlignHint /> }],
+    onSessionReset: () => {
+      usePlaceStore.getState().reset();
+      useAlignStore.getState().reset();
+    },
     navigatorTabs: [
       { id: 'library', title: placementEt.tabs.library, order: 0, render: () => <Library /> },
       {

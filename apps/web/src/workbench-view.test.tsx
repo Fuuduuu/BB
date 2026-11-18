@@ -21,12 +21,26 @@ test('view_only_change_leaves_document_rev_unchanged', async () => {
     Object.defineProperty(canvas, 'getScreenCTM', {
       value: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }),
     });
+    Object.defineProperties(canvas.parentElement!, {
+      getBoundingClientRect: {
+        value: () => ({ left: 0, top: 0, right: 1000, bottom: 700, width: 1000, height: 700 }),
+      },
+      clientWidth: { value: 1000 },
+      clientHeight: { value: 700 },
+    });
+    fireEvent(window, new Event('resize'));
+    const committed = canvas.querySelector('[data-view]')?.getAttribute('transform');
     fireEvent.wheel(canvas, { clientX: 120, clientY: 18, deltaY: -Math.log(2) / 0.002 });
-    expect(canvas.querySelector('[data-view]')?.getAttribute('transform')).toBe(
-      'matrix(2 0 0 2 -120 -18)',
-    );
+    expect(canvas.querySelector('[data-view]')?.getAttribute('transform')).toBe(committed);
+    expect(canvas.style.transform).toBe('matrix(2, 0, 0, 2, -370, -193)');
     expect(useViewStore.getState().boardView).toEqual({ zoom: 2, pan: { x: -120, y: -18 } });
     expect(savingView).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(canvas.querySelector('[data-view]')?.getAttribute('transform')).toBe(
+        'matrix(2 0 0 2 -120 -18)',
+      );
+      expect(canvas.style.transform).toBe('');
+    });
     await act(async () => expect((await runtime.projects.flush()).ok).toBe(true));
     expect(runtime.engine.snapshot()).toMatchObject({ rev: before.rev, history: before.history });
   } finally {
@@ -40,6 +54,52 @@ test('view_only_change_leaves_document_rev_unchanged', async () => {
       value: { view: { boardView: { zoom: 2, pan: { x: -120, y: -18 } } } },
     });
   } finally {
+    await runtime.projects.close();
+  }
+});
+
+test('pan_frames_do_not_rerender_shell_panels', async () => {
+  const runtime = createRuntime();
+  const project = await seedProject(runtime, 'Pani paneelirenderduste proov');
+  const { host } = fakeHost();
+  let panelRenders = 0;
+  const app = mount(runtime, host, () => [
+    {
+      id: 'render-probe',
+      title: 'Renderduse proov',
+      navigatorTabs: [
+        {
+          id: 'library',
+          title: 'Proovipaneel',
+          order: 0,
+          render: () => {
+            panelRenders++;
+            return <p>Paneeli sisu</p>;
+          },
+        },
+      ],
+    },
+  ]);
+  try {
+    await openWorkbenchProject(runtime, host, project.path);
+    expect(await screen.findByRole('tabpanel', { name: 'Proovipaneel' })).toBeTruthy();
+    await act(async () => expect((await runtime.projects.flush()).ok).toBe(true));
+    expect(panelRenders).toBeGreaterThan(0);
+    const before = runtime.engine.snapshot();
+    const initialView = useViewStore.getState().boardView;
+    panelRenders = 0;
+    for (let frame = 1; frame <= 30; frame++) {
+      act(() =>
+        useViewStore.getState().setBoardView({
+          zoom: initialView.zoom,
+          pan: { x: initialView.pan.x + frame, y: initialView.pan.y + frame },
+        }),
+      );
+    }
+    expect(runtime.engine.snapshot().rev).toBe(before.rev);
+    expect(panelRenders).toBeLessThanOrEqual(1);
+  } finally {
+    app.unmount();
     await runtime.projects.close();
   }
 });

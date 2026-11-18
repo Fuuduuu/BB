@@ -1,0 +1,48 @@
+.bb-canvas-menu {
+  position: absolute;
+  z-index: 5;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: min(180px, var(--menu-available-width, 100%));
+  max-width: var(--menu-available-width, 100%);
+  max-height: var(--menu-available-height, 100%);
+  overflow: auto;
+  padding: 4px;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  cursor: default;
+}
+
+.bb-canvas-menu > button {
+  display: flex;
+  width: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+.bb-canvas-menu > button:hover,
+.bb-canvas-menu > button:focus {
+  background: var(--accent-soft);
+}
+
+.bb-canvas-menu > button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.bb-canvas-menu kbd {
+  color: var(--ink-2);
+  font: 0.85em var(--f-mono);
+  white-space: nowrap;
+}

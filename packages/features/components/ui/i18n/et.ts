@@ -25,6 +25,9 @@ export const componentEt = {
   select: (ref: string) => `Vali ${ref}`,
   removePin: (id: string) => `Eemalda jalg ${id}`,
   namePin: (id: string) => `Jala ${id} nimi`,
+  renamePin: 'Nimeta jalg',
+  markNc: 'Märgi NC-ks',
+  clearNc: 'Eemalda NC-märge',
   ncPin: (id: string) => `Jalg ${id}: kinnitatud ühendamata`,
   invalid: 'Kontrolli sisestatud väärtust.',
   duplicateRef: 'See tähis on juba kasutusel.',
@@ -63,6 +66,9 @@ export const componentEt = {
 } as const;
 
 export const placementEt = {
+  addHere: 'Lisa komponent siia',
+  placeHere: 'Paiguta siia',
+  cancelHere: 'Loobu',
   tabs: {
     library: 'Teek',
     components: 'Komponendid',
@@ -112,6 +118,7 @@ export const placementEt = {
       xtal_smd: 'Kvarts SMD',
       btn: 'Nupp 6×6',
       pot: 'Trimmer',
+      custom: 'Kohandatud',
       unknown: 'Tundmatu komponent',
       tp: 'Testpunkt',
       via: 'Via',
@@ -133,7 +140,7 @@ export const placementEt = {
     previewInvalid: 'Kontrolli parameetreid',
     search: 'Otsi korpust',
     emptyBefore: 'Sellist korpust ei leitud. Proovi ',
-    custom: 'Kohandatud',
+    custom: 'tundmatut komponenti',
     emptyAfter: ': sellele saad ise jalad lisada.',
   },
   footprints: {
@@ -167,6 +174,7 @@ export const placementEt = {
     xtal_smd: 'Kvarts SMD',
     button: 'Nupp 6×6',
     trimmer: 'Trimmer',
+    custom: 'Kohandatud',
     point: 'Punkt plaadil',
     area: 'Kohandatud korpus',
   },
@@ -176,6 +184,14 @@ export const placementEt = {
     pins: 'Jalgu',
     pairs: 'Paare',
     pitch: 'Samm',
+    pitchMm: 'Samm (mm)',
+    layout: 'Jalgade paigutus',
+    layouts: {
+      two_rows: '2 rida',
+      one_row: '1 rida',
+      four_sides: '4 külge',
+      empty: 'tühi',
+    },
     diameter: 'Läbimõõt',
     row: 'Ridade vahe',
     autoBody: 'Kere (mm, 0 = auto)',
@@ -235,9 +251,37 @@ export const placementEt = {
     side: 'Pool',
     top: 'Pealmine',
     bottom: 'Alumine',
+    scaleX: 'Mõõtkava X',
+    scaleY: 'Mõõtkava Y',
     rotateClockwise: 'Pööra +90°',
     rotateCounterclockwise: 'Pööra −90°',
     flip: 'Teisele poolele',
     remove: 'Eemalda paigutus plaadilt',
   },
+} as const;
+export const alignEt = {
+  tool: 'Joonda',
+  steps: {
+    1: 'Joonda: vali jalg 1 · Esc katkestab',
+    2: 'Joonda: klõpsa jala 1 kohta fotol · Esc katkestab',
+    3: 'Joonda: vali jalg 2 · Esc katkestab',
+    4: 'Joonda: klõpsa jala 2 kohta fotol · Esc katkestab',
+  },
+  pickPin: 'Vali komponendi jalg.',
+  sameComponent: 'Vali teine jalg samalt komponendilt.',
+  pinPosition: 'Jala asukohta ei saa üheselt määrata.',
+  errors: {
+    same_pin: 'Vali teine jalg.',
+    pins_coincide: 'Jalad on samas kohas või nende asukoht on ebaselge.',
+    targets_coincide: 'Sihtpunktid on liiga lähestikku.',
+    scale_out_of_range: 'Joondus viiks mõõtkava lubatud vahemikust (0,2–5) välja.',
+  },
+} as const;
+export const ownPinEt = {
+  clickBoard: 'Lisa jalg: klõpsa plaadil jala kohal · Esc lõpetab',
+  selectComponent: 'Lisa jalg: vali enne komponent · Esc lõpetab',
+  pinNeedsPad: 'Paigutatud korpusele lisa jalg plaadil: Lisa jalg (J).',
+  footprintPinLocked: 'Korpuse jalga ei saa eemaldada. Märgi see NC-ks või vaheta korpust.',
+  footprintPinsMismatch: 'Jalgade arv ei sobi selle korpusega. Vali sobiv korpus või „Ala“.',
+  duplicatePin: 'Sellise numbriga jalg on juba olemas.',
 } as const;

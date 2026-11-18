@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   bounds,
   canvas,
+  canvasViewport,
   center,
   createBoard,
   dropPhoto,
@@ -34,7 +35,7 @@ test('exif_portrait_is_upright_on_canvas', async ({ page }) => {
 
 test('calibration_shows_scale_and_undo_restores', async ({ page }) => {
   await createBoard(page, 'Mõõtkava kontroll');
-  const area = await bounds(canvas(page));
+  const area = await bounds(canvasViewport(page));
   await canvas(page).focus();
   await page.keyboard.press('k');
   await page.mouse.click(area.x + 100, area.y + 100);

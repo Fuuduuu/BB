@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { canvas, center, createBoard } from './photo-flow-helpers';
+import { canvasViewport, center, createBoard } from './photo-flow-helpers';
 
 const pins = (page: Page) => page.locator('[data-layer="components.pins"] [data-pin]');
 const readings = (page: Page) => page.locator('[data-layer="measurements.readings"]');
@@ -38,7 +38,7 @@ test('soic8_14_8_swap_keeps_and_historizes_measurements', async ({ page }) => {
   await library.getByRole('button', { name: 'SOIC', exact: true }).click();
   await library.getByRole('combobox', { name: 'Jalgu', exact: true }).selectOption('8');
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
-  const at = await center(canvas(page));
+  const at = await center(canvasViewport(page));
   await page.mouse.click(at.x, at.y);
   await expect(pins(page)).toHaveCount(8);
   await page.keyboard.press('Escape');
@@ -70,7 +70,7 @@ test('soic8_14_8_swap_keeps_and_historizes_measurements', async ({ page }) => {
   await expect(pin12).toContainText('3,3 V');
   await expect(pin12.getByText('kontakt kustutatud', { exact: true })).toBeVisible();
 
-  await canvas(page).click({ position: { x: 25, y: 25 } });
+  await canvasViewport(page).click({ position: { x: 25, y: 25 } });
   await page.keyboard.press('Control+z');
   await expect(pins(page)).toHaveCount(14);
   await expect(pin12.getByText('kontakt kustutatud', { exact: true })).toHaveCount(0);

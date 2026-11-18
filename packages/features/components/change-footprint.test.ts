@@ -1,4 +1,4 @@
-import { newBoardDoc } from '@pcbk/domain';
+import { boardPads, newBoardDoc } from '@pcbk/domain';
 import type { BoardDoc } from '@pcbk/domain';
 import { createEngine } from '@pcbk/engine';
 import { expect, test } from 'vitest';
@@ -132,7 +132,37 @@ test('change_footprint_keeps_center_rotation_side_and_label_offset', () => {
   });
 });
 
-test('change_footprint_cleans_custom_pads_and_pad_map_for_removed_pins', () => {
+test('refreshing a footprint preserves valid pad permutations and pin identities', () => {
+  const initial = placed();
+  const doc = structuredClone(initial.engine.snapshot().doc) as BoardDoc;
+  const padMap = { '1': '2', '2': '1', '3': '4', '4': '3' };
+  doc.components[0]!.board!.padMap = padMap;
+  const { engine } = setup(doc);
+  addMeasurement(engine, 2);
+  const before = engine.snapshot();
+
+  expect(
+    engine.execute('components.changeFootprint', {
+      ...swap(8),
+      params: { pins: 8, body: 7.5 },
+    }).ok,
+  ).toBe(true);
+
+  const after = engine.snapshot();
+  const { board, pins } = after.doc.components[0]!;
+  expect(board?.padMap).toEqual(padMap);
+  expect(pins).toEqual(before.doc.components[0]!.pins);
+  expect(after.derived.pinReadings.pin_original_2?.measurementId).toBe('msr_2');
+  expect(
+    boardPads(
+      board!,
+      pins.map(({ id }) => id),
+      1,
+    ).map((pad) => pad.pinId),
+  ).toEqual(['2', '1', '4', '3', '5', '6', '7', '8']);
+});
+
+test('a smaller footprint keeps complete pad permutations and noncolliding custom pads', () => {
   const initial = placed(14);
   const doc = structuredClone(initial.engine.snapshot().doc) as BoardDoc;
   const customPad = {
@@ -142,18 +172,32 @@ test('change_footprint_cleans_custom_pads_and_pad_map_for_removed_pins', () => {
     through: false,
   };
   Object.assign(doc.components[0]!.board!, {
-    customPads: { '3': customPad, '12': customPad },
-    padMap: { '1': '3', '2': '12', '12': '1', alias: '12' },
+    customPads: { '3': customPad, '12': customPad, stale: customPad },
+    padMap: {
+      '1': '2',
+      '2': '1',
+      '3': '12',
+      '4': '1',
+      '5': '6',
+      '7': '7',
+      '12': '3',
+      alias: '3',
+    },
   });
   const { engine } = setup(doc);
   const before = engine.snapshot().doc.components;
   expect(engine.execute('components.changeFootprint', swap(8)).ok).toBe(true);
-  expect(engine.snapshot().doc.components[0]!.board).toMatchObject({
-    customPads: { '3': customPad },
-    padMap: { '1': '3' },
-  });
-  expect(Object.keys(engine.snapshot().doc.components[0]!.board!.customPads)).toEqual(['3']);
-  expect(Object.keys(engine.snapshot().doc.components[0]!.board!.padMap!)).toEqual(['1']);
+  const { board, pins } = engine.snapshot().doc.components[0]!;
+  expect(board?.customPads).toEqual({ '12': customPad });
+  expect(board?.padMap).toEqual({ '1': '2', '2': '1', '7': '7' });
+  expect(pins.map(({ id }) => id)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '12']);
+  expect(
+    boardPads(
+      board!,
+      pins.map(({ id }) => id),
+      1,
+    ).map((pad) => pad.pinId),
+  ).toEqual(['2', '1', '3', '4', '5', '6', '7', '8', '12']);
   expect(engine.undo().ok).toBe(true);
   expect(engine.snapshot().doc.components).toEqual(before);
 });
@@ -208,7 +252,9 @@ test('pad_names_set_on_add_and_for_new_pins_only', () => {
     { id: '2', uid: 'pin_original_2', name: 'User name', nc: true },
     { id: '3', uid: 'pin_original_3', nc: false },
   ]);
-  expect(custom.engine.execute('components.removePin', { id: 'cmp_a', pinId: '3' }).ok).toBe(true);
+  const legacy = structuredClone(custom.engine.snapshot().doc) as BoardDoc;
+  legacy.components[0]!.pins.pop();
+  custom.host.load('legacy-missing-pin', legacy, false);
   expect(
     custom.engine.execute('components.changeFootprint', {
       id: 'cmp_a',

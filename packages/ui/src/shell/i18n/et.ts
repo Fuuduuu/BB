@@ -44,6 +44,7 @@ export const et = {
     resizeNavigator: 'Navigaatori laius',
     resizeContext: 'Omaduste paneeli laius',
     canvas: 'Plaat',
+    contextMenu: 'Toimingud',
     selectTool: 'Vali',
     panTool: 'Liiguta vaadet',
     canvasEmpty: 'Sinu plaadi tööala',

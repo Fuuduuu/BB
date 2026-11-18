@@ -218,6 +218,20 @@ export const COMPONENT_LIBRARY: readonly LibraryEntry[] = [
     ['xtal_smd', 'crystal', 'xtal_smd', {}, 'crystal 3225'],
     ['btn', 'switch', 'button', {}, 'button switch tact'],
     ['pot', 'resistor', 'trimmer', {}, 'potentiometer'],
+    [
+      'custom',
+      'ic',
+      'custom',
+      { layout: 'two_rows', pins: 8, pitch: 2.54, w: 8, h: 10 },
+      'custom kohandatud generic moodul',
+      [
+        choice('layout', ['two_rows', 'one_row', 'four_sides', 'empty']),
+        range('pins', 0, 200, 1),
+        range('pitch', 0.3, 10, 0.01, 'pitchMm'),
+        range('w', 1, 200, 0.1, 'width'),
+        range('h', 1, 200, 0.1, 'height'),
+      ],
+    ],
     ['unknown', 'other', 'area', { w: 8, h: 10 }, 'unknown generic custom moodul'],
   ]),
   ...entries('point', [
@@ -259,11 +273,12 @@ export const BoardInputSchema = z.strictObject({
 });
 
 const pinIdentity = PinSchema.pick({ id: true, uid: true });
+const namedPinIdentity = PinSchema.pick({ id: true, uid: true, name: true });
 export const AddComponentSchema = z.strictObject({
   id: IdSchema,
   kind: ComponentKindSchema,
   ref: z.string().trim().min(1).optional(),
-  pins: z.array(PinSchema.pick({ id: true, uid: true, name: true })),
+  pins: z.array(namedPinIdentity),
   marking: z.string().optional(),
   value: z.string().optional(),
   board: BoardInputSchema.optional(),
@@ -283,6 +298,11 @@ export const PinTargetSchema = z.strictObject({ id: IdSchema, pinId: IdSchema })
 export const RenamePinSchema = PinTargetSchema.extend({ name: z.string().nullable() });
 export const SetNcSchema = PinTargetSchema.extend({ nc: z.boolean() });
 export const ComponentTargetSchema = z.strictObject({ id: IdSchema });
+export const AddOwnPinSchema = ComponentTargetSchema.extend({
+  pin: namedPinIdentity,
+  local: Vec2Schema,
+  sizeMm: BoardPlacementSchema.shape.customPads.out.valueType.shape.sizeMm,
+});
 export const PlaceOnBoardSchema = ComponentTargetSchema.extend({ board: BoardInputSchema });
 export const ChangeFootprintSchema = ComponentTargetSchema.extend({
   footprint: z.string({ error: 'invalid_footprint' }),
@@ -290,12 +310,23 @@ export const ChangeFootprintSchema = ComponentTargetSchema.extend({
   newPinUids: BoardPlacementSchema.shape.padMap.unwrap(),
 });
 export const RotateSchema = ComponentTargetSchema.extend({ deltaDeg: z.number() });
+export const SetScaleSchema = ComponentTargetSchema.extend({
+  scaleX: BoardPlacementSchema.shape.scaleX,
+  scaleY: BoardPlacementSchema.shape.scaleY,
+});
+export const AlignSchema = SetScaleSchema.extend({
+  center: Vec2Schema,
+  rotationDeg: z.number(),
+});
+export const COMPONENT_SCALE_MIN = SetScaleSchema.shape.scaleX.minValue ?? 0.2;
+export const COMPONENT_SCALE_MAX = SetScaleSchema.shape.scaleX.maxValue ?? 5;
 export const SetLabelOffsetSchema = ComponentTargetSchema.extend({ offset: Vec2Schema.nullable() });
 
 export type BoardInput = z.infer<typeof BoardInputSchema>;
 export type AddComponentParams = z.infer<typeof AddComponentSchema>;
 export type UpdateComponentParams = z.infer<typeof UpdateComponentSchema>;
 export type AddPinParams = z.infer<typeof AddPinSchema>;
+export type AddOwnPinParams = z.infer<typeof AddOwnPinSchema>;
 export type PinTargetParams = z.infer<typeof PinTargetSchema>;
 export type RenamePinParams = z.infer<typeof RenamePinSchema>;
 export type SetNcParams = z.infer<typeof SetNcSchema>;
@@ -303,6 +334,8 @@ export type ComponentTargetParams = z.infer<typeof ComponentTargetSchema>;
 export type PlaceOnBoardParams = z.infer<typeof PlaceOnBoardSchema>;
 export type ChangeFootprintParams = z.infer<typeof ChangeFootprintSchema>;
 export type RotateParams = z.infer<typeof RotateSchema>;
+export type SetScaleParams = z.infer<typeof SetScaleSchema>;
+export type AlignParams = z.infer<typeof AlignSchema>;
 export type SetLabelOffsetParams = z.infer<typeof SetLabelOffsetSchema>;
 
 declare module '@pcbk/contracts' {
@@ -310,6 +343,7 @@ declare module '@pcbk/contracts' {
     'components.add': AddComponentParams;
     'components.update': UpdateComponentParams;
     'components.addPin': AddPinParams;
+    'components.addOwnPin': AddOwnPinParams;
     'components.renamePin': RenamePinParams;
     'components.setNc': SetNcParams;
     'components.removePin': PinTargetParams;
@@ -318,6 +352,8 @@ declare module '@pcbk/contracts' {
     'components.removeFromBoard': ComponentTargetParams;
     'components.rotate': RotateParams;
     'components.flipSide': ComponentTargetParams;
+    'components.setScale': SetScaleParams;
+    'components.align': AlignParams;
     'components.setLabelOffset': SetLabelOffsetParams;
   }
 }

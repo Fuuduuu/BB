@@ -6,6 +6,8 @@ import { entries, get, update } from 'idb-keyval';
 import type { UseStore } from 'idb-keyval';
 import { createWebStore } from './web-db';
 
+declare const __PCBK_APP_VERSION__: string;
+
 type WebProject = {
   meta: {
     format_version: number;
@@ -217,7 +219,7 @@ export function createWebRepository(
             file_id: crypto.randomUUID(),
             created_at: at,
             updated_at: at,
-            app_version: '0.0.0',
+            app_version: __PCBK_APP_VERSION__,
           },
           doc: captured.doc,
           rev: captured.doc.rev,

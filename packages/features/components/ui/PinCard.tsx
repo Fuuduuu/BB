@@ -1,7 +1,8 @@
-import { useId, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
 import type { Snapshot } from '@pcbk/contracts';
 import { Button, useSessionStore } from '@pcbk/ui';
+import { create } from 'zustand';
 import { selectComponent } from '../contract';
 import { DraftField } from './DraftField';
 import { commandError } from './errors';
@@ -9,6 +10,10 @@ import { componentEt } from './i18n/et';
 
 type ReadonlyComponent = Snapshot['doc']['components'][number];
 type ReadonlyPin = ReadonlyComponent['pins'][number];
+
+export const usePinNameFocus = create<{ requestedUid: string | null }>(() => ({
+  requestedUid: null,
+}));
 
 export function PinCard({ componentId, pinId }: { componentId: string; pinId: string }) {
   const component = useSnapshot((snapshot) => selectComponent(snapshot, componentId));
@@ -23,6 +28,13 @@ function PinFields({ component, pin }: { component: ReadonlyComponent; pin: Read
   const engine = useEngine();
   const headingId = useId();
   const [error, setError] = useState<string>();
+  const nameInput = useRef<HTMLInputElement>(null);
+  const focusRequested = usePinNameFocus((state) => state.requestedUid === pin.uid);
+  useLayoutEffect(() => {
+    if (!focusRequested) return;
+    nameInput.current?.focus();
+    usePinNameFocus.setState({ requestedUid: null });
+  }, [focusRequested]);
   return (
     <section className="pcbk-component-details" aria-labelledby={headingId}>
       <header className="pcbk-component-details__header">
@@ -34,6 +46,7 @@ function PinFields({ component, pin }: { component: ReadonlyComponent; pin: Read
         <DraftField
           label={componentEt.namePin(pin.id)}
           value={pin.name ?? ''}
+          inputRef={nameInput}
           commit={(name) => {
             const result = engine.execute('components.renamePin', {
               id: component.id,

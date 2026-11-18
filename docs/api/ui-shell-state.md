@@ -9,6 +9,21 @@ Sisenemispunkt: `packages/ui/src/shell-state.ts`
 export function bindHistoryKeys(target: Window, actions: HistoryActions): () => void;
 ```
 
+### `ContextMenuItemSpec`
+```ts
+export interface ContextMenuItemSpec {
+    id: string;
+    appliesTo: string[];
+    order: number;
+    label(snapshot: Snapshot, selection: Selection): string;
+    shortcut?: {
+        key: string;
+        shift?: boolean;
+    };
+    run(api: ToolApi, selection: Selection, at: Vec2): boolean;
+}
+```
+
 ### `ContextSectionSpec`
 ```ts
 export interface ContextSectionSpec {
@@ -66,6 +81,7 @@ export const et: {
         readonly resizeNavigator: "Navigaatori laius";
         readonly resizeContext: "Omaduste paneeli laius";
         readonly canvas: "Plaat";
+        readonly contextMenu: "Toimingud";
         readonly selectTool: "Vali";
         readonly panTool: "Liiguta vaadet";
         readonly canvasEmpty: "Sinu plaadi tööala";
@@ -197,6 +213,14 @@ export type SelectionItem = {
 };
 ```
 
+### `SelectionKindSpec`
+```ts
+export interface SelectionKindSpec {
+    kind: SelectionItem['kind'];
+    label(snapshot: Snapshot, item: SelectionItem): string | null;
+}
+```
+
 ### `SHELL_KEYS`
 ```ts
 export const SHELL_KEYS: {
@@ -233,6 +257,13 @@ export const SHELL_KEYS: {
     readonly temporaryPan: {
         readonly key: " ";
         readonly shift: "any";
+    };
+    readonly contextMenu: {
+        readonly key: "F10";
+        readonly shift: true;
+    };
+    readonly contextMenuKey: {
+        readonly key: "ContextMenu";
     };
     readonly nudgeLeft: {
         readonly key: "ArrowLeft";
@@ -275,11 +306,13 @@ export interface UiModule {
     navigatorTabs?: PanelSpec[];
     contextSections?: ContextSectionSpec[];
     contextPinned?: PinnedSpec[];
+    selectionKinds?: SelectionKindSpec[];
     topBar?: SlotSpec[];
     bottomBar?: SlotSpec[];
     canvasLayers?: LayerSpec[];
     tools?: ToolSpec[];
     keys?: KeySpec[];
+    contextMenu?: ContextMenuItemSpec[];
     onSessionReset?(): void;
 }
 ```
@@ -293,6 +326,8 @@ export class UiRegistry {
     navigatorTabs(): PanelSpec[];
     contextSections(selection: Selection): ContextSectionSpec[];
     contextPinned(): PinnedSpec[];
+    contextMenu(kind: string): ContextMenuItemSpec[];
+    selectionLabel(snapshot: Snapshot, selection: Selection): string | null;
     topBar(): SlotSpec[];
     bottomBar(): SlotSpec[];
     canvasLayers(): LayerSpec[];

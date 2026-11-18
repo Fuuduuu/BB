@@ -6,6 +6,7 @@ import type { BoardPlacement, Component } from '@pcbk/domain';
 import { boardPads } from '@pcbk/domain/geometry';
 import { createHitIndex } from '@pcbk/ui';
 import { setup } from '../../../__tests__/helpers';
+import { ComponentsLayer } from './ComponentsLayer';
 import { ComponentShape } from './ComponentShape';
 import type { ComponentLayerKind } from './ComponentShape';
 import { componentPinHits } from './hits';
@@ -48,6 +49,17 @@ function mount(
   selectedPinId: string | null = null,
   pxPerMm = newBoardDoc('Plaat').scale.pxPerMm,
 ) {
+  if (kind === 'labels') {
+    const doc = newBoardDoc('Plaat');
+    doc.scale.pxPerMm = pxPerMm;
+    doc.components.push(part);
+    const snapshot = setup(doc).engine.snapshot();
+    return render(
+      <svg>
+        <ComponentsLayer kind="labels" snapshot={snapshot} zoom={zoom} preview={null} />
+      </svg>,
+    ).container;
+  }
   return render(
     <svg>
       <ComponentShape
@@ -219,42 +231,44 @@ test('component_pin_hit_rejects_outside_short_side_but_accepts_pad_edge', () => 
   expect(index.query({ x: 72.25, y: 64.05 }, 1)).toBeUndefined();
 });
 
-test('custom_circle_hit_uses_horizontal_half_size_and_has_no_unplaced_hits', () => {
+test('scaled_circle_hit_uses_both_axes_and_ignores_unplaced_components', () => {
   const doc = newBoardDoc('Plaat');
   const part = component({
     footprint: 'area',
     scaleX: 2,
     scaleY: 3,
+    rotationDeg: 90,
     customPads: { '1': { local: { x: 0, y: 0 }, sizeMm: 2, shape: 'circle', through: false } },
   });
   const unplaced = component();
   unplaced.pins = unplaced.pins.map((pin) => ({ ...pin, uid: `${pin.uid}_unplaced` }));
   doc.components.push(part, { ...unplaced, id: 'cmp_unplaced', ref: 'U2', board: undefined });
-  expect(componentPinHits(setup(doc).engine.snapshot())).toEqual([
-    {
-      kind: 'pin',
-      id: '1',
-      componentId: 'cmp_a',
-      priority: 2,
-      shape: { type: 'point', at: center, r: 20 },
-    },
-  ]);
+  const hits = componentPinHits(setup(doc).engine.snapshot());
+  expect(hits).toHaveLength(1);
+  const index = createHitIndex(hits);
+  expect(index.query({ x: 128, y: 80 }, 1)).toBe(hits[0]);
+  expect(index.query({ x: 100, y: 102 }, 1)).toBeUndefined();
 });
 
-test('circle_render_and_selection_use_horizontal_half_size', () => {
+test('circle_render_and_selection_use_scaled_ellipse_radii', () => {
   const part = component({
     footprint: 'area',
     scaleX: 2,
     scaleY: 3,
+    rotationDeg: 90,
     customPads: { '1': { local: { x: 0, y: 0 }, sizeMm: 2, shape: 'circle', through: false } },
   });
   const container = mount(part, 'pins', 0.5, '1');
   const pad = outline(container);
-  expect(pad.tagName).toBe('circle');
+  expect(pad.tagName).toBe('ellipse');
   expect(number(pad, 'cx')).toBe(100);
   expect(number(pad, 'cy')).toBe(80);
-  expect(number(pad, 'r')).toBe(20);
-  expect(number(container.querySelector('[stroke="var(--sel)"]'), 'r')).toBe(24);
+  expect(number(pad, 'rx')).toBe(20);
+  expect(number(pad, 'ry')).toBe(30);
+  rotatedAt(pad, 90, 100, 80);
+  const selected = container.querySelector('[stroke="var(--sel)"]');
+  expect(number(selected, 'rx')).toBe(24);
+  expect(number(selected, 'ry')).toBe(34);
 });
 
 test('pin_name_starts_outside_long_rect_at_visible_name_zoom', () => {
@@ -277,7 +291,7 @@ test('pin_name_starts_outside_long_rect_at_visible_name_zoom', () => {
   }
 });
 
-test('circle_nc_cross_uses_the_visible_radius_on_both_axes', () => {
+test('scaled_circle_nc_cross_uses_both_visible_radii', () => {
   const part = component({
     footprint: 'area',
     scaleX: 1,
@@ -287,6 +301,6 @@ test('circle_nc_cross_uses_the_visible_radius_on_both_axes', () => {
   part.pins[0]!.nc = true;
   const container = mount(part, 'labels');
   const cross = container.querySelector('path[stroke="var(--ink-3)"]')!;
-  // Circle center (100,80), radius10: top-right (110,70), cross arms +/-3.
-  expect(cross.getAttribute('d')).toBe('M107,67 L113,73 M113,67 L107,73');
+  // Pad center (100,80), radii 10 and 50: top-right (110,30), cross arms +/-3.
+  expect(cross.getAttribute('d')).toBe('M107,27 L113,33 M113,27 L107,33');
 });

@@ -4,6 +4,9 @@ import { newBoardDoc } from '@pcbk/domain';
 import type { JournalEntry } from '@pcbk/engine';
 import { afterEach, expect, test, vi } from 'vitest';
 import { createWebRepository } from './storage-web';
+
+declare const __PCBK_APP_VERSION__: string;
+
 let sequence = 0;
 const at = '2026-11-08T12:00:00.000Z';
 const entry: JournalEntry = {
@@ -82,7 +85,12 @@ test('create and open persist a detached document, revision, journal, metadata a
     modules: {},
   });
   expect(await get(`project:${opened.path}`, store)).toMatchObject({
-    meta: { format_version: 1, project_id: 'project_a', created_at: at, app_version: '0.0.0' },
+    meta: {
+      format_version: 1,
+      project_id: 'project_a',
+      created_at: at,
+      app_version: __PCBK_APP_VERSION__,
+    },
     rev: 1,
     journal: [entry],
   });

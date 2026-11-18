@@ -124,6 +124,48 @@ for (const entry of prototypeEntries.filter((entry) => keys[entry.key])) {
   });
 }
 
+test('custom_layout_matches_prototype_pin_positions', () => {
+  const entry = prototypeEntries.find(({ key }) => key === 'custom')!;
+  const prototypeLayouts = {
+    two_rows: '2 rida',
+    one_row: '1 rida',
+    four_sides: '4 külge',
+    empty: 'tühi',
+  };
+  const defaults = Object.fromEntries(entry.params.map(({ k, d }) => [k, d]));
+  expect(footprintGeometry('custom', {})).toStrictEqual(expectedGeometry(entry.gen(defaults)));
+
+  const cases = [
+    { layout: 'two_rows', pins: 7, pitch: 2.54, w: 8, h: 10 },
+    { layout: 'one_row', pins: 1, pitch: 0.3, w: 1, h: 1 },
+    { layout: 'one_row', pins: 2, pitch: 10, w: 200, h: 200 },
+    { layout: 'four_sides', pins: 13, pitch: 2.54, w: 8, h: 10 },
+    { layout: 'four_sides', pins: 200, pitch: 0.3, w: 200, h: 200 },
+    { layout: 'empty', pins: 0, pitch: 10, w: 1, h: 1 },
+    { layout: 'empty', pins: 8, pitch: 2.54, w: 8, h: 10 },
+  ] as const;
+  for (const params of cases) {
+    const prototype = entry.gen({ ...params, layout: prototypeLayouts[params.layout] });
+    expect(footprintGeometry('custom', params), JSON.stringify(params)).toStrictEqual(
+      expectedGeometry(prototype),
+    );
+  }
+});
+
+test('custom_rejects_invalid_layout_and_dimensions', () => {
+  const invalidCases: FootprintParams[] = [
+    { layout: 'diagonal' },
+    { pins: 201 },
+    { pins: 1.5 },
+    { pitch: 0.2 },
+    { w: 0 },
+    { h: 201 },
+  ];
+  for (const params of invalidCases) {
+    expect(footprintGeometry('custom', params), JSON.stringify(params)).toBeUndefined();
+  }
+});
+
 test('qfp44_pin12_on_bottom_side', () => {
   const geometry = footprintGeometry('qfp', {});
   expect(geometry?.pads).toHaveLength(44);

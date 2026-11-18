@@ -3,7 +3,7 @@ import { act, screen, within } from '@testing-library/react';
 import type { Measurement } from '@pcbk/domain';
 import { useSessionStore, useViewStore } from '@pcbk/ui';
 import { expect, test } from 'vitest';
-import { mountMeasurements, pinRef } from '../__tests__/workspace';
+import { mountMeasurements, pinRef, seedRemovablePins } from '../__tests__/workspace';
 
 function measurement(overrides: Partial<Measurement> = {}): Measurement {
   return {
@@ -89,7 +89,10 @@ test('pin_measurements_match_uid_instead_of_reused_contact_names', () => {
 
 test('pin_measurements_of_replaced_pin_exclude_previous_uid', () => {
   const { clickBlank, engine } = mountMeasurements({
-    seed: (doc) => doc.measurements.push(measurement()),
+    seed: (doc) => {
+      seedRemovablePins(doc);
+      doc.measurements.push(measurement());
+    },
   });
   clickBlank();
   act(() => {

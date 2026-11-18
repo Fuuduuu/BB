@@ -1,5 +1,5 @@
 use super::{
-    db::{document_header, ProjectDb},
+    db::{document_header, supported_format, ProjectDb},
     schema, JournalDto, OpenedProjectDto, PendingFile, Reason, StorageErrorDto, StorageResult,
 };
 use rusqlite::{params, Connection, OpenFlags, Transaction};
@@ -38,6 +38,10 @@ pub(super) fn vacuum_into(source: &ProjectDb, dest: &Path) -> StorageResult<()> 
     Ok(())
 }
 
+fn falls_back_to_memory(error: &StorageErrorDto) -> bool {
+    error.reason != Reason::DiskFull
+}
+
 pub(super) fn replace_snapshot(
     tx: &Transaction<'_>,
     doc_json: &str,
@@ -45,6 +49,7 @@ pub(super) fn replace_snapshot(
     view_json: Option<&str>,
 ) -> StorageResult<u32> {
     let (format, document_rev) = document_header(doc_json)?;
+    supported_format(format)?;
     if rev != document_rev {
         return Err(StorageErrorDto::new(Reason::Unknown));
     }
@@ -76,7 +81,11 @@ pub(super) fn write(
         return Err(StorageErrorDto::new(Reason::Unknown));
     }
     let pending = PendingFile::unique(dest)?;
-    let from_memory = vacuum_into(source, pending.path()).is_err();
+    let from_memory = match vacuum_into(source, pending.path()) {
+        Ok(()) => false,
+        Err(error) if falls_back_to_memory(&error) => true,
+        Err(error) => return Err(error),
+    };
     if from_memory {
         fs::OpenOptions::new()
             .write(true)
@@ -121,4 +130,50 @@ pub(super) fn write(
     ProjectDb::open(pending.path())?.describe(String::new())?;
     pending.publish(dest)?;
     Ok(from_memory)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn disk_full_does_not_fall_back_to_memory_copy() {
+        let error = StorageErrorDto::from(rusqlite::Error::SqliteFailure(
+            rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_FULL),
+            None,
+        ));
+        assert_eq!(error.reason, Reason::DiskFull);
+        assert!(!falls_back_to_memory(&error));
+    }
+
+    #[test]
+    fn other_copy_errors_still_fall_back_to_memory_copy() {
+        for reason in [
+            Reason::Missing,
+            Reason::NotProject,
+            Reason::ReadOnly,
+            Reason::Locked,
+            Reason::Unknown,
+        ] {
+            assert!(falls_back_to_memory(&StorageErrorDto::new(reason)));
+        }
+    }
+
+    #[test]
+    fn replace_snapshot_rejects_newer_format_before_changing_document() {
+        let mut conn = Connection::open_in_memory().unwrap();
+        let original = r#"{"format_version":1,"rev":0}"#;
+        schema::initialize(&mut conn, "project-board", original).unwrap();
+        let future = serde_json::json!({ "format_version": u32::MAX, "rev": 1 }).to_string();
+        let tx = conn.transaction().unwrap();
+
+        let result = replace_snapshot(&tx, &future, 1, None);
+        assert_eq!(result.unwrap_err().reason, Reason::TooNew);
+        let stored: (String, i64) = tx
+            .query_row("SELECT json, rev FROM document WHERE id=1", [], |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })
+            .unwrap();
+        assert_eq!(stored, (original.to_owned(), 0));
+    }
 }

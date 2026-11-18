@@ -149,6 +149,9 @@ test('unplaced_component_not_drawn', () => {
     ['components.bodies', 30],
     ['components.pins', 50],
     ['components.labels', 60],
+    ['components.handles', 90],
+    ['components.hover', 90],
+    ['components.align', 100],
   ]);
   for (const layer of ['bodies', 'pins', 'labels']) {
     expect(group(layer)).toBeTruthy();
@@ -254,6 +257,82 @@ test('drag_preview_moves_only_dragged_components', () => {
   expect(label.closest('[transform="translate(4 -3)"]')).toBeTruthy();
   expect(screen.getByText('R2').closest('[transform="translate(4 -3)"]')).toBeNull();
   expect(engine.snapshot()).toBe(before);
+});
+
+test('scale_preview_rerenders_only_scaled_component', () => {
+  const { engine } = setup();
+  add(engine);
+  add(engine, { id: 'cmp_b', board: { ...chip, center: { x: 200, y: 80 } } });
+  const { group, update } = mount(engine);
+  const snapshot = engine.snapshot();
+  const points = (id: string) =>
+    group('bodies', id)?.querySelector('polygon')?.getAttribute('points');
+  const before = points('cmp_a');
+  const stationary = points('cmp_b');
+  const renderBody = vi.spyOn(geometry, 'bodyOutline');
+  const renderPads = vi.spyOn(geometry, 'boardPads');
+  for (let dx = 2; dx <= 10; dx += 2) {
+    update(1, { owner: 'components.scale', data: { id: 'cmp_a:e', dx, dy: 0 } });
+  }
+  expect(points('cmp_a')).not.toBe(before);
+  expect(points('cmp_b')).toBe(stationary);
+  for (const render of [renderBody, renderPads]) {
+    expect(render).toHaveBeenCalled();
+    expect(new Set(render.mock.calls.map(([board]) => board.center.x))).toEqual(new Set([100]));
+  }
+  expect(engine.snapshot()).toBe(snapshot);
+});
+
+test('drag_preview_rerenders_only_dragged_group', () => {
+  const { engine } = setup();
+  const draggedId = 'cmp_0';
+  for (let index = 0; index < 20; index++) {
+    add(engine, { id: `cmp_${index}`, board: { ...chip, center: { x: 100 + 40 * index, y: 80 } } });
+  }
+  // An explicit label offset keeps the geometry counters specific to the shape render paths.
+  expect(
+    engine.execute('components.setLabelOffset', { id: draggedId, offset: { x: 0, y: -24 } }).ok,
+  ).toBe(true);
+  const snapshot = engine.snapshot();
+  const renderBody = vi.spyOn(geometry, 'bodyOutline');
+  const renderPads = vi.spyOn(geometry, 'boardPads');
+  const { container } = render(
+    <Canvas
+      layers={layers}
+      tools={[]}
+      snapshot={snapshot}
+      execute={engine.execute}
+      sceneTransform="none"
+      view={{ zoom: 1, pan: { x: 0, y: 0 } }}
+      onViewChange={() => {}}
+    />,
+  );
+  renderBody.mockClear();
+  renderPads.mockClear();
+
+  for (let frame = 1; frame <= 10; frame++) {
+    act(() =>
+      useSessionStore.getState().setPreview({
+        owner: 'select',
+        data: { items: [{ kind: 'component', id: draggedId }], dx: frame, dy: -frame },
+      }),
+    );
+  }
+
+  for (const layer of ['bodies', 'pins', 'labels']) {
+    const groups = container.querySelectorAll(
+      `[data-layer="components.${layer}"] [data-component]`,
+    );
+    expect(groups).toHaveLength(20);
+    for (const group of groups) {
+      expect(group.getAttribute('transform')).toBe(
+        group.getAttribute('data-component') === draggedId ? 'translate(10 -10)' : null,
+      );
+    }
+  }
+  expect(renderBody.mock.calls.map(([board]) => board.center.x)).toEqual(Array(10).fill(100));
+  expect(renderPads.mock.calls.map(([board]) => board.center.x)).toEqual(Array(20).fill(100));
+  expect(engine.snapshot()).toBe(snapshot);
 });
 
 test('component_labels_use_scene_text', () => {

@@ -18,10 +18,12 @@ function matrixOf(element: Element): Matrix {
   const left = parent?.closest('svg')
     ? matrixOf(parent)
     : (rootMatrices.get(element) ?? [2, 0, 0, 2, 17, 29]);
-  const attribute = element.getAttribute('transform');
+  const attribute =
+    element.getAttribute('transform') ||
+    (element instanceof SVGSVGElement ? element.style.transform : '');
   if (!attribute) return left as Matrix;
   const [a, b, c, d, e, f] = left;
-  const [g, h, i, j, k, l] = attribute.slice(7, -1).split(' ').map(Number) as Matrix;
+  const [g, h, i, j, k, l] = attribute.slice(7, -1).split(/[ ,]+/).map(Number) as Matrix;
   return [
     a! * g + c! * h,
     b! * g + d! * h,
@@ -90,6 +92,12 @@ function setup(sceneTransform: SceneTransform = 'rot90') {
   installCtm(scene);
   let bounds = { left: 17, top: 29, right: 1617, bottom: 1229, width: 1600, height: 1200 };
   Object.defineProperty(svg, 'getBoundingClientRect', { value: () => bounds });
+  Object.defineProperties(svg.parentElement!, {
+    getBoundingClientRect: { value: () => bounds },
+    clientWidth: { get: () => bounds.width / (rootMatrices.get(svg)?.[0] ?? 2) },
+    clientHeight: { get: () => bounds.height / (rootMatrices.get(svg)?.[3] ?? 2) },
+  });
+  fireEvent(window, new Event('resize'));
   return {
     ...result,
     engine,
@@ -214,7 +222,7 @@ test('cursor_readout_shows_mm_and_dash_outside', () => {
     }),
   );
   expect(screen.getByText('X 24,6 mm · Y 9,0 mm')).toBeTruthy();
-  fireEvent.pointerLeave(svg);
+  fireEvent.pointerLeave(svg.parentElement!);
   expect(screen.getByText('X — · Y —')).toBeTruthy();
   move(123, 45, 'touch');
   act(() => vi.advanceTimersToNextFrame());
@@ -365,7 +373,7 @@ test('resize_observer_refreshes_stationary_cursor_and_disconnects_on_unmount', a
   );
   try {
     const { svg, viewport, unmount } = setup('none');
-    expect(observe).toHaveBeenCalledWith(svg);
+    expect(observe).toHaveBeenCalledWith(svg.parentElement);
     stationaryPointer(svg);
     await nextCursorFrame();
     act(() => {

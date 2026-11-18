@@ -4,6 +4,7 @@ import type { BoardDoc } from '@pcbk/domain';
 import {
   bounds,
   canvas,
+  canvasViewport,
   center,
   createBoard,
   dropPhoto,
@@ -81,7 +82,7 @@ test('j29_reading_does_not_overlap_ref_label', async ({ page }) => {
   await page.keyboard.press('r');
   await page.keyboard.press('r');
   await page.keyboard.press('r');
-  const area = await bounds(canvas(page));
+  const area = await bounds(canvasViewport(page));
   await page.mouse.click(area.x + 320, area.y + 320);
   await expect(page.locator('[data-layer="components.pins"] [data-pin]')).toHaveCount(15);
   await page.keyboard.press('Escape');

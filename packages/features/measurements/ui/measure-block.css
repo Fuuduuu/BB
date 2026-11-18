@@ -18,6 +18,13 @@
   font-size: 14px;
 }
 
+.pcbk-board-reading {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
 .pcbk-measure-value {
   font-family: var(--f-mono);
   font-size: 20px;

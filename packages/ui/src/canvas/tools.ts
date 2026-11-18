@@ -47,6 +47,7 @@ export interface ToolApi {
 export type LayerSpec = {
   id: string;
   z: number;
+  previewOwners?: readonly string[];
   render(props: { snapshot: Snapshot; preview: Preview | null; zoom: number }): ReactNode;
   hits?(snapshot: Snapshot, zoom: number, sceneTransform: SceneTransform): HitItem[];
   obstacles?(snapshot: Snapshot, zoom: number, sceneTransform: SceneTransform): LabelObstacle[];

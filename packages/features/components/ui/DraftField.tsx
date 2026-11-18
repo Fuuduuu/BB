@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent, Ref } from 'react';
 
 /** A document field is one command per committed edit, never one per keystroke. */
 export function DraftField({
@@ -7,6 +7,7 @@ export function DraftField({
   value,
   commit,
   placeholder,
+  inputRef,
   multiline = false,
   mono = false,
 }: {
@@ -14,6 +15,7 @@ export function DraftField({
   value: string;
   commit(value: string): string | undefined;
   placeholder?: string;
+  inputRef?: Ref<HTMLInputElement>;
   multiline?: boolean;
   mono?: boolean;
 }) {
@@ -65,7 +67,7 @@ export function DraftField({
       <label className="bb-field__label" htmlFor={id}>
         {label}
       </label>
-      {multiline ? <textarea {...props} rows={3} /> : <input {...props} />}
+      {multiline ? <textarea {...props} rows={3} /> : <input {...props} ref={inputRef} />}
       {error && (
         <p id={`${id}-error`} className="bb-field__error">
           {error}

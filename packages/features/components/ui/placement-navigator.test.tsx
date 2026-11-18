@@ -41,9 +41,10 @@ test('expanded_library_keeps_original_entries_and_unknown_subtitle', () => {
     'SOIC',
     'TO-220',
     'Pinnirida 1×N',
+    'Kohandatud',
     'Tundmatu komponent',
   ];
-  expect(rows).toHaveLength(40);
+  expect(rows).toHaveLength(41);
   names.forEach((name) => {
     expect(screen.getByRole('button', { name })).toBeTruthy();
   });
@@ -71,7 +72,7 @@ test('search_filters_by_keyword_and_shows_empty_state', () => {
   fireEvent.change(search, { target: { value: 'takisti mosfet' } });
   expect(screen.queryByRole('listitem')).toBeNull();
   expect(screen.getByText(/Sellist korpust ei leitud/)).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Kohandatud' }));
+  fireEvent.click(screen.getByRole('button', { name: 'tundmatut komponenti' }));
   expect((search as HTMLInputElement).value).toBe('');
   expect(
     screen.getByRole('button', { name: /Tundmatu komponent/ }).getAttribute('aria-expanded'),

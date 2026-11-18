@@ -4,6 +4,8 @@ import { withExifOrientation } from '../../desktop/src/perf/png-exif';
 
 export const canvas = (page: Page) =>
   page.getByRole('main', { name: 'Plaat', exact: true }).getByLabel('Plaat', { exact: true });
+// The SVG includes a gesture buffer; pointer coordinates use its fixed visible container.
+export const canvasViewport = (page: Page) => canvas(page).locator('..');
 export const photo = (page: Page) => page.locator('image[data-layer="photo.image"]');
 export const undo = (page: Page) => page.getByRole('button', { name: 'Võta tagasi', exact: true });
 

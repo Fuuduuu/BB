@@ -272,7 +272,7 @@ Kontrollväärtused (`packages/domain/src/measure/evaluate.test.ts`, vaikeseaded
 
 **Jala hinnang** (`latestVerdicts`): iga jala jaoks loetakse viimane kehtiv (mitte aegunud ega ajalooline) mõõtmine, kus jalg on `at` või (takistuse, dioodi ja läbivuse puhul) `ref`.
 
-**Väärtuse lugemine** (`parseReading(text, mode)`): koma ja punkt on võrdsed, tühikud eemaldatakse, sufiksid `m` (10⁻³), `k`, `M`. Ka kuju `4k7` = 4700. Ühik võib olla lõpus (`4,98V`, `10 kΩ`). Takistuse ja dioodi puhul tähendab `OL` (suur- või väiketähtedega) `overload = true`. Vigane sisend annab `null`. Sama parserit kasutavad Mõõda-plokk ja import.
+**Väärtuse lugemisel** (`parseReading(text, mode)`) on koma ja punkt võrdsed. Tühik kahe numbri või numbri ja kümnendmärgi vahel teeb sisendi vigaseks (`3 5 V`, `3 ,5`, `1 000`). Tühik on lubatud alguses, lõpus ning numbri ja kordaja või ühiku vahel (` 4,98V `, `5 mV`, `10 k`). Kordajad on `m` (10⁻³), `k`, `M`. Ka kuju `4k7` = 4700. Ühik võib olla lõpus (`4,98V`, `10 kΩ`). Takistuse ja dioodi puhul tähendab `OL` (suur- või väiketähtedega) `overload = true`. Vigane sisend annab `null`. Sama parserit kasutavad Mõõda-plokk ja import.
 
 ## Remont ja aegumine
 

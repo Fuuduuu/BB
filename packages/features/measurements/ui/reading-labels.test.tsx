@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, screen } from '@testing-library/react';
+import * as ui from '@pcbk/ui';
 import type { SceneTransform } from '@pcbk/ui';
 import type { BoardDoc } from '@pcbk/domain';
 import { boardPads } from '@pcbk/domain/geometry';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { mountMeasurements, pinRef, pointer } from '../__tests__/workspace';
+import * as placement from './layers/reading-placement';
 
 function seed(doc: BoardDoc) {
   doc.measurements.push(
@@ -54,6 +56,56 @@ test('reading_label_insets_glyph_inside_halo_box', () => {
   const dy = Number(label.getAttribute('dy'));
   // The candidate starts at the padded box edge: move its text anchor 2px inside at zoom 1.
   expect(Math.abs(dx) - Math.abs(dy)).toBeCloseTo(2);
+});
+
+test('scale_preview_hides_only_the_scaled_components_readings', () => {
+  const placeLabel = vi.spyOn(placement, 'placeReadingLabel');
+  try {
+    const { engine, pinPoint, svg } = mountMeasurements({
+      seed(doc) {
+        seed(doc);
+        const original = doc.components[0]!;
+        const other = {
+          ...original,
+          id: 'cmp_u2',
+          ref: 'U2',
+          pins: original.pins.map((pin) => ({ ...pin, uid: `pin_u2_${pin.id}` })),
+          board: { ...original.board!, center: { x: 410, y: 100 } },
+        };
+        doc.components.push(other);
+        doc.measurements.push({
+          ...doc.measurements[0]!,
+          id: 'msr_u2_voltage',
+          at: { c: other.id, p: '1', uid: other.pins[0]!.uid },
+          atLabel: 'U2.1',
+          value: 3.3,
+        });
+      },
+    });
+    const id = pinRef('1').c;
+    const stationary = screen.getByText('3,3 V');
+    const placementCalls = placeLabel.mock.calls.length;
+    act(() =>
+      ui.useSessionStore.getState().setPreview({
+        owner: 'components.scale',
+        data: { id: `${id}:e`, dx: 10, dy: 0 },
+      }),
+    );
+    expect(screen.queryByText('4,98 V')).toBeNull();
+    expect(screen.getByText('3,3 V')).toBe(stationary);
+    expect(placeLabel).toHaveBeenCalledTimes(placementCalls);
+
+    act(() => {
+      ui.useSessionStore.getState().setPreview(null);
+      expect(engine.execute('components.setScale', { id, scaleX: 1.5, scaleY: 1 }).ok).toBe(true);
+    });
+    const reading = screen.getByText('4,98 V');
+    const ring = reading.closest('g')?.querySelector('circle');
+    expect(svg.contains(reading)).toBe(true);
+    expect(Number(ring?.getAttribute('cx'))).toBeCloseTo(pinPoint('1').x);
+  } finally {
+    placeLabel.mockRestore();
+  }
 });
 
 test('reading_label_points_away_from_component_body', () => {
@@ -131,6 +183,53 @@ test('reading_label_follows_drag_preview', () => {
 
   fireEvent.keyDown(svg, { key: 'Escape' });
   expect(coordinates()).toEqual(original);
+});
+
+test('drag_preview_rerenders_only_dragged_readings', () => {
+  const renderText = vi.spyOn(ui, 'SceneText');
+  const placeLabel = vi.spyOn(placement, 'placeReadingLabel');
+  try {
+    const { svg, pinPoint } = mountMeasurements({
+      seed(doc) {
+        seed(doc);
+        const original = doc.components[0]!;
+        const other = {
+          ...original,
+          id: 'cmp_u2',
+          ref: 'U2',
+          pins: original.pins.map((pin) => ({ ...pin, uid: `pin_u2_${pin.id}` })),
+          board: { ...original.board!, center: { x: 410, y: 100 } },
+        };
+        doc.components.push(other);
+        doc.measurements.push({
+          ...doc.measurements[0]!,
+          id: 'msr_stationary_voltage',
+          at: { c: other.id, p: '1', uid: other.pins[0]!.uid },
+          atLabel: 'U2.1',
+          value: 3.3,
+        });
+      },
+    });
+    expect(screen.getByText('4,98 V')).toBeTruthy();
+    expect(screen.getByText('3,3 V')).toBeTruthy();
+    expect(placeLabel).toHaveBeenCalled();
+    const pin = pinPoint('1');
+    pointer(svg, 'pointerdown', pin.x, pin.y);
+    const initialPlacementCalls = placeLabel.mock.calls.length;
+    renderText.mockClear();
+
+    for (let frame = 1; frame <= 10; frame++) {
+      pointer(svg, 'pointermove', pin.x + frame * 10, pin.y - frame);
+    }
+
+    expect(placeLabel).toHaveBeenCalledTimes(initialPlacementCalls);
+    const rendered = renderText.mock.calls.map(([props]) => props.children);
+    expect(rendered.filter((text) => text === '4,98 V')).toHaveLength(10);
+    expect(rendered.filter((text) => text === '3,3 V')).toHaveLength(0);
+  } finally {
+    renderText.mockRestore();
+    placeLabel.mockRestore();
+  }
 });
 
 test('reading_label_side_follows_screen_under_all_8_transforms', () => {

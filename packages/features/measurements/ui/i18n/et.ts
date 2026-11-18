@@ -20,6 +20,8 @@ export const measureEt = {
   blackProbe: 'Must sond',
   pickBlack: 'Vali musta sondi jalg',
   pickingBlack: 'Klõpsa plaadil musta sondi jalal',
+  boardReading: (value: string, refLabel: string, powerLabel: string) =>
+    `Plaadil: ${value} · must ${refLabel} · toide ${powerLabel.toLowerCase()}`,
   lastSaved: 'Viimati salvestatud',
   pinMeasurements: 'Mõõtmised',
   pinMeasurementsEmpty: 'Selle jalaga mõõtmisi pole.',

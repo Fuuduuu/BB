@@ -2,7 +2,7 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 import { useSessionStore } from '@pcbk/ui';
-import { mountMeasurements, pinRef } from '../__tests__/workspace';
+import { mountMeasurements, pinRef, seedRemovablePins } from '../__tests__/workspace';
 import { MeasureBlock } from './MeasureBlock';
 
 function measureBlock() {
@@ -30,6 +30,56 @@ function chooseReference(clickPin: (pinId: string) => void, pinId: string) {
   fireEvent.click(measureBlock().getByRole('button', { name: 'Vali musta sondi jalg' }));
   clickPin(pinId);
 }
+
+test('reading_reveals_probe_pair_and_power', () => {
+  const { clickBlank, clickPin } = mountMeasurements({
+    seed: (doc) => {
+      const reading = {
+        id: 'msr_shown',
+        mode: 'voltage',
+        at: pinRef('1'),
+        atLabel: 'U1.1',
+        ref: pinRef('4'),
+        refLabel: '12V siin',
+        value: -7,
+        power: 'on',
+        takenAt: '2026-11-10T10:00:00.000Z',
+        source: 'manual',
+      } as const;
+      doc.measurements.push(
+        reading,
+        {
+          ...reading,
+          id: 'msr_resistance',
+          mode: 'resistance',
+          ref: pinRef('3'),
+          refLabel: 'U1.3',
+          value: 10,
+          power: 'off',
+          takenAt: '2026-11-10T10:01:00.000Z',
+        },
+        {
+          id: 'msr_no_ref',
+          mode: 'voltage',
+          at: pinRef('2'),
+          atLabel: 'U1.2',
+          value: 0,
+          power: 'unknown',
+          takenAt: '2026-11-10T10:02:00.000Z',
+          source: 'manual',
+        },
+      );
+    },
+  });
+  clickPin('1');
+  expect(measureBlock().getByText('Plaadil: -7 V · must 12V siin · toide sees')).toBeTruthy();
+  clickBlank();
+  expect(measureBlock().queryByText(/^Plaadil:/)).toBeNull();
+  clickPin('2');
+  expect(measureBlock().getByText('Plaadil: 0 V · must määramata · toide teadmata')).toBeTruthy();
+  clickPin('3');
+  expect(measureBlock().queryByText(/^Plaadil:/)).toBeNull();
+});
 
 test('black_probe_is_never_chosen_automatically', () => {
   const { clickPin, engine } = mountMeasurements();
@@ -105,7 +155,7 @@ test('tab_does_not_change_location', () => {
 });
 
 test('pin_keys_hint_shown_only_for_multi_pin_component', () => {
-  const { clickPin, engine } = mountMeasurements();
+  const { clickPin, engine } = mountMeasurements({ seed: seedRemovablePins });
   const hintText = 'Alt+↓ järgmine jalg · Alt+↑ eelmine';
   expect(screen.queryByText(hintText)).toBeNull();
   clickPin('1');
@@ -194,7 +244,7 @@ test('invalid_voltage_blocks_save_and_shows_reason', () => {
 });
 
 test('deleted_probe_keeps_visible_draft_but_blocks_save', () => {
-  const { clickPin, engine, host } = mountMeasurements();
+  const { clickPin, engine, host } = mountMeasurements({ seed: seedRemovablePins });
   clickPin('1');
   typeVoltage('2');
   chooseReference(clickPin, '4');
@@ -230,7 +280,7 @@ test('deleted_probe_keeps_visible_draft_but_blocks_save', () => {
 });
 
 test('both_deleted_contacts_are_reported', () => {
-  const { clickPin, engine } = mountMeasurements();
+  const { clickPin, engine } = mountMeasurements({ seed: seedRemovablePins });
   clickPin('1');
   chooseReference(clickPin, '4');
   typeVoltage('4,98');

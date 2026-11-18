@@ -3,10 +3,11 @@ import type { RefObject, MutableRefObject } from 'react';
 import type { BoardView } from '@pcbk/contracts';
 import { useViewStore } from '../shell/view-store';
 import { useCursorStore } from './cursor-store';
-import { pointerWorld, sceneToScreenVector, zoomAt } from './stage';
+import { screenToScenePoint, sceneToScreenVector, zoomAt } from './stage';
 import type { SceneTransform } from './stage';
 
 interface Controls {
+  viewport: RefObject<HTMLDivElement>;
   svg: RefObject<SVGSVGElement>;
   scene: RefObject<SVGGElement>;
   viewRef: MutableRefObject<BoardView>;
@@ -16,25 +17,35 @@ interface Controls {
   sceneTransform: SceneTransform;
   sessionId: string;
   isGesturing(): boolean;
+  onResize(size: { width: number; height: number }): void;
+}
+interface ViewportGeometry {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+  scaleX: number;
+  scaleY: number;
 }
 export function useCanvasControls(props: Controls) {
   const current = useRef(props);
+  const geometry = useRef<ViewportGeometry | null>(null);
   useLayoutEffect(() => {
     current.current = props;
   });
   useLayoutEffect(
     () =>
       useViewStore.subscribe((next, previous) => {
-        const { svg, surface, fitInsets, sceneTransform, viewRef, changeView, isGesturing } =
+        const { surface, fitInsets, sceneTransform, viewRef, changeView, isGesturing } =
           current.current;
-        const element = svg.current;
         const fit = next.fitRequest !== previous.fitRequest && next.fitRequest > 0;
         const zoom =
           next.zoomRequest.sequence !== previous.zoomRequest.sequence &&
           next.zoomRequest.sequence > 0;
-        if (!element || (!fit && !zoom) || isGesturing()) return;
-        const bounds = element.getBoundingClientRect();
-        if (bounds.width <= 0 || bounds.height <= 0) return;
+        const bounds = geometry.current;
+        if (!bounds || (!fit && !zoom) || isGesturing()) return;
         const available = {
           left: bounds.left + (fitInsets?.left ?? 0),
           right: bounds.right - (fitInsets?.right ?? 0),
@@ -43,8 +54,14 @@ export function useCanvasControls(props: Controls) {
         };
         // Insets and the 200px fallback are CSS pixels, before root CTM conversion.
         const area = fit && available.right - available.left >= 200 ? available : bounds;
-        const start = pointerWorld(element, { x: area.left, y: area.top });
-        const end = pointerWorld(element, { x: area.right, y: area.bottom });
+        const start = {
+          x: (area.left - bounds.left) * bounds.scaleX,
+          y: (area.top - bounds.top) * bounds.scaleY,
+        };
+        const end = {
+          x: (area.right - bounds.left) * bounds.scaleX,
+          y: (area.bottom - bounds.top) * bounds.scaleY,
+        };
         const width = Math.abs(end.x - start.x);
         const height = Math.abs(end.y - start.y);
         const center = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
@@ -73,7 +90,8 @@ export function useCanvasControls(props: Controls) {
     [],
   );
   useLayoutEffect(() => {
-    const element = props.svg.current;
+    const element = props.viewport.current;
+    const svg = props.svg.current;
     let frame: number | undefined;
     let lastScreen: { x: number; y: number } | null = null;
     function clear() {
@@ -83,7 +101,8 @@ export function useCanvasControls(props: Controls) {
       if (useCursorStore.getState().world !== null) useCursorStore.setState({ world: null });
     }
     function outside(point: { x: number; y: number }) {
-      const bounds = element!.getBoundingClientRect();
+      const bounds = geometry.current;
+      if (!bounds) return true;
       return (
         point.x < bounds.left ||
         point.x > bounds.right ||
@@ -95,13 +114,22 @@ export function useCanvasControls(props: Controls) {
       if (!lastScreen || frame !== undefined) return;
       frame = window.requestAnimationFrame(() => {
         frame = undefined;
-        const scene = current.current.scene.current;
-        if (!scene || !lastScreen) return;
+        if (!lastScreen) return;
         if (outside(lastScreen)) {
           clear();
           return;
         }
-        const world = pointerWorld(scene, lastScreen);
+        const bounds = geometry.current!;
+        const { viewRef, sceneTransform, surface } = current.current;
+        const view = viewRef.current;
+        const world = screenToScenePoint(
+          sceneTransform,
+          {
+            x: ((lastScreen.x - bounds.left) * bounds.scaleX - view.pan.x) / view.zoom,
+            y: ((lastScreen.y - bounds.top) * bounds.scaleY - view.pan.y) / view.zoom,
+          },
+          surface,
+        );
         const previous = useCursorStore.getState().world;
         if (previous?.x !== world.x || previous.y !== world.y) useCursorStore.setState({ world });
       });
@@ -115,6 +143,29 @@ export function useCanvasControls(props: Controls) {
       lastScreen = point;
       refresh();
     }
+    function measure() {
+      if (!element) return;
+      const bounds = element.getBoundingClientRect();
+      const width = element.clientWidth;
+      const height = element.clientHeight;
+      if (bounds.width <= 0 || bounds.height <= 0 || width <= 0 || height <= 0) {
+        geometry.current = null;
+        clear();
+        return;
+      }
+      geometry.current = {
+        left: bounds.left,
+        top: bounds.top,
+        right: bounds.right,
+        bottom: bounds.bottom,
+        width,
+        height,
+        scaleX: width / bounds.width,
+        scaleY: height / bounds.height,
+      };
+      current.current.onResize({ width, height });
+      refresh();
+    }
     // Observe only the groups/root inputs that affect the pointer's screen CTM.
     // The queued frame reads the committed DOM, after any batched React changes.
     const transforms = new MutationObserver(refresh);
@@ -122,8 +173,8 @@ export function useCanvasControls(props: Controls) {
     if (scene) transforms.observe(scene, { attributes: true, attributeFilter: ['transform'] });
     if (scene?.parentElement)
       transforms.observe(scene.parentElement, { attributes: true, attributeFilter: ['transform'] });
-    if (element)
-      transforms.observe(element, {
+    if (svg)
+      transforms.observe(svg, {
         attributes: true,
         attributeFilter: [
           'viewBox',
@@ -134,10 +185,11 @@ export function useCanvasControls(props: Controls) {
           'style',
         ],
       });
-    const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(refresh);
+    const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
     if (element) resize?.observe(element);
-    window.addEventListener('resize', refresh);
+    window.addEventListener('resize', measure);
     clear();
+    measure();
     element?.addEventListener('pointermove', move);
     element?.addEventListener('pointerleave', clear);
     element?.addEventListener('pointercancel', clear);
@@ -146,11 +198,12 @@ export function useCanvasControls(props: Controls) {
       clear();
       transforms.disconnect();
       resize?.disconnect();
-      window.removeEventListener('resize', refresh);
+      window.removeEventListener('resize', measure);
       element?.removeEventListener('pointermove', move);
       element?.removeEventListener('pointerleave', clear);
       element?.removeEventListener('pointercancel', clear);
       window.removeEventListener('blur', clear);
     };
-  }, [props.svg, props.sessionId]);
+  }, [props.viewport, props.svg, props.sessionId]);
+  return geometry;
 }

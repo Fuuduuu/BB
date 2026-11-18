@@ -23,6 +23,23 @@ test('parse_reading_si_suffixes', () => {
   }
 });
 
+test('space_between_digits_is_rejected', () => {
+  for (const text of ['3 5 V', '3 ,5', '3. 5', '1 000', '3\t5 V', '1\u00a0000']) {
+    expect(parseReading(text, 'voltage'), text).toBeNull();
+  }
+});
+
+test('space_before_unit_or_suffix_is_allowed', () => {
+  for (const [text, value] of [
+    ['5 mV', 0.005],
+    ['3,5 V', 3.5],
+    [' 4,98V ', 4.98],
+    ['10 k', 10_000],
+  ] as const) {
+    expect(parseReading(text, 'voltage'), text).toEqual({ value });
+  }
+});
+
 test('parse_reading_accepts_sign', () => {
   expect(parseReading('+5 V', 'voltage')).toEqual({ value: 5 });
   expect(parseReading('+3.3', 'voltage')).toEqual({ value: 3.3 });

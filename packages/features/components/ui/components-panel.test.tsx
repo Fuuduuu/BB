@@ -43,8 +43,10 @@ function fixture(placed = 1, unplaced = 1) {
   return result;
 }
 
-function mount(engine = fixture().engine) {
-  const registry = new UiRegistry([createComponentsUi(idGenerator())]);
+function mount(
+  engine = fixture().engine,
+  registry = new UiRegistry([createComponentsUi(idGenerator())]),
+) {
   const noop = () => {};
   return render(
     <EngineProvider engine={engine} projects={new FakeProjects()}>
@@ -58,6 +60,62 @@ function mount(engine = fixture().engine) {
     </EngineProvider>,
   );
 }
+
+test('properties_header_shows_selected_ref', () => {
+  const { engine } = fixture(0, 0);
+  useViewStore.getState().setContextWidth(280);
+  expect(
+    engine.execute('components.add', {
+      id: 'cmp_j29',
+      ref: 'J29',
+      kind: 'connector',
+      pins: [
+        { id: '15', uid: 'pin_j29_15' },
+        { id: '16', uid: 'pin_j29_16', name: 'GND' },
+      ],
+    }).ok,
+  ).toBe(true);
+  mount(
+    engine,
+    new UiRegistry([
+      createComponentsUi(idGenerator()),
+      {
+        id: 'pinned',
+        title: 'Mõõda',
+        contextPinned: [{ id: 'measure', order: 0, useVisible: () => true, render: () => null }],
+      },
+    ]),
+  );
+  const pane = within(screen.getByRole('complementary', { name: 'Omadused' }));
+  const component = { kind: 'component', id: 'cmp_j29' };
+  const pin = { kind: 'pin', componentId: 'cmp_j29', id: '15' };
+  const namedPin = { ...pin, id: '16' };
+
+  expect(pane.getByText('Omadused')).toBeTruthy();
+  act(() => useSessionStore.getState().setSelection({ items: [component] }));
+  expect(pane.getByText('Omadused · J29')).toBeTruthy();
+  act(() => useSessionStore.getState().setSelection({ items: [pin] }));
+  expect(pane.getByText('Omadused · J29.15')).toBeTruthy();
+  act(() => useSessionStore.getState().setSelection({ items: [namedPin] }));
+  expect(pane.getByText('Omadused · J29.GND').title).toBe('Omadused · J29.GND');
+  const longName = 'Pika nimega maandusjalg toiteploki ühendamiseks';
+  act(() => {
+    expect(
+      engine.execute('components.renamePin', {
+        id: component.id,
+        pinId: namedPin.id,
+        name: longName,
+      }).ok,
+    ).toBe(true);
+  });
+  const longTitle = `Omadused · J29.${longName}`;
+  expect(pane.getByText(longTitle).title).toBe(longTitle);
+  expect(pane.getByRole('button', { name: 'Peida omadused' })).toBeTruthy();
+  act(() => useSessionStore.getState().setSelection({ items: [component, pin] }));
+  expect(pane.getByText('Omadused')).toBeTruthy();
+  act(() => useSessionStore.getState().setSelection({ items: [{ kind: 'net', id: 'net_1' }] }));
+  expect(pane.getByText('Omadused')).toBeTruthy();
+});
 
 test('component_filters_switch_placed_and_unplaced', () => {
   const { engine, host } = fixture();

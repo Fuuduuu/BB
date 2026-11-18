@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Locator } from '@playwright/test';
-import { bounds, canvas, center, createBoard } from './photo-flow-helpers';
+import { bounds, canvasViewport, center, createBoard } from './photo-flow-helpers';
 
 test.use({ viewport: { width: 1280, height: 800 } });
 
@@ -20,7 +20,7 @@ test('measure_panel_fits_280px_and_history_fits_240px', async ({ page }) => {
   await library.getByRole('button', { name: 'SOIC', exact: true }).click();
   await library.getByRole('combobox', { name: 'Jalgu', exact: true }).selectOption('8');
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
-  const area = await bounds(canvas(page));
+  const area = await bounds(canvasViewport(page));
   await page.mouse.click(area.x + 200, area.y + 300);
   await expect(page.locator('[data-layer="components.pins"] [data-pin]')).toHaveCount(8);
   await page.keyboard.press('Escape');

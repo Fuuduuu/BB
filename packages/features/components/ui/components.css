@@ -119,6 +119,27 @@
 .pcbk-library__group + .pcbk-library__group {
   border-top: 1px solid var(--line);
 }
+.pcbk-library__silhouette-slot {
+  display: flex;
+  flex: 0 0 28px;
+  align-items: center;
+  height: 0;
+}
+.pcbk-library__row .pcbk-component-row__body > span:first-child {
+  white-space: nowrap;
+}
+.pcbk-library__row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.pcbk-library__anchor-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+[data-own-pin-hint][data-error] {
+  color: var(--danger);
+}
 .pcbk-library__params,
 .pcbk-unplaced__actions {
   display: grid;

@@ -3,8 +3,8 @@ import type { Snapshot } from '@pcbk/contracts';
 import type { BoardPlacement } from '@pcbk/domain';
 import { footprintGeometry } from '@pcbk/domain/footprints';
 import { boardPads, bodyOutline, padToBoard } from '@pcbk/domain/geometry';
-import { SceneText, useSceneTransform } from '@pcbk/ui';
-import { componentLabelBox, isComponentLabelVisible } from './hits';
+import { SceneText } from '@pcbk/ui';
+import { isComponentLabelVisible, type ComponentLabelBox } from './label-placement';
 import { PinLabels, PinMarker } from './PinMarker';
 
 export type ComponentLayerKind = 'bodies' | 'pins' | 'labels';
@@ -21,6 +21,7 @@ type ComponentShapeProps = {
   dy: number;
   labelDx: number;
   labelDy: number;
+  label?: ComponentLabelBox;
 };
 
 function translation(dx: number, dy: number): string | undefined {
@@ -74,19 +75,18 @@ function Body({
 
 function Labels({
   component,
-  pxPerMm,
+  label,
   zoom,
   dx,
   dy,
 }: {
   component: PlacedComponent;
-  pxPerMm: number;
+  label: ComponentLabelBox;
   zoom: number;
   dx: number;
   dy: number;
 }) {
-  const transform = useSceneTransform();
-  const { at, textSize, valueAt } = componentLabelBox(component, pxPerMm, zoom, transform);
+  const { at, textSize, valueAt } = label;
   if (!isComponentLabelVisible(textSize, zoom)) return null;
   const textProps = {
     x: at.x,
@@ -131,6 +131,7 @@ export const ComponentShape = memo(function ComponentShape({
   dy,
   labelDx,
   labelDy,
+  label,
 }: ComponentShapeProps) {
   const transform = translation(dx, dy);
   if (kind === 'bodies') {
@@ -167,8 +168,8 @@ export const ComponentShape = memo(function ComponentShape({
           <PinLabels key={key} {...props} />
         );
       })}
-      {kind === 'labels' && (
-        <Labels component={component} pxPerMm={pxPerMm} zoom={zoom} dx={labelDx} dy={labelDy} />
+      {kind === 'labels' && label && (
+        <Labels component={component} label={label} zoom={zoom} dx={labelDx} dy={labelDy} />
       )}
     </g>
   );

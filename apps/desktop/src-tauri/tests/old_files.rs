@@ -38,7 +38,7 @@ fn old_files_open_and_get_file_id_on_first_writable_open() {
     let trials = std::env::temp_dir().join("bb-m1-3-katse");
     fs::create_dir_all(&trials).unwrap();
 
-    for version in ["v0.1.0", "v0.1.1", "v0.2.0"] {
+    for version in ["v0.1.0", "v0.1.1", "v0.2.0", "v0.3.0"] {
         let source = directory.join(format!("{version}.pcbk"));
         let original = fs::read(&source).unwrap_or_else(|error| {
             panic!("release fixture {} must exist: {error}", source.display())
@@ -51,13 +51,14 @@ fn old_files_open_and_get_file_id_on_first_writable_open() {
         fs::copy(&source, &copy).unwrap();
         let db = read_db(&copy);
         let original_file_id = stored_file_id(&db);
-        if version == "v0.2.0" {
+        let has_identity = matches!(version, "v0.2.0" | "v0.3.0");
+        if has_identity {
             assert_eq!(
                 uuid::Uuid::parse_str(original_file_id.as_deref().unwrap())
                     .unwrap()
                     .get_version_num(),
                 4,
-                "v0.2.0 already stores file_id"
+                "{version} already stores file_id"
             );
         } else {
             assert_eq!(original_file_id, None, "{version} predates file_id");
@@ -66,7 +67,7 @@ fn old_files_open_and_get_file_id_on_first_writable_open() {
             .query_row("SELECT json FROM document WHERE id=1", [], |row| row.get(0))
             .unwrap();
         let original_value: Value = serde_json::from_str(&original_doc).unwrap();
-        let expected_photos = usize::from(version == "v0.2.0");
+        let expected_photos = usize::from(has_identity);
         assert_eq!(
             original_value["photos"].as_array().unwrap().len(),
             expected_photos
@@ -311,4 +312,134 @@ fn v0_2_0_photo_scale_and_measurement_survive_open() {
         drop(db);
         assert_eq!(fs::read(&source).unwrap(), original);
     }
+}
+
+#[test]
+fn v0_3_0_label_probes_and_scale_survive_open() {
+    let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/v0.3.0.pcbk");
+    let original = fs::read(&source)
+        .unwrap_or_else(|error| panic!("release fixture {} must exist: {error}", source.display()));
+    let root = tempfile::Builder::new()
+        .prefix("bb-v0-3-0-")
+        .tempdir()
+        .unwrap();
+    let copy = root.path().join("v0.3.0.pcbk");
+    fs::copy(&source, &copy).unwrap();
+    let db = read_db(&copy);
+    let original_id = stored_file_id(&db).expect("v0.3.0 stores file_id on creation");
+    let original_doc: String = db
+        .query_row("SELECT json FROM document WHERE id=1", [], |row| row.get(0))
+        .unwrap();
+    let original_view: String = db
+        .query_row("SELECT json FROM view WHERE id=1", [], |row| row.get(0))
+        .unwrap();
+    let doc: Value = serde_json::from_str(&original_doc).unwrap();
+    let view: Value = serde_json::from_str(&original_view).unwrap();
+    assert_eq!(view["navigatorOpen"], false);
+    let zoom = view["boardView"]["zoom"].as_f64().unwrap();
+    assert!(zoom.is_finite() && zoom > 0.0 && zoom != 1.0);
+    assert_eq!(doc["scale"]["calibrated"], true);
+    let scale = doc["scale"]["pxPerMm"].as_f64().unwrap();
+    assert!((scale - 4.025256739675138).abs() < 1e-10);
+    assert_eq!(doc["scale"]["calib"]["mm"], 20);
+
+    let photos = doc["photos"].as_array().unwrap();
+    assert_eq!(photos.len(), 1);
+    let photo = &photos[0];
+    assert_eq!(photo["transform"], "rot90");
+    assert_eq!(photo["widthPx"], 4000);
+    assert_eq!(photo["heightPx"], 3000);
+    let photo_id = photo["id"].as_str().unwrap();
+    let blobs = photo_rows(&db);
+    assert_eq!(blobs.len(), 1);
+    assert_eq!(blobs[0].0, photo_id);
+    assert_eq!(blobs[0].1, "original");
+    let bytes = &blobs[0].2;
+    assert_eq!(orientation(bytes), Some(6));
+    assert_eq!(bytes.len(), 162457);
+
+    let components = doc["components"].as_array().unwrap();
+    assert_eq!(components.len(), 2);
+    let u1 = components.iter().find(|c| c["ref"] == "U1").unwrap();
+    let r1 = components.iter().find(|c| c["ref"] == "R1").unwrap();
+    assert_eq!(u1["board"]["footprint"], "soic");
+    assert_eq!(u1["board"]["params"]["pins"], 8);
+    let label = &u1["board"]["labelOffset"];
+    assert!(label["x"].as_f64().unwrap().abs() + label["y"].as_f64().unwrap().abs() > 0.0);
+    assert!(r1["board"].is_object());
+    assert_eq!(r1["kind"], "resistor");
+    let find_pin = |component: &Value, id: &str| {
+        component["pins"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|pin| pin["id"] == id)
+            .unwrap()
+            .clone()
+    };
+    let red = find_pin(u1, "8");
+    let black = find_pin(r1, "1");
+    assert_eq!(red["name"], "VCC");
+    assert_eq!(find_pin(u1, "7")["nc"], true);
+    let uids = pin_uids(&doc);
+    assert_eq!(uids.len(), 10);
+    assert!(uids.iter().all(|(_, _, uid)| !uid.is_empty()));
+    assert_eq!(
+        uids.iter()
+            .map(|(_, _, uid)| uid)
+            .collect::<HashSet<_>>()
+            .len(),
+        10
+    );
+    let measurements = doc["measurements"].as_array().unwrap();
+    assert_eq!(measurements.len(), 1);
+    let m = &measurements[0];
+    assert_eq!(m["mode"], "voltage");
+    assert_eq!(m["value"], 4.98);
+    assert_eq!(m["power"], "on");
+    assert_eq!(m["at"]["c"], u1["id"]);
+    assert_eq!(m["at"]["p"], red["id"]);
+    assert_eq!(m["at"]["uid"], red["uid"]);
+    assert_eq!(m["ref"]["c"], r1["id"]);
+    assert_eq!(m["ref"]["p"], black["id"]);
+    assert_eq!(m["ref"]["uid"], black["uid"]);
+    drop(db);
+
+    let store = ProjectStore::new(root.path().join("app-data"), Arc::new(SystemClock));
+    let permissions = fs::metadata(&copy).unwrap().permissions();
+    let mut readonly = permissions.clone();
+    readonly.set_readonly(true);
+    fs::set_permissions(&copy, readonly).unwrap();
+    let viewed = store.open(&copy).unwrap();
+    assert!(viewed.read_only);
+    assert_eq!(viewed.file_id, original_id);
+    assert_eq!(viewed.doc_json, original_doc);
+    assert_eq!(viewed.view_json.as_deref(), Some(original_view.as_str()));
+    let read_original = |session: &str| {
+        let original = store.photo_protocol(&format!("/photo/{session}/{photo_id}?v=original"));
+        assert_eq!(original.status, 200);
+        assert_eq!(&original.bytes, bytes);
+    };
+    read_original(&viewed.session);
+    store.close(&viewed.session).unwrap();
+    assert_eq!(fs::read(&copy).unwrap(), original);
+    fs::set_permissions(&copy, permissions).unwrap();
+
+    let opened = store.open(&copy).unwrap();
+    assert!(!opened.read_only);
+    assert_eq!(
+        uuid::Uuid::parse_str(&opened.file_id)
+            .unwrap()
+            .get_version_num(),
+        4
+    );
+    assert_eq!(opened.file_id, original_id);
+    assert_eq!(opened.doc_json, original_doc);
+    assert_eq!(opened.view_json.as_deref(), Some(original_view.as_str()));
+    read_original(&opened.session);
+    store.close(&opened.session).unwrap();
+    let db = read_db(&copy);
+    assert_eq!(stored_file_id(&db), Some(original_id));
+    assert_eq!(photo_rows(&db), blobs);
+    assert_eq!(fs::read(&source).unwrap(), original);
 }

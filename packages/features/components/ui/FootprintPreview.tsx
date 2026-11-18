@@ -1,4 +1,5 @@
-import type { FootprintGeom } from '@pcbk/domain/footprints';
+import { footprintGeometry, type FootprintGeom } from '@pcbk/domain/footprints';
+import { COMPONENT_LIBRARY } from '../contract';
 import { placementEt } from './i18n/et';
 
 function previewViewBox({ pads, body }: FootprintGeom): string {
@@ -20,6 +21,67 @@ function previewViewBox({ pads, body }: FootprintGeom): string {
   const paddingX = Math.max(width * 0.1, 0.5);
   const paddingY = Math.max(height * 0.1, 0.5);
   return `${minX - paddingX} ${minY - paddingY} ${width + 2 * paddingX} ${height + 2 * paddingY}`;
+}
+
+function previewPad(pad: FootprintGeom['pads'][number], filled = false) {
+  const style = {
+    'data-pad': pad.id,
+    fill: filled ? 'var(--ink-2)' : 'none',
+    stroke: filled ? 'none' : 'var(--ink-3)',
+    strokeWidth: 1.2,
+    vectorEffect: 'non-scaling-stroke',
+  };
+  return pad.shape === 'circle' ? (
+    <circle key={pad.id} cx={pad.x} cy={pad.y} r={pad.w / 2} {...style} />
+  ) : (
+    <rect
+      key={pad.id}
+      x={pad.x - pad.w / 2}
+      y={pad.y - pad.h / 2}
+      width={pad.w}
+      height={pad.h}
+      rx={pad.shape === 'oval' ? Math.min(pad.w, pad.h) / 2 : undefined}
+      {...style}
+    />
+  );
+}
+
+function silhouette(geometry: FootprintGeom) {
+  const { body, pads } = geometry;
+  return (
+    <svg
+      width={28}
+      height={18}
+      viewBox={previewViewBox(geometry)}
+      aria-hidden="true"
+      data-silhouette=""
+    >
+      {body.w > 0 && body.h > 0 && (
+        <rect
+          x={-body.w / 2}
+          y={-body.h / 2}
+          width={body.w}
+          height={body.h}
+          fill="none"
+          stroke="var(--body)"
+          strokeWidth={1}
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
+      {pads.map((pad) => previewPad(pad, true))}
+    </svg>
+  );
+}
+
+const silhouettes = new Map(
+  COMPONENT_LIBRARY.map(({ id, footprint, params }) => {
+    const geometry = footprintGeometry(footprint, params);
+    return [id, geometry ? silhouette(geometry) : null] as const;
+  }),
+);
+
+export function FootprintSilhouette({ entryId }: { entryId: string }) {
+  return silhouettes.get(entryId) ?? null;
 }
 
 export function FootprintPreview({
@@ -53,28 +115,7 @@ export function FootprintPreview({
               vectorEffect="non-scaling-stroke"
             />
           )}
-          {pads.map((pad) => {
-            const style = {
-              'data-pad': pad.id,
-              fill: 'none',
-              stroke: 'var(--ink-3)',
-              strokeWidth: 1.2,
-              vectorEffect: 'non-scaling-stroke',
-            };
-            return pad.shape === 'circle' ? (
-              <circle key={pad.id} cx={pad.x} cy={pad.y} r={pad.w / 2} {...style} />
-            ) : (
-              <rect
-                key={pad.id}
-                x={pad.x - pad.w / 2}
-                y={pad.y - pad.h / 2}
-                width={pad.w}
-                height={pad.h}
-                rx={pad.shape === 'oval' ? Math.min(pad.w, pad.h) / 2 : undefined}
-                {...style}
-              />
-            );
-          })}
+          {pads.map((pad) => previewPad(pad))}
           {body.w > 0 && body.h > 0 && body.pin1 && (
             <circle
               data-pin1="true"

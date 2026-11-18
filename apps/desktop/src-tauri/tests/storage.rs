@@ -10,6 +10,12 @@ fn test_store(path: &Path) -> ProjectStore {
 fn doc(rev: i64) -> String {
     json!({"format_version":1,"rev":rev,"name":"Plaat"}).to_string()
 }
+
+fn newer_doc(rev: i64) -> String {
+    let mut document: Value = serde_json::from_str(&doc(rev)).unwrap();
+    document["format_version"] = json!(document["format_version"].as_u64().unwrap() + 1);
+    document.to_string()
+}
 fn entry(summary: &str) -> JournalDto {
     JournalDto {
         at: "2026-11-09T00:00:00.000Z".into(),
@@ -58,6 +64,45 @@ fn create_open_save_roundtrip() {
             .unwrap(),
         "request-a"
     );
+}
+
+#[test]
+fn save_rejects_newer_format_and_leaves_file_unchanged() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("board.pcbk");
+    let store = test_store(dir.path());
+    let session = create(&store, &path);
+    store
+        .save(&session, 0, 1, &doc(1), &[entry("accepted")])
+        .unwrap();
+    store.close(&session).unwrap();
+    let before = fs::read(&path).unwrap();
+
+    let opened = store.open(&path).unwrap();
+    let result = store.save(&opened.session, 1, 2, &newer_doc(2), &[entry("rejected")]);
+    store.close(&opened.session).unwrap();
+    assert_eq!(result.unwrap_err().reason, Reason::TooNew);
+    // Byte equality covers the document, metadata and journal together.
+    assert!(fs::read(&path).unwrap() == before, "project file changed");
+    let reopened = store.open(&path).unwrap();
+    assert_eq!(reopened.doc_json, doc(1));
+    store.close(&reopened.session).unwrap();
+}
+
+#[test]
+fn create_rejects_newer_format() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("future.pcbk");
+    let store = test_store(dir.path());
+    assert_eq!(
+        store
+            .create(&path, "future", &newer_doc(0))
+            .unwrap_err()
+            .reason,
+        Reason::TooNew
+    );
+    assert!(!path.exists(), "unsupported project was published");
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 0);
 }
 
 #[test]

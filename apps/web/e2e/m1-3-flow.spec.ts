@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 import {
   bounds,
   canvas,
+  canvasViewport,
   center,
   dropPhoto,
   photo,
@@ -75,7 +76,7 @@ test('m1_3_technician_flow', async ({ page }) => {
   await library.getByRole('button', { name: 'SOIC', exact: true }).click();
   await library.getByRole('combobox', { name: 'Jalgu', exact: true }).selectOption('8');
   await library.getByRole('button', { name: 'Paiguta', exact: true }).click();
-  const area = await bounds(canvas(page));
+  const area = await bounds(canvasViewport(page));
   await page.mouse.click(area.x + 200, area.y + 250);
   await page.mouse.click(area.x + 450, area.y + 250);
   const bodies = page.locator('[data-layer="components.bodies"] [data-component]');
@@ -150,7 +151,7 @@ test('m1_3_technician_flow', async ({ page }) => {
   await expect(added).toContainText('3,3 V');
   await expect(added.getByText('kontakt kustutatud', { exact: true })).toBeVisible();
 
-  await canvas(page).click({ position: { x: 25, y: 25 } });
+  await canvasViewport(page).click({ position: { x: 25, y: 25 } });
   await page.keyboard.press('Control+z');
   await expect(pins(page, u1)).toHaveCount(14);
   await expect(added.getByText('kontakt kustutatud', { exact: true })).toHaveCount(0);
@@ -160,6 +161,9 @@ test('m1_3_technician_flow', async ({ page }) => {
   await topbar.getByRole('button', { name: 'Peida omadused', exact: true }).click();
   await topbar.getByRole('button', { name: 'Peida navigaator', exact: true }).click();
   await page.getByRole('button', { name: 'Vähenda', exact: true }).click();
+  await expect
+    .poll(() => canvas(page).evaluate((element) => (element as SVGSVGElement).style.transform))
+    .toBe('');
   const view = await canvas(page).locator('[data-view]').getAttribute('transform');
   const photoBounds = await bounds(photo(page));
   const marks = await screenshotMarks(page);

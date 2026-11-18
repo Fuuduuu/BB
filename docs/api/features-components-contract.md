@@ -22,6 +22,21 @@ export type AddComponentParams = {
 export const AddComponentSchema: ZodType<AddComponentParams>;
 ```
 
+### `AddOwnPinParams`
+```ts
+export type AddOwnPinParams = {
+    id: string;
+    pin: { uid: string; id: string; name?: string | undefined; };
+    local: { x: number; y: number; };
+    sizeMm: number;
+};
+```
+
+### `AddOwnPinSchema`
+```ts
+export const AddOwnPinSchema: ZodType<AddOwnPinParams>;
+```
+
 ### `AddPinParams`
 ```ts
 export type AddPinParams = {
@@ -33,6 +48,22 @@ export type AddPinParams = {
 ### `AddPinSchema`
 ```ts
 export const AddPinSchema: ZodType<AddPinParams>;
+```
+
+### `AlignParams`
+```ts
+export type AlignParams = {
+    id: string;
+    scaleX: number;
+    scaleY: number;
+    center: { x: number; y: number; };
+    rotationDeg: number;
+};
+```
+
+### `AlignSchema`
+```ts
+export const AlignSchema: ZodType<AlignParams>;
 ```
 
 ### `BoardInput`
@@ -69,6 +100,16 @@ export const ChangeFootprintSchema: ZodType<ChangeFootprintParams>;
 ### `COMPONENT_LIBRARY`
 ```ts
 export const COMPONENT_LIBRARY: readonly LibraryEntry[];
+```
+
+### `COMPONENT_SCALE_MAX`
+```ts
+export const COMPONENT_SCALE_MAX: number;
+```
+
+### `COMPONENT_SCALE_MIN`
+```ts
+export const COMPONENT_SCALE_MIN: number;
 ```
 
 ### `ComponentTargetParams`
@@ -342,6 +383,20 @@ export type SetNcParams = {
 ### `SetNcSchema`
 ```ts
 export const SetNcSchema: ZodType<SetNcParams>;
+```
+
+### `SetScaleParams`
+```ts
+export type SetScaleParams = {
+    id: string;
+    scaleX: number;
+    scaleY: number;
+};
+```
+
+### `SetScaleSchema`
+```ts
+export const SetScaleSchema: ZodType<SetScaleParams>;
 ```
 
 ### `UpdateComponentParams`

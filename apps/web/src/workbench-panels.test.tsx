@@ -60,6 +60,12 @@ test('fit_insets_follow_context_shown', async () => {
         value: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }),
       },
     });
+    Object.defineProperties(svg.parentElement!, {
+      getBoundingClientRect: { value: () => svg.getBoundingClientRect() },
+      clientWidth: { value: 1000 },
+      clientHeight: { value: 2000 },
+    });
+    fireEvent(window, new Event('resize'));
     const { width } = boardSurface(runtime.engine.snapshot().doc);
     const fittedCenter = () => {
       act(() => useViewStore.getState().requestFit());

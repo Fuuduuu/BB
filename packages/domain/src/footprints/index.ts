@@ -9,6 +9,7 @@ import {
   terminalFootprint,
   usbCFootprint,
 } from './connectors';
+import { customFootprint } from './custom';
 import { header1Footprint } from './header';
 import { dipFootprint, qfnFootprint, qfpFootprint, sopFootprint } from './integrated';
 import { buttonFootprint, trimmerFootprint, xtalFootprint, xtalSmdFootprint } from './misc';
@@ -63,6 +64,7 @@ export const FOOTPRINTS: readonly FootprintDef[] = [
   xtalSmdFootprint,
   buttonFootprint,
   trimmerFootprint,
+  customFootprint,
   pointFootprint,
 ];
 

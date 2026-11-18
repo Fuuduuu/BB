@@ -94,6 +94,14 @@ function setup(initial?: CanvasProps['view']) {
       return screenMatrix(current.zoom, current.pan);
     },
   });
+  Object.defineProperties(svg.parentElement!, {
+    getBoundingClientRect: {
+      value: () => ({ left: 0, top: 0, right: 1000, bottom: 800, width: 1000, height: 800 }),
+    },
+    clientWidth: { value: 1000 },
+    clientHeight: { value: 800 },
+  });
+  fireEvent(window, new Event('resize'));
   return {
     svg,
     viewGroup,
@@ -274,20 +282,6 @@ test('rev_change_during_drag_cancels_gesture', () => {
   expect(svg.releasePointerCapture).toHaveBeenCalledOnce();
   pointer(svg, 'pointerup', 24, 24);
   expect(execute).not.toHaveBeenCalled();
-});
-
-test('wheel_zoom_keeps_cursor_point_fixed', () => {
-  const before = { zoom: 2, pan: { x: 20, y: 10 } };
-  const { svg, viewGroup, onViewChange } = setup(before);
-  const point = { x: 80, y: 100 };
-  const oldTransform = viewGroup.getAttribute('transform');
-  fireEvent.wheel(svg, { clientX: point.x, clientY: point.y, deltaY: -100 });
-
-  const after = onViewChange.mock.lastCall![0];
-  expect(after.zoom).toBeGreaterThan(before.zoom);
-  expect((point.x - after.pan.x) / after.zoom).toBeCloseTo(30);
-  expect((point.y - after.pan.y) / after.zoom).toBeCloseTo(45);
-  expect(viewGroup.getAttribute('transform')).not.toBe(oldTransform);
 });
 
 test('lod_updates_after_zoom_settles_not_during_pan', () => {

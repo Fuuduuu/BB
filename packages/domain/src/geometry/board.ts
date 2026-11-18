@@ -23,6 +23,23 @@ export function padToBoard(
   };
 }
 
+export function boardToPad(
+  p: Pick<BoardPlacement, 'center' | 'rotationDeg' | 'side' | 'scaleX' | 'scaleY'>,
+  point: Vec2,
+  pxPerMm: number,
+): Vec2 {
+  const x = (point.x - p.center.x) / pxPerMm;
+  const y = (point.y - p.center.y) / pxPerMm;
+  const angle = ((p.rotationDeg % 360) * Math.PI) / 180;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+
+  return {
+    x: ((x * cos + y * sin) / p.scaleX) * (p.side === 'bottom' ? -1 : 1),
+    y: (-x * sin + y * cos) / p.scaleY,
+  };
+}
+
 export function boardPads(
   placement: BoardPlacement,
   pinIds: readonly string[],

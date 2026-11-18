@@ -72,6 +72,12 @@ test('workbench_fit_tracks_overlay_open_closed_wide_and_resized_panel', async ()
       value: () => ({ inverse: () => ({ a: 0.5, b: 0, c: 0, d: 0.5, e: -152, f: -30 }) }),
     },
   });
+  Object.defineProperties(svg.parentElement!, {
+    getBoundingClientRect: { value: () => svg.getBoundingClientRect() },
+    clientWidth: { value: 398 },
+    clientHeight: { value: 300 },
+  });
+  fireEvent(window, new Event('resize'));
   function expectFit(right: number) {
     fireEvent.click(screen.getByRole('button', { name: 'Sobita' }));
     const zoom = Math.min(((796 - right) * 0.9) / 4000, (600 * 0.9) / 2800);

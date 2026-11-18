@@ -45,6 +45,28 @@ export function screenToSceneVector(transform: SceneTransform, { x, y }: Vec2): 
   return { x: a * x + b * y, y: c * x + d * y };
 }
 
+/** Map a point from the translated scene bounds back to board coordinates. */
+export function screenToScenePoint(
+  transform: SceneTransform,
+  point: Vec2,
+  surface: { width: number; height: number } = { width: 0, height: 0 },
+): Vec2 {
+  const [a, b, c, d] = sceneTransforms[transform];
+  const x = -Math.min(
+    0,
+    a * surface.width,
+    c * surface.height,
+    a * surface.width + c * surface.height,
+  );
+  const y = -Math.min(
+    0,
+    b * surface.width,
+    d * surface.height,
+    b * surface.width + d * surface.height,
+  );
+  return screenToSceneVector(transform, { x: point.x - x, y: point.y - y });
+}
+
 /** Keep the text anchor in the scene while cancelling its rotation and reflection. */
 export function sceneTextMatrix(transform: SceneTransform, { x, y }: Vec2): string {
   const [a, b, c, d] = sceneTransforms[transform];

@@ -271,7 +271,7 @@ test('all_library_entries_place_with_empty_value_and_marking', () => {
   }
   const components = engine.snapshot().doc.components;
   expect(components.map(({ value, marking }) => [value, marking])).toEqual(
-    Array.from({ length: 40 }, () => ['', '']),
+    Array.from({ length: 41 }, () => ['', '']),
   );
   expect(components.find(({ board }) => board?.footprint === 'area')!.pins).toEqual([]);
 });

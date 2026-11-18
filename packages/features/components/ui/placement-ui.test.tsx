@@ -133,6 +133,60 @@ test('placement_section_buttons_dispatch_commands', () => {
   ]);
 });
 
+test('scale_fields_accept_decimal_comma', () => {
+  const { engine, host } = mount();
+  select('R1');
+  const field = screen.getByRole<HTMLInputElement>('textbox', { name: 'Mõõtkava X' });
+  field.focus();
+  fireEvent.change(field, { target: { value: '1,25' } });
+  expect(engine.snapshot().doc.components[0]?.board?.scaleX).toBe(1);
+  fireEvent.keyDown(field, { key: 'Enter' });
+
+  expect(engine.snapshot().doc.components[0]?.board).toMatchObject({ scaleX: 1.25, scaleY: 1 });
+  expect(host.drainJournal().map((row) => row.commandId)).toEqual(['components.setScale']);
+  expect(field.value).toBe('1,25');
+});
+
+test('scale_field_commits_on_focus_exit', () => {
+  const { engine, host } = mount();
+  select('R1');
+  const field = screen.getByRole<HTMLInputElement>('textbox', { name: 'Mõõtkava Y' });
+  fireEvent.change(field, { target: { value: '2.5' } });
+  fireEvent.blur(field);
+
+  expect(engine.snapshot().doc.components[0]?.board).toMatchObject({ scaleX: 1, scaleY: 2.5 });
+  expect(host.drainJournal().map((row) => row.commandId)).toEqual(['components.setScale']);
+  expect(field.value).toBe('2,5');
+});
+
+test.each(['', '1,2,3'])('scale_field_restores_previous_value_for_invalid_input (%j)', (value) => {
+  const { engine, host } = mount();
+  select('R1');
+  const field = screen.getByRole<HTMLInputElement>('textbox', { name: 'Mõõtkava X' });
+  fireEvent.change(field, { target: { value } });
+  fireEvent.blur(field);
+
+  expect(engine.snapshot().doc.components[0]?.board?.scaleX).toBe(1);
+  expect(host.drainJournal()).toEqual([]);
+  expect(field.value).toBe('1');
+});
+
+test.each([
+  ['-1', 0.2, '0,2'],
+  ['0,01', 0.2, '0,2'],
+  ['6', 5, '5'],
+])('scale_clamped_to_schema_limits (field %s)', (value, scaleX, displayed) => {
+  const { engine, host } = mount();
+  select('R1');
+  const field = screen.getByRole<HTMLInputElement>('textbox', { name: 'Mõõtkava X' });
+  fireEvent.change(field, { target: { value } });
+  fireEvent.blur(field);
+
+  expect(engine.snapshot().doc.components[0]?.board).toMatchObject({ scaleX, scaleY: 1 });
+  expect(host.drainJournal().map((row) => row.commandId)).toEqual(['components.setScale']);
+  expect(field.value).toBe(displayed);
+});
+
 test('remove_from_board_moves_component_to_unplaced', () => {
   const { engine, host } = mount();
   const original = engine.snapshot().doc.components[0]!;

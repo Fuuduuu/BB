@@ -140,7 +140,7 @@ Juhend ei peata kasutajat kunagi. Rida „Jätan vahele“ (nt fotota töö) mä
 | Viis | Kuidas | Millal |
 |---|---|---|
 | **Lohistamine** | haara komponendist ja vii paika; nooled nihutavad 1 px, Shift+nool 10 px | alati |
-| **Pööramine** | `R` = 90°, `Q`/`E` = ±1°, Shift+`Q`/`E` = ±15°, kontekstipaneelis täpne kraad | foto pole ideaalselt sirge |
+| **Pööramine** | `R` = +90°, `Shift+R` = −90°; täpne nurk tuleb kahe jalaga joondusest (`A`) ja on näha kontekstipaneelis (M1.4 otsus O2) | foto pole ideaalselt sirge |
 | **Suuruse muutmine** | valitud komponendil on 8 käepidet; Shift hoiab proportsiooni; paneelis laius ja kõrgus % | foto on moonutatud või korpus erineb |
 | **Parameetrid** | paneelis jalgade arv, samm, kere laius (nt SOIC-8 → SOIC-14). Sama numbriga jalad jäävad ühendatuks; kui jalgu kaob, loetleb äpp mõjutatud ühendused ja mõõtmised ning küsib kinnitust | teine variant samast perest |
 | **Kahe jala joondus** | tööriist *Joonda* (`A`): klõpsa jalg 1 → klõpsa see koht fotol → klõpsa teine jalg → klõpsa see koht fotol | kiireim viis panna IC täpselt paika |
@@ -365,7 +365,7 @@ V1 on valmis siis, kui see stsenaarium läheb päris äpis läbi ilma terminali,
 
 1. Ava äpp, lohista foto avalehele → töölaud avaneb, fotoga.
 2. Kalibreeri plaadi laiusega 76 mm → kiip näitab ±0,5 % täpsusega õiget px/mm väärtust.
-3. Paiguta SOIC-8, joonda kahe jalaga, muuda suurust käepidemega, pööra `Q`/`E`-ga.
+3. Paiguta SOIC-8, joonda kahe jalaga, muuda suurust käepidemega, pööra `R`/`Shift+R`-ga.
 4. Paiguta kaks 0805 kondensaatorit (C1, C2), SOT-23 regulaator (U2), USB-C (J1) ja pinnirida 1×4 (J2) → uue 0805 väärtus ja märgistus on tühjad. Anna U1-le märgistus „ATTINY85“, väärtus „ATtiny85“ ja jalale 8 nimi „VCC“.
 5. Lisa U1-le oma jalg.
 6. Joonista rada J1 VBUS → C1.1 → U2.3 kahe käänupunktiga; lõpeta teine rada esimese peal → tekib liitepunkt. Kaks ristuvat rada ei ühendu.

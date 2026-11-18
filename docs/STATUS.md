@@ -29,7 +29,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
   5. [M1-4-3b](tasks/M1-4-3b.md) suumi rahunemine ilma nõksuta (A): **vastu võetud** `dde0424` (rahunemine 267 → 67 ms). M1.4 jõudluse osa on tehtud.
   6. [M1-4-5](tasks/M1-4-5.md) komponendi suurus käepidemete ja numbritega (A): **vastu võetud** `8f3d54f`.
   7. [M1-4-6](tasks/M1-4-6.md) joonda kahe jalaga (A): **vastu võetud** `345791a`.
-  8. Järgmine: ülesanne 9b (leia komponent valikut muutmata, tähis omaduste päises), alus `345791a`. Edasi plaani järjekorras: 9b → 7 → 8 → 9 → 10 → 11 (ülesanne 2 tingimuslik, 4 liidetud 11-ga; kasutaja otsus 2026-11-17). Kaart kirjutatakse vahetult enne ülesannet.
+  8. Järgmine: [M1-4-9b](tasks/M1-4-9b.md) leia komponent ja tea, mida mõõtsid (A), alus `345791a`. Edasi plaani järjekorras: 9b → 7 → 8 → 9 → 10 → 11 (ülesanne 2 tingimuslik, 4 liidetud 11-ga; kasutaja otsus 2026-11-17). Kaart kirjutatakse vahetult enne ülesannet.
 - Lahtine arhitektile: 02 §16 uuendamine `R`/`Shift+R` otsuse järgi (O2).
 
 ## Kehtivad otsused, mis pole veel koodis näha

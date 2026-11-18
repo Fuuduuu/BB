@@ -156,10 +156,9 @@ Rajad: ülesanded 11 (koos endise 4-ga) ja H on **rada B** (jõudluseelarve, vas
    - Omaduste päis näitab valitud objekti tähist: „Omadused · J29“ või „Omadused · J29.15“. Tähis uueneb samas kohas ja on loetav 280 px laiuses paneelis.
    - Plaadil oleva näidu juurest saab ühe toiminguga näha selle mõõtmise sondipaari ja toiteoleku (näiteks −7 V: punane 5 V siinil, must 12 V siinil). Üldvaates jääb näit lühikeseks ([töövoo hinnang](../review/2026-11-17-toovoo-ja-arhitektuuri-hinnang.md)).
    - Testid:
-     - `list_row_hover_previews_component_without_selecting`
+     - `list_row_hover_previews_component_without_selecting` (ka realt lahkudes kontuur kaob)
      - `keyboard_row_focus_previews_component`
      - `preview_keeps_measure_draft_and_view`
-     - `leaving_row_clears_preview`
      - `properties_header_shows_selected_ref`
      - `reading_reveals_probe_pair_and_power`
 

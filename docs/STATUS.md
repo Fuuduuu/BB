@@ -26,7 +26,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 - Haru `codex/m1-4` on liidetud. M2.1 tööpuu on `C:/Users/TRUMPIT/.codex/worktrees/bb-m2-1/BB`, haru `codex/m2-1`.
 - [Koodiülevaatus 2026-11-19](review/2026-11-19-koodiulevaatus-00a424e.md) (`00a424e`, 34 leidu, triaaž dokumendi lõpus). Enne M2.1 tööd:
   1. [M2-1-H](tasks/M2-1-H.md) projektifaili terviklus ja päästekoopia (B), M2.1 ainus hooldusvoor: **vastu võetud** `af5716b`.
-  2. M2-1-1 töövoo vead (`R` paigutamisel, teegi parameetrid paigutamise ajal, kalibreerimine akna vahetusel) (A): **järgmine**, kaart kirjutatakse vahetult enne ülesannet.
+  2. [M2-1-1](tasks/M2-1-1.md) paigutus ja kalibreerimine ilma üllatusteta (`R` paigutamisel, teegi parameetrid paigutamise ajal, kalibreerimine akna vahetusel) (A): **ehitamiseks**, alus `af5716b`.
   3. Astra tööriistad: leid 25 (kaardikontroll ei tohi nõutud testi vaikselt välja jätta), seejärel 26–30.
 - 02 § 16 ja § 6.2 kasutavad pööramiseks `R`/`Shift+R`-i (O2). 03 § 7.3 kirjeldab M1-4-10 sildi külje valikut.
 

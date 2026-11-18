@@ -125,13 +125,15 @@ _M1.1 töötab virtuaalsel tööpinnal ilma fotota ([03 § 7.1](03-arhitektuur.m
 - [x] SOIC-8 → SOIC-14 vahetus hoiab jalad 1–8 seotuna (sama `uid`); SOIC-14 → SOIC-8 küsib kinnitust ja loetleb kaduvate jalgade mõju; nende jalgade mõõtmised muutuvad ajaloolisteks. SOIC-8 → SOIC-14 tagasi ei aktiveeri vanu mõõtmisi (uus `uid`), aga `Ctrl+Z` aktiveerib.
 
 ### M1.4 · Suurus ja joondus
+**Olek: valmis ja avaldatud** versioonina `v0.4.0` (2026-11-19). Tõendid ja kasutaja suitsukatse (12/12 oma tiheda plaadi fotoga) on [M1.4 üleandmises](plans/M1-4-uleandmine.md). Dubleerimine liikus M2-sse; menüü „kustuta“ on „Eemalda paigutus plaadilt“ ([M1-4-9](tasks/M1-4-9.md)).
+
 **Sisu:** suuruse muutmine käepidemetega ja numbritega, kahe jala joondus, oma jalad, jõudluseelarve, paremklõpsu kontekstimenüü baas ([06 › Hiir ja puude](06-kasutajaliides.md#hiir-ja-puude)): komponent (pööra, pool, dubleeri, kustuta), jalg (mõõda, nimeta, NC), tühi ala (lisa komponent siia); hilisemad osad lisavad oma kirjed.
 
 **Valmis kui:**
-- [ ] [02 § 16](02-kasutaja-teekond.md#16-vastuvõtustsenaarium-e2e-test-plaat-algusest-lõpuni) sammud 1–5 lähevad läbi.
-- [ ] Kahe jala joondus taastab teadaoleva asendi täpsusega < 0,01 px ja < 0,01°.
-- [ ] Jõudluseelarve on täidetud ([03 § 7.3](03-arhitektuur.md#73-kihid-ja-jõudlus)).
-- [ ] Paremklõps komponendil, jalal ja tühjal alal avab menüü, mille kirjed teevad sama, mis klahvid ja tööriistad; `Esc` sulgeb menüü ilma muutuseta.
+- [x] [02 § 16](02-kasutaja-teekond.md#16-vastuvõtustsenaarium-e2e-test-plaat-algusest-lõpuni) sammud 1–5 lähevad läbi (E2E `full_flow_steps_1_to_5`).
+- [x] Kahe jala joondus taastab teadaoleva asendi täpsusega < 0,01 px ja < 0,01° ([M1-4-6](tasks/M1-4-6.md)).
+- [x] Jõudluseelarve on täidetud ([03 § 7.3](03-arhitektuur.md#73-kihid-ja-jõudlus)): Tauri proovis pan 59,3, suum 60,0, lohistus 50,7 fps, avamine 714,5 ms ([M1-4-11](tasks/M1-4-11.md)).
+- [x] Paremklõps komponendil, jalal ja tühjal alal avab menüü, mille kirjed teevad sama, mis klahvid ja tööriistad; `Esc` sulgeb menüü ilma muutuseta ([M1-4-9](tasks/M1-4-9.md)).
 
 ## M2 · Ühendused, võrgud ja muudetav skeem
 

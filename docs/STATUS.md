@@ -1,6 +1,6 @@
 # BB: jooksev seis ja üleandmine
 
-Uuendatud: **2026-11-18**. See fail on lühike hetkeseis, kuni 80 rida. Ajalugu on Git-is, kaartidel ja verstapostide üleandmistes ([docs/README](README.md)). Kontrolli väiteid Git-i vastu.
+Uuendatud: **2026-11-19**. See fail on lühike hetkeseis, kuni 80 rida. Ajalugu on Git-is, kaartidel ja verstapostide üleandmistes ([docs/README](README.md)). Kontrolli väiteid Git-i vastu.
 
 ## Rollid
 
@@ -10,6 +10,7 @@ Claude on arhitekt ja Codex on ehitaja; tööriistu ehitab ka Astra põhikaustas
 
 | Versioon | Verstapost | Kuupäev | Märkus |
 |---|---|---|---|
+| `v0.4.0` | M1.4 suurus, joondus, oma jalad ja jõudlus | 2026-11-19 | liidetud `7e37c59`, silt `v0.4.0`; kasutaja suitsukatse 12/12 oma tiheda plaadi fotoga |
 | `v0.3.0` | M1.3 tööpind, valik, korpuste teek | 2026-11-17 | liidetud `6fa7a85`, silt `a995825`; kasutaja oma fotoga kontroll jäi vahele, ehitaja sünteetiline suitsukatse 10/12 |
 | `v0.2.0` | M1.2 foto ja kalibreerimine | 2026-11-14 | |
 | `v0.1.1` | M1.1 komponent fotol ja mõõtmine | 2026-11-10 | |
@@ -17,31 +18,19 @@ Claude on arhitekt ja Codex on ehitaja; tööriistu ehitab ka Astra põhikaustas
 
 Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani vastuvõtutabelis.
 
-## Käimas: M1.4 suurus, joondus ja jõudlus
+## Järgmine: M2.1 ühendused ja võrgud plaadil
 
-- [Plaan](plans/M1-4-suurus-joondus-joudlus.md) on kinnitatud (kasutaja 2026-11-17: O1 jõudlus enne, O2 `R`/`Shift+R` jääb, O3 ühe telje venitus lubatud).
-- Tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m1-4/BB`, haru `codex/m1-4`, alus `3953382`.
-- Kaartide järjekord:
-  1. [M1-4-1](tasks/M1-4-1.md) žesti ajal bitmap-teisendus (A): **vastu võetud** `09383e4` (proof 4/4, `bb-review-card` läbis). Servapuhver 0,25: pan 57,1 fps, suum 57,8 fps, rahunemine 283,3 ms.
-  2. [M1-4-1b](tasks/M1-4-1b.md) vaate muutus ei renderda kesta paneele (A): **vastu võetud** `d126c09` (sh probe-testi CI parandus).
-  3. [M1-4-H](tasks/M1-4-H.md) vormingu versiooni kaitse, täis ketas koopial ja pinge sisestus (B), M1.4 ainus hooldusvoor: **vastu võetud** `7fb0de2`.
-  4. [M1-4-3](tasks/M1-4-3.md) lohistamisel renderdub ainult liigutatav komponent (A): **vastu võetud** `9f25688` (lohistus 23 → 50 fps).
-  5. [M1-4-3b](tasks/M1-4-3b.md) suumi rahunemine ilma nõksuta (A): **vastu võetud** `dde0424` (rahunemine 267 → 67 ms). M1.4 jõudluse osa on tehtud.
-  6. [M1-4-5](tasks/M1-4-5.md) komponendi suurus käepidemete ja numbritega (A): **vastu võetud** `8f3d54f`.
-  7. [M1-4-6](tasks/M1-4-6.md) joonda kahe jalaga (A): **vastu võetud** `345791a`.
-  8. [M1-4-9b](tasks/M1-4-9b.md) leia komponent ja tea, mida mõõtsid (A): **vastu võetud** `8193de7`.
-  9. [M1-4-7](tasks/M1-4-7.md) oma jalad ja jalgade-padjandite vastavus (A): **vastu võetud** `d275566`.
-  10. [M1-4-8](tasks/M1-4-8.md) kohandatud korpus (A): **vastu võetud** `dc124bf`.
-  11. [M1-4-9](tasks/M1-4-9.md) paremklõpsu menüü (A): **vastu võetud** `d909fe9`. Dubleerimine (käsk ja `Ctrl+D`) läheb M2 plaani.
-  12. [M1-4-10](tasks/M1-4-10.md) tihedus: sildid naabrite kõrval ja teegi siluetid (A): **vastu võetud** `ea60389`.
-  13. [M1-4-11](tasks/M1-4-11.md) M1.4 vastuvõtt: läbiv e2e, jõudlus, ühilduvus, versioon ja suitsukatse (B): **vastu võetud** `bbb0920`. Järgmine on kasutaja suitsukatse (`%TEMP%/bb-m1-4-katse/pcbk-m1-4-11-katse.exe`, 12 sammu haru failis `docs/plans/M1-4-uleandmine.md`). Liitmine `main`-iga ainult rohelise haru CI järel. Raja B kontroll ja Tauri eelarve läbisid (pan 59,3, suum 60,0, lohistus 50,7 fps, avamine 714,5 ms). Sisaldab endist ülesannet 4. Kasutaja suitsukatse järgneb arhitekti ülevaatusele. Pärast suitsukatset teeb arhitekt kasutaja loal väljalaske `v0.4.0` ja uuendab `ARHITEKT.md` § 6 versiooniallika (`Cargo.toml`).
-- 02 § 16 ja § 6.2 kasutavad nüüd pööramiseks `R`/`Shift+R`-i (O2). 03 § 7.3 kirjeldab M1-4-10 sildi külje valikut.
+- M1.4 on avaldatud versioonina `v0.4.0` (liidetud `7e37c59`). Kaardid ja commit'id, jõudlustabel, ühilduvusfailid ja suitsukatse on [M1.4 üleandmises](plans/M1-4-uleandmine.md).
+- Järgmine samm on M2.1 plaan ([07 › M2.1](07-teekaart.md#m21--ühendused-ja-võrgud-plaadil)). Esimesed ülesanded on [ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md) teostus. Plaan kirjutatakse kasutaja loal.
+- M2 plaani sisendid M1.4-st: dubleerimine ja `Ctrl+D`, siltide omavaheline kattuvus, mitme komponendi toimingu üks ajaloosamm (partiikäsk) ja jala sildi ühtne kuju (`pin.name || pin.id` või `pin.id`). Hooldus: `old_files.rs` (445 rida) ja `interaction.test.tsx` (435 rida) jagamine ning ühine `__PCBK_APP_VERSION__` deklaratsioon. Lisaks [M1.4 plaani lahtised](plans/M1-4-suurus-joondus-joudlus.md#mis-jääb-järgmistesse-plaanidesse).
+- Haru `codex/m1-4` on liidetud. Uus verstapost alustab uue tööpuu ja haruga.
+- 02 § 16 ja § 6.2 kasutavad pööramiseks `R`/`Shift+R`-i (O2). 03 § 7.3 kirjeldab M1-4-10 sildi külje valikut.
 
 ## Kehtivad otsused, mis pole veel koodis näha
 
 - Failivorming ei muutu ilma kasutaja loata (M1.3 O2).
 - [ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md) (kasutaja 2026-11-17): moodulitevahelised reeglid ja invariandid lähevad domeeni, valiku kehtivus registrisse. Teostus on M2.1 esimesed ülesanded; kaardid tulevad M2.1 plaaniga.
-- SVG jääb lõuendi aluseks; jõudluse parandus ja kordusmõõtmine on M1.4 osa A. Canvas-kihi otsus jalgadele tehakse M1.4 vastuvõtu kordusmõõtmisel (ül. 11).
+- SVG jääb lõuendi aluseks. M1.4 kordusmõõtmine täitis eelarve, seega jalgade Canvas-kihti ei tehta ([M1-4-11](tasks/M1-4-11.md)).
 - PNG-eksport (M4) komponeeritakse veebivaates; fotoprotokoll saab tootmises oma päritolu CORS-päise.
 - Windowsi eelkontroll jääb kasutaja suitsuloendiks; uut automaatikat ei lisata.
 - `Tab` liigub vormis; järgmine jalg on `Alt+↓` (kasutaja 2026-11-15).
@@ -52,7 +41,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 
 - Otsust vajab: koodiallkirjastamine enne laiemat jagamist (v1.0 tingimuslik, A2).
 - Otsust vajab: CLAUDE.md laadib ARHITEKT-i `@`-impordiga ja ARHITEKT §7 saab tööpuu-seansi lõksu (md-auditi ettepanek 2026-11-17).
-- Koristamiseks (kasutaja võib kustutada): `%TEMP%\bb-m1-3-katse\v0.2.0-worktree\` ja `%TEMP%\bb-m1-2-katse\v0.1.1-worktree\`.
+- Koristamiseks (kasutaja võib kustutada): `%TEMP%\bb-m1-4-katse\` (pärast varukoopia kontrolli), `%TEMP%\bb030-m1411\`, `%TEMP%\bb-m1-3-katse\v0.2.0-worktree\` ja `%TEMP%\bb-m1-2-katse\v0.1.1-worktree\`.
 
 ## Tööriistad
 

@@ -64,7 +64,7 @@ Canvas-üleminekut M1.4-s ei tehta. Kolme jooksu lähteandmed ja arvutus on `C:/
 | M1-4-9 | `d909fe9` | Kontekstimenüü |
 | M1-4-9b | `8193de7` | Loendi eelvaade, päise tähis ja näidu asukoht |
 | M1-4-10 | `ea60389` | Sildi külje valik ja teegi siluetid |
-| M1-4-11 | Commitimata | Vastuvõtutõendid arhitekti ülevaatuseks |
+| M1-4-11 | `bbb0920` | Vastuvõtutõendid, versioon ühest allikast ja suitsukatse |
 
 ## Ühilduvusfailid
 
@@ -87,11 +87,11 @@ Foto originaal on 162 457 baiti ja SHA-256 on `33afd1c2e74e7d8f2a7f17e4585f31dbe
 - Automaatne silt väldib keret ja padjandeid. Sildid võivad omavahel kattuda.
 - Mitmikvaliku pööramine, poolevahetus ja paigutuse eemaldamine kasutavad üht ajaloosammu komponendi kohta.
 - Pärast oma jalgadega komponendi paigutuse eemaldamist jäävad jalad alles. Senise tavakorpuse ja lisajalgade arv ei klapi. Paigutuse saab taastada `Ctrl+Z`-ga või valida „Ala“.
-- Väljalaske ja paigutustiheduse otsused järgnevad kasutaja suitsukatsele. [Mis jääb järgmistesse plaanidesse](C:/Users/TRUMPIT/Desktop/BB/docs/plans/M1-4-suurus-joondus-joudlus.md#mis-jääb-järgmistesse-plaanidesse)
+- Edasised tööd: [Mis jääb järgmistesse plaanidesse](M1-4-suurus-joondus-joudlus.md#mis-jääb-järgmistesse-plaanidesse).
 
 ## Kasutaja suitsukatse
 
-Staatus **ootab kasutajat pärast arhitekti ülevaatust**. Katse-EXE on `%TEMP%/bb-m1-4-katse/pcbk-m1-4-11-katse.exe`, SHA-256 `a9662d8ee14d6282d78d504afc1e7e2b4dfe1789e7bc704ae1f8e14b3a9dfc76`. Uue projekti ja „Salvesta mujale…“ vaikimisi kaust on `%TEMP%/bb-m1-4-katse`. Vana faili katsel kasuta `%TEMP%/bb-m1-4-katse/v0.3.0-suitsukatse.pcbk` koopiat.
+Staatus: **läbis 2026-11-19**. Kasutaja tegi kõik 12 sammu oma tiheda plaadi fotoga, kaasa arvatud järgmise päeva taasavamise; paneelide mõõtude kohta märkusi ei tulnud. Väljalase `v0.4.0` (liidetud `7e37c59`). Katse-EXE on `%TEMP%/bb-m1-4-katse/pcbk-m1-4-11-katse.exe`, SHA-256 `a9662d8ee14d6282d78d504afc1e7e2b4dfe1789e7bc704ae1f8e14b3a9dfc76`. Uue projekti ja „Salvesta mujale…“ vaikimisi kaust on `%TEMP%/bb-m1-4-katse`. Vana faili katsel kasuta `%TEMP%/bb-m1-4-katse/v0.3.0-suitsukatse.pcbk` koopiat.
 
 Ehitaja käivitas kopeeritud EXE ja lõi sünteetilise projekti. Fail tekkis ettenähtud kausta ning selle `app_version` oli `0.3.0`. „Salvesta mujale…“ vaikekataloogi kontrolliti ümbrise koodist. Ehitaja katses ei olnud salvestusviga, mis avaks selle dialoogi. Tõend on `C:/Users/TRUMPIT/.codex/worktrees/bb-m1-4/BB/output/playwright/m1-4-11/smoke-exe-proof.json`.
 

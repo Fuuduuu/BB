@@ -33,7 +33,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
   9. [M1-4-7](tasks/M1-4-7.md) oma jalad ja jalgade-padjandite vastavus (A): **vastu võetud** `d275566`.
   10. [M1-4-8](tasks/M1-4-8.md) kohandatud korpus (A): **vastu võetud** `dc124bf`.
   11. [M1-4-9](tasks/M1-4-9.md) paremklõpsu menüü (A): **vastu võetud** `d909fe9`. Dubleerimine (käsk ja `Ctrl+D`) läheb M2 plaani.
-  12. [M1-4-10](tasks/M1-4-10.md) tihedus: sildid naabrite kõrval ja teegi siluetid (A): **ehitamiseks**, alus `d909fe9`. Paneelide mõõdud vaatab kasutaja üle ülesande 11 oma foto katses. Edasi plaani järjekorras: 11 (ülesanne 2 tingimuslik, 4 liidetud 11-ga; kasutaja otsus 2026-11-17). Kaart kirjutatakse vahetult enne ülesannet.
+  12. [M1-4-10](tasks/M1-4-10.md) tihedus: sildid naabrite kõrval ja teegi siluetid (A): **vastu võetud** `ea60389`. Paneelide mõõdud vaatab kasutaja üle ülesande 11 oma foto katses. Järgmine on M1.4 ülesanne 11 (rada B: e2e, jõudluseelarve, suitsukatse ja väljalase). Edasi plaani järjekorras: 11 (ülesanne 2 tingimuslik, 4 liidetud 11-ga; kasutaja otsus 2026-11-17). Kaart kirjutatakse vahetult enne ülesannet.
 - Lahtine arhitektile: 02 §16 uuendamine `R`/`Shift+R` otsuse järgi (O2).
 
 ## Kehtivad otsused, mis pole veel koodis näha

@@ -23,7 +23,11 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 - M1.4 on avaldatud versioonina `v0.4.0` (liidetud `7e37c59`). Kaardid ja commit'id, jõudlustabel, ühilduvusfailid ja suitsukatse on [M1.4 üleandmises](plans/M1-4-uleandmine.md).
 - Järgmine samm on M2.1 plaan ([07 › M2.1](07-teekaart.md#m21--ühendused-ja-võrgud-plaadil)). Esimesed ülesanded on [ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md) teostus. Plaan kirjutatakse kasutaja loal.
 - M2 plaani sisendid M1.4-st: dubleerimine ja `Ctrl+D`, siltide omavaheline kattuvus, mitme komponendi toimingu üks ajaloosamm (partiikäsk) ja jala sildi ühtne kuju (`pin.name || pin.id` või `pin.id`). Hooldus: `old_files.rs` (445 rida) ja `interaction.test.tsx` (435 rida) jagamine ning ühine `__PCBK_APP_VERSION__` deklaratsioon. Lisaks [M1.4 plaani lahtised](plans/M1-4-suurus-joondus-joudlus.md#mis-jääb-järgmistesse-plaanidesse).
-- Haru `codex/m1-4` on liidetud. Uus verstapost alustab uue tööpuu ja haruga.
+- Haru `codex/m1-4` on liidetud. M2.1 tööpuu on `C:/Users/TRUMPIT/.codex/worktrees/bb-m2-1/BB`, haru `codex/m2-1`.
+- [Koodiülevaatus 2026-11-19](review/2026-11-19-koodiulevaatus-00a424e.md) (`00a424e`, 34 leidu, triaaž dokumendi lõpus). Enne M2.1 tööd:
+  1. [M2-1-H](tasks/M2-1-H.md) projektifaili terviklus ja päästekoopia (B), M2.1 ainus hooldusvoor: **ehitamiseks**.
+  2. M2-1-1 töövoo vead (`R` paigutamisel, teegi parameetrid paigutamise ajal, kalibreerimine akna vahetusel) (A): kaart kirjutatakse pärast M2-1-H-d.
+  3. Astra tööriistad: leid 25 (kaardikontroll ei tohi nõutud testi vaikselt välja jätta), seejärel 26–30.
 - 02 § 16 ja § 6.2 kasutavad pööramiseks `R`/`Shift+R`-i (O2). 03 § 7.3 kirjeldab M1-4-10 sildi külje valikut.
 
 ## Kehtivad otsused, mis pole veel koodis näha

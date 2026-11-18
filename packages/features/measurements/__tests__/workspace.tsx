@@ -114,6 +114,7 @@ export function mountMeasurements({
   const layers = registry.canvasLayers();
   const tools = registry.tools();
   const keys = registry.keys();
+  const contextMenu = registry.contextMenu.bind(registry);
   function Board() {
     const snapshot = useSnapshot((value) => value);
     return (
@@ -121,6 +122,7 @@ export function mountMeasurements({
         layers={layers}
         tools={tools}
         keys={keys}
+        contextMenu={contextMenu}
         sceneTransform={sceneTransform}
         view={view}
         onViewChange={noop}

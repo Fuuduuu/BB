@@ -9,6 +9,21 @@ Sisenemispunkt: `packages/ui/src/shell-state.ts`
 export function bindHistoryKeys(target: Window, actions: HistoryActions): () => void;
 ```
 
+### `ContextMenuItemSpec`
+```ts
+export interface ContextMenuItemSpec {
+    id: string;
+    appliesTo: string[];
+    order: number;
+    label(snapshot: Snapshot, selection: Selection): string;
+    shortcut?: {
+        key: string;
+        shift?: boolean;
+    };
+    run(api: ToolApi, selection: Selection, at: Vec2): boolean;
+}
+```
+
 ### `ContextSectionSpec`
 ```ts
 export interface ContextSectionSpec {
@@ -66,6 +81,7 @@ export const et: {
         readonly resizeNavigator: "Navigaatori laius";
         readonly resizeContext: "Omaduste paneeli laius";
         readonly canvas: "Plaat";
+        readonly contextMenu: "Toimingud";
         readonly selectTool: "Vali";
         readonly panTool: "Liiguta vaadet";
         readonly canvasEmpty: "Sinu plaadi tööala";
@@ -242,6 +258,13 @@ export const SHELL_KEYS: {
         readonly key: " ";
         readonly shift: "any";
     };
+    readonly contextMenu: {
+        readonly key: "F10";
+        readonly shift: true;
+    };
+    readonly contextMenuKey: {
+        readonly key: "ContextMenu";
+    };
     readonly nudgeLeft: {
         readonly key: "ArrowLeft";
         readonly shift: "any";
@@ -289,6 +312,7 @@ export interface UiModule {
     canvasLayers?: LayerSpec[];
     tools?: ToolSpec[];
     keys?: KeySpec[];
+    contextMenu?: ContextMenuItemSpec[];
     onSessionReset?(): void;
 }
 ```
@@ -302,6 +326,7 @@ export class UiRegistry {
     navigatorTabs(): PanelSpec[];
     contextSections(selection: Selection): ContextSectionSpec[];
     contextPinned(): PinnedSpec[];
+    contextMenu(kind: string): ContextMenuItemSpec[];
     selectionLabel(snapshot: Snapshot, selection: Selection): string | null;
     topBar(): SlotSpec[];
     bottomBar(): SlotSpec[];

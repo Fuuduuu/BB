@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { UiRegistry, type KeySpec, type UiModule } from './UiRegistry';
+import { UiRegistry, type ContextMenuItemSpec, type KeySpec, type UiModule } from './UiRegistry';
 
 test('context_section_applies_only_when_all_items_match', () => {
   const registry = new UiRegistry([
@@ -92,6 +92,12 @@ test('module_key_conflict_fails_registration', () => {
     registry.register({ ...module('conflict'), keys: [key('duplicate', 'R', true)] }),
   ).toThrow();
   expect(() =>
+    registry.register({ ...module('conflict'), keys: [key('duplicate', 'F10', true)] }),
+  ).toThrow(/reserved/i);
+  expect(() =>
+    registry.register({ ...module('conflict'), keys: [key('duplicate', 'ContextMenu')] }),
+  ).toThrow(/reserved/i);
+  expect(() =>
     registry.register({
       ...module('conflict'),
       tools: [{ ...measure, id: 'custom', key: 'r' }],
@@ -170,6 +176,39 @@ test('duplicate pinned section ids reject registration', () => {
     /measure/,
   );
   expect(registry.modules().map(({ id }) => id)).toEqual(['first']);
+});
+
+test('context menu entries are filtered and ordered across modules with unique ids', () => {
+  const rotate: ContextMenuItemSpec = {
+    id: 'rotate',
+    appliesTo: ['component'],
+    order: 20,
+    label: () => 'Rotate',
+    shortcut: { key: 'R' },
+    run: () => true,
+  };
+  const add: ContextMenuItemSpec = {
+    ...rotate,
+    id: 'add',
+    appliesTo: ['empty', 'component'],
+    order: 10,
+  };
+  const registry = new UiRegistry([
+    { ...module('placed'), contextMenu: [rotate] },
+    { ...module('library'), contextMenu: [add] },
+  ]);
+  expect(registry.contextMenu('empty').map(({ id }) => id)).toEqual(['add']);
+  expect(registry.contextMenu('component').map(({ id }) => id)).toEqual(['add', 'rotate']);
+  expect(registry.contextMenu('pin')).toEqual([]);
+  expect(() => registry.register({ ...module('duplicate'), contextMenu: [rotate] })).toThrow(
+    /Duplicate contextMenu id: rotate/,
+  );
+  rotate.appliesTo.push('pin');
+  rotate.shortcut!.key = 'X';
+  registry.contextMenu('component')[1]!.appliesTo.push('pin');
+  expect(registry.contextMenu('pin')).toEqual([]);
+  expect(registry.contextMenu('component')[1]?.shortcut?.key).toBe('R');
+  expect(registry.modules()).toHaveLength(2);
 });
 
 test('caller changes and result-array changes cannot corrupt registered contribution ids', () => {

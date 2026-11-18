@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useEngine } from '@pcbk/client';
 import type { IdGen } from '@pcbk/contracts';
 import { useSessionStore, useViewStore } from '@pcbk/ui';
-import type { UiModule } from '@pcbk/ui';
+import type { KeySpec, UiModule } from '@pcbk/ui';
 import { contactFromSelection } from './contacts';
 import { measureEt } from './i18n/et';
 import { READING_LABELS_LAYER } from './layers/ReadingLabels';
@@ -27,6 +27,18 @@ function useMeasureVisible(): boolean {
   );
   return useMeasureStore((state) => state.measureAt !== null);
 }
+
+const focusMeasurement: KeySpec['run'] = (api, selection) => {
+  const store = useMeasureStore.getState();
+  if (!store.measureAt) {
+    const at = contactFromSelection(api.snapshot(), selection);
+    if (!at) return false;
+    store.setMeasureAt(at);
+  }
+  useViewStore.getState().setContextOpen(true);
+  store.requestFocus();
+  return true;
+};
 
 export function createMeasurementsUi(ids: IdGen): UiModule {
   return {
@@ -62,17 +74,17 @@ export function createMeasurementsUi(ids: IdGen): UiModule {
       {
         id: 'measurements.focus',
         key: 'M',
-        run: (api, selection) => {
-          const store = useMeasureStore.getState();
-          if (!store.measureAt) {
-            const at = contactFromSelection(api.snapshot(), selection);
-            if (!at) return false;
-            store.setMeasureAt(at);
-          }
-          useViewStore.getState().setContextOpen(true);
-          store.requestFocus();
-          return true;
-        },
+        run: focusMeasurement,
+      },
+    ],
+    contextMenu: [
+      {
+        id: 'measurements.focus',
+        appliesTo: ['pin'],
+        order: 10,
+        label: () => measureEt.title,
+        shortcut: { key: 'M' },
+        run: focusMeasurement,
       },
     ],
     canvasLayers: [READING_LABELS_LAYER],

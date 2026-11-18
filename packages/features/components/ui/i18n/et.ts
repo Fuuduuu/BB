@@ -25,6 +25,9 @@ export const componentEt = {
   select: (ref: string) => `Vali ${ref}`,
   removePin: (id: string) => `Eemalda jalg ${id}`,
   namePin: (id: string) => `Jala ${id} nimi`,
+  renamePin: 'Nimeta jalg',
+  markNc: 'Märgi NC-ks',
+  clearNc: 'Eemalda NC-märge',
   ncPin: (id: string) => `Jalg ${id}: kinnitatud ühendamata`,
   invalid: 'Kontrolli sisestatud väärtust.',
   duplicateRef: 'See tähis on juba kasutusel.',
@@ -63,6 +66,9 @@ export const componentEt = {
 } as const;
 
 export const placementEt = {
+  addHere: 'Lisa komponent siia',
+  placeHere: 'Paiguta siia',
+  cancelHere: 'Loobu',
   tabs: {
     library: 'Teek',
     components: 'Komponendid',

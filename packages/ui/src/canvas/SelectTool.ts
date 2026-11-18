@@ -33,7 +33,7 @@ function selectedBoardComponents(selection: Selection, snapshot: Snapshot): Tran
   );
 }
 
-function selectionForHit(hit: HitItem | undefined): Selection {
+export function selectionForHit(hit: HitItem | undefined): Selection {
   if (!hit) return { items: [] };
   if (hit.target) return { items: [hit.target] };
   const { kind, id, componentId } = hit;

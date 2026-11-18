@@ -20,6 +20,8 @@ export const SHELL_KEYS = {
   select: { key: 'V' },
   pan: { key: 'H' },
   temporaryPan: { key: ' ', shift: 'any' },
+  contextMenu: { key: 'F10', shift: true },
+  contextMenuKey: { key: 'ContextMenu' },
   nudgeLeft: { key: 'ArrowLeft', shift: 'any' },
   nudgeRight: { key: 'ArrowRight', shift: 'any' },
   nudgeUp: { key: 'ArrowUp', shift: 'any' },

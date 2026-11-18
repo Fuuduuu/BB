@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, expect, test, vi } from 'vitest';
 import { snapshot } from '../../../client/src/__tests__/fakes';
 import { useSessionStore } from '../shell/session-store';
 import { Canvas, type CanvasProps } from './Canvas';
@@ -259,4 +259,36 @@ test('escape cancels the outgoing tool once', () => {
   fireEvent.keyDown(svg, { key: 'Escape' });
   expect(getSession()).toMatchObject({ toolId: 'select', selection: { items: [] } });
   expect(cancellations).toBe(1);
+});
+
+test('context_menu_uses_the_board_area_visible_beside_overlay_panels', () => {
+  const run = vi.fn(() => true);
+  const svg = setup({
+    fitInsets: { left: 20, right: 240, top: 10, bottom: 30 },
+    contextMenu: () => [
+      { id: 'test', appliesTo: ['component', 'empty'], order: 10, label: () => 'Toiming', run },
+    ],
+  });
+  const viewport = svg.parentElement!;
+  viewport.getBoundingClientRect = () => new DOMRect(10, 20, 600, 400);
+  const scene = svg.querySelector<SVGGElement>('[data-scene]')!;
+  scene.getScreenCTM = () =>
+    ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }) as DOMMatrix;
+
+  const width = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(180);
+  const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(80);
+  try {
+    fireEvent.keyDown(svg, { key: 'F10', shiftKey: true });
+    fireEvent.click(screen.getByRole('menuitem'));
+    expect(run).toHaveBeenCalledWith(expect.anything(), { items: [component] }, { x: 200, y: 210 });
+
+    fireEvent.pointerDown(svg, { button: 2 });
+    fireEvent.contextMenu(svg, { button: 2, clientX: 360, clientY: 380 });
+    const menu = screen.getByRole('menu');
+    expect(menu.style.left).toBe('180px');
+    expect(menu.style.top).toBe('290px');
+  } finally {
+    width.mockRestore();
+    height.mockRestore();
+  }
 });

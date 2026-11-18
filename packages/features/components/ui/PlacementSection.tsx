@@ -143,24 +143,33 @@ function forPlaced(api: ToolApi, selection: Selection, run: (id: string) => void
   return handled;
 }
 
+export const rotateClockwise: KeySpec['run'] = (api, selection) =>
+  forPlaced(api, selection, (id) => api.execute('components.rotate', { id, deltaDeg: 90 }));
+
+export const rotateCounterclockwise: KeySpec['run'] = (api, selection) =>
+  forPlaced(api, selection, (id) => api.execute('components.rotate', { id, deltaDeg: -90 }));
+
+export const flipSide: KeySpec['run'] = (api, selection) =>
+  forPlaced(api, selection, (id) => api.execute('components.flipSide', { id }));
+
+export const removePlacements: KeySpec['run'] = (api, selection) =>
+  forPlaced(api, selection, (id) => api.execute('components.removeFromBoard', { id }));
+
 export const placementKeys: KeySpec[] = [
   {
     id: 'components.rotateClockwise',
     key: 'R',
-    run: (api, selection) =>
-      forPlaced(api, selection, (id) => api.execute('components.rotate', { id, deltaDeg: 90 })),
+    run: rotateClockwise,
   },
   {
     id: 'components.rotateCounterclockwise',
     key: 'R',
     shift: true,
-    run: (api, selection) =>
-      forPlaced(api, selection, (id) => api.execute('components.rotate', { id, deltaDeg: -90 })),
+    run: rotateCounterclockwise,
   },
   {
     id: 'components.flipSide',
     key: 'F',
-    run: (api, selection) =>
-      forPlaced(api, selection, (id) => api.execute('components.flipSide', { id })),
+    run: flipSide,
   },
 ];

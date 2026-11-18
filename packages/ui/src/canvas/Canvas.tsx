@@ -3,13 +3,15 @@ import type { PointerEvent } from 'react';
 import type { DocumentEngine, Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
 import { et } from '../shell/i18n/et';
-import { isEditing, matchesShellKey, SHELL_KEYS } from '../shell/keymap';
 import { useSessionStore } from '../shell/session-store';
 import type { Preview } from '../shell/session-store';
-import type { KeySpec } from '../shell/UiRegistry';
+import type { ContextMenuItemSpec, KeySpec } from '../shell/UiRegistry';
+import { ContextMenu } from './ContextMenu';
 import { createHitIndex } from './hit-index';
 import { LabelObstaclesContext } from './label-obstacles';
+import { useCanvasContextMenu } from './use-canvas-context-menu';
 import { useCanvasControls } from './use-canvas-controls';
+import { useCanvasKeys } from './use-canvas-keys';
 import { GESTURE_OVERSCAN, useCanvasView } from './use-canvas-view';
 import { createPanToolSpec } from './PanTool';
 import { createSelectToolSpec } from './SelectTool';
@@ -24,6 +26,7 @@ export interface CanvasProps {
   layers: readonly LayerSpec[];
   tools: readonly ToolSpec[];
   keys?: readonly KeySpec[];
+  contextMenu?: (kind: string) => ContextMenuItemSpec[];
   sceneTransform: SceneTransform;
   view: CanvasView;
   onViewChange(view: CanvasView): void;
@@ -67,6 +70,7 @@ export function Canvas({
   layers,
   tools,
   keys,
+  contextMenu,
   sceneTransform,
   view,
   onViewChange,
@@ -223,71 +227,27 @@ export function Canvas({
     return () => element.removeEventListener('wheel', onWheel);
   }, [changeView, geometry, viewRef]);
 
-  useLayoutEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (
-        event.defaultPrevented ||
-        event.isComposing ||
-        event.ctrlKey ||
-        event.metaKey ||
-        isEditing(event)
-      )
-        return;
-      if (matchesShellKey(event, SHELL_KEYS.cancel)) {
-        space.current = false;
-        // Switching tools cancels the outgoing tool in the layout cleanup.
-        if (getSession().toolId === 'select') cancel(active);
-        else getSession().setToolId('select');
-        api.select({ items: [] });
-        event.preventDefault();
-        return;
-      }
-      if (matchesShellKey(event, SHELL_KEYS.temporaryPan)) {
-        if (event.target instanceof Element && event.target.closest('button, a[href]')) return;
-        space.current = true;
-        event.preventDefault();
-        return;
-      }
-      if (active.onKey?.(event, api)) {
-        event.preventDefault();
-        return;
-      }
-      if (event.altKey) return;
-      const key = event.key.toLowerCase();
-      const binding = keys?.find(
-        (spec) => spec.key.toLowerCase() === key && (spec.shift ?? false) === event.shiftKey,
-      );
-      if (binding && event.repeat && binding.repeat !== true) {
-        event.preventDefault();
-        return;
-      }
-      if (binding?.run(api, getSession().selection)) {
-        event.preventDefault();
-        return;
-      }
-      if (event.shiftKey) return;
-      const tool = toolset.specs.find((spec) => spec.key?.toLowerCase() === key);
-      if (tool) {
-        getSession().setToolId(tool.id);
-        event.preventDefault();
-      }
-    }
-    function onKeyUp(event: KeyboardEvent) {
-      if (event.key === SHELL_KEYS.temporaryPan.key) space.current = false;
-    }
-    function onBlur() {
-      space.current = false;
-      cancel(active);
-    }
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    window.addEventListener('blur', onBlur);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
-      window.removeEventListener('blur', onBlur);
-    };
-  }, [active, api, cancel, keys, toolset]);
+  const menu = useCanvasContextMenu({
+    api,
+    contextMenu,
+    fitInsets,
+    isGesturing,
+    viewRef,
+    scene,
+    sessionId: snapshot.sessionId,
+    svg,
+    toolId,
+    viewport,
+  });
+  useCanvasKeys({
+    active,
+    api,
+    cancel,
+    keys,
+    openContextMenu: menu.openFromKeyboard,
+    space,
+    specs: toolset.specs,
+  });
 
   function pointer(event: PointerEvent<HTMLDivElement>, panning: boolean): CanvasPointer {
     const screen = { x: event.clientX, y: event.clientY };
@@ -324,6 +284,7 @@ export function Canvas({
         touchAction: 'none',
         cursor: active.cursor,
       }}
+      onContextMenu={menu.onContextMenu}
       onPointerDown={(event) => {
         if (gesture.current || (event.button !== 0 && event.button !== 1)) return;
         const tool = event.button === 1 || space.current ? toolset.pan : active;
@@ -336,6 +297,7 @@ export function Canvas({
         tool.onPointerDown(at, api);
       }}
       onPointerMove={(event) => {
+        menu.trackPointer(event);
         const down = gesture.current;
         if (down && down.pointerId !== event.pointerId) return;
         const tool = down?.tool ?? active;
@@ -396,6 +358,19 @@ export function Canvas({
           </g>
         </g>
       </svg>
+      {menu.open && (
+        <ContextMenu
+          menuRef={menu.menuRef}
+          viewport={viewport}
+          fitInsets={fitInsets}
+          screen={menu.open.screen}
+          items={menu.open.items}
+          selection={menu.open.selection}
+          snapshot={snapshot}
+          close={menu.close}
+          activate={menu.activate}
+        />
+      )}
     </div>
   );
 }

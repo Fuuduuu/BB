@@ -1,13 +1,14 @@
 import type { IdGen } from '@pcbk/contracts';
 import type { FootprintParams, Vec2 } from '@pcbk/domain';
-import { useSessionStore } from '@pcbk/ui';
-import type { CanvasTool, ToolApi, ToolSpec } from '@pcbk/ui';
+import { useSessionStore, useViewStore } from '@pcbk/ui';
+import type { CanvasTool, Selection, ToolApi, ToolSpec } from '@pcbk/ui';
 import { COMPONENT_LIBRARY, makePlacedComponent } from '../contract';
+import type { LibraryEntry } from '../contract';
 import { commandError } from './errors';
 import { componentEt, placementEt } from './i18n/et';
 import { placementRotation } from './placement-rotation';
 import { PLACE_TOOL_ID, usePlaceStore } from './place-store';
-import type { PlacementRequest } from './place-store';
+import type { PlacementAnchor, PlacementRequest } from './place-store';
 
 export type PlacePreviewData = { footprint: string; params: FootprintParams; center: Vec2 };
 
@@ -16,6 +17,32 @@ const DRAG_THRESHOLD = 3;
 
 function isDrag(start: Vec2, current: Vec2): boolean {
   return Math.hypot(current.x - start.x, current.y - start.y) >= DRAG_THRESHOLD;
+}
+
+export function openPlacementAt(api: ToolApi, _selection: Selection, at: Vec2): boolean {
+  usePlaceStore.setState({
+    request: null,
+    anchor: { center: { ...at }, rotationDeg: placementRotation(api.sceneTransform()) },
+    error: null,
+  });
+  const view = useViewStore.getState();
+  view.setNavigatorOpen(true);
+  view.setNavigatorTab('library');
+  return true;
+}
+
+export function addPlacedComponent(
+  engine: Pick<ToolApi, 'execute'>,
+  ids: IdGen,
+  entry: LibraryEntry,
+  params: FootprintParams,
+  { center, rotationDeg }: PlacementAnchor,
+): string | null {
+  const component = makePlacedComponent(ids, entry, params, center);
+  component.board = { ...component.board!, rotationDeg };
+  const result = engine.execute('components.add', component);
+  usePlaceStore.setState({ error: result.ok ? null : commandError(result.error) });
+  return result.ok ? component.id : null;
 }
 
 function createPlaceTool(ids: IdGen): CanvasTool {
@@ -69,43 +96,37 @@ function createPlaceTool(ids: IdGen): CanvasTool {
       }
 
       const rotationDeg = placementRotation(api.sceneTransform());
-      let id: string;
-      let result: ReturnType<ToolApi['execute']>;
-      let preview: PlacePreviewData | undefined;
       if (request.mode === 'new') {
         const entry = entries.get(request.entryId);
         if (!entry) {
           usePlaceStore.setState({ error: componentEt.invalid });
           return;
         }
-        const params = makePlacedComponent(ids, entry, request.params, center);
-        params.board = { ...params.board!, rotationDeg };
-        id = params.id;
-        result = api.execute('components.add', params);
-        preview = {
-          footprint: entry.footprint,
-          params: { ...entry.params, ...request.params },
-          center,
-        };
-      } else {
-        id = request.componentId;
-        const { footprint, params } = request;
-        result = api.execute('components.placeOnBoard', {
-          id,
-          board: { footprint, params, center, rotationDeg },
+        const id = addPlacedComponent(api, ids, entry, request.params, { center, rotationDeg });
+        if (id === null) return;
+        api.select({ items: [{ kind: 'component', id }] });
+        api.setPreview({
+          owner: PLACE_TOOL_ID,
+          data: {
+            footprint: entry.footprint,
+            params: { ...entry.params, ...request.params },
+            center,
+          },
         });
+        return;
       }
+
+      const { componentId: id, footprint, params } = request;
+      const result = api.execute('components.placeOnBoard', {
+        id,
+        board: { footprint, params, center, rotationDeg },
+      });
       if (!result.ok) {
         usePlaceStore.setState({ error: commandError(result.error) });
         return;
       }
       api.select({ items: [{ kind: 'component', id }] });
-      if (preview) {
-        usePlaceStore.setState({ error: null });
-        api.setPreview({ owner: PLACE_TOOL_ID, data: preview });
-      } else {
-        endPlacement(api);
-      }
+      endPlacement(api);
     },
     onCancel: endPlacement,
   };

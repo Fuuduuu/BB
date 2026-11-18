@@ -28,20 +28,26 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
   const layers = useMemo(() => registry.canvasLayers(), [registry, selection]);
   const tools = useMemo(() => registry.tools(), [registry]);
   const keys = useMemo(() => registry.keys(), [registry]);
+  const contextMenu = useMemo(() => registry.contextMenu.bind(registry), [registry]);
   const view = useViewStore((state) => state.boardView);
   const contextShown = useViewStore((state) => state.contextShown);
   const contextWidth = useViewStore((state) => state.contextWidth);
+  const fitInsets = useMemo(
+    () => ({ right: contextShown ? contextWidth : 0 }),
+    [contextShown, contextWidth],
+  );
   const setBoardView = useViewStore((state) => state.setBoardView);
   return (
     <Canvas
       layers={layers}
       tools={tools}
       keys={keys}
+      contextMenu={contextMenu}
       snapshot={snapshot}
       execute={execute}
       sceneTransform={sceneTransformOf(snapshot.doc)}
       surface={boardSurface(snapshot.doc)}
-      fitInsets={{ right: contextShown ? contextWidth : 0 }}
+      fitInsets={fitInsets}
       view={view}
       onViewChange={setBoardView}
     />

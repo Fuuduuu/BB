@@ -6,7 +6,7 @@ Sisenemispunkt: `packages/ui/src/canvas/index.ts`
 
 ### `Canvas`
 ```ts
-export function Canvas({ layers, tools, keys, sceneTransform, view, onViewChange, snapshot, execute, surface, fitInsets, }: CanvasProps): import("react").JSX.Element;
+export function Canvas({ layers, tools, keys, contextMenu, sceneTransform, view, onViewChange, snapshot, execute, surface, fitInsets, }: CanvasProps): import("react").JSX.Element;
 ```
 
 ### `CanvasPointer`
@@ -27,6 +27,7 @@ export interface CanvasProps {
     layers: readonly LayerSpec[];
     tools: readonly ToolSpec[];
     keys?: readonly KeySpec[];
+    contextMenu?: (kind: string) => ContextMenuItemSpec[];
     sceneTransform: SceneTransform;
     view: CanvasView;
     onViewChange(view: CanvasView): void;

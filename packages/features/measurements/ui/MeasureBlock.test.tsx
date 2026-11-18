@@ -2,7 +2,7 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { expect, test, vi } from 'vitest';
 import { useSessionStore } from '@pcbk/ui';
-import { mountMeasurements, pinRef } from '../__tests__/workspace';
+import { mountMeasurements, pinRef, seedRemovablePins } from '../__tests__/workspace';
 import { MeasureBlock } from './MeasureBlock';
 
 function measureBlock() {
@@ -155,7 +155,7 @@ test('tab_does_not_change_location', () => {
 });
 
 test('pin_keys_hint_shown_only_for_multi_pin_component', () => {
-  const { clickPin, engine } = mountMeasurements();
+  const { clickPin, engine } = mountMeasurements({ seed: seedRemovablePins });
   const hintText = 'Alt+↓ järgmine jalg · Alt+↑ eelmine';
   expect(screen.queryByText(hintText)).toBeNull();
   clickPin('1');
@@ -244,7 +244,7 @@ test('invalid_voltage_blocks_save_and_shows_reason', () => {
 });
 
 test('deleted_probe_keeps_visible_draft_but_blocks_save', () => {
-  const { clickPin, engine, host } = mountMeasurements();
+  const { clickPin, engine, host } = mountMeasurements({ seed: seedRemovablePins });
   clickPin('1');
   typeVoltage('2');
   chooseReference(clickPin, '4');
@@ -280,7 +280,7 @@ test('deleted_probe_keeps_visible_draft_but_blocks_save', () => {
 });
 
 test('both_deleted_contacts_are_reported', () => {
-  const { clickPin, engine } = mountMeasurements();
+  const { clickPin, engine } = mountMeasurements({ seed: seedRemovablePins });
   clickPin('1');
   chooseReference(clickPin, '4');
   typeVoltage('4,98');

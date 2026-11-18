@@ -1,4 +1,4 @@
-import { componentEt } from './i18n/et';
+import { componentEt, ownPinEt } from './i18n/et';
 import type { EngineError } from '@pcbk/contracts';
 
 export function commandError(error: EngineError): string {
@@ -6,11 +6,22 @@ export function commandError(error: EngineError): string {
     case 'internal':
       return 'Sisemine viga, muudatust ei tehtud. Salvesta diagnostika ja anna veast teada.';
     case 'validation':
-      return error.issues.some(
-        (issue) => issue.code === 'custom' && issue.message === 'invalid_or_duplicate_ref',
-      )
-        ? componentEt.duplicateRef
-        : componentEt.invalid;
+      for (const { code, message } of error.issues) {
+        if (code !== 'custom') continue;
+        switch (message) {
+          case 'invalid_or_duplicate_ref':
+            return componentEt.duplicateRef;
+          case 'pin_needs_pad':
+            return ownPinEt.pinNeedsPad;
+          case 'footprint_pin_locked':
+            return ownPinEt.footprintPinLocked;
+          case 'footprint_pins_mismatch':
+            return ownPinEt.footprintPinsMismatch;
+          case 'duplicate_pin':
+            return ownPinEt.duplicatePin;
+        }
+      }
+      return componentEt.invalid;
     case 'not_found':
       return componentEt.missing;
     case 'read_only':

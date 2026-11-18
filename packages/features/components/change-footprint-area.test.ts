@@ -105,9 +105,11 @@ test('change_to_area_keeps_all_pins', () => {
       newPinUids: {},
     }),
   ).toMatchObject({ ok: true });
-  expect(engine.snapshot().doc.components[0]).toEqual({
+  const restored = engine.snapshot().doc.components[0]!;
+  expect(restored).toEqual({
     ...original,
     pins: [...original.pins].sort((a, b) => Number(a.id) - Number(b.id)),
+    board: { ...original.board, customPads: {} },
   });
   expect(engine.snapshot().doc.measurements).toEqual(before.doc.measurements);
   expect(engine.snapshot().derived.pinReadings).toEqual(before.derived.pinReadings);

@@ -177,6 +177,25 @@ test('change_without_impact_runs_without_dialog', () => {
   expect(host.drainJournal()).toHaveLength(1);
 });
 
+test('change_footprint_does_not_warn_that_a_retained_own_pin_will_be_lost', () => {
+  const doc = fixture(8);
+  const component = doc.components[0]!;
+  const pin = { id: 'EP', uid: 'pin_old_EP', name: 'Jahutus', nc: false };
+  const pad = { local: { x: 0, y: 1 }, sizeMm: 0.6, shape: 'circle', through: false } as const;
+  component.pins.push(pin);
+  component.board!.customPads.EP = pad;
+  doc.measurements.push(reading('msr_own', 'EP'));
+  const { engine } = mount(doc);
+  const editor = edit('14');
+  fireEvent.click(editor.getByRole('button', { name: 'Vaheta korpus' }));
+
+  expect(screen.queryByRole('dialog')).toBeNull();
+  const after = engine.snapshot().doc.components[0]!;
+  expect(after.pins.at(-1)).toEqual(pin);
+  expect(after.board?.customPads.EP).toEqual(pad);
+  expect(after.board?.params.pins).toBe(14);
+});
+
 test('shrinking_ignores_historical_uid_matches_and_blank_names', () => {
   const doc = fixture();
   doc.components[0]!.pins[8]!.name = '   ';

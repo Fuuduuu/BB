@@ -24,6 +24,11 @@ export function boardSurface(doc: SurfaceSource): {
 };
 ```
 
+### `boardToPad`
+```ts
+export function boardToPad(p: Pick<BoardPlacement, 'center' | 'rotationDeg' | 'side' | 'scaleX' | 'scaleY'>, point: Vec2, pxPerMm: number): Vec2;
+```
+
 ### `bodyOutline`
 ```ts
 export function bodyOutline(placement: BoardPlacement, pxPerMm: number): Vec2[];

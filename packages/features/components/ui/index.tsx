@@ -8,6 +8,8 @@ import { ComponentsPanel } from './ComponentsPanel';
 import { useHoverStore } from './hover-store';
 import { PinCard } from './PinCard';
 import { Library } from './Library';
+import { OwnPinHint } from './OwnPinHint';
+import { OWN_PIN_TOOL_ID, ownPinToolSpec, useOwnPinError } from './OwnPinTool';
 import { createPlaceToolSpec } from './PlaceTool';
 import { PlacementSection, placementKeys } from './PlacementSection';
 import { componentEt, placementEt } from './i18n/et';
@@ -22,13 +24,17 @@ export function createComponentsUi(ids: IdGen): UiModule {
     id: 'components',
     title: componentEt.title,
     canvasLayers: [...COMPONENTS_LAYERS, HOVER_LAYER, ALIGN_LAYER],
-    tools: [createPlaceToolSpec(ids), alignToolSpec()],
+    tools: [createPlaceToolSpec(ids), alignToolSpec(), ownPinToolSpec(ids)],
     keys: placementKeys,
-    bottomBar: [{ id: 'components.align', render: () => <AlignHint /> }],
+    bottomBar: [
+      { id: 'components.align', render: () => <AlignHint /> },
+      { id: OWN_PIN_TOOL_ID, render: () => <OwnPinHint /> },
+    ],
     onSessionReset: () => {
       usePlaceStore.getState().reset();
       useAlignStore.getState().reset();
       useHoverStore.getState().setComponentId(null);
+      useOwnPinError.getState().setError(null);
     },
     navigatorTabs: [
       { id: 'library', title: placementEt.tabs.library, order: 0, render: () => <Library /> },

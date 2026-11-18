@@ -22,6 +22,21 @@ export type AddComponentParams = {
 export const AddComponentSchema: ZodType<AddComponentParams>;
 ```
 
+### `AddOwnPinParams`
+```ts
+export type AddOwnPinParams = {
+    id: string;
+    pin: { uid: string; id: string; name?: string | undefined; };
+    local: { x: number; y: number; };
+    sizeMm: number;
+};
+```
+
+### `AddOwnPinSchema`
+```ts
+export const AddOwnPinSchema: ZodType<AddOwnPinParams>;
+```
+
 ### `AddPinParams`
 ```ts
 export type AddPinParams = {

@@ -1,11 +1,12 @@
 import { componentEt } from './i18n/et';
 import { useId, useState } from 'react';
-import type { IdGen } from '@pcbk/contracts';
-import type { Snapshot } from '@pcbk/contracts';
+import type { IdGen, Snapshot } from '@pcbk/contracts';
 import { useEngine } from '@pcbk/client';
-import { Button } from '@pcbk/ui';
+import { Button, useSessionStore } from '@pcbk/ui';
 import { DraftField } from './DraftField';
 import { commandError } from './errors';
+import { OWN_PIN_TOOL_ID, useOwnPinError } from './OwnPinTool';
+import { nextPinId } from './own-pin';
 
 type ReadonlyComponent = Snapshot['doc']['components'][number];
 export function PinTable({ component, ids }: { component: ReadonlyComponent; ids: IdGen }) {
@@ -19,12 +20,17 @@ export function PinTable({ component, ids }: { component: ReadonlyComponent; ids
         <h3 id={headingId}>{componentEt.pins}</h3>
         <Button
           onClick={() => {
-            const used = new Set(component.pins.map((pin) => pin.id));
-            let next = 1;
-            while (used.has(String(next))) next++;
+            if (component.board && component.board.footprint !== 'area') {
+              const session = useSessionStore.getState();
+              setError(undefined);
+              useOwnPinError.getState().setError(null);
+              session.setSelection({ items: [{ kind: 'component', id }] });
+              session.setToolId(OWN_PIN_TOOL_ID);
+              return;
+            }
             const result = engine.execute('components.addPin', {
               id,
-              pin: { id: String(next), uid: ids.newId('pin') },
+              pin: { id: nextPinId(component.pins), uid: ids.newId('pin') },
             });
             setError(result.ok ? undefined : commandError(result.error));
           }}

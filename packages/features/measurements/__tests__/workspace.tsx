@@ -5,6 +5,7 @@ import { EngineProvider, useSnapshot } from '@pcbk/client';
 import type { IdGen } from '@pcbk/contracts';
 import { newBoardDoc } from '@pcbk/domain';
 import type { BoardDoc, MeasuredPin } from '@pcbk/domain';
+import { footprintGeometry } from '@pcbk/domain/footprints';
 import { boardPads } from '@pcbk/domain/geometry';
 import { createEngine } from '@pcbk/engine';
 import { AppShell, Canvas, UiRegistry, useSessionStore, useViewStore } from '@pcbk/ui';
@@ -52,6 +53,19 @@ export function measurementDoc(): BoardDoc {
     },
   });
   return doc;
+}
+
+export function seedRemovablePins(doc: BoardDoc) {
+  const board = doc.components[0]!.board!;
+  const geometry = footprintGeometry(board.footprint, board.params)!;
+  board.footprint = 'area';
+  board.params = { w: 12, h: 4 };
+  board.customPads = Object.fromEntries(
+    geometry.pads.map(({ id, x, y, w, h, through }) => [
+      id,
+      { local: { x, y }, sizeMm: Math.min(w, h), shape: 'circle', through },
+    ]),
+  );
 }
 
 type Options = {

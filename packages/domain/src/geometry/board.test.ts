@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import type { BoardPlacement, Vec2 } from '@pcbk/domain';
-import { boardPads, bodyOutline, padToBoard } from '@pcbk/domain/geometry';
+import { boardPads, boardToPad, bodyOutline, padToBoard } from '@pcbk/domain/geometry';
 
 function placement(overrides: Partial<BoardPlacement> = {}): BoardPlacement {
   return {
@@ -30,6 +30,22 @@ test('pad_to_board_applies_scale_mirror_rotation_in_order', () => {
 
   expectPoint(padToBoard(top, local, 10), 40, 220);
   expectPoint(padToBoard(bottom, local, 10), 40, 180);
+});
+
+test('board_to_pad_recovers_unscaled_local_coordinates_on_either_side', () => {
+  const top = placement({ rotationDeg: 90, scaleX: 2, scaleY: 3 });
+  const bottom = placement({ ...top, side: 'bottom' });
+
+  expectPoint(boardToPad(top, { x: 40, y: 220 }, 10), 1, 2);
+  expectPoint(boardToPad(bottom, { x: 40, y: 180 }, 10), 1, 2);
+});
+
+test('board_to_pad_round_trips_an_off_center_board_point', () => {
+  const board = placement({ rotationDeg: 30, side: 'bottom', scaleX: 1.5, scaleY: 0.75 });
+  const point = { x: 106.5, y: 197.25 };
+  const pxPerMm = 12.5;
+
+  expectPoint(padToBoard(board, boardToPad(board, point, pxPerMm), pxPerMm), point.x, point.y);
 });
 
 test('rotation_wraps_and_is_clockwise_with_y_down', () => {

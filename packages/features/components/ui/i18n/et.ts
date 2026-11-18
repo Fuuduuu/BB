@@ -261,3 +261,11 @@ export const alignEt = {
     scale_out_of_range: 'Joondus viiks mõõtkava lubatud vahemikust (0,2–5) välja.',
   },
 } as const;
+export const ownPinEt = {
+  clickBoard: 'Lisa jalg: klõpsa plaadil jala kohal · Esc lõpetab',
+  selectComponent: 'Lisa jalg: vali enne komponent · Esc lõpetab',
+  pinNeedsPad: 'Paigutatud korpusele lisa jalg plaadil: Lisa jalg (J).',
+  footprintPinLocked: 'Korpuse jalga ei saa eemaldada. Märgi see NC-ks või vaheta korpust.',
+  footprintPinsMismatch: 'Jalgade arv ei sobi selle korpusega. Vali sobiv korpus või „Ala“.',
+  duplicatePin: 'Sellise numbriga jalg on juba olemas.',
+} as const;

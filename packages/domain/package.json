@@ -11,6 +11,7 @@
     "./geometry": "./src/geometry/board.ts",
     "./measure": "./src/measure/index.ts",
     "./measure/reading": "./src/measure/reading.ts",
+    "./rules": "./src/rules/index.ts",
     "./migrations": "./src/migrations/index.ts",
     "./ids": "./src/ids.ts",
     "./doc": "./src/doc.ts",

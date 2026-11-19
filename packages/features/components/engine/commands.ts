@@ -1,5 +1,6 @@
 import { FOOTPRINTS, footprintGeometry, footprintPinIds, nextRef } from '@pcbk/domain';
 import type { BoardDoc, BoardPlacement, Component, Pin } from '@pcbk/domain';
+import { removePins } from '@pcbk/domain/rules';
 import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec } from '@pcbk/engine';
 import {
@@ -193,19 +194,11 @@ const removePin: CommandSpec<PinTargetParams> = {
   params: PinTargetSchema,
   run(doc, { id, pinId }) {
     const target = component(doc, id);
-    const index = target.pins.findIndex((item) => item.id === pinId);
-    if (index < 0) throw new CommandTargetNotFound(`${id}:${pinId}`);
+    if (!target.pins.some((item) => item.id === pinId))
+      throw new CommandTargetNotFound(`${id}:${pinId}`);
     const board = target.board;
     if (board && hasFootprintPad(board, pinId)) reject('footprint_pin_locked');
-    target.pins.splice(index, 1);
-    if (board) {
-      delete board.customPads[pinId];
-      if (board.padMap) {
-        for (const [padId, mappedPinId] of Object.entries(board.padMap)) {
-          if (mappedPinId === pinId) delete board.padMap[padId];
-        }
-      }
-    }
+    removePins(doc, id, [pinId]);
   },
 };
 const placeOnBoard: CommandSpec<PlaceOnBoardParams> = {
@@ -244,11 +237,13 @@ const changeFootprint: CommandSpec<ChangeFootprintParams> = {
       board.params = footprintParams;
       return;
     }
-    const existing = new Map(target.pins.map((pin) => [pin.id, pin]));
     const footprintIds = new Set(geometry.pads.map(({ id }) => id));
-    const ownPins = target.pins.filter(
-      ({ id }) => !footprintIds.has(id) && Object.hasOwn(board.customPads, id),
-    );
+    const removedIds = target.pins
+      .filter(({ id }) => !footprintIds.has(id) && !Object.hasOwn(board.customPads, id))
+      .map(({ id }) => id);
+    removePins(doc, params.id, removedIds);
+    const existing = new Map(target.pins.map((pin) => [pin.id, pin]));
+    const ownPins = target.pins.filter(({ id }) => !footprintIds.has(id));
     const footprintPins = geometry.pads.map(({ id, name }) => {
       const retained = existing.get(id);
       if (retained) return retained;

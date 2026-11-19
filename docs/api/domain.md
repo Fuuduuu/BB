@@ -54,3 +54,9 @@ Avalik liides alamteede kaupa:
 - [progress](domain-model-progress.md)
 - [record](domain-model-record.md)
 - [repair](domain-model-repair.md)
+
+### `./rules`
+
+- [errors](domain-rules-errors.md)
+- [invariants](domain-rules-invariants.md)
+- [items](domain-rules-items.md)

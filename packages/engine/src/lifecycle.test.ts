@@ -168,7 +168,30 @@ test('derived placement lists stay coherent across commands and undo', () => {
       customPads: {},
     };
   });
-  const { engine } = setup({ doc, modules: [module] });
+  const { engine } = setup({
+    doc,
+    modules: [
+      {
+        ...module,
+        derive: [
+          {
+            key: 'unplacedBoard',
+            inputs: ['components'],
+            schema: z.array(z.string()),
+            initial: [],
+            run: (doc) => (doc.components[0]!.board ? [] : ['cmp_a']),
+          },
+          {
+            key: 'unplacedSchematic',
+            inputs: [],
+            schema: z.array(z.string()),
+            initial: [],
+            run: () => ['cmp_a'],
+          },
+        ],
+      },
+    ],
+  });
   expect(engine.snapshot().derived.unplacedBoard).toEqual(['cmp_a']);
   engine.execute('test.mutate', {});
   expect(engine.snapshot().derived.unplacedBoard).toEqual([]);

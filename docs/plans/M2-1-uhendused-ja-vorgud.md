@@ -130,6 +130,7 @@ Rajad: ülesanded 2, 5, 6 ja 11 on **rada B** (tuuma piir, andmereeglid ja invar
      - `trace_on_existing_connection_adds_only_drawing`
      - `trace_tool_escape_leaves_no_trace`
      - `rect_custom_pad_keeps_shape_and_hit`
+     - `traces_render_by_layer_and_menu_offers_drawing_actions` ([M2-1-6](../tasks/M2-1-6.md): rajakiht ja menüü)
 7. **Raja muutmine.** Käänupunkti lohistus (`connections.update`), lisamine (`connections.insertWaypoint`) ja eemaldamine (`connections.removeWaypoint`); liitepunkti liigutamine (`junctions.move`) ja kinnitamine jalale (`junctions.attachToPin`, sildid tõstetakse kaasa). Liigutamine muudab ainult paigutust, ühendatus jääb samaks.
    - Testid:
      - `waypoint_drag_changes_only_drawing_in_one_step`

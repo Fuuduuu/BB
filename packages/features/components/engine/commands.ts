@@ -200,6 +200,7 @@ const removePin: CommandSpec<PinTargetParams> = {
   id: 'components.removePin',
   title: 'components.removePin',
   params: PinTargetSchema,
+  alsoWrites: ['connections', 'junctions', 'netLabels'],
   run(doc, { id, pinId }) {
     const target = component(doc, id);
     if (!target.pins.some((item) => item.id === pinId))
@@ -234,6 +235,7 @@ const changeFootprint: CommandSpec<ChangeFootprintParams> = {
   id: 'components.changeFootprint',
   title: 'components.changeFootprint',
   params: ChangeFootprintSchema,
+  alsoWrites: ['connections', 'junctions', 'netLabels'],
   run(doc, params) {
     const target = component(doc, params.id);
     const board = placedBoard(doc, params.id);

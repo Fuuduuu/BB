@@ -57,6 +57,4 @@ Avalik liides alamteede kaupa:
 
 ### `./rules`
 
-- [errors](domain-rules-errors.md)
-- [invariants](domain-rules-invariants.md)
-- [items](domain-rules-items.md)
+- [rules](domain-rules.md)

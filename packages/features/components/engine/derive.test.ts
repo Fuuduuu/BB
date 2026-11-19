@@ -43,7 +43,15 @@ test('unplaced_keys_come_from_components_module', () => {
   const clock = { now: () => '2026-11-19T10:00:00Z' };
   const without = createEngine({
     modules: engineFeatures.filter(({ id }) => id === 'project' || id === 'photo'),
-    reserved: [...RESERVED_FIELDS, 'components', 'measurements'],
+    reserved: [
+      ...RESERVED_FIELDS,
+      'components',
+      'measurements',
+      'connections',
+      'junctions',
+      'netLabels',
+      'roles',
+    ],
     clock,
   });
   without.host.load('without-components', doc, false);

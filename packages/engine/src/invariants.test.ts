@@ -65,6 +65,7 @@ test('short suffixes, default roles and repeated references remain valid', () =>
   const doc = newBoardDoc('Plaat');
   for (const [key, entry] of Object.entries(entries))
     if (key !== 'roles') Object.assign(doc, { [key]: [entry] });
+  doc.junctions.push({ id: 'jun_b' });
   doc.components.push(component('cmp_b', 'R2'));
   const { engine } = setup({ doc });
   expect(engine.execute('demo.rename', { name: 'Accepted' }).ok).toBe(true);

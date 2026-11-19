@@ -1,5 +1,7 @@
 import type { IdPrefix } from '../ids';
 import type { BoardDoc, DocKey } from '../model/board';
+import { connectedJunctionIds } from './connections';
+import { endKey, endRefsByKey } from './nets';
 
 export interface Issue {
   path: (string | number)[];
@@ -86,8 +88,50 @@ function checkMeasurements(doc: BoardDoc): Issue[] {
   return issues;
 }
 
+function checkConnections(doc: BoardDoc): Issue[] {
+  if (doc.connections.length === 0) return [];
+  const issues: Issue[] = [];
+  const known = endRefsByKey(doc);
+  doc.connections.forEach(({ a, b }, index) => {
+    const left = endKey(a);
+    const right = endKey(b);
+    if (!known.has(left))
+      issues.push({ path: ['connections', index, 'a'], code: 'dangling_connection_end' });
+    if (!known.has(right))
+      issues.push({ path: ['connections', index, 'b'], code: 'dangling_connection_end' });
+    if (left === right)
+      issues.push({ path: ['connections', index, 'b'], code: 'connection_ends_equal' });
+  });
+  return issues;
+}
+
+function checkJunctions(doc: BoardDoc): Issue[] {
+  if (doc.junctions.length === 0) return [];
+  const connected = connectedJunctionIds(doc.connections);
+  return doc.junctions.flatMap(({ id }, index) =>
+    connected.has(id) ? [] : [{ path: ['junctions', index, 'id'], code: 'orphan_junction' }],
+  );
+}
+
+function checkNetLabels(doc: BoardDoc): Issue[] {
+  if (doc.netLabels.length === 0) return [];
+  const known = endRefsByKey(doc);
+  return doc.netLabels.flatMap(({ anchor }, index) =>
+    known.has(endKey(anchor))
+      ? []
+      : [{ path: ['netLabels', index, 'anchor'], code: 'dangling_label_anchor' }],
+  );
+}
+
 export const INVARIANTS: readonly Invariant[] = [
   { id: 'ids', inputs: entityFields, check: checkIds },
   { id: 'components', inputs: ['components'], check: checkComponents },
   { id: 'measurements', inputs: ['measurements'], check: checkMeasurements },
+  {
+    id: 'connections',
+    inputs: ['connections', 'components', 'junctions'],
+    check: checkConnections,
+  },
+  { id: 'junctions', inputs: ['junctions', 'connections'], check: checkJunctions },
+  { id: 'netLabels', inputs: ['netLabels', 'components', 'junctions'], check: checkNetLabels },
 ];

@@ -91,6 +91,7 @@ export interface HitItem {
     componentId?: string;
     shape: HitShape;
     priority?: number;
+    enabled?(): boolean;
     data?: unknown;
     target?: SelectionItem;
     moves?: SelectionItem;
@@ -114,6 +115,7 @@ export type HitShape = {
     a: Vec2;
     b: Vec2;
     width: number;
+    widthUnit?: 'screen';
 } | {
     type: 'area';
     polygon: Vec2[];

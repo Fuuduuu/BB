@@ -5,7 +5,7 @@ import type { ToolApi } from './tools';
 export type HitShape =
   | { type: 'point'; at: Vec2; r: number }
   | { type: 'rect'; at: Vec2; half: Vec2; angleDeg: number }
-  | { type: 'segment'; a: Vec2; b: Vec2; width: number }
+  | { type: 'segment'; a: Vec2; b: Vec2; width: number; widthUnit?: 'screen' }
   | { type: 'area'; polygon: Vec2[] };
 
 export type HitDrag = { owner: string; commit(delta: Vec2, api: ToolApi): void };
@@ -16,6 +16,8 @@ export interface HitItem {
   componentId?: string;
   shape: HitShape;
   priority?: number;
+  // Visibility can change without rebuilding the geometry index.
+  enabled?(): boolean;
   data?: unknown;
   target?: SelectionItem;
   moves?: SelectionItem;
@@ -38,7 +40,7 @@ function nativeRadius(shape: HitShape): number {
     case 'rect':
       return Math.hypot(shape.half.x, shape.half.y);
     case 'segment':
-      return shape.width / 2;
+      return shape.widthUnit === 'screen' ? 0 : shape.width / 2;
     case 'area':
       return 0;
   }
@@ -153,7 +155,11 @@ function shapeDistance(world: Vec2, shape: HitShape, zoom: number): number {
 export function createHitIndex(items: HitItem[], cellPx = 32): HitIndex {
   const cells = new Map<string, HitItem[]>();
   const oversized: HitItem[] = [];
+  let maxScreenRadius = minScreenRadius;
   for (const item of items) {
+    if (item.shape.type === 'segment' && item.shape.widthUnit === 'screen') {
+      maxScreenRadius = Math.max(maxScreenRadius, item.shape.width / 2);
+    }
     const points = shapePoints(item.shape);
     if (points.length === 0) continue;
     const range = cellRange(points, Math.max(0, nativeRadius(item.shape)), cellPx);
@@ -171,7 +177,7 @@ export function createHitIndex(items: HitItem[], cellPx = 32): HitIndex {
   return {
     query(world, zoom) {
       const minRadius = minScreenRadius / zoom;
-      const range = cellRange([world], minRadius, cellPx);
+      const range = cellRange([world], maxScreenRadius / zoom, cellPx);
       let candidates: Iterable<HitItem> = items;
       // For a broad query, scanning the items is cheaper than visiting empty cells.
       if (cellCount(range) <= cells.size) {
@@ -187,13 +193,16 @@ export function createHitIndex(items: HitItem[], cellPx = 32): HitIndex {
       let bestDistance = Infinity;
       for (const item of candidates) {
         const priority = item.priority ?? 0;
-        if (priority < bestPriority) continue;
-        const distance = shapeDistance(world, item.shape, zoom);
-        if (
-          !Number.isFinite(distance) ||
-          (item.shape.type !== 'rect' && distance > Math.max(minRadius, nativeRadius(item.shape)))
-        ) {
-          continue;
+        if (priority < bestPriority || item.enabled?.() === false) continue;
+        const { shape } = item;
+        const distance = shapeDistance(world, shape, zoom);
+        if (!Number.isFinite(distance)) continue;
+        if (shape.type !== 'rect') {
+          const radius =
+            shape.type === 'segment' && shape.widthUnit === 'screen'
+              ? shape.width / (2 * zoom)
+              : Math.max(minRadius, nativeRadius(shape));
+          if (distance > radius) continue;
         }
         if (priority > bestPriority || distance < bestDistance) {
           best = item;

@@ -105,14 +105,14 @@ Rajad: ülesanded 2, 5, 6 ja 11 on **rada B** (tuuma piir, andmereeglid ja invar
    - `domain/rules`:
      - `resolveNets` liikmesus: ainult ühendused liidavad;
      - komponendi või jala kustutamisel muutuvad ühenduse otsad liitepunktideks jala endises kohas, jala sildid kustutatakse ja mõõtmised jäävad;
-     - ühenduseta liitepunkt kaob ning tema sildid tõstetakse või kustutatakse 04 järgi koos teatega („Võrgusilt VBUS eemaldati · Ctrl+Z toob tagasi“).
+     - ühenduseta liitepunkt kaob ning tema sildid tõstetakse või kustutatakse 04 järgi; reegel tagastab kustutatud sildid ja kasutaja teade tuleb ülesandes 8, kui silte saab luua ([M2-1-5](../tasks/M2-1-5.md) otsus 3).
    - Invariandid ([03 § 6](../03-arhitektuur.md#6-käsud-tagasivõtmine-ja-logi) samm 4): ühenduse otsad on olemas ja erinevad, sildi ankur on olemas, igal liitepunktil on vähemalt üks ühendus.
    - Testid:
      - `quick_connect_creates_assumed_air_lines_in_one_step`
      - `delete_component_turns_connection_ends_into_junctions`
      - `remove_board_drawing_keeps_connection_as_air_line`
      - `remove_connection_drops_orphan_junctions`
-     - `orphan_junction_label_moves_or_is_removed_with_notice`
+     - `orphan_junction_label_moves_or_is_removed`
      - `invariants_reject_dangling_end_and_label_anchor`
      - `delete_measured_connected_component_and_undo_stays_consistent` (ADR-005 vastuvõtukatse M1.4 plaanist)
 6. **Tööriist Rada** (`T`, rada B).
@@ -142,6 +142,7 @@ Rajad: ülesanded 2, 5, 6 ja 11 on **rada B** (tuuma piir, andmereeglid ja invar
 8. **Moodul `nets`: arvutus ja käsud.**
    - Tuletis `nets` ([04](../04-andmemudel.md#võrkude-arvutus-resolvenets)): võti, liikmed, nimi (sildist või N1, N2 …), roll, `roleConflict`, `conflictingRoles`, `beepContradiction`, `shortedComponents`.
    - Käsud `nets.assign` (nimi ja roll sildina võrgu liikmele), `nets.join` (loob ühenduse), `roles.add`, `roles.update` ja `roles.remove` (ainult kasutamata roll; vaikerolle ei kustutata).
+   - Teade „Võrgusilt VBUS eemaldati · Ctrl+Z toob tagasi“, kui käsk kustutab sildi (M2-1-5 reeglite `removedLabels`).
    - Testid:
      - `same_name_does_not_join_nets`
      - `joining_gnd_and_5v_flags_conflict_and_undo_restores`

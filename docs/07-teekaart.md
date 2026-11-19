@@ -140,6 +140,8 @@ _M1.1 töötab virtuaalsel tööpinnal ilma fotota ([03 § 7.1](03-arhitektuur.m
 M2 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse järjest: võrgud plaadil, siis mõõtmisest tulenev tase, siis skeemi sümbolid ja paigutus, siis skeemi juhtmed ja sildid.
 
 ### M2.1 · Ühendused ja võrgud plaadil
+**Olek:** [teostusplaan](plans/M2-1-uhendused-ja-vorgud.md) on kinnitatud (2026-11-19, otsused O1–O5). Eeltööd [M2-1-H](tasks/M2-1-H.md) ja [M2-1-1](tasks/M2-1-1.md) on vastu võetud.
+
 **Sisu:** moodulid `connections` ja `nets`.
 - **esmalt [ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md):** olemasolevad üldkäsud, invariandid ja „paigutamata“ tuletis viiakse domeeni reegliteks ning valiku kehtivus registrisse; käitumine ei muutu;
 - **ühendused ja liitepunktid:**

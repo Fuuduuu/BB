@@ -8,7 +8,7 @@ import { placementEt } from './i18n/et';
 import { FootprintPreview, FootprintSilhouette } from './FootprintPreview';
 import { FootprintParameters, validatedFootprintParams } from './FootprintParameters';
 import { addPlacedComponent } from './PlaceTool';
-import { beginPlacement, usePlaceStore } from './place-store';
+import { beginPlacement, updatePlacementParams, usePlaceStore } from './place-store';
 import type { PlacementAnchor } from './place-store';
 import { libraryName, searchLibrary } from './placement';
 
@@ -62,8 +62,11 @@ function LibraryParameters({
     ({ request }) => request?.mode === 'new' && request.entryId === entry.id,
   );
   const placementParams = validatedFootprintParams(entry, params);
-  const setParam = (key: string, value: string | number) =>
-    setParams((previous) => ({ ...previous, [key]: value }));
+  const setParam = (key: string, value: string | number) => {
+    const next = { ...params, [key]: value };
+    setParams(next);
+    if (isPlacing) updatePlacementParams(validatedFootprintParams(entry, next) ?? null);
+  };
   return (
     <div className="pcbk-library__params">
       <FootprintParameters entry={entry} params={params} onChange={setParam} />

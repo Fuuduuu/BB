@@ -248,17 +248,22 @@ test('drag_on_selected_component_keeps_group_selection', () => {
   expect(selection()).toBe(before);
 });
 
-test.each(['escape', 'pointercancel', 'tool switch', 'project switch'] as const)(
+test.each(['escape', 'pointercancel', 'tool switch', 'project switch', 'window blur'] as const)(
   'cancelled_drag_leaves_no_trace (%s)',
   (reason) => {
     const { svg, execute, update } = setup();
     selectComponent();
+    if (reason === 'window blur') {
+      fireEvent.keyDown(svg, { key: ' ' });
+      fireEvent(window, new Event('blur'));
+    }
     pointer(svg, 'pointerdown', 12, 12);
     pointer(svg, 'pointermove', 18, 20);
     expect(preview()).not.toBeNull();
     if (reason === 'escape') fireEvent.keyDown(svg, { key: 'Escape' });
     else if (reason === 'pointercancel') pointer(svg, 'pointercancel', 18, 20);
     else if (reason === 'tool switch') fireEvent.keyDown(svg, { key: 'h' });
+    else if (reason === 'window blur') fireEvent(window, new Event('blur'));
     else update({ snapshot: snapshot('next-project') });
 
     expect(preview()).toBeNull();

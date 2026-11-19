@@ -3,9 +3,8 @@ import { footprintGeometry } from '@pcbk/domain/footprints';
 import { boardPads, bodyOutline, padToBoard } from '@pcbk/domain/geometry';
 import { useSceneTransform, useSessionStore } from '@pcbk/ui';
 import type { LayerSpec, TranslatePreviewData } from '@pcbk/ui';
-import type { PlacePreviewData } from '../PlaceTool';
-import { placementRotation } from '../placement-rotation';
 import { PLACE_TOOL_ID } from '../place-store';
+import type { PlacePreviewData } from '../place-store';
 import { ComponentShape } from './ComponentShape';
 import type { ComponentLayerKind } from './ComponentShape';
 import { componentLabelPlacements, LABEL_DRAG_OWNER } from './label-placement';
@@ -24,10 +23,8 @@ function PlacementGhost({
   pxPerMm: number;
   zoom: number;
 }) {
-  const rotationDeg = placementRotation(useSceneTransform());
   const placement: BoardPlacement = {
     ...data,
-    rotationDeg,
     side: 'top',
     scaleX: 1,
     scaleY: 1,

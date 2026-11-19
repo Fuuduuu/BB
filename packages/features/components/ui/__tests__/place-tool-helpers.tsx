@@ -7,6 +7,7 @@ import type { SceneTransform, ToolApi } from '@pcbk/ui';
 import { idGenerator, setup } from '../../../__tests__/helpers';
 import { COMPONENTS_LAYERS } from '../layers';
 import { createPlaceToolSpec } from '../PlaceTool';
+import { placementKeys } from '../PlacementSection';
 import { beginPlacement } from '../place-store';
 import type { PlacementRequest } from '../place-store';
 
@@ -28,6 +29,7 @@ export function mountPlaceTool(sceneTransform: SceneTransform = 'none') {
       <Canvas
         layers={COMPONENTS_LAYERS}
         tools={tools}
+        keys={placementKeys}
         snapshot={snapshot}
         execute={execute}
         sceneTransform={sceneTransform}

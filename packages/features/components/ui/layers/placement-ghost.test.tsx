@@ -6,7 +6,7 @@ import { Canvas, useSessionStore } from '@pcbk/ui';
 import type { SceneTransform } from '@pcbk/ui';
 import { setup } from '../../../__tests__/helpers';
 import { mountPlaceTool } from '../__tests__/place-tool-helpers';
-import type { PlacePreviewData } from '../PlaceTool';
+import type { PlacePreviewData } from '../place-store';
 import { PLACE_TOOL_ID, usePlaceStore } from '../place-store';
 import { COMPONENTS_LAYERS } from './index';
 
@@ -14,6 +14,7 @@ const soic: PlacePreviewData = {
   footprint: 'soic',
   params: { pins: 8, body: 3.9 },
   center: { x: 100, y: 80 },
+  rotationDeg: 0,
 };
 
 function mount(data = soic, zoom = 1, sceneTransform: SceneTransform = 'none') {
@@ -103,7 +104,7 @@ test.each(orientations)(
     const { engine, svg, start, pointer, click } = mountPlaceTool(transform);
     start({ mode: 'new', entryId: 'soic', params: soic.params });
     pointer('pointermove');
-    expect(useSessionStore.getState().preview?.data).toEqual(soic);
+    expect(useSessionStore.getState().preview?.data).toEqual({ ...soic, rotationDeg: rotation });
     const ghost = svg.querySelector('[data-placement-ghost]');
     const first = pad(ghost);
     expect(rectCenter(first).x).toBeCloseTo(x);

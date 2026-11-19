@@ -55,7 +55,12 @@ test('preview_stays_after_stamp', () => {
   expect(engine.snapshot().doc.components[0]?.board?.center).toEqual({ x: 100, y: 80 });
   expect(useSessionStore.getState().preview).toEqual({
     owner: 'components.place',
-    data: { footprint: 'chip', params: { size: '0805' }, center: { x: 100, y: 80 } },
+    data: {
+      footprint: 'chip',
+      params: { size: '0805' },
+      rotationDeg: 0,
+      center: { x: 100, y: 80 },
+    },
   });
   const outline = svg.querySelector('[data-layer="components.bodies"] [stroke-dasharray]');
   expect(outline?.getAttribute('points')).toBe('90,73.75 110,73.75 110,86.25 90,86.25');

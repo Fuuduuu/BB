@@ -9,6 +9,7 @@ interface CanvasKeys {
   active: CanvasTool;
   api: ToolApi;
   cancel(tool: CanvasTool): void;
+  cancelGesture(): void;
   keys?: readonly KeySpec[];
   openContextMenu(): void;
   space: MutableRefObject<boolean>;
@@ -21,6 +22,7 @@ export function useCanvasKeys({
   active,
   api,
   cancel,
+  cancelGesture,
   keys,
   openContextMenu,
   space,
@@ -88,7 +90,7 @@ export function useCanvasKeys({
     }
     function onBlur() {
       space.current = false;
-      cancel(active);
+      cancelGesture();
     }
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -98,5 +100,5 @@ export function useCanvasKeys({
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
     };
-  }, [active, api, cancel, keys, openContextMenu, space, specs]);
+  }, [active, api, cancel, cancelGesture, keys, openContextMenu, space, specs]);
 }

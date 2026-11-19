@@ -172,14 +172,16 @@ export function Canvas({
   );
 
   const cancel = useCallback(
-    (tool: CanvasTool) => {
+    (tool: CanvasTool, gestureOnly = false) => {
       const down = gesture.current;
       gesture.current = null;
+      // A temporary pan can own the pointer without owning the active tool's draft.
+      const resetTool = !gestureOnly || down?.tool === tool;
       try {
         if (down && down.tool !== tool) down.tool.onCancel?.(api);
-        tool.onCancel?.(api);
+        if (resetTool) tool.onCancel?.(api);
       } finally {
-        if (getSession().preview !== null) api.setPreview(null);
+        if (resetTool && getSession().preview !== null) api.setPreview(null);
         if (down && svg.current?.hasPointerCapture(down.pointerId)) {
           svg.current.releasePointerCapture(down.pointerId);
         }
@@ -187,6 +189,9 @@ export function Canvas({
     },
     [api],
   );
+  const cancelGesture = useCallback(() => {
+    if (isGesturing()) cancel(active, true);
+  }, [active, cancel, isGesturing]);
 
   useLayoutEffect(() => {
     const previousSnapshot = current.current.snapshot;
@@ -243,6 +248,7 @@ export function Canvas({
     active,
     api,
     cancel,
+    cancelGesture,
     keys,
     openContextMenu: menu.openFromKeyboard,
     space,

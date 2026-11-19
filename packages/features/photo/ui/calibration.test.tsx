@@ -28,6 +28,48 @@ test('calibration_two_clicks_open_mm_dialog', async () => {
   expect(execute).not.toHaveBeenCalled();
 });
 
+test('window_blur_keeps_calibration_draft', async () => {
+  const { engine, execute, click, start } = await calibrationWorkspace();
+  const a = { x: 10, y: 20 };
+  const b = { x: 110, y: 20 };
+  start();
+  click(57, 79);
+  click(257, 79);
+  const dialog = screen.getByRole('dialog', { name: 'Kalibreeri mõõtkava' });
+  const input = within(dialog).getByRole<HTMLInputElement>('textbox', {
+    name: 'Vahe millimeetrites',
+  });
+  fireEvent.change(input, { target: { value: '17' } });
+  fireEvent(window, new Event('blur'));
+
+  expect(useSessionStore.getState().toolId).toBe('photo.calibrate');
+  expect(useCalibrateStore.getState()).toMatchObject({ a, b, dialogOpen: true });
+  expect(screen.getByRole('dialog', { name: 'Kalibreeri mõõtkava' })).toBe(dialog);
+  expect(input.value).toBe('17');
+  expect(execute).not.toHaveBeenCalled();
+
+  // jsdom does not perform the default form submission on Enter.
+  if (fireEvent.keyDown(input, { key: 'Enter' })) fireEvent.submit(input.form!);
+  expect(execute).toHaveBeenCalledExactlyOnceWith('photo.setScale', { a, b, mm: 17 });
+  expect(engine.snapshot().doc.scale.pxPerMm).toBeCloseTo(100 / 17);
+  expect(screen.queryByRole('dialog', { name: 'Kalibreeri mõõtkava' })).toBeNull();
+});
+
+test('window_blur_cancels_temporary_pan_without_clearing_calibration_point', async () => {
+  const { execute, click, pointer, start } = await calibrationWorkspace();
+  start();
+  click(57, 79);
+  const a = { x: 10, y: 20 };
+  expect(useCalibrateStore.getState().a).toEqual(a);
+  pointer('pointerdown', 157, 139, 1);
+  pointer('pointermove', 207, 149, 1);
+  fireEvent(window, new Event('blur'));
+  pointer('pointerup', 207, 149, 1);
+  expect(useCalibrateStore.getState()).toMatchObject({ a, b: null, dialogOpen: false });
+  expect(useSessionStore.getState().toolId).toBe('photo.calibrate');
+  expect(execute).not.toHaveBeenCalled();
+});
+
 test('escape_before_second_click_cancels_without_command', async () => {
   const { engine, execute, click, start } = await calibrationWorkspace({ withPhoto: false });
   const before = engine.snapshot();

@@ -98,7 +98,12 @@ test('place_tool_preview_follows_cursor', () => {
   expect(outline()?.getAttribute('points')).toBe('100,68.75 120,68.75 120,81.25 100,81.25');
   expect(useSessionStore.getState().preview).toEqual({
     owner: 'components.place',
-    data: { footprint: 'chip', params: { size: '0805' }, center: { x: 110, y: 75 } },
+    data: {
+      footprint: 'chip',
+      params: { size: '0805' },
+      rotationDeg: 0,
+      center: { x: 110, y: 75 },
+    },
   });
   expect(execute).not.toHaveBeenCalled();
   expect(engine.snapshot()).toBe(before);
@@ -136,7 +141,11 @@ test('existing_component_placement_ends_after_one', () => {
   expect(engine.snapshot().doc.components).toHaveLength(1);
 });
 
-test.each<{ footprint: string; params: PlacementRequest['params']; pinIds: string[] }>([
+test.each<{
+  footprint: string;
+  params: Extract<PlacementRequest, { mode: 'existing' }>['params'];
+  pinIds: string[];
+}>([
   { footprint: 'chip', params: { size: '0805' }, pinIds: ['2', '1'] },
   { footprint: 'area', params: { w: 4, h: 8 }, pinIds: ['PWR', 'GND'] },
 ])('place_existing_keeps_pin_uids ($footprint)', ({ footprint, params, pinIds }) => {

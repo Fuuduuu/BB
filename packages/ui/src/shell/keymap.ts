@@ -24,6 +24,7 @@ export const SHELL_KEYS = {
   contextMenuKey: { key: 'ContextMenu' },
   nudgeLeft: { key: 'ArrowLeft', shift: 'any' },
   nudgeRight: { key: 'ArrowRight', shift: 'any' },
+  delete: { key: 'Delete' },
   nudgeUp: { key: 'ArrowUp', shift: 'any' },
   nudgeDown: { key: 'ArrowDown', shift: 'any' },
 } as const satisfies Record<string, ShellKey>;

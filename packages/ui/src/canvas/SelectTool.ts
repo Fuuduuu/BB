@@ -1,8 +1,8 @@
 import type { Vec2 } from '@pcbk/domain';
 import { et } from '../shell/i18n/et';
-import { SHELL_KEYS } from '../shell/keymap';
-import type { Selection } from '../shell/session-store';
-import type { MoveRef, UiRegistry } from '../shell/UiRegistry';
+import { matchesShellKey, SHELL_KEYS } from '../shell/keymap';
+import type { Selection, SelectionItem } from '../shell/session-store';
+import type { MoveRef, SelectionFrame, UiRegistry } from '../shell/UiRegistry';
 import type { HitItem } from './hit-index';
 import { screenToSceneVector } from './stage';
 import type { CanvasPointer, CanvasTool, ToolSpec } from './tools';
@@ -17,7 +17,10 @@ interface Gesture {
 }
 
 const SELECT_ID = 'select';
+export const SELECT_FRAME_OWNER = 'select.frame';
 const DRAG_THRESHOLD = 3;
+const noItemsInFrame: UiRegistry['itemsInFrame'] = () => [];
+const noDeleteIds: UiRegistry['deleteIds'] = () => [];
 const nudgeDirections = new Map<string, Vec2>([
   [SHELL_KEYS.nudgeLeft.key, { x: -1, y: 0 }],
   [SHELL_KEYS.nudgeRight.key, { x: 1, y: 0 }],
@@ -46,9 +49,44 @@ function translationOffset(start: Vec2, world: Vec2) {
   };
 }
 
+function sameItem(a: SelectionItem, b: SelectionItem): boolean {
+  return a.kind === b.kind && a.id === b.id && a.componentId === b.componentId;
+}
+
+function toggleItem(selection: Selection, item: SelectionItem): Selection {
+  const { items } = selection;
+  return {
+    items: items.some((selected) => sameItem(selected, item))
+      ? items.filter((selected) => !sameItem(selected, item))
+      : [...items, item],
+  };
+}
+
+function appendItems(selection: Selection, additions: SelectionItem[]): Selection {
+  const items = [...selection.items];
+  const key = ({ kind, id, componentId }: SelectionItem) => JSON.stringify([kind, id, componentId]);
+  const added = new Set(items.map(key));
+  for (const item of additions) {
+    const id = key(item);
+    if (added.has(id)) continue;
+    items.push(item);
+    added.add(id);
+  }
+  return { items };
+}
+
+function selectionFrame(start: Vec2, end: Vec2): SelectionFrame {
+  return {
+    min: { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y) },
+    max: { x: Math.max(start.x, end.x), y: Math.max(start.y, end.y) },
+  };
+}
+
 function createSelectTool(
   getSelection: () => Selection,
   moveRefs: UiRegistry['moveRefs'],
+  itemsInFrame: UiRegistry['itemsInFrame'],
+  deleteIds: UiRegistry['deleteIds'],
 ): CanvasTool {
   let gesture: Gesture | undefined;
 
@@ -59,14 +97,11 @@ function createSelectTool(
       const { hit } = event;
       const next: Gesture = { start: event, items: [], selectionHandled: false, dragged: false };
       gesture = next;
-      if (!hit || hit.drag) return;
+      if (event.shift || !hit || hit.drag) return;
       const snapshot = api.snapshot();
       if (!hit.target && moveRefs(snapshot, [hit]).length > 0) {
         const current = getSelection();
-        const alreadySelected = current.items.some(
-          ({ kind, id, componentId }) =>
-            kind === hit.kind && id === hit.id && componentId === hit.componentId,
-        );
+        const alreadySelected = current.items.some((item) => sameItem(item, hit));
         const selection = alreadySelected ? current : selectionForHit(hit);
         if (!alreadySelected) api.select(selection);
         next.items = moveRefs(snapshot, selection.items);
@@ -79,9 +114,13 @@ function createSelectTool(
       if (!gesture) return;
       gesture.dragged ||= crossedDragThreshold(gesture.start, event);
       if (!gesture.dragged) return;
-      const { hit, world } = gesture.start;
+      const { hit, shift, world } = gesture.start;
+      if (shift || !hit) {
+        api.setPreview({ owner: SELECT_FRAME_OWNER, data: selectionFrame(world, event.world) });
+        return;
+      }
       const offset = translationOffset(world, event.world);
-      if (hit?.drag) {
+      if (hit.drag) {
         api.setPreview({ owner: hit.drag.owner, data: { id: hit.id, ...offset } });
       } else if (gesture.items.length > 0) {
         const data: TranslatePreviewData = { items: gesture.items, ...offset };
@@ -92,18 +131,40 @@ function createSelectTool(
       const finished = gesture;
       gesture = undefined;
       if (!finished) return;
-      const { hit, world } = finished.start;
-      if (!finished.dragged && !crossedDragThreshold(finished.start, event)) {
-        if (!finished.selectionHandled) api.select(selectionForHit(hit));
+      const { hit, shift, world } = finished.start;
+      const pastThreshold = crossedDragThreshold(finished.start, event);
+      if (!finished.dragged && !pastThreshold) {
+        const clicked = selectionForHit(hit);
+        if (shift) {
+          const item = clicked.items[0];
+          if (item) api.select(toggleItem(getSelection(), item));
+        } else if (!finished.selectionHandled) {
+          api.select(clicked);
+        }
         return;
       }
-      if (!hit?.drag && finished.items.length === 0) return;
+      if (shift || !hit) {
+        api.setPreview(null);
+        if (pastThreshold) {
+          const items = itemsInFrame(api.snapshot(), selectionFrame(world, event.world));
+          api.select(shift ? appendItems(getSelection(), items) : { items });
+        }
+        return;
+      }
+      if (!hit.drag && finished.items.length === 0) return;
       api.setPreview(null);
       const { dx, dy } = translationOffset(world, event.world);
-      if (hit?.drag) hit.drag.commit({ x: dx, y: dy }, api);
+      if (hit.drag) hit.drag.commit({ x: dx, y: dy }, api);
       else api.execute('items.translate', { items: finished.items, dx, dy });
     },
     onKey(event, api) {
+      if (matchesShellKey(event, SHELL_KEYS.delete)) {
+        if (event.repeat) return false;
+        const ids = deleteIds(api.snapshot(), getSelection().items);
+        if (ids.length === 0) return false;
+        api.execute('items.delete', { ids });
+        return true;
+      }
       const direction = nudgeDirections.get(event.key);
       if (!direction || event.altKey || event.ctrlKey || event.metaKey) return false;
       const items = moveRefs(api.snapshot(), getSelection().items);
@@ -125,6 +186,8 @@ function createSelectTool(
 export function createSelectToolSpec(
   getSelection: () => Selection,
   moveRefs: UiRegistry['moveRefs'],
+  itemsInFrame = noItemsInFrame,
+  deleteIds = noDeleteIds,
 ): ToolSpec {
   return {
     id: SELECT_ID,
@@ -132,6 +195,6 @@ export function createSelectToolSpec(
     icon: SELECT_ID,
     key: SHELL_KEYS.select.key,
     group: 'select',
-    create: () => createSelectTool(getSelection, moveRefs),
+    create: () => createSelectTool(getSelection, moveRefs, itemsInFrame, deleteIds),
   };
 }

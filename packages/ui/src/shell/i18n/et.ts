@@ -37,6 +37,8 @@ export const et = {
     hideNavigator: 'Peida navigaator',
     navigatorEmpty: 'Siia ilmuvad plaadi komponendid.',
     context: 'Omadused',
+    selectedCount: (count: number) => `${count} valitud`,
+    multipleSelected: 'Mitu objekti on valitud.',
     contextEmpty: 'Omadused · vali komponent või jalg',
     showContext: 'Näita omadusi',
     hideContext: 'Peida omadused',

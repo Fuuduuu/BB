@@ -30,14 +30,15 @@ export function useCanvasKeys({
 }: CanvasKeys) {
   useLayoutEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (
-        event.defaultPrevented ||
-        event.isComposing ||
-        event.ctrlKey ||
-        event.metaKey ||
-        isEditing(event)
-      )
+      if (event.defaultPrevented || event.isComposing || isEditing(event)) return;
+      if (event.ctrlKey || event.metaKey) {
+        const binding = keys?.find((spec) => spec.primary && matchesShellKey(event, spec));
+        if (binding) {
+          event.preventDefault();
+          if (!event.repeat || binding.repeat === true) binding.run(api, getSession().selection);
+        }
         return;
+      }
       if (
         matchesShellKey(event, SHELL_KEYS.contextMenu) ||
         matchesShellKey(event, SHELL_KEYS.contextMenuKey)
@@ -67,9 +68,7 @@ export function useCanvasKeys({
       }
       if (event.altKey) return;
       const key = event.key.toLowerCase();
-      const binding = keys?.find(
-        (spec) => spec.key.toLowerCase() === key && (spec.shift ?? false) === event.shiftKey,
-      );
+      const binding = keys?.find((spec) => !spec.primary && matchesShellKey(event, spec));
       if (binding && event.repeat && binding.repeat !== true) {
         event.preventDefault();
         return;

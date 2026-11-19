@@ -71,7 +71,7 @@ export function PlacementSection({ id, ids }: { id: string; ids: IdGen }) {
   const report = (result: ReturnType<ToolApi['execute']>) =>
     setError(result.ok ? undefined : commandError(result.error));
   const rotate = (deltaDeg: number) =>
-    report(engine.execute('components.rotate', { id, deltaDeg }));
+    report(engine.execute('components.rotate', { ids: [id], deltaDeg }));
 
   return (
     <div className="pcbk-component-details">
@@ -113,10 +113,10 @@ export function PlacementSection({ id, ids }: { id: string; ids: IdGen }) {
         />
         <Button onClick={() => rotate(90)}>{text.rotateClockwise}</Button>
         <Button onClick={() => rotate(-90)}>{text.rotateCounterclockwise}</Button>
-        <Button onClick={() => report(engine.execute('components.flipSide', { id }))}>
+        <Button onClick={() => report(engine.execute('components.flipSide', { ids: [id] }))}>
           {text.flip}
         </Button>
-        <Button onClick={() => report(engine.execute('components.removeFromBoard', { id }))}>
+        <Button onClick={() => report(engine.execute('components.removeFromBoard', { ids: [id] }))}>
           {text.remove}
         </Button>
       </div>
@@ -129,31 +129,30 @@ export function PlacementSection({ id, ids }: { id: string; ids: IdGen }) {
   );
 }
 
-function forPlaced(api: ToolApi, selection: Selection, run: (id: string) => void): boolean {
-  const ids = new Set(
+function forPlaced(api: ToolApi, selection: Selection, run: (ids: string[]) => void): boolean {
+  const selected = new Set(
     selection.items.filter((item) => item.kind === 'component').map(({ id }) => id),
   );
-  if (ids.size === 0) return false;
-  let handled = false;
-  for (const { id, board } of api.snapshot().doc.components) {
-    if (!board || !ids.has(id)) continue;
-    run(id);
-    handled = true;
-  }
-  return handled;
+  if (selected.size === 0) return false;
+  const ids = api
+    .snapshot()
+    .doc.components.flatMap(({ id, board }) => (board && selected.has(id) ? [id] : []));
+  if (ids.length === 0) return false;
+  run(ids);
+  return true;
 }
 
 export const rotateClockwise: KeySpec['run'] = (api, selection) =>
-  forPlaced(api, selection, (id) => api.execute('components.rotate', { id, deltaDeg: 90 }));
+  forPlaced(api, selection, (ids) => api.execute('components.rotate', { ids, deltaDeg: 90 }));
 
 export const rotateCounterclockwise: KeySpec['run'] = (api, selection) =>
-  forPlaced(api, selection, (id) => api.execute('components.rotate', { id, deltaDeg: -90 }));
+  forPlaced(api, selection, (ids) => api.execute('components.rotate', { ids, deltaDeg: -90 }));
 
 export const flipSide: KeySpec['run'] = (api, selection) =>
-  forPlaced(api, selection, (id) => api.execute('components.flipSide', { id }));
+  forPlaced(api, selection, (ids) => api.execute('components.flipSide', { ids }));
 
 export const removePlacements: KeySpec['run'] = (api, selection) =>
-  forPlaced(api, selection, (id) => api.execute('components.removeFromBoard', { id }));
+  forPlaced(api, selection, (ids) => api.execute('components.removeFromBoard', { ids }));
 
 export const placementKeys: KeySpec[] = [
   {

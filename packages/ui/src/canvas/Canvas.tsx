@@ -15,6 +15,7 @@ import { useCanvasKeys } from './use-canvas-keys';
 import { GESTURE_OVERSCAN, useCanvasView } from './use-canvas-view';
 import { createPanToolSpec } from './PanTool';
 import { createSelectToolSpec } from './SelectTool';
+import { SelectionFrameLayer } from './SelectionFrameLayer';
 import { SceneTransformContext } from './scene-text';
 import { pointerWorld, sceneMatrix, screenToScenePoint, zoomAt } from './stage';
 import type { SceneTransform } from './stage';
@@ -28,6 +29,8 @@ export interface CanvasProps {
   keys?: readonly KeySpec[];
   contextMenu?: (kind: string) => ContextMenuItemSpec[];
   moveRefs?: UiRegistry['moveRefs'];
+  itemsInFrame?: UiRegistry['itemsInFrame'];
+  deleteIds?: UiRegistry['deleteIds'];
   sceneTransform: SceneTransform;
   view: CanvasView;
   onViewChange(view: CanvasView): void;
@@ -74,6 +77,8 @@ export function Canvas({
   keys,
   contextMenu,
   moveRefs = emptyMoveRefs,
+  itemsInFrame,
+  deleteIds,
   sceneTransform,
   view,
   onViewChange,
@@ -149,7 +154,12 @@ export function Canvas({
     [changeView, geometry, viewRef],
   );
   const toolset = useMemo(() => {
-    const select = createSelectToolSpec(() => getSession().selection, moveRefs);
+    const select = createSelectToolSpec(
+      () => getSession().selection,
+      moveRefs,
+      itemsInFrame,
+      deleteIds,
+    );
     const pan = createPanToolSpec(panByScreen);
     return {
       select: select.create(),
@@ -157,7 +167,7 @@ export function Canvas({
       custom: new Map(tools.map((spec) => [spec.id, spec.create()])),
       specs: [select, pan, ...tools],
     };
-  }, [moveRefs, panByScreen, tools]);
+  }, [deleteIds, itemsInFrame, moveRefs, panByScreen, tools]);
   const active = toolId === 'pan' ? toolset.pan : (toolset.custom.get(toolId) ?? toolset.select);
   const emptyHits = useMemo(() => createHitIndex([]), []);
   const api = useMemo<ToolApi>(
@@ -361,6 +371,7 @@ export function Canvas({
             <SceneTransformContext.Provider value={sceneTransform}>
               <LabelObstaclesContext.Provider value={layerData.obstacles}>
                 <Layers layers={layers} snapshot={snapshot} preview={preview} lodZoom={lodZoom} />
+                <SelectionFrameLayer preview={preview} />
                 {active.overlay?.(api)}
               </LabelObstaclesContext.Provider>
             </SceneTransformContext.Provider>

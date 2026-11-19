@@ -116,8 +116,10 @@ function Context({
   selection: Selection;
   pinned: PinnedSpec[];
 }) {
-  const sections = registry.contextSections(selection);
-  const label = useSnapshot((snapshot) => registry.selectionLabel(snapshot, selection));
+  const count = selection.items.length;
+  const multiple = count > 1;
+  const singleLabel = useSnapshot((snapshot) => registry.selectionLabel(snapshot, selection));
+  const label = multiple ? et.shell.selectedCount(count) : singleLabel;
   const heading = label === null ? et.shell.context : `${et.shell.context} · ${label}`;
   return (
     <>
@@ -139,12 +141,18 @@ function Context({
         </Button>
       </div>
       <div className="pcbk-pane-content">
-        {pinned.map((section) => (
-          <section key={section.id}>{section.render()}</section>
-        ))}
-        {sections.map((section) => (
-          <section key={section.id}>{section.render({ selection })}</section>
-        ))}
+        {multiple ? (
+          <p>{et.shell.multipleSelected}</p>
+        ) : (
+          <>
+            {pinned.map((section) => (
+              <section key={section.id}>{section.render()}</section>
+            ))}
+            {registry.contextSections(selection).map((section) => (
+              <section key={section.id}>{section.render({ selection })}</section>
+            ))}
+          </>
+        )}
       </div>
     </>
   );

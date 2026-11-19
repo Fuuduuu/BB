@@ -134,7 +134,7 @@ test('hidden_and_unplaced_labels_do_not_supply_obstacles', () => {
   const layer = COMPONENTS_LAYERS.find(({ id }) => id === 'components.labels')!;
   expect(layer.obstacles).toBeTypeOf('function');
   expect(layer.obstacles!(engine.snapshot(), 0.49, 'rot90')).toEqual([]);
-  expect(engine.execute('components.removeFromBoard', { id: 'cmp_u1' }).ok).toBe(true);
+  expect(engine.execute('components.removeFromBoard', { ids: ['cmp_u1'] }).ok).toBe(true);
   expect(layer.obstacles!(engine.snapshot(), 1, 'rot90')).toEqual([]);
 });
 

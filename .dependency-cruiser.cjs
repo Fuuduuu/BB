@@ -24,11 +24,18 @@ module.exports = {
           '^packages/domain/|(?:^|/)node_modules/(?:zod|nanoid)(?:/|$)|^(?:zod|nanoid)(?:/|$)',
       },
     },
-    forbid(
-      'contracts-no-impl',
-      '^packages/(?:contracts/|features/[^/]+/contract[.]ts$)',
-      `^packages/(?:engine|client|ui|adapters|features)/|^apps/|${react}|${tauri}`,
-    ),
+    {
+      name: 'contracts-no-impl',
+      severity: 'error',
+      from: {
+        path: '^packages/(?:contracts/|features/([^/]+)/contract(?:[.]ts$|/))',
+        pathNot: tests,
+      },
+      to: {
+        path: `^packages/(?:engine|client|ui|adapters|features)/|^apps/|${react}|${tauri}`,
+        pathNot: '^packages/features/$1/contract/',
+      },
+    },
     forbid(
       'engine-no-ui',
       '^packages/engine/',
@@ -104,7 +111,7 @@ module.exports = {
       name: 'shared-code-no-node',
       severity: 'error',
       from: {
-        path: '^packages/(?:domain/|contracts/|engine/|client/|ui/|features/[^/]+/(?:engine/|ui/|contract[.]ts$))',
+        path: '^packages/(?:domain/|contracts/|engine/|client/|ui/|features/[^/]+/(?:engine/|ui/|contract(?:[.]ts$|/)))',
         pathNot: tests,
       },
       to: { dependencyTypes: ['core'] },

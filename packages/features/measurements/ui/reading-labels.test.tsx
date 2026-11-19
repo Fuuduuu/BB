@@ -139,7 +139,9 @@ test('reading_label_points_away_from_component_body', () => {
   expectDirection('3,3 V', 'start');
 
   act(() => {
-    expect(engine.execute('components.rotate', { id: pinRef('1').c, deltaDeg: 90 }).ok).toBe(true);
+    expect(engine.execute('components.rotate', { ids: [pinRef('1').c], deltaDeg: 90 }).ok).toBe(
+      true,
+    );
   });
 
   expectDirection('4,98 V', 'start');

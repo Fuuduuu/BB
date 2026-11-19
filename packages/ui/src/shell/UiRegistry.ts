@@ -20,6 +20,7 @@ export interface KeySpec {
   id: string;
   key: string;
   shift?: boolean;
+  primary?: boolean;
   repeat?: boolean;
   run(api: ToolApi, selection: Selection): boolean;
 }
@@ -29,7 +30,7 @@ export interface ContextMenuItemSpec {
   appliesTo: string[];
   order: number;
   label(snapshot: Snapshot, selection: Selection): string;
-  shortcut?: { key: string; shift?: boolean };
+  shortcut?: { key: string; shift?: boolean; primary?: boolean };
   run(api: ToolApi, selection: Selection, at: Vec2): boolean;
 }
 
@@ -49,12 +50,16 @@ export interface PinnedSpec {
 
 export type MoveRef = ParamsOf<'items.translate'>['items'][number];
 
+export type SelectionFrame = { min: Vec2; max: Vec2 };
+
 export interface SelectionKindSpec {
   kind: SelectionItem['kind'];
   label(snapshot: Snapshot, item: SelectionItem): string | null;
   exists(snapshot: Snapshot, item: SelectionItem): boolean;
   /** Viide, mida `items.translate` liigutab. `null` tähistab liikumatut objekti. */
   moveRef?(snapshot: Snapshot, item: SelectionItem): MoveRef | null;
+  inFrame?(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[];
+  deleteId?(snapshot: Snapshot, item: SelectionItem): string | null;
 }
 
 export interface UiModule {
@@ -155,7 +160,10 @@ export class UiRegistry {
     ])) {
       if (
         shortcut.key !== undefined &&
-        isShellShortcut(shortcut.key, 'shift' in shortcut && shortcut.shift === true)
+        isShellShortcut(
+          'primary' in shortcut && shortcut.primary ? 'Ctrl+' + shortcut.key : shortcut.key,
+          'shift' in shortcut && shortcut.shift === true,
+        )
       ) {
         throw new Error(`Reserved shell keyboard shortcut: ${shortcut.key}`);
       }
@@ -163,7 +171,9 @@ export class UiRegistry {
     uniqueIds(
       [
         ...tools.flatMap(({ key }) => (key === undefined ? [] : [{ id: key.toLowerCase() }])),
-        ...keys.map(({ key, shift }) => ({ id: `${shift ? 'Shift+' : ''}${key.toLowerCase()}` })),
+        ...keys.map(({ key, primary, shift }) => ({
+          id: `${primary ? 'Ctrl+' : ''}${shift ? 'Shift+' : ''}${key.toLowerCase()}`,
+        })),
       ],
       'keyboard shortcut',
     );
@@ -218,6 +228,27 @@ export class UiRegistry {
       refs.push(ref);
     }
     return refs;
+  }
+  itemsInFrame(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[] {
+    const seen = new Set<string>();
+    const items: SelectionItem[] = [];
+    for (const kind of this.selectionKinds.values()) {
+      for (const item of kind.inFrame?.(snapshot, frame) ?? []) {
+        const key = JSON.stringify([item.kind, item.id, item.componentId]);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        items.push(item);
+      }
+    }
+    return items;
+  }
+  deleteIds(snapshot: Snapshot, items: readonly SelectionItem[]): string[] {
+    const ids = new Set<string>();
+    for (const item of items) {
+      const id = this.selectionKinds.get(item.kind)?.deleteId?.(snapshot, item);
+      if (id != null) ids.add(id);
+    }
+    return [...ids];
   }
   topBar(): SlotSpec[] {
     return ordered(this.modules().flatMap((module) => module.topBar ?? []));

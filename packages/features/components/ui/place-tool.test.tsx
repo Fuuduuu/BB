@@ -155,7 +155,7 @@ test.each<{
   act(() => engine.execute('components.add', { id, kind: 'other', pins }));
   const board = { footprint, params, center };
   act(() => engine.execute('components.placeOnBoard', { id, board }));
-  act(() => engine.execute('components.removeFromBoard', { id }));
+  act(() => engine.execute('components.removeFromBoard', { ids: [id] }));
   expect(engine.snapshot().doc.components[0]?.board).toBeUndefined();
   const before = engine.snapshot().doc.components[0]?.pins;
 

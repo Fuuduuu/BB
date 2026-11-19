@@ -116,6 +116,8 @@ export function mountMeasurements({
   const keys = registry.keys();
   const contextMenu = registry.contextMenu.bind(registry);
   const moveRefs = registry.moveRefs.bind(registry);
+  const itemsInFrame = registry.itemsInFrame.bind(registry);
+  const deleteIds = registry.deleteIds.bind(registry);
   function Board() {
     const snapshot = useSnapshot((value) => value);
     return (
@@ -125,6 +127,8 @@ export function mountMeasurements({
         keys={keys}
         contextMenu={contextMenu}
         moveRefs={moveRefs}
+        itemsInFrame={itemsInFrame}
+        deleteIds={deleteIds}
         sceneTransform={sceneTransform}
         view={view}
         onViewChange={noop}

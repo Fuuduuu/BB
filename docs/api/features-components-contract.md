@@ -112,6 +112,18 @@ export const COMPONENT_SCALE_MAX: number;
 export const COMPONENT_SCALE_MIN: number;
 ```
 
+### `ComponentListParams`
+```ts
+export type ComponentListParams = {
+    ids: string[];
+};
+```
+
+### `ComponentListSchema`
+```ts
+export const ComponentListSchema: ZodType<ComponentListParams>;
+```
+
 ### `ComponentTargetParams`
 ```ts
 export type ComponentTargetParams = {
@@ -122,6 +134,18 @@ export type ComponentTargetParams = {
 ### `ComponentTargetSchema`
 ```ts
 export const ComponentTargetSchema: ZodType<ComponentTargetParams>;
+```
+
+### `DuplicateParams`
+```ts
+export type DuplicateParams = {
+    items: { sourceId: string; id: string; pinUids: Record<string, string>; }[];
+};
+```
+
+### `DuplicateSchema`
+```ts
+export const DuplicateSchema: ZodType<DuplicateParams>;
 ```
 
 ### `LibraryCategory`
@@ -210,7 +234,7 @@ export const RenamePinSchema: ZodType<RenamePinParams>;
 ### `RotateParams`
 ```ts
 export type RotateParams = {
-    id: string;
+    ids: string[];
     deltaDeg: number;
 };
 ```
@@ -291,71 +315,7 @@ export const selectComponent: (snapshot: Pick<Snapshot, "doc">, id: string) => {
 
 ### `selectComponents`
 ```ts
-export const selectComponents: (snapshot: Pick<Snapshot, "doc">) => readonly {
-    readonly id: string;
-    readonly ref: string;
-    readonly kind: "resistor" | "capacitor" | "capacitor_polarized" | "inductor" | "diode" | "led" | "zener" | "npn" | "pnp" | "nmos" | "pmos" | "regulator" | "ic" | "connector" | "crystal" | "switch" | "fuse" | "testpoint" | "via" | "pad" | "wire_point" | "hole" | "other";
-    readonly marking: string;
-    readonly value: string;
-    readonly identified: boolean;
-    readonly dnp: boolean;
-    readonly note: string;
-    readonly pins: readonly {
-        readonly id: string;
-        readonly uid: string;
-        readonly nc: boolean;
-        readonly name?: string | undefined;
-    }[];
-    readonly referenceImageId?: string | undefined;
-    readonly board?: {
-        readonly footprint: string;
-        readonly params: {
-            readonly [x: string]: string | number;
-        };
-        readonly center: {
-            readonly x: number;
-            readonly y: number;
-        };
-        readonly rotationDeg: number;
-        readonly side: "top" | "bottom";
-        readonly scaleX: number;
-        readonly scaleY: number;
-        readonly customPads: {
-            readonly [x: string]: {
-                readonly local: {
-                    readonly x: number;
-                    readonly y: number;
-                };
-                readonly sizeMm: number;
-                readonly shape: "rect" | "circle";
-                readonly through: boolean;
-            };
-        };
-        readonly padMap?: {
-            readonly [x: string]: string;
-        } | undefined;
-        readonly labelOffset?: {
-            readonly x: number;
-            readonly y: number;
-        } | undefined;
-    } | undefined;
-    readonly schematic?: {
-        readonly symbol: string;
-        readonly at: {
-            readonly x: number;
-            readonly y: number;
-        };
-        readonly rot: 0 | 90 | 180 | 270;
-        readonly mirror: boolean;
-        readonly pinMap?: {
-            readonly [x: string]: string;
-        } | undefined;
-        readonly labelOffset?: {
-            readonly x: number;
-            readonly y: number;
-        } | undefined;
-    } | undefined;
-}[];
+export const selectComponents: (snapshot: Pick<Snapshot, "doc">) => Snapshot["doc"]["components"];
 ```
 
 ### `SetLabelOffsetParams`

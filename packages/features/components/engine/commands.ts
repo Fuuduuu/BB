@@ -1,4 +1,10 @@
-import { FOOTPRINTS, footprintGeometry, footprintPinIds, nextRef } from '@pcbk/domain';
+import {
+  BoardPlacementSchema,
+  FOOTPRINTS,
+  footprintGeometry,
+  footprintPinIds,
+  nextRef,
+} from '@pcbk/domain';
 import type { BoardDoc, BoardPlacement, Component, Pin } from '@pcbk/domain';
 import { removePins } from '@pcbk/domain/rules';
 import { CommandTargetNotFound, reject } from '@pcbk/engine';
@@ -10,7 +16,8 @@ import {
   AddPinSchema,
   AlignSchema,
   ChangeFootprintSchema,
-  ComponentTargetSchema,
+  ComponentListSchema,
+  DuplicateSchema,
   PinTargetSchema,
   PlaceOnBoardSchema,
   RenamePinSchema,
@@ -27,7 +34,8 @@ import type {
   AlignParams,
   BoardInput,
   ChangeFootprintParams,
-  ComponentTargetParams,
+  ComponentListParams,
+  DuplicateParams,
   PinTargetParams,
   PlaceOnBoardParams,
   RenamePinParams,
@@ -211,13 +219,15 @@ const placeOnBoard: CommandSpec<PlaceOnBoardParams> = {
     target.board = makeBoardPlacement(params.board, target.pins);
   },
 };
-const removeFromBoard: CommandSpec<ComponentTargetParams> = {
+const removeFromBoard: CommandSpec<ComponentListParams> = {
   id: 'components.removeFromBoard',
   title: 'components.removeFromBoard',
-  params: ComponentTargetSchema,
-  run(doc, params) {
-    const target = component(doc, params.id);
-    if (target.board) delete target.board;
+  params: ComponentListSchema,
+  run(doc, { ids }) {
+    for (const id of new Set(ids)) {
+      const target = component(doc, id);
+      if (target.board) delete target.board;
+    }
   },
 };
 const changeFootprint: CommandSpec<ChangeFootprintParams> = {
@@ -272,18 +282,55 @@ const rotate: CommandSpec<RotateParams> = {
   id: 'components.rotate',
   title: 'components.rotate',
   params: RotateSchema,
-  run(doc, params) {
-    const board = placedBoard(doc, params.id);
-    board.rotationDeg = normalizeAngle((board.rotationDeg % 360) + (params.deltaDeg % 360));
+  run(doc, { ids, deltaDeg }) {
+    const delta = deltaDeg % 360;
+    for (const id of new Set(ids)) {
+      const board = placedBoard(doc, id);
+      board.rotationDeg = normalizeAngle((board.rotationDeg % 360) + delta);
+    }
   },
 };
-const flipSide: CommandSpec<ComponentTargetParams> = {
+const flipSide: CommandSpec<ComponentListParams> = {
   id: 'components.flipSide',
   title: 'components.flipSide',
-  params: ComponentTargetSchema,
-  run(doc, params) {
-    const board = placedBoard(doc, params.id);
-    board.side = board.side === 'top' ? 'bottom' : 'top';
+  params: ComponentListSchema,
+  run(doc, { ids }) {
+    for (const id of new Set(ids)) {
+      const board = placedBoard(doc, id);
+      board.side = board.side === 'top' ? 'bottom' : 'top';
+    }
+  },
+};
+const duplicate: CommandSpec<DuplicateParams> = {
+  id: 'components.duplicate',
+  title: 'components.duplicate',
+  params: DuplicateSchema,
+  run(doc, { items }) {
+    const shift = 2 * doc.scale.pxPerMm;
+    for (const { sourceId, id, pinUids } of items) {
+      const source = component(doc, sourceId);
+      const pins = source.pins.map((pin) => {
+        if (!Object.hasOwn(pinUids, pin.id)) reject('missing_pin_uid');
+        return { ...pin, uid: pinUids[pin.id]! };
+      });
+      const board = source.board ? BoardPlacementSchema.parse(source.board) : undefined;
+      if (board) {
+        board.center.x += shift;
+        board.center.y += shift;
+      }
+      doc.components.push({
+        id,
+        ref: nextRef(doc, source.kind),
+        kind: source.kind,
+        marking: source.marking,
+        value: source.value,
+        identified: source.identified,
+        dnp: false,
+        note: '',
+        pins,
+        ...(board ? { board } : {}),
+      });
+    }
   },
 };
 const setScale: CommandSpec<SetScaleParams> = {
@@ -332,6 +379,7 @@ export const commands = [
   removeFromBoard,
   rotate,
   flipSide,
+  duplicate,
   setScale,
   align,
   setLabelOffset,

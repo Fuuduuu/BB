@@ -67,6 +67,7 @@ export const componentEt = {
 
 export const placementEt = {
   addHere: 'Lisa komponent siia',
+  duplicate: 'Dubleeri',
   placeHere: 'Paiguta siia',
   cancelHere: 'Loobu',
   tabs: {

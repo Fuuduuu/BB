@@ -11,10 +11,8 @@ export type DeepReadonly<T> = T extends (...args: never[]) => unknown
         : T;
 
 /** Feature contracts extend this interface with their registered derivation keys. */
-export interface Derived {
-  unplacedBoard: string[];
-  unplacedSchematic: string[];
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface Derived {}
 
 export interface Snapshot {
   readonly sessionId: string;

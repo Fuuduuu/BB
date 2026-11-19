@@ -21,19 +21,13 @@ import { et } from './i18n/et';
 
 const emptyRegistry = new UiRegistry();
 const noSelection: Selection = { items: [] };
-function useSelection(sessionId: string, components: Snapshot['doc']['components']) {
+function useSelection(snapshot: Snapshot, registry: UiRegistry) {
+  const { sessionId } = snapshot;
   const selected = useSessionStore((s) => (s.sessionId === sessionId ? s.selection : noSelection));
-  const valid = useMemo(() => {
-    const items = selected.items.filter((item) => {
-      if (item.kind === 'component') return components.some(({ id }) => id === item.id);
-      if (item.kind === 'pin') {
-        const component = components.find(({ id }) => id === item.componentId);
-        return component?.pins.some(({ id }) => id === item.id);
-      }
-      return true;
-    });
-    return items.length === selected.items.length ? selected : { items };
-  }, [components, selected]);
+  const valid = useMemo(
+    () => registry.validSelection(snapshot, selected),
+    [registry, snapshot, selected],
+  );
   useEffect(() => {
     if (valid === selected) return;
     const current = useSessionStore.getState();
@@ -64,7 +58,7 @@ function Navigator({ registry }: { registry: UiRegistry }) {
   if (!active)
     return (
       <>
-        <div className="pcbk-pane-heading">{et.shell.components}</div>
+        <div className="pcbk-pane-heading">{et.shell.navigator}</div>
         <p className="pcbk-empty-pane">{et.shell.navigatorEmpty}</p>
       </>
     );
@@ -216,12 +210,12 @@ function ExtraSlots({ registry, slot }: { registry: UiRegistry; slot: 'topBar' |
 }
 function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps) {
   const engine = useEngine();
-  const { sessionId, name, history, components } = useSnapshot((s) => ({
-    sessionId: s.sessionId,
-    name: s.doc.name,
-    history: s.history,
-    components: s.doc.components,
-  }));
+  const snapshot = useSnapshot((s) => s);
+  const {
+    sessionId,
+    history,
+    doc: { name },
+  } = snapshot;
   const status = useSaveStatus();
   const view = useViewStore(
     useShallow(
@@ -243,7 +237,7 @@ function Workspace({ registry = emptyRegistry, canvas, ...props }: AppShellProps
     ),
   );
   useTheme(props.manageTheme !== false);
-  const selection = useSelection(sessionId, components);
+  const selection = useSelection(snapshot, registry);
   const [contextAvailable, setContextAvailable] = useState(false);
   const PinnedContextPane = useMemo(() => createPinnedContextPane(registry), [registry]);
   const activeSession = useRef<string>();

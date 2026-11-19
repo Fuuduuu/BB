@@ -18,6 +18,7 @@ export interface HitItem {
   priority?: number;
   data?: unknown;
   target?: SelectionItem;
+  moves?: SelectionItem;
   drag?: HitDrag;
 }
 

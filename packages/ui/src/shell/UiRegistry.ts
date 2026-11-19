@@ -1,4 +1,4 @@
-import type { Snapshot } from '@pcbk/contracts';
+import type { ParamsOf, Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
 import type { ReactNode } from 'react';
 import type { LayerSpec, ToolApi, ToolSpec } from '../canvas/tools';
@@ -47,9 +47,14 @@ export interface PinnedSpec {
   render(): ReactNode;
 }
 
+export type MoveRef = ParamsOf<'items.translate'>['items'][number];
+
 export interface SelectionKindSpec {
   kind: SelectionItem['kind'];
   label(snapshot: Snapshot, item: SelectionItem): string | null;
+  exists(snapshot: Snapshot, item: SelectionItem): boolean;
+  /** Viide, mida `items.translate` liigutab. `null` tähistab liikumatut objekti. */
+  moveRef?(snapshot: Snapshot, item: SelectionItem): MoveRef | null;
 }
 
 export interface UiModule {
@@ -106,13 +111,15 @@ function uniqueIds(items: { id: string }[], kind: string): void {
 
 export class UiRegistry {
   private readonly registered: UiModule[] = [];
+  private readonly selectionKinds = new Map<SelectionItem['kind'], SelectionKindSpec>();
 
   constructor(modules: UiModule[] = []) {
     for (const module of modules) this.register(module);
   }
 
   register(module: UiModule): void {
-    const candidate = [...this.registered, copyModule(module)];
+    const added = copyModule(module);
+    const candidate = [...this.registered, added];
     uniqueIds(candidate, 'module');
     for (const slot of [
       'navigatorTabs',
@@ -128,6 +135,12 @@ export class UiRegistry {
         slot,
       );
     }
+    uniqueIds(
+      candidate.flatMap(({ selectionKinds }) =>
+        (selectionKinds ?? []).map(({ kind }) => ({ id: kind })),
+      ),
+      'selectionKinds',
+    );
     const tools = [
       { id: 'select', key: undefined },
       { id: 'pan', key: undefined },
@@ -154,7 +167,8 @@ export class UiRegistry {
       ],
       'keyboard shortcut',
     );
-    this.registered.push(candidate[candidate.length - 1]!);
+    this.registered.push(added);
+    for (const kind of added.selectionKinds ?? []) this.selectionKinds.set(kind.kind, kind);
   }
 
   modules(): UiModule[] {
@@ -184,14 +198,26 @@ export class UiRegistry {
   selectionLabel(snapshot: Snapshot, selection: Selection): string | null {
     const [item] = selection.items;
     if (selection.items.length !== 1 || !item) return null;
-    for (const module of this.registered) {
-      for (const spec of module.selectionKinds ?? []) {
-        if (spec.kind !== item.kind) continue;
-        const label = spec.label(snapshot, item);
-        if (label !== null) return label;
-      }
+    return this.selectionKinds.get(item.kind)?.label(snapshot, item) ?? null;
+  }
+  validSelection(snapshot: Snapshot, selection: Selection): Selection {
+    const items = selection.items.filter(
+      (item) => this.selectionKinds.get(item.kind)?.exists(snapshot, item) !== false,
+    );
+    return items.length === selection.items.length ? selection : { items };
+  }
+  moveRefs(snapshot: Snapshot, items: readonly SelectionItem[]): MoveRef[] {
+    const seen = new Set<string>();
+    const refs: MoveRef[] = [];
+    for (const item of items) {
+      const ref = this.selectionKinds.get(item.kind)?.moveRef?.(snapshot, item);
+      if (!ref) continue;
+      const key = `${ref.kind}:${ref.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      refs.push(ref);
     }
-    return null;
+    return refs;
   }
   topBar(): SlotSpec[] {
     return ordered(this.modules().flatMap((module) => module.topBar ?? []));

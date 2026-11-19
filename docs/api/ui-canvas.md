@@ -6,7 +6,7 @@ Sisenemispunkt: `packages/ui/src/canvas/index.ts`
 
 ### `Canvas`
 ```ts
-export function Canvas({ layers, tools, keys, contextMenu, sceneTransform, view, onViewChange, snapshot, execute, surface, fitInsets, }: CanvasProps): import("react").JSX.Element;
+export function Canvas({ layers, tools, keys, contextMenu, moveRefs, sceneTransform, view, onViewChange, snapshot, execute, surface, fitInsets, }: CanvasProps): import("react").JSX.Element;
 ```
 
 ### `CanvasPointer`
@@ -28,6 +28,7 @@ export interface CanvasProps {
     tools: readonly ToolSpec[];
     keys?: readonly KeySpec[];
     contextMenu?: (kind: string) => ContextMenuItemSpec[];
+    moveRefs?: UiRegistry['moveRefs'];
     sceneTransform: SceneTransform;
     view: CanvasView;
     onViewChange(view: CanvasView): void;
@@ -90,6 +91,7 @@ export interface HitItem {
     priority?: number;
     data?: unknown;
     target?: SelectionItem;
+    moves?: SelectionItem;
     drag?: HitDrag;
 }
 ```
@@ -223,7 +225,7 @@ export interface ToolSpec {
 ### `TranslatePreviewData`
 ```ts
 export type TranslatePreviewData = {
-    items: SelectionItem[];
+    items: MoveRef[];
     dx: number;
     dy: number;
 };

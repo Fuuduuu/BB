@@ -11,6 +11,7 @@ import type { LayerSpec } from './tools';
 
 const component = { kind: 'component', id: 'cmp_test' };
 const pin = { kind: 'pin', id: '1', componentId: component.id };
+const pinHit = { ...pin, moves: component };
 const selection = () => useSessionStore.getState().selection;
 const preview = () => useSessionStore.getState().preview;
 const selectComponent = () =>
@@ -54,7 +55,7 @@ function setup(initial?: CanvasProps['view']) {
           ],
         },
       },
-      { ...pin, priority: 1, shape: { type: 'point', at: { x: 25, y: 25 }, r: 1 } },
+      { ...pinHit, priority: 1, shape: { type: 'point', at: { x: 25, y: 25 }, r: 1 } },
     ]),
   };
   const onViewChange = vi.fn<(next: CanvasProps['view']) => void>();
@@ -62,6 +63,8 @@ function setup(initial?: CanvasProps['view']) {
   let props: CanvasProps = {
     layers: [hitLayer],
     tools: [],
+    moveRefs: (_snapshot, items) =>
+      items.flatMap(({ kind, id }) => (kind === 'component' ? [{ kind, id }] : [])),
     sceneTransform: 'none',
     view,
     onViewChange,

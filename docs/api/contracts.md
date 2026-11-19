@@ -115,8 +115,6 @@ Feature contracts extend this interface with their registered derivation keys.
 
 ```ts
 export interface Derived {
-    unplacedBoard: string[];
-    unplacedSchematic: string[];
 }
 ```
 

@@ -205,7 +205,12 @@ test('nc_cross_rotates_with_rect_top_right_corner_and_survives_hidden_numbers', 
 test('component_pin_hits_keep_pad_shape_size_rotation_and_priority', () => {
   const doc = newBoardDoc('Plaat');
   doc.components.push(component({ side: 'bottom', rotationDeg: 90 }));
-  const hits = componentPinHits(setup(doc).engine.snapshot());
+  // The selection kinds test checks movement ownership.
+  const hits = componentPinHits(setup(doc).engine.snapshot()).map((hit) => {
+    const geometry = { ...hit };
+    delete geometry.moves;
+    return geometry;
+  });
   expect(hits[0]).toEqual({
     kind: 'pin',
     id: '1',

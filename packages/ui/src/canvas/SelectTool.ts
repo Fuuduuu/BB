@@ -1,19 +1,18 @@
-import type { ParamsOf, Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
 import { et } from '../shell/i18n/et';
 import { SHELL_KEYS } from '../shell/keymap';
-import type { Selection, SelectionItem } from '../shell/session-store';
+import type { Selection } from '../shell/session-store';
+import type { MoveRef, UiRegistry } from '../shell/UiRegistry';
 import type { HitItem } from './hit-index';
 import { screenToSceneVector } from './stage';
 import type { CanvasPointer, CanvasTool, ToolSpec } from './tools';
 
-export type TranslatePreviewData = { items: SelectionItem[]; dx: number; dy: number };
-
-type Translation = ParamsOf<'items.translate'>;
+export type TranslatePreviewData = { items: MoveRef[]; dx: number; dy: number };
 
 interface Gesture {
   start: CanvasPointer;
-  items: Translation['items'];
+  items: MoveRef[];
+  selectionHandled: boolean;
   dragged: boolean;
 }
 
@@ -25,13 +24,6 @@ const nudgeDirections = new Map<string, Vec2>([
   [SHELL_KEYS.nudgeUp.key, { x: 0, y: -1 }],
   [SHELL_KEYS.nudgeDown.key, { x: 0, y: 1 }],
 ]);
-
-function selectedBoardComponents(selection: Selection, snapshot: Snapshot): Translation['items'] {
-  const unplaced = snapshot.derived.unplacedBoard;
-  return selection.items.flatMap(({ kind, id }) =>
-    kind === 'component' && !unplaced.includes(id) ? [{ kind, id }] : [],
-  );
-}
 
 export function selectionForHit(hit: HitItem | undefined): Selection {
   if (!hit) return { items: [] };
@@ -54,7 +46,10 @@ function translationOffset(start: Vec2, world: Vec2) {
   };
 }
 
-function createSelectTool(getSelection: () => Selection): CanvasTool {
+function createSelectTool(
+  getSelection: () => Selection,
+  moveRefs: UiRegistry['moveRefs'],
+): CanvasTool {
   let gesture: Gesture | undefined;
 
   return {
@@ -62,22 +57,22 @@ function createSelectTool(getSelection: () => Selection): CanvasTool {
     cursor: 'default',
     onPointerDown(event, api) {
       const { hit } = event;
-      const next: Gesture = { start: event, items: [], dragged: false };
+      const next: Gesture = { start: event, items: [], selectionHandled: false, dragged: false };
       gesture = next;
-      if (hit?.drag) return;
-      if (hit?.kind === 'component' && !hit.target) {
+      if (!hit || hit.drag) return;
+      const snapshot = api.snapshot();
+      if (!hit.target && moveRefs(snapshot, [hit]).length > 0) {
         const current = getSelection();
         const alreadySelected = current.items.some(
-          ({ kind, id }) => kind === 'component' && id === hit.id,
+          ({ kind, id, componentId }) =>
+            kind === hit.kind && id === hit.id && componentId === hit.componentId,
         );
         const selection = alreadySelected ? current : selectionForHit(hit);
         if (!alreadySelected) api.select(selection);
-        next.items = selectedBoardComponents(selection, api.snapshot());
-      } else if (hit?.kind === 'pin' && hit.componentId !== undefined) {
-        next.items = selectedBoardComponents(
-          { items: [{ kind: 'component', id: hit.componentId }] },
-          api.snapshot(),
-        );
+        next.items = moveRefs(snapshot, selection.items);
+        next.selectionHandled = true;
+      } else if (hit.moves) {
+        next.items = moveRefs(snapshot, [hit.moves]);
       }
     },
     onPointerMove(event, api) {
@@ -99,7 +94,7 @@ function createSelectTool(getSelection: () => Selection): CanvasTool {
       if (!finished) return;
       const { hit, world } = finished.start;
       if (!finished.dragged && !crossedDragThreshold(finished.start, event)) {
-        if (hit?.kind !== 'component' || hit.drag || hit.target) api.select(selectionForHit(hit));
+        if (!finished.selectionHandled) api.select(selectionForHit(hit));
         return;
       }
       if (!hit?.drag && finished.items.length === 0) return;
@@ -111,7 +106,7 @@ function createSelectTool(getSelection: () => Selection): CanvasTool {
     onKey(event, api) {
       const direction = nudgeDirections.get(event.key);
       if (!direction || event.altKey || event.ctrlKey || event.metaKey) return false;
-      const items = selectedBoardComponents(getSelection(), api.snapshot());
+      const items = moveRefs(api.snapshot(), getSelection().items);
       if (items.length === 0) return false;
       if (!event.repeat && !gesture) {
         const step = event.shiftKey ? 10 : 1;
@@ -127,13 +122,16 @@ function createSelectTool(getSelection: () => Selection): CanvasTool {
   };
 }
 
-export function createSelectToolSpec(getSelection: () => Selection): ToolSpec {
+export function createSelectToolSpec(
+  getSelection: () => Selection,
+  moveRefs: UiRegistry['moveRefs'],
+): ToolSpec {
   return {
     id: SELECT_ID,
     label: et.shell.selectTool,
     icon: SELECT_ID,
     key: SHELL_KEYS.select.key,
     group: 'select',
-    create: () => createSelectTool(getSelection),
+    create: () => createSelectTool(getSelection, moveRefs),
   };
 }

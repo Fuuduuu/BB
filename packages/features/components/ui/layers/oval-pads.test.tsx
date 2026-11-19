@@ -58,7 +58,12 @@ test('oval_pad_hits_like_rect', () => {
     },
   });
   const snapshot = setup(doc).engine.snapshot();
-  const hits = componentPinHits(snapshot);
+  // Movement ownership is covered by the selection-kind test.
+  const hits = componentPinHits(snapshot).map((hit) => {
+    const geometry = { ...hit };
+    delete geometry.moves;
+    return geometry;
+  });
   expect(hits).toEqual([
     {
       kind: 'pin',

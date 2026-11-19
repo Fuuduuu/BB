@@ -5,7 +5,7 @@ import type { Vec2 } from '@pcbk/domain';
 import { et } from '../shell/i18n/et';
 import { useSessionStore } from '../shell/session-store';
 import type { Preview } from '../shell/session-store';
-import type { ContextMenuItemSpec, KeySpec } from '../shell/UiRegistry';
+import type { ContextMenuItemSpec, KeySpec, UiRegistry } from '../shell/UiRegistry';
 import { ContextMenu } from './ContextMenu';
 import { createHitIndex } from './hit-index';
 import { LabelObstaclesContext } from './label-obstacles';
@@ -27,6 +27,7 @@ export interface CanvasProps {
   tools: readonly ToolSpec[];
   keys?: readonly KeySpec[];
   contextMenu?: (kind: string) => ContextMenuItemSpec[];
+  moveRefs?: UiRegistry['moveRefs'];
   sceneTransform: SceneTransform;
   view: CanvasView;
   onViewChange(view: CanvasView): void;
@@ -65,12 +66,14 @@ const Layers = memo(
 );
 
 const getSession = useSessionStore.getState;
+const emptyMoveRefs: UiRegistry['moveRefs'] = () => [];
 
 export function Canvas({
   layers,
   tools,
   keys,
   contextMenu,
+  moveRefs = emptyMoveRefs,
   sceneTransform,
   view,
   onViewChange,
@@ -146,7 +149,7 @@ export function Canvas({
     [changeView, geometry, viewRef],
   );
   const toolset = useMemo(() => {
-    const select = createSelectToolSpec(() => getSession().selection);
+    const select = createSelectToolSpec(() => getSession().selection, moveRefs);
     const pan = createPanToolSpec(panByScreen);
     return {
       select: select.create(),
@@ -154,7 +157,7 @@ export function Canvas({
       custom: new Map(tools.map((spec) => [spec.id, spec.create()])),
       specs: [select, pan, ...tools],
     };
-  }, [panByScreen, tools]);
+  }, [moveRefs, panByScreen, tools]);
   const active = toolId === 'pan' ? toolset.pan : (toolset.custom.get(toolId) ?? toolset.select);
   const emptyHits = useMemo(() => createHitIndex([]), []);
   const api = useMemo<ToolApi>(

@@ -35,7 +35,6 @@ export const et = {
     navigator: 'Navigaator',
     showNavigator: 'Näita navigaatorit',
     hideNavigator: 'Peida navigaator',
-    components: 'Komponendid',
     navigatorEmpty: 'Siia ilmuvad plaadi komponendid.',
     context: 'Omadused',
     contextEmpty: 'Omadused · vali komponent või jalg',

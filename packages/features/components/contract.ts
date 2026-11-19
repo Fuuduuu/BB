@@ -339,6 +339,11 @@ export type AlignParams = z.infer<typeof AlignSchema>;
 export type SetLabelOffsetParams = z.infer<typeof SetLabelOffsetSchema>;
 
 declare module '@pcbk/contracts' {
+  interface Derived {
+    unplacedBoard: string[];
+    unplacedSchematic: string[];
+  }
+
   interface CommandMap {
     'components.add': AddComponentParams;
     'components.update': UpdateComponentParams;

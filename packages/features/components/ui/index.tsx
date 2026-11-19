@@ -150,6 +150,9 @@ export function createComponentsUi(ids: IdGen): UiModule {
       {
         kind: 'component',
         label: (snapshot, item) => selectComponent(snapshot, item.id)?.ref ?? null,
+        exists: (snapshot, item) => selectComponent(snapshot, item.id) !== undefined,
+        moveRef: (snapshot, item) =>
+          selectComponent(snapshot, item.id)?.board ? { kind: 'component', id: item.id } : null,
       },
       {
         kind: 'pin',
@@ -158,6 +161,13 @@ export function createComponentsUi(ids: IdGen): UiModule {
           const component = selectComponent(snapshot, item.componentId);
           const pin = component?.pins.find(({ id }) => id === item.id);
           return component && pin ? `${component.ref}.${pin.name || pin.id}` : null;
+        },
+        exists: (snapshot, item) => {
+          if (!item.componentId) return false;
+          return (
+            selectComponent(snapshot, item.componentId)?.pins.some(({ id }) => id === item.id) ??
+            false
+          );
         },
       },
     ],

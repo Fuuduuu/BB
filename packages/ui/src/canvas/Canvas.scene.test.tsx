@@ -147,8 +147,13 @@ test.each(transforms)(
   'arrow_key_nudges_follow_screen_axes_under_all_8_transforms (%s)',
   (transform) => {
     const execute = vi.fn<CanvasProps['execute']>(() => ({ ok: true, value: { rev: 1 } }));
-    const { svg, scene, props } = setup({ sceneTransform: transform, execute });
-    const component = { kind: 'component', id: 'cmp_nudge' };
+    const component = { kind: 'component', id: 'cmp_nudge' } as const;
+    const { svg, scene, props } = setup({
+      sceneTransform: transform,
+      execute,
+      moveRefs: (_snapshot, items) =>
+        items.some(({ id }) => id === component.id) ? [component] : [],
+    });
     act(() => useSessionStore.getState().setSelection({ items: [component] }));
     const before = apply(matrixOf(scene), pixel);
     const directions = [

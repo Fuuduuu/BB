@@ -72,7 +72,6 @@ export const et: {
         readonly navigator: "Navigaator";
         readonly showNavigator: "Näita navigaatorit";
         readonly hideNavigator: "Peida navigaator";
-        readonly components: "Komponendid";
         readonly navigatorEmpty: "Siia ilmuvad plaadi komponendid.";
         readonly context: "Omadused";
         readonly contextEmpty: "Omadused · vali komponent või jalg";
@@ -173,6 +172,11 @@ export interface KeySpec {
 }
 ```
 
+### `MoveRef`
+```ts
+export type MoveRef = ParamsOf<'items.translate'>['items'][number];
+```
+
 ### `PanelSpec`
 ```ts
 export interface PanelSpec extends SlotSpec {
@@ -220,6 +224,8 @@ export type SelectionItem = {
 export interface SelectionKindSpec {
     kind: SelectionItem['kind'];
     label(snapshot: Snapshot, item: SelectionItem): string | null;
+    exists(snapshot: Snapshot, item: SelectionItem): boolean;
+    moveRef?(snapshot: Snapshot, item: SelectionItem): MoveRef | null;
 }
 ```
 
@@ -330,6 +336,8 @@ export class UiRegistry {
     contextPinned(): PinnedSpec[];
     contextMenu(kind: string): ContextMenuItemSpec[];
     selectionLabel(snapshot: Snapshot, selection: Selection): string | null;
+    validSelection(snapshot: Snapshot, selection: Selection): Selection;
+    moveRefs(snapshot: Snapshot, items: readonly SelectionItem[]): MoveRef[];
     topBar(): SlotSpec[];
     bottomBar(): SlotSpec[];
     canvasLayers(): LayerSpec[];

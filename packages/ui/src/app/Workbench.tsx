@@ -29,6 +29,7 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
   const tools = useMemo(() => registry.tools(), [registry]);
   const keys = useMemo(() => registry.keys(), [registry]);
   const contextMenu = useMemo(() => registry.contextMenu.bind(registry), [registry]);
+  const moveRefs = useMemo(() => registry.moveRefs.bind(registry), [registry]);
   const view = useViewStore((state) => state.boardView);
   const contextShown = useViewStore((state) => state.contextShown);
   const contextWidth = useViewStore((state) => state.contextWidth);
@@ -43,6 +44,7 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
       tools={tools}
       keys={keys}
       contextMenu={contextMenu}
+      moveRefs={moveRefs}
       snapshot={snapshot}
       execute={execute}
       sceneTransform={sceneTransformOf(snapshot.doc)}

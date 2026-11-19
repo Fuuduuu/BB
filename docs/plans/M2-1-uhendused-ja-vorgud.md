@@ -74,7 +74,7 @@ Rajad: ülesanded 2, 5, 6 ja 11 on **rada B** (tuuma piir, andmereeglid ja invar
      - `engine_source_has_no_object_rules`
      - `invariants_come_from_domain_list`
      - `unplaced_keys_come_from_components_module`
-     - `remove_pin_uses_the_delete_rule`
+     - `remove_pin_and_footprint_change_use_remove_pins`
 3. **Valiku kehtivus registrisse.** `UiModule.selectionKinds` (`kind`, `exists`, `movable`). `components` registreerib komponendi ja jala. `AppShell` ja `SelectTool` ei viita komponentidele. Vaikevahekaart on registri esimene vahekaart.
    - Testid:
      - `selection_validity_comes_from_registry`

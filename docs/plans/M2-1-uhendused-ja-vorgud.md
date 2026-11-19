@@ -75,12 +75,12 @@ Rajad: ülesanded 2, 5, 6 ja 11 on **rada B** (tuuma piir, andmereeglid ja invar
      - `invariants_come_from_domain_list`
      - `unplaced_keys_come_from_components_module`
      - `remove_pin_and_footprint_change_use_remove_pins`
-3. **Valiku kehtivus registrisse.** `UiModule.selectionKinds` (`kind`, `exists`, `movable`). `components` registreerib komponendi ja jala. `AppShell` ja `SelectTool` ei viita komponentidele. Vaikevahekaart on registri esimene vahekaart.
+3. **Valiku kehtivus registrisse.** `UiModule.selectionKinds` (`kind`, `exists`, `moveRef`). `components` registreerib komponendi ja jala. `AppShell` ja `SelectTool` ei viita komponentidele. Vaikevahekaart jääb salvestatud vaate olekusse ([M2-1-3](../tasks/M2-1-3.md) otsus 7).
    - Testid:
      - `selection_validity_comes_from_registry`
      - `select_tool_moves_only_registry_movable_items`
      - `shell_and_select_tool_have_no_component_kind`
-     - `default_tab_is_first_registered_tab`
+     - `components_register_component_and_pin_kinds`
 
 **Osa B · Valik**
 

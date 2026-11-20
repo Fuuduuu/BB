@@ -1,5 +1,11 @@
 import type { ParamsOf } from '@pcbk/contracts';
-import { deleteItems, ITEM_FIELDS, ItemRefSchema, translateItems } from '@pcbk/domain/rules';
+import {
+  deleteItems,
+  isEmptyReport,
+  ITEM_FIELDS,
+  ItemRefSchema,
+  translateItems,
+} from '@pcbk/domain/rules';
 import { z } from 'zod';
 import type { CommandSpec, EngineModule } from './types';
 
@@ -8,8 +14,9 @@ const remove: CommandSpec<{ ids: string[] }> = {
   title: 'items.delete',
   params: z.strictObject({ ids: z.array(z.string()) }),
   alsoWrites: [...ITEM_FIELDS],
-  run(doc, { ids }) {
-    deleteItems(doc, ids);
+  run(doc, { ids }, ctx) {
+    const report = deleteItems(doc, ids);
+    if (!isEmptyReport(report)) ctx.emit({ type: 'rules.report', payload: report });
   },
 };
 

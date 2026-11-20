@@ -5,6 +5,7 @@ import {
   endAcceptsDrawing,
   endKey,
   endRefsByKey,
+  isEmptyReport,
   removeBoardDrawing,
   removeConnections,
   removeJunctions,
@@ -170,8 +171,9 @@ const remove: CommandSpec<ConnectionIdsParams> = {
   title: 'connections.remove',
   params: ConnectionIdsSchema,
   alsoWrites: ['netLabels'],
-  run(doc, { ids }) {
-    removeConnections(doc, existingIds(doc.connections, ids));
+  run(doc, { ids }, ctx) {
+    const report = removeConnections(doc, existingIds(doc.connections, ids));
+    if (!isEmptyReport(report)) ctx.emit({ type: 'rules.report', payload: report });
   },
 };
 
@@ -189,8 +191,9 @@ const removeJunction: CommandSpec<ConnectionIdsParams> = {
   title: 'junctions.remove',
   params: ConnectionIdsSchema,
   alsoWrites: ['netLabels'],
-  run(doc, { ids }) {
-    removeJunctions(doc, existingIds(doc.junctions, ids));
+  run(doc, { ids }, ctx) {
+    const report = removeJunctions(doc, existingIds(doc.junctions, ids));
+    if (!isEmptyReport(report)) ctx.emit({ type: 'rules.report', payload: report });
   },
 };
 

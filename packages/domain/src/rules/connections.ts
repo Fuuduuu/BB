@@ -14,6 +14,10 @@ export interface RuleReport {
   removedLabels: NetLabel[];
 }
 
+export function isEmptyReport(report: RuleReport): boolean {
+  return report.removedLabels.length === 0;
+}
+
 type PinRemoval = { component: Component; pinIds: ReadonlySet<string> };
 
 function newJunction(

@@ -6,7 +6,7 @@ import {
   nextRef,
 } from '@pcbk/domain';
 import type { BoardDoc, BoardPlacement, Component, Pin } from '@pcbk/domain';
-import { removePins } from '@pcbk/domain/rules';
+import { isEmptyReport, removePins } from '@pcbk/domain/rules';
 import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec } from '@pcbk/engine';
 import {
@@ -201,13 +201,14 @@ const removePin: CommandSpec<PinTargetParams> = {
   title: 'components.removePin',
   params: PinTargetSchema,
   alsoWrites: ['connections', 'junctions', 'netLabels'],
-  run(doc, { id, pinId }) {
+  run(doc, { id, pinId }, ctx) {
     const target = component(doc, id);
     if (!target.pins.some((item) => item.id === pinId))
       throw new CommandTargetNotFound(`${id}:${pinId}`);
     const board = target.board;
     if (board && hasFootprintPad(board, pinId)) reject('footprint_pin_locked');
-    removePins(doc, id, [pinId]);
+    const report = removePins(doc, id, [pinId]);
+    if (!isEmptyReport(report)) ctx.emit({ type: 'rules.report', payload: report });
   },
 };
 const placeOnBoard: CommandSpec<PlaceOnBoardParams> = {
@@ -236,7 +237,7 @@ const changeFootprint: CommandSpec<ChangeFootprintParams> = {
   title: 'components.changeFootprint',
   params: ChangeFootprintSchema,
   alsoWrites: ['connections', 'junctions', 'netLabels'],
-  run(doc, params) {
+  run(doc, params, ctx) {
     const target = component(doc, params.id);
     const board = placedBoard(doc, params.id);
     const definition = FOOTPRINTS.find((entry) => entry.key === params.footprint);
@@ -253,7 +254,8 @@ const changeFootprint: CommandSpec<ChangeFootprintParams> = {
     const removedIds = target.pins
       .filter(({ id }) => !footprintIds.has(id) && !Object.hasOwn(board.customPads, id))
       .map(({ id }) => id);
-    removePins(doc, params.id, removedIds);
+    const report = removePins(doc, params.id, removedIds);
+    if (!isEmptyReport(report)) ctx.emit({ type: 'rules.report', payload: report });
     const existing = new Map(target.pins.map((pin) => [pin.id, pin]));
     const ownPins = target.pins.filter(({ id }) => !footprintIds.has(id));
     const footprintPins = geometry.pads.map(({ id, name }) => {

@@ -24,6 +24,11 @@ export function branchConnection(doc: DrawingPositions & {
 export function deleteItems(doc: BoardDoc, ids: readonly string[]): RuleReport;
 ```
 
+### `describeNets`
+```ts
+export function describeNets(doc: BoardDoc): NetsDerived;
+```
+
 ### `DrawingKind`
 ```ts
 export type DrawingKind = NonNullable<Connection['board']>['kind'];
@@ -58,6 +63,11 @@ export interface Invariant {
 export const INVARIANTS: readonly Invariant[];
 ```
 
+### `isEmptyReport`
+```ts
+export function isEmptyReport(report: RuleReport): boolean;
+```
+
 ### `Issue`
 ```ts
 export interface Issue {
@@ -89,11 +99,34 @@ export type ItemRef = {
 export const ItemRefSchema: ZodType<ItemRef>;
 ```
 
+### `NetInfo`
+```ts
+export interface NetInfo {
+    key: string;
+    members: string[];
+    name: string;
+    named: boolean;
+    roleId?: string;
+    roleConflict: boolean;
+    conflictingRoles: string[];
+    beepContradiction: boolean;
+}
+```
+
 ### `NetMembership`
 ```ts
 export interface NetMembership {
     netOf: ReadonlyMap<string, string>;
     members: ReadonlyMap<string, readonly string[]>;
+}
+```
+
+### `NetsDerived`
+```ts
+export interface NetsDerived {
+    list: NetInfo[];
+    netOf: Record<string, string>;
+    shortedComponents: string[];
 }
 ```
 

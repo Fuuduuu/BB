@@ -101,6 +101,7 @@ fn main() {
             ipc::project_save,
             ipc::project_save_view,
             ipc::project_copy,
+            ipc::project_replace_token,
             ipc::project_backup_full,
             ipc::project_backups,
             ipc::project_restore,
@@ -114,6 +115,7 @@ fn main() {
             ipc::default_project_path,
             ipc::take_initial_path,
             ipc::log_export,
+            ipc::text_export,
         ])
         .run(tauri::generate_context!())
         .expect("PCB Kaardistaja ei käivitunud");

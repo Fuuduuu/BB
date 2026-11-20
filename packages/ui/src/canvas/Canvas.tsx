@@ -5,7 +5,7 @@ import type { Vec2 } from '@pcbk/domain';
 import { et } from '../shell/i18n/et';
 import { useSessionStore } from '../shell/session-store';
 import type { Preview } from '../shell/session-store';
-import type { ContextMenuItemSpec, KeySpec } from '../shell/UiRegistry';
+import type { ContextMenuItemSpec, KeySpec, UiRegistry } from '../shell/UiRegistry';
 import { ContextMenu } from './ContextMenu';
 import { createHitIndex } from './hit-index';
 import { LabelObstaclesContext } from './label-obstacles';
@@ -15,6 +15,7 @@ import { useCanvasKeys } from './use-canvas-keys';
 import { GESTURE_OVERSCAN, useCanvasView } from './use-canvas-view';
 import { createPanToolSpec } from './PanTool';
 import { createSelectToolSpec } from './SelectTool';
+import { SelectionFrameLayer } from './SelectionFrameLayer';
 import { SceneTransformContext } from './scene-text';
 import { pointerWorld, sceneMatrix, screenToScenePoint, zoomAt } from './stage';
 import type { SceneTransform } from './stage';
@@ -27,6 +28,9 @@ export interface CanvasProps {
   tools: readonly ToolSpec[];
   keys?: readonly KeySpec[];
   contextMenu?: (kind: string) => ContextMenuItemSpec[];
+  moveRefs?: UiRegistry['moveRefs'];
+  itemsInFrame?: UiRegistry['itemsInFrame'];
+  deleteIds?: UiRegistry['deleteIds'];
   sceneTransform: SceneTransform;
   view: CanvasView;
   onViewChange(view: CanvasView): void;
@@ -65,12 +69,16 @@ const Layers = memo(
 );
 
 const getSession = useSessionStore.getState;
+const emptyMoveRefs: UiRegistry['moveRefs'] = () => [];
 
 export function Canvas({
   layers,
   tools,
   keys,
   contextMenu,
+  moveRefs = emptyMoveRefs,
+  itemsInFrame,
+  deleteIds,
   sceneTransform,
   view,
   onViewChange,
@@ -146,7 +154,12 @@ export function Canvas({
     [changeView, geometry, viewRef],
   );
   const toolset = useMemo(() => {
-    const select = createSelectToolSpec(() => getSession().selection);
+    const select = createSelectToolSpec(
+      () => getSession().selection,
+      moveRefs,
+      itemsInFrame,
+      deleteIds,
+    );
     const pan = createPanToolSpec(panByScreen);
     return {
       select: select.create(),
@@ -154,7 +167,7 @@ export function Canvas({
       custom: new Map(tools.map((spec) => [spec.id, spec.create()])),
       specs: [select, pan, ...tools],
     };
-  }, [panByScreen, tools]);
+  }, [deleteIds, itemsInFrame, moveRefs, panByScreen, tools]);
   const active = toolId === 'pan' ? toolset.pan : (toolset.custom.get(toolId) ?? toolset.select);
   const emptyHits = useMemo(() => createHitIndex([]), []);
   const api = useMemo<ToolApi>(
@@ -172,14 +185,16 @@ export function Canvas({
   );
 
   const cancel = useCallback(
-    (tool: CanvasTool) => {
+    (tool: CanvasTool, gestureOnly = false) => {
       const down = gesture.current;
       gesture.current = null;
+      // A temporary pan can own the pointer without owning the active tool's draft.
+      const resetTool = !gestureOnly || down?.tool === tool;
       try {
         if (down && down.tool !== tool) down.tool.onCancel?.(api);
-        tool.onCancel?.(api);
+        if (resetTool) tool.onCancel?.(api);
       } finally {
-        if (getSession().preview !== null) api.setPreview(null);
+        if (resetTool && getSession().preview !== null) api.setPreview(null);
         if (down && svg.current?.hasPointerCapture(down.pointerId)) {
           svg.current.releasePointerCapture(down.pointerId);
         }
@@ -187,6 +202,9 @@ export function Canvas({
     },
     [api],
   );
+  const cancelGesture = useCallback(() => {
+    if (isGesturing()) cancel(active, true);
+  }, [active, cancel, isGesturing]);
 
   useLayoutEffect(() => {
     const previousSnapshot = current.current.snapshot;
@@ -243,6 +261,7 @@ export function Canvas({
     active,
     api,
     cancel,
+    cancelGesture,
     keys,
     openContextMenu: menu.openFromKeyboard,
     space,
@@ -352,6 +371,7 @@ export function Canvas({
             <SceneTransformContext.Provider value={sceneTransform}>
               <LabelObstaclesContext.Provider value={layerData.obstacles}>
                 <Layers layers={layers} snapshot={snapshot} preview={preview} lodZoom={lodZoom} />
+                <SelectionFrameLayer preview={preview} />
                 {active.overlay?.(api)}
               </LabelObstaclesContext.Provider>
             </SceneTransformContext.Provider>

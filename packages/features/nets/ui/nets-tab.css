@@ -1,0 +1,123 @@
+.pcbk-nets-tab,
+.pcbk-net-form {
+  display: grid;
+  gap: 12px;
+}
+
+.pcbk-nets-tab {
+  padding: 12px;
+  align-content: start;
+}
+
+.pcbk-net-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pcbk-net-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.pcbk-net-row:hover {
+  background: var(--well);
+  border-color: var(--ink-2);
+}
+
+.pcbk-net-row__name {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1 1 7em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pcbk-net-row__meta,
+.pcbk-net-fact {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.pcbk-net-fact,
+.pcbk-net-warning p,
+.pcbk-net-measurements h3 {
+  margin: 0;
+}
+
+.pcbk-net-roles,
+.pcbk-net-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pcbk-net-actions {
+  justify-content: flex-end;
+}
+
+.pcbk-net-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.pcbk-net-chip[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--well);
+}
+
+.pcbk-net-swatch {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.pcbk-net-warning {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--danger);
+  padding: 8px;
+  border-radius: 7px;
+}
+
+.pcbk-net-warning p,
+.pcbk-net-conflict-icon {
+  color: var(--danger);
+}
+
+.pcbk-net-back {
+  justify-self: start;
+}
+
+.pcbk-net-measurements {
+  display: grid;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+
+.pcbk-net-measurements h3 {
+  font-size: 13px;
+}

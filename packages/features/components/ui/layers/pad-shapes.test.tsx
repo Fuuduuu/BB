@@ -205,7 +205,12 @@ test('nc_cross_rotates_with_rect_top_right_corner_and_survives_hidden_numbers', 
 test('component_pin_hits_keep_pad_shape_size_rotation_and_priority', () => {
   const doc = newBoardDoc('Plaat');
   doc.components.push(component({ side: 'bottom', rotationDeg: 90 }));
-  const hits = componentPinHits(setup(doc).engine.snapshot());
+  // The selection kinds test checks movement ownership.
+  const hits = componentPinHits(setup(doc).engine.snapshot()).map((hit) => {
+    const geometry = { ...hit };
+    delete geometry.moves;
+    return geometry;
+  });
   expect(hits[0]).toEqual({
     kind: 'pin',
     id: '1',
@@ -269,6 +274,21 @@ test('circle_render_and_selection_use_scaled_ellipse_radii', () => {
   const selected = container.querySelector('[stroke="var(--sel)"]');
   expect(number(selected, 'rx')).toBe(24);
   expect(number(selected, 'ry')).toBe(34);
+});
+
+test('rect_custom_pad_draws_and_accepts_a_corner_click', () => {
+  const part = component({
+    footprint: 'area',
+    customPads: { '1': { local: { x: 0, y: 0 }, sizeMm: 2, shape: 'rect', through: true } },
+  });
+  const doc = newBoardDoc('Plaat');
+  doc.components.push(part);
+  const pad = outline(mount(part));
+  const index = createHitIndex(componentPinHits(setup(doc).engine.snapshot()));
+
+  expect(pad.tagName).toBe('rect');
+  expect(index.query({ x: 109, y: 89 }, 1)?.id).toBe('1');
+  expect(index.query({ x: 111, y: 89 }, 1)).toBeUndefined();
 });
 
 test('pin_name_starts_outside_long_rect_at_visible_name_zoom', () => {

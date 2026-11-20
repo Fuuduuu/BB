@@ -1,4 +1,5 @@
 import type { BoardDoc, DocKey } from '@pcbk/domain';
+import { RuleRejected, RuleTargetNotFound } from '@pcbk/domain/rules';
 import { err, ok } from '@pcbk/contracts';
 import type {
   CommandOk,
@@ -34,7 +35,7 @@ type Active = {
   history: ReturnType<typeof createHistory>;
   journal: ReturnType<typeof createJournal>;
 };
-const validation = (error: ZodError | CommandRejected): CommandResult =>
+const validation = (error: ZodError | CommandRejected | RuleRejected): CommandResult =>
   err({
     code: 'validation',
     issues:
@@ -70,8 +71,14 @@ export function createEngine(opts: {
     try {
       return action(active);
     } catch (error) {
-      if (error instanceof CommandTargetNotFound) return err({ code: 'not_found', id: error.id });
-      if (error instanceof ZodError || error instanceof CommandRejected) return validation(error);
+      if (error instanceof CommandTargetNotFound || error instanceof RuleTargetNotFound)
+        return err({ code: 'not_found', id: error.id });
+      if (
+        error instanceof ZodError ||
+        error instanceof CommandRejected ||
+        error instanceof RuleRejected
+      )
+        return validation(error);
       try {
         opts.onInternalError?.(error, commandId);
       } catch {

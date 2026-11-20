@@ -9,6 +9,7 @@ interface CanvasKeys {
   active: CanvasTool;
   api: ToolApi;
   cancel(tool: CanvasTool): void;
+  cancelGesture(): void;
   keys?: readonly KeySpec[];
   openContextMenu(): void;
   space: MutableRefObject<boolean>;
@@ -21,6 +22,7 @@ export function useCanvasKeys({
   active,
   api,
   cancel,
+  cancelGesture,
   keys,
   openContextMenu,
   space,
@@ -28,14 +30,15 @@ export function useCanvasKeys({
 }: CanvasKeys) {
   useLayoutEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (
-        event.defaultPrevented ||
-        event.isComposing ||
-        event.ctrlKey ||
-        event.metaKey ||
-        isEditing(event)
-      )
+      if (event.defaultPrevented || event.isComposing || isEditing(event)) return;
+      if (event.ctrlKey || event.metaKey) {
+        const binding = keys?.find((spec) => spec.primary && matchesShellKey(event, spec));
+        if (binding) {
+          event.preventDefault();
+          if (!event.repeat || binding.repeat === true) binding.run(api, getSession().selection);
+        }
         return;
+      }
       if (
         matchesShellKey(event, SHELL_KEYS.contextMenu) ||
         matchesShellKey(event, SHELL_KEYS.contextMenuKey)
@@ -65,9 +68,7 @@ export function useCanvasKeys({
       }
       if (event.altKey) return;
       const key = event.key.toLowerCase();
-      const binding = keys?.find(
-        (spec) => spec.key.toLowerCase() === key && (spec.shift ?? false) === event.shiftKey,
-      );
+      const binding = keys?.find((spec) => !spec.primary && matchesShellKey(event, spec));
       if (binding && event.repeat && binding.repeat !== true) {
         event.preventDefault();
         return;
@@ -88,7 +89,7 @@ export function useCanvasKeys({
     }
     function onBlur() {
       space.current = false;
-      cancel(active);
+      cancelGesture();
     }
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -98,5 +99,5 @@ export function useCanvasKeys({
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('blur', onBlur);
     };
-  }, [active, api, cancel, keys, openContextMenu, space, specs]);
+  }, [active, api, cancel, cancelGesture, keys, openContextMenu, space, specs]);
 }

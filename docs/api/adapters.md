@@ -7,6 +7,7 @@ Sisenemispunkt: `packages/adapters/src/index.ts`
 ### `createMemoryRepository`
 ```ts
 export function createMemoryRepository(store?: MemoryStore): {
+    replaceToken(path: string): string | null;
     failNext(reason: StorageReason): void;
     setReadOnly(path: string, readOnly: boolean): void;
     documentWrites: number;

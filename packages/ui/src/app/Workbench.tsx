@@ -29,6 +29,9 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
   const tools = useMemo(() => registry.tools(), [registry]);
   const keys = useMemo(() => registry.keys(), [registry]);
   const contextMenu = useMemo(() => registry.contextMenu.bind(registry), [registry]);
+  const moveRefs = useMemo(() => registry.moveRefs.bind(registry), [registry]);
+  const itemsInFrame = useMemo(() => registry.itemsInFrame.bind(registry), [registry]);
+  const deleteIds = useMemo(() => registry.deleteIds.bind(registry), [registry]);
   const view = useViewStore((state) => state.boardView);
   const contextShown = useViewStore((state) => state.contextShown);
   const contextWidth = useViewStore((state) => state.contextWidth);
@@ -43,6 +46,9 @@ function BoardCanvas({ registry }: { registry: UiRegistry }) {
       tools={tools}
       keys={keys}
       contextMenu={contextMenu}
+      moveRefs={moveRefs}
+      itemsInFrame={itemsInFrame}
+      deleteIds={deleteIds}
       snapshot={snapshot}
       execute={execute}
       sceneTransform={sceneTransformOf(snapshot.doc)}
@@ -81,12 +87,14 @@ export function Workbench({
     ]);
   }, [uiModules, validateModules, goHome]);
   const copyAvailable = Boolean(workbench.info && host.pickSavePath);
+  const onPickCopyAndReload = copyAvailable ? () => workbench.copy('reload-picker') : undefined;
   const restoreAvailable = host.kind === 'desktop' && Boolean(host.pickSavePath);
 
   return (
     <>
       <RootErrorBoundary
         onCopyAndReload={() => workbench.copy('reload')}
+        onPickCopyAndReload={onPickCopyAndReload}
         onExportDiagnostics={workbench.diagnose}
         copyAvailable={Boolean(workbench.info && (host.recoveryCopyPath || host.pickSavePath))}
       >
@@ -123,6 +131,7 @@ export function Workbench({
                 onRetrySave={workbench.retrySave}
                 onSaveElsewhere={() => workbench.copy('stay')}
                 onCopyAndReload={() => workbench.copy('reload')}
+                onPickCopyAndReload={onPickCopyAndReload}
                 onExportDiagnostics={workbench.diagnose}
               />
             ) : (
@@ -161,6 +170,7 @@ export function Workbench({
       <CloseDialog
         open={workbench.closeError !== null}
         reason={workbench.closeError?.reason ?? 'unknown'}
+        copyError={workbench.closeError?.copyError}
         opening={typeof workbench.closeError?.intent === 'object'}
         busy={workbench.busy}
         copyAvailable={copyAvailable}

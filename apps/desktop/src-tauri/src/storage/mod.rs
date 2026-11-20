@@ -3,17 +3,21 @@ mod clock;
 mod copy;
 mod db;
 mod error;
+mod pending;
 pub(crate) mod photo_protocol;
 mod photo_validation;
 mod photos;
 mod recent;
 mod restore;
 mod schema;
+pub(crate) mod sidecars;
 
 pub use backup::{BackupInfoDto, BackupKind};
 pub use clock::{Clock, SystemClock};
 pub use copy::{CopyRequest, CopyResultDto};
 pub use error::{Reason, StorageErrorDto, StorageResult};
+pub use pending::replace_token;
+use pending::PendingFile;
 pub use photo_protocol::PhotoResponse;
 pub use photos::PhotoRefDto;
 pub use recent::RecentDto;
@@ -59,86 +63,6 @@ pub struct ProjectStore {
     recent_lock: Mutex<()>,
 }
 
-struct PendingFile(Option<PathBuf>);
-
-impl PendingFile {
-    fn unique(destination: &Path) -> StorageResult<Self> {
-        let mut path = destination.as_os_str().to_owned();
-        path.push(format!(".{}.tmp", uuid::Uuid::new_v4()));
-        let path = PathBuf::from(path);
-        fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&path)?;
-        Ok(Self(Some(path)))
-    }
-
-    fn path(&self) -> &Path {
-        self.0.as_deref().expect("pending file is armed")
-    }
-
-    fn sync(&self) -> std::io::Result<()> {
-        fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(self.path())?
-            .sync_all()
-    }
-
-    fn publish(mut self, destination: &Path) -> StorageResult<()> {
-        self.sync()?;
-        replace_file(self.path(), destination)?;
-        // After rename, this operation no longer owns the temporary path.
-        self.0 = None;
-        Ok(())
-    }
-
-    fn publish_new(mut self, destination: &Path) -> StorageResult<()> {
-        self.sync()?;
-        match backup::install_new(&mut self, destination) {
-            Ok(()) => Ok(()),
-            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-                Err(StorageErrorDto::new(Reason::PathTaken))
-            }
-            Err(error) => Err(error.into()),
-        }
-    }
-}
-
-fn replace_file(source: &Path, destination: &Path) -> StorageResult<()> {
-    let Err(error) = fs::rename(source, destination) else {
-        return Ok(());
-    };
-    #[cfg(windows)]
-    if error.kind() == std::io::ErrorKind::PermissionDenied {
-        use std::os::windows::fs::OpenOptionsExt;
-
-        // MoveFileEx may report access denied when the destination is open
-        // without delete sharing. A DELETE-access probe distinguishes the lock.
-        const DELETE_ACCESS: u32 = 0x0001_0000;
-        const SHARE_ALL: u32 = 0x7;
-        if let Err(probe) = fs::OpenOptions::new()
-            .access_mode(DELETE_ACCESS)
-            .share_mode(SHARE_ALL)
-            .open(destination)
-        {
-            let mapped = StorageErrorDto::from(probe);
-            if mapped.reason == Reason::Locked {
-                return Err(mapped);
-            }
-        }
-    }
-    Err(error.into())
-}
-
-impl Drop for PendingFile {
-    fn drop(&mut self) {
-        if let Some(path) = &self.0 {
-            let _ = fs::remove_file(path);
-        }
-    }
-}
-
 fn absolute(path: &Path) -> StorageResult<PathBuf> {
     if path.exists() {
         Ok(dunce::canonicalize(path)?)
@@ -179,8 +103,21 @@ impl ProjectStore {
     fn destination(
         path: &Path,
         sessions: &HashMap<String, db::ProjectDb>,
+        exclusive: bool,
     ) -> StorageResult<PathBuf> {
-        let path = Self::available_path(path, sessions)?;
+        let path = Self::available_path(path, sessions).map_err(|error| {
+            if exclusive && error.reason == Reason::Locked {
+                StorageErrorDto::new(Reason::PathTaken)
+            } else {
+                error
+            }
+        })?;
+        if exclusive {
+            if sidecars::occupied(&path)? {
+                return Err(StorageErrorDto::new(Reason::PathTaken));
+            }
+            return Ok(path);
+        }
         match fs::metadata(&path) {
             Ok(metadata) if metadata.permissions().readonly() => {
                 return Err(StorageErrorDto::new(Reason::ReadOnly));
@@ -197,19 +134,43 @@ impl ProjectStore {
         db: db::ProjectDb,
         daily_backup: bool,
     ) -> StorageResult<OpenedProjectDto> {
-        let session = uuid::Uuid::new_v4().to_string();
-        let opened = db.describe(session.clone())?;
+        let opened = db.describe(uuid::Uuid::new_v4().to_string())?;
         if daily_backup && !db.read_only {
             if let Err(error) = backup::daily(&self.app_data, &db, self.clock.now()) {
                 log::warn!("Project backup after open failed: {error:?}");
             }
         }
+        self.register_opened(sessions, db, opened)
+    }
+
+    fn register_opened(
+        &self,
+        sessions: &mut HashMap<String, db::ProjectDb>,
+        db: db::ProjectDb,
+        opened: OpenedProjectDto,
+    ) -> StorageResult<OpenedProjectDto> {
         self.session_order
             .lock()
             .map_err(|_| StorageErrorDto::new(Reason::Unknown))?
-            .push(session.clone());
-        sessions.insert(session, db);
+            .push(opened.session.clone());
+        sessions.insert(opened.session.clone(), db);
         Ok(opened)
+    }
+
+    fn register_published(
+        &self,
+        sessions: &mut HashMap<String, db::ProjectDb>,
+        path: &Path,
+        exclusive: bool,
+    ) -> StorageResult<OpenedProjectDto> {
+        let (db, opened) = restore::open_published(path).map_err(|error| {
+            if exclusive && error.reason == Reason::Exists {
+                StorageErrorDto::new(Reason::PathTaken)
+            } else {
+                error
+            }
+        })?;
+        self.register_opened(sessions, db, opened)
     }
 
     pub fn create(
@@ -233,7 +194,7 @@ impl ProjectStore {
             return Err(StorageErrorDto::new(Reason::Unknown));
         }
         let mut sessions = self.sessions()?;
-        let path = Self::destination(path, &sessions)?;
+        let path = Self::destination(path, &sessions, exclusive)?;
         let pending = PendingFile::unique(&path)?;
         {
             let mut conn = rusqlite::Connection::open_with_flags(
@@ -250,7 +211,7 @@ impl ProjectStore {
         } else {
             pending.publish(&path)?;
         }
-        self.register(&mut sessions, db::ProjectDb::open(&path)?, false)
+        self.register_published(&mut sessions, &path, exclusive)
     }
     pub fn open(&self, path: &Path) -> StorageResult<OpenedProjectDto> {
         let mut sessions = self.sessions()?;
@@ -287,9 +248,13 @@ impl ProjectStore {
         let source = sessions
             .get(request.session)
             .ok_or_else(|| StorageErrorDto::new(Reason::Unknown))?;
-        let destination = Self::destination(request.dest, &sessions)?;
+        let destination = if request.exclusive {
+            Self::destination(request.dest, &sessions, true)?
+        } else {
+            Self::available_path(request.dest, &sessions)?
+        };
         let from_memory = copy::write(source, &destination, &request)?;
-        let opened = self.register(&mut sessions, db::ProjectDb::open(&destination)?, false)?;
+        let opened = self.register_published(&mut sessions, &destination, request.exclusive)?;
         Ok(CopyResultDto {
             opened,
             from_memory,
@@ -316,13 +281,7 @@ impl ProjectStore {
             return Err(StorageErrorDto::new(Reason::Locked));
         }
         restore::write(&self.app_data, backup, &destination)?;
-        let (db, opened) = restore::open_published(&destination)?;
-        self.session_order
-            .lock()
-            .map_err(|_| StorageErrorDto::new(Reason::Unknown))?
-            .push(opened.session.clone());
-        sessions.insert(opened.session.clone(), db);
-        Ok(opened)
+        self.register_published(&mut sessions, &destination, false)
     }
 
     fn recent_guard(&self) -> StorageResult<MutexGuard<'_, ()>> {
@@ -379,3 +338,6 @@ impl ProjectStore {
 
 #[cfg(all(test, windows))]
 mod tests;
+
+#[cfg(test)]
+mod publication_tests;

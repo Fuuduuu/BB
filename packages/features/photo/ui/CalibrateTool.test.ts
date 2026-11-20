@@ -22,7 +22,7 @@ function fixture() {
     execute,
     snapshot: () => engine.snapshot(),
     sceneTransform: () => 'none',
-    hitIndex: { query: () => undefined },
+    hitIndex: { query: () => undefined, queryAll: () => [] },
     select: vi.fn(),
     setPreview: vi.fn(),
   };

@@ -95,6 +95,11 @@ pub fn log_export<R: Runtime>(app: AppHandle<R>, dest: String) -> Result<(), Sto
     Ok(())
 }
 
+#[tauri::command(rename_all = "snake_case")]
+pub fn text_export(dest: String, contents: String) -> Result<(), StorageErrorDto> {
+    crate::text_export::write_csv(Path::new(&dest), &contents)
+}
+
 fn project_file(path: &str) -> Result<&Path, StorageErrorDto> {
     let path = Path::new(path);
     if path
@@ -148,6 +153,11 @@ pub fn project_save_view(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+pub fn project_replace_token(path: String) -> Result<Option<String>, StorageErrorDto> {
+    crate::storage::replace_token(project_file(&path)?)
+}
+
+#[tauri::command(rename_all = "snake_case")]
 #[allow(clippy::too_many_arguments)]
 pub fn project_copy(
     store: State<'_, ProjectStore>,
@@ -155,6 +165,8 @@ pub fn project_copy(
     dest: String,
     project_id: String,
     copied_from_project_id: Option<String>,
+    exclusive: bool,
+    replace_token: Option<String>,
     doc_json: String,
     rev: i64,
     view_json: Option<String>,
@@ -165,6 +177,8 @@ pub fn project_copy(
         dest: project_file(&dest)?,
         project_id: &project_id,
         copied_from_project_id: copied_from_project_id.as_deref(),
+        exclusive,
+        replace_token: replace_token.as_deref(),
         doc_json: &doc_json,
         rev,
         view_json: view_json.as_deref(),

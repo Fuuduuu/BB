@@ -6,11 +6,9 @@ import type { DeriveSpec } from './types';
 
 export function createSnapshotBuilder(specs: readonly DeriveSpec[], history: Snapshot['history']) {
   const emptyDoc = newBoardDoc('');
-  const defaults: Partial<Snapshot['derived']> = {
-    unplacedBoard: [],
-    unplacedSchematic: [],
-    ...Object.fromEntries(specs.map((spec) => [spec.key, spec.schema.parse(spec.initial)])),
-  };
+  const defaults: Partial<Snapshot['derived']> = Object.fromEntries(
+    specs.map((spec) => [spec.key, spec.schema.parse(spec.initial)]),
+  );
   const empty: Snapshot = sealTree({
     sessionId: '',
     rev: emptyDoc.rev,
@@ -27,11 +25,7 @@ export function createSnapshotBuilder(specs: readonly DeriveSpec[], history: Sna
     previous?: Snapshot,
   ): Snapshot {
     const sameSession = previous?.sessionId === sessionId ? previous : undefined;
-    let derived: Snapshot['derived'] = {
-      ...empty.derived,
-      unplacedBoard: doc.components.filter((item) => !item.board).map((item) => item.id),
-      unplacedSchematic: doc.components.filter((item) => !item.schematic).map((item) => item.id),
-    };
+    let derived = { ...empty.derived };
     for (const spec of specs) {
       const value =
         sameSession && spec.inputs.every((field) => sameSession.doc[field] === doc[field])

@@ -3,7 +3,7 @@ import type { BoardDoc } from '@pcbk/domain';
 import type { Snapshot } from '@pcbk/contracts';
 import { expect, test, vi } from 'vitest';
 import { z } from 'zod';
-import { clock, component, mutationModule, setup } from './__tests__/helpers';
+import { clock, component, demo, mutationModule, setup } from './__tests__/helpers';
 
 test('invalid params return validation without changing snapshot, history or journal', () => {
   const { engine, host } = setup();
@@ -119,7 +119,23 @@ test('rejected commands preserve redo and confirmed new commands discard it', ()
 test('subscribers and host get the same deeply frozen snapshot document', () => {
   const doc = newBoardDoc('Plaat');
   doc.components.push(component());
-  const { engine, host } = setup({ doc });
+  const { engine, host } = setup({
+    doc,
+    modules: [
+      {
+        ...demo,
+        derive: [
+          {
+            key: 'unplacedBoard',
+            inputs: [],
+            schema: z.array(z.string()),
+            initial: [],
+            run: () => ['cmp_a'],
+          },
+        ],
+      },
+    ],
+  });
   let seen: Snapshot | undefined;
   const stop = engine.subscribe((value) => {
     seen = value;

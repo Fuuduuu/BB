@@ -180,17 +180,19 @@ export async function calibrationWorkspace({
       }),
     },
   });
-  function click(x: number, y: number) {
-    for (const type of ['pointerdown', 'pointerup']) {
-      const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y, button: 0 });
-      Object.defineProperties(event, { pointerId: { value: 1 }, pointerType: { value: 'mouse' } });
-      fireEvent(svg, event);
-    }
+  function pointer(type: string, x: number, y: number, button = 0) {
+    const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y, button });
+    Object.defineProperties(event, { pointerId: { value: 1 }, pointerType: { value: 'mouse' } });
+    fireEvent(svg, event);
   }
   return {
     engine,
     execute,
-    click,
+    click(x: number, y: number) {
+      pointer('pointerdown', x, y);
+      pointer('pointerup', x, y);
+    },
+    pointer,
     start: () => fireEvent.keyDown(window, { key: 'k' }),
     undo: () => act(() => expect(engine.undo().ok).toBe(true)),
   };

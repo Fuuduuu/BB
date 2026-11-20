@@ -213,6 +213,7 @@ test('adds recent entry after open and copy', async () => {
       identity: 'new',
       projectId: copyDto.project_id,
       copiedFromProjectId: dto.project_id,
+      replaceToken: 'confirmed-copy-target',
       doc: copyDoc,
       rev: copyDoc.rev,
       view: null,
@@ -236,6 +237,8 @@ test('adds recent entry after open and copy', async () => {
         dest: copyDto.path,
         project_id: copyDto.project_id,
         copied_from_project_id: dto.project_id,
+        exclusive: false,
+        replace_token: 'confirmed-copy-target',
         doc_json: copyDto.doc_json,
         rev: copyDoc.rev,
         view_json: null,
@@ -279,6 +282,29 @@ test('normal copy exposes false and backups retain file groups including legacy 
     { file: 'group/full.pcbk', kind: 'full', at: 'now', fileId: 'file-open' },
     { file: 'legacy.doc.json', kind: 'doc', at: 'before', base: 'legacy.pcbk' },
   ]);
+});
+
+test('exclusive copy forwards the flag to IPC and maps an occupied path to exists', async () => {
+  const { call, invoke } = mockInvoke();
+  const repo = createTauriRepository({ invoke });
+  call.mockRejectedValueOnce({ reason: 'path_taken', actual_rev: null });
+  await expect(
+    repo.copy({
+      session: dto.session,
+      dest: 'Rescue.pcbk',
+      identity: 'same',
+      exclusive: true,
+      projectId: dto.project_id,
+      doc,
+      rev: doc.rev,
+      view: null,
+      journal: [],
+    }),
+  ).rejects.toMatchObject({ reason: 'exists' });
+  expect(call).toHaveBeenCalledExactlyOnceWith(
+    'project_copy',
+    expect.objectContaining({ dest: 'Rescue.pcbk', exclusive: true }),
+  );
 });
 
 test('a recent index write failure keeps the opened session usable', async () => {

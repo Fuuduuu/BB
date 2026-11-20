@@ -1,5 +1,12 @@
-import { FOOTPRINTS, footprintGeometry, footprintPinIds, nextRef } from '@pcbk/domain';
+import {
+  BoardPlacementSchema,
+  FOOTPRINTS,
+  footprintGeometry,
+  footprintPinIds,
+  nextRef,
+} from '@pcbk/domain';
 import type { BoardDoc, BoardPlacement, Component, Pin } from '@pcbk/domain';
+import { flipComponentSides, isEmptyReport, removePins } from '@pcbk/domain/rules';
 import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec } from '@pcbk/engine';
 import {
@@ -9,7 +16,8 @@ import {
   AddPinSchema,
   AlignSchema,
   ChangeFootprintSchema,
-  ComponentTargetSchema,
+  ComponentListSchema,
+  DuplicateSchema,
   PinTargetSchema,
   PlaceOnBoardSchema,
   RenamePinSchema,
@@ -26,7 +34,8 @@ import type {
   AlignParams,
   BoardInput,
   ChangeFootprintParams,
-  ComponentTargetParams,
+  ComponentListParams,
+  DuplicateParams,
   PinTargetParams,
   PlaceOnBoardParams,
   RenamePinParams,
@@ -191,21 +200,15 @@ const removePin: CommandSpec<PinTargetParams> = {
   id: 'components.removePin',
   title: 'components.removePin',
   params: PinTargetSchema,
-  run(doc, { id, pinId }) {
+  alsoWrites: ['connections', 'junctions', 'netLabels'],
+  run(doc, { id, pinId }, ctx) {
     const target = component(doc, id);
-    const index = target.pins.findIndex((item) => item.id === pinId);
-    if (index < 0) throw new CommandTargetNotFound(`${id}:${pinId}`);
+    if (!target.pins.some((item) => item.id === pinId))
+      throw new CommandTargetNotFound(`${id}:${pinId}`);
     const board = target.board;
     if (board && hasFootprintPad(board, pinId)) reject('footprint_pin_locked');
-    target.pins.splice(index, 1);
-    if (board) {
-      delete board.customPads[pinId];
-      if (board.padMap) {
-        for (const [padId, mappedPinId] of Object.entries(board.padMap)) {
-          if (mappedPinId === pinId) delete board.padMap[padId];
-        }
-      }
-    }
+    const report = removePins(doc, id, [pinId]);
+    if (!isEmptyReport(report)) ctx.emit({ type: 'rules.report', payload: report });
   },
 };
 const placeOnBoard: CommandSpec<PlaceOnBoardParams> = {
@@ -218,20 +221,23 @@ const placeOnBoard: CommandSpec<PlaceOnBoardParams> = {
     target.board = makeBoardPlacement(params.board, target.pins);
   },
 };
-const removeFromBoard: CommandSpec<ComponentTargetParams> = {
+const removeFromBoard: CommandSpec<ComponentListParams> = {
   id: 'components.removeFromBoard',
   title: 'components.removeFromBoard',
-  params: ComponentTargetSchema,
-  run(doc, params) {
-    const target = component(doc, params.id);
-    if (target.board) delete target.board;
+  params: ComponentListSchema,
+  run(doc, { ids }) {
+    for (const id of new Set(ids)) {
+      const target = component(doc, id);
+      if (target.board) delete target.board;
+    }
   },
 };
 const changeFootprint: CommandSpec<ChangeFootprintParams> = {
   id: 'components.changeFootprint',
   title: 'components.changeFootprint',
   params: ChangeFootprintSchema,
-  run(doc, params) {
+  alsoWrites: ['connections', 'junctions', 'netLabels'],
+  run(doc, params, ctx) {
     const target = component(doc, params.id);
     const board = placedBoard(doc, params.id);
     const definition = FOOTPRINTS.find((entry) => entry.key === params.footprint);
@@ -244,11 +250,14 @@ const changeFootprint: CommandSpec<ChangeFootprintParams> = {
       board.params = footprintParams;
       return;
     }
-    const existing = new Map(target.pins.map((pin) => [pin.id, pin]));
     const footprintIds = new Set(geometry.pads.map(({ id }) => id));
-    const ownPins = target.pins.filter(
-      ({ id }) => !footprintIds.has(id) && Object.hasOwn(board.customPads, id),
-    );
+    const removedIds = target.pins
+      .filter(({ id }) => !footprintIds.has(id) && !Object.hasOwn(board.customPads, id))
+      .map(({ id }) => id);
+    const report = removePins(doc, params.id, removedIds);
+    if (!isEmptyReport(report)) ctx.emit({ type: 'rules.report', payload: report });
+    const existing = new Map(target.pins.map((pin) => [pin.id, pin]));
+    const ownPins = target.pins.filter(({ id }) => !footprintIds.has(id));
     const footprintPins = geometry.pads.map(({ id, name }) => {
       const retained = existing.get(id);
       if (retained) return retained;
@@ -277,18 +286,53 @@ const rotate: CommandSpec<RotateParams> = {
   id: 'components.rotate',
   title: 'components.rotate',
   params: RotateSchema,
-  run(doc, params) {
-    const board = placedBoard(doc, params.id);
-    board.rotationDeg = normalizeAngle((board.rotationDeg % 360) + (params.deltaDeg % 360));
+  run(doc, { ids, deltaDeg }) {
+    const delta = deltaDeg % 360;
+    for (const id of new Set(ids)) {
+      const board = placedBoard(doc, id);
+      board.rotationDeg = normalizeAngle((board.rotationDeg % 360) + delta);
+    }
   },
 };
-const flipSide: CommandSpec<ComponentTargetParams> = {
+const flipSide: CommandSpec<ComponentListParams> = {
   id: 'components.flipSide',
   title: 'components.flipSide',
-  params: ComponentTargetSchema,
-  run(doc, params) {
-    const board = placedBoard(doc, params.id);
-    board.side = board.side === 'top' ? 'bottom' : 'top';
+  params: ComponentListSchema,
+  alsoWrites: ['connections', 'junctions'],
+  run(doc, { ids }) {
+    flipComponentSides(doc, ids);
+  },
+};
+const duplicate: CommandSpec<DuplicateParams> = {
+  id: 'components.duplicate',
+  title: 'components.duplicate',
+  params: DuplicateSchema,
+  run(doc, { items }) {
+    const shift = 2 * doc.scale.pxPerMm;
+    for (const { sourceId, id, pinUids } of items) {
+      const source = component(doc, sourceId);
+      const pins = source.pins.map((pin) => {
+        if (!Object.hasOwn(pinUids, pin.id)) reject('missing_pin_uid');
+        return { ...pin, uid: pinUids[pin.id]! };
+      });
+      const board = source.board ? BoardPlacementSchema.parse(source.board) : undefined;
+      if (board) {
+        board.center.x += shift;
+        board.center.y += shift;
+      }
+      doc.components.push({
+        id,
+        ref: nextRef(doc, source.kind),
+        kind: source.kind,
+        marking: source.marking,
+        value: source.value,
+        identified: source.identified,
+        dnp: false,
+        note: '',
+        pins,
+        ...(board ? { board } : {}),
+      });
+    }
   },
 };
 const setScale: CommandSpec<SetScaleParams> = {
@@ -337,6 +381,7 @@ export const commands = [
   removeFromBoard,
   rotate,
   flipSide,
+  duplicate,
   setScale,
   align,
   setLabelOffset,

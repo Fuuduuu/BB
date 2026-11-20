@@ -28,6 +28,17 @@ export function createMemoryStore(): MemoryStore {
 const clone = <T>(value: T): T =>
   value === undefined ? value : (JSON.parse(JSON.stringify(value)) as T);
 
+const replacementTokens = new WeakMap<MemoryProject, string>();
+
+function replacementToken(project: MemoryProject): string {
+  let token = replacementTokens.get(project);
+  if (token === undefined) {
+    token = crypto.randomUUID();
+    replacementTokens.set(project, token);
+  }
+  return token;
+}
+
 export function createMemoryRepository(store: MemoryStore = createMemoryStore()) {
   const sessions = new Map<string, string>();
   let failure: StorageReason | undefined;
@@ -58,7 +69,10 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
     const current = store.files.get(path);
     if (!current) throw new StorageError('missing');
     const fileId = current.fileId ?? crypto.randomUUID();
-    if (!current.readOnly) current.fileId = fileId;
+    if (!current.readOnly && current.fileId === undefined) {
+      current.fileId = fileId;
+      replacementTokens.delete(current);
+    }
     const session = `memory-session-${++store.sequence}`;
     store.locks.set(path, session);
     sessions.set(session, path);
@@ -109,12 +123,15 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
       current.journal = journal;
       current.formatVersion = req.doc.format_version;
       current.savedAt = new Date().toISOString();
+      replacementTokens.delete(current);
       documentWrites++;
     },
     async saveView(session, view) {
       const parsed = parseViewState(view);
       if (!parsed) throw new StorageError('unknown');
-      writable(session).view = parsed;
+      const current = writable(session);
+      current.view = parsed;
+      replacementTokens.delete(current);
       viewWrites++;
     },
     async copy(req) {
@@ -122,11 +139,21 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
       const source = sessions.get(req.session);
       if (!source) throw new StorageError('missing');
       const original = store.files.get(source);
-      return {
-        ...install(req.dest, {
+      const destination = store.files.get(req.dest);
+      if (destination && (req.exclusive || req.replaceToken !== replacementToken(destination))) {
+        throw new StorageError('exists');
+      }
+      if (store.locks.has(req.dest)) throw new StorageError('locked');
+      if (destination?.readOnly) throw new StorageError('read_only');
+      store.files.set(
+        req.dest,
+        clone({
           projectId: req.projectId,
           fileId: crypto.randomUUID(),
-          copiedFromProjectId: req.copiedFromProjectId ?? original?.copiedFromProjectId,
+          copiedFromProjectId:
+            req.identity === 'same'
+              ? original?.copiedFromProjectId
+              : (req.copiedFromProjectId ?? original?.projectId),
           doc: req.doc,
           rev: req.rev,
           view: req.view,
@@ -135,8 +162,8 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
           readOnly: false,
           savedAt: new Date().toISOString(),
         }),
-        fromMemory: !original,
-      };
+      );
+      return { ...acquire(req.dest), fromMemory: !original };
     },
     async backupFull(session) {
       checkFailure();
@@ -172,12 +199,17 @@ export function createMemoryRepository(store: MemoryStore = createMemoryStore())
   };
   return {
     ...repo,
+    replaceToken(path: string): string | null {
+      const target = store.files.get(path);
+      return target ? replacementToken(target) : null;
+    },
     failNext(reason: StorageReason) {
       failure = reason;
     },
     setReadOnly(path: string, readOnly: boolean) {
       const current = store.files.get(path);
       if (!current) throw new StorageError('missing');
+      if (current.readOnly !== readOnly) replacementTokens.delete(current);
       current.readOnly = readOnly;
     },
     get documentWrites() {

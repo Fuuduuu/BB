@@ -2,17 +2,20 @@ import type { IdGen } from '@pcbk/contracts';
 import type { FootprintParams, Vec2 } from '@pcbk/domain';
 import { useSessionStore, useViewStore } from '@pcbk/ui';
 import type { CanvasTool, Selection, ToolApi, ToolSpec } from '@pcbk/ui';
-import { COMPONENT_LIBRARY, makePlacedComponent } from '../contract';
+import { makePlacedComponent } from '../contract';
 import type { LibraryEntry } from '../contract';
 import { commandError } from './errors';
 import { componentEt, placementEt } from './i18n/et';
 import { placementRotation } from './placement-rotation';
-import { PLACE_TOOL_ID, usePlaceStore } from './place-store';
+import {
+  currentPlacementPreview,
+  PLACE_TOOL_ID,
+  placementAngle,
+  placementEntries,
+  usePlaceStore,
+} from './place-store';
 import type { PlacementAnchor, PlacementRequest } from './place-store';
 
-export type PlacePreviewData = { footprint: string; params: FootprintParams; center: Vec2 };
-
-const entries = new Map(COMPONENT_LIBRARY.map((entry) => [entry.id, entry]));
 const DRAG_THRESHOLD = 3;
 
 function isDrag(start: Vec2, current: Vec2): boolean {
@@ -22,6 +25,8 @@ function isDrag(start: Vec2, current: Vec2): boolean {
 export function openPlacementAt(api: ToolApi, _selection: Selection, at: Vec2): boolean {
   usePlaceStore.setState({
     request: null,
+    cursor: null,
+    rotationOffsetDeg: 0,
     anchor: { center: { ...at }, rotationDeg: placementRotation(api.sceneTransform()) },
     error: null,
   });
@@ -61,33 +66,40 @@ function createPlaceTool(ids: IdGen): CanvasTool {
     cursor: 'crosshair',
     onPointerDown({ screen }) {
       const { request } = usePlaceStore.getState();
-      if (request) gesture = { screen, request, dragged: false };
+      if (request?.params) gesture = { screen, request, dragged: false };
     },
     onPointerMove({ world: center, screen }, api) {
       if (gesture) gesture.dragged ||= isDrag(gesture.screen, screen);
-      const { request } = usePlaceStore.getState();
-      if (!request) return;
-
-      let data: PlacePreviewData;
-      if (request.mode === 'new') {
-        const entry = entries.get(request.entryId);
-        if (!entry) return;
-        data = {
-          footprint: entry.footprint,
-          params: { ...entry.params, ...request.params },
-          center,
-        };
-      } else {
-        data = { footprint: request.footprint, params: request.params, center };
+      if (!usePlaceStore.getState().request) return;
+      usePlaceStore.setState({
+        cursor: { center, baseRotationDeg: placementRotation(api.sceneTransform()) },
+      });
+      api.setPreview(currentPlacementPreview());
+    },
+    onKey(event, api) {
+      const { request, rotationOffsetDeg } = usePlaceStore.getState();
+      if (
+        !request ||
+        event.key.toLowerCase() !== 'r' ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.metaKey
+      )
+        return false;
+      if (!event.repeat) {
+        usePlaceStore.setState({
+          rotationOffsetDeg: (rotationOffsetDeg + (event.shiftKey ? 270 : 90)) % 360,
+        });
+        api.setPreview(currentPlacementPreview());
       }
-      api.setPreview({ owner: PLACE_TOOL_ID, data });
+      return true;
     },
     onPointerUp({ world: center, screen }, api) {
       const { request } = usePlaceStore.getState();
       const finished = gesture;
       gesture = undefined;
       if (
-        !request ||
+        !request?.params ||
         finished?.request !== request ||
         finished.dragged ||
         isDrag(finished.screen, screen)
@@ -95,9 +107,10 @@ function createPlaceTool(ids: IdGen): CanvasTool {
         return;
       }
 
-      const rotationDeg = placementRotation(api.sceneTransform());
+      const baseRotationDeg = placementRotation(api.sceneTransform());
+      const rotationDeg = placementAngle(baseRotationDeg);
       if (request.mode === 'new') {
-        const entry = entries.get(request.entryId);
+        const entry = placementEntries.get(request.entryId);
         if (!entry) {
           usePlaceStore.setState({ error: componentEt.invalid });
           return;
@@ -105,14 +118,8 @@ function createPlaceTool(ids: IdGen): CanvasTool {
         const id = addPlacedComponent(api, ids, entry, request.params, { center, rotationDeg });
         if (id === null) return;
         api.select({ items: [{ kind: 'component', id }] });
-        api.setPreview({
-          owner: PLACE_TOOL_ID,
-          data: {
-            footprint: entry.footprint,
-            params: { ...entry.params, ...request.params },
-            center,
-          },
-        });
+        usePlaceStore.setState({ cursor: { center, baseRotationDeg } });
+        api.setPreview(currentPlacementPreview());
         return;
       }
 

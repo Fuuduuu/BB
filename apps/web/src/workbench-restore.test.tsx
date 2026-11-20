@@ -20,7 +20,9 @@ const restoreList = [
 
 function mountRestore(runtime: Runtime, dest: string | null, source = restoreSource) {
   const { host } = fakeHost([source]);
-  const pickSavePath = vi.fn<NonNullable<AppHost['pickSavePath']>>().mockResolvedValue(dest);
+  const pickSavePath = vi
+    .fn<NonNullable<AppHost['pickSavePath']>>()
+    .mockResolvedValue(dest === null ? null : { path: dest, replaceToken: null });
   const backups = vi
     .spyOn(runtime.projects, 'backups')
     .mockResolvedValue({ ok: true, value: restoreList });
@@ -100,7 +102,10 @@ test('restore_conflict_keeps_choice_and_retries_with_new_name', async () => {
   const runtime = createRuntime();
   const restored = await seedProject(runtime, 'Uue nimega taastatud plaat');
   const { app, pickSavePath, backups, restore } = mountRestore(runtime, restored.path);
-  pickSavePath.mockResolvedValueOnce(restoreSource.path);
+  pickSavePath.mockResolvedValueOnce({
+    path: restoreSource.path,
+    replaceToken: 'confirmed-file-token',
+  });
   restore
     .mockResolvedValueOnce({ ok: false, error: { code: 'storage', reason: 'exists' } })
     .mockImplementation(({ dest }) => runtime.projects.open({ path: dest }));

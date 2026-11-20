@@ -12,7 +12,7 @@ export interface AppHost {
     removeRecent(path: string): Promise<void>;
     listOpenable?(): Promise<RecentProject[]>;
     pickProjectFile?(): Promise<string | null>;
-    pickSavePath?(suggestedName: string): Promise<string | null>;
+    pickSavePath?(suggestedName: string): Promise<SaveTarget | null>;
     recoveryCopyPath?(projectPath: string): Promise<string>;
     onCloseRequested(handler: () => Promise<boolean>): Unsubscribe;
     onOpenPath(handler: (path: string) => void): Unsubscribe;
@@ -20,6 +20,7 @@ export interface AppHost {
     closeNow(): void;
     reload(): void;
     saveDiagnostics(summary: string): Promise<void>;
+    saveTextFile?(suggestedName: string, contents: string): Promise<'saved' | 'cancelled'>;
 }
 ```
 
@@ -83,6 +84,8 @@ export type CommandOk = {
 export type CopyReq = {
     dest: string;
     identity: 'same' | 'new';
+    exclusive?: boolean;
+    replaceToken?: string;
 };
 ```
 
@@ -114,8 +117,6 @@ Feature contracts extend this interface with their registered derivation keys.
 
 ```ts
 export interface Derived {
-    unplacedBoard: string[];
-    unplacedSchematic: string[];
 }
 ```
 
@@ -311,6 +312,14 @@ export type SaveStatus = {
 } | {
     state: 'error';
     reason: StorageReason;
+};
+```
+
+### `SaveTarget`
+```ts
+export type SaveTarget = {
+    path: string;
+    replaceToken: string | null;
 };
 ```
 

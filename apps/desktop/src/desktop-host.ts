@@ -56,7 +56,10 @@ export function createDesktopHost(warn: (message: string) => void): AppHost {
     pickProjectFile: () => open({ multiple: false, directory: false, filters: [projectFilter] }),
     async pickSavePath(suggestedName) {
       const defaultPath = await invoke<string>('default_project_path', { name: suggestedName });
-      return save({ defaultPath, filters: [projectFilter] });
+      const path = await save({ defaultPath, filters: [projectFilter] });
+      if (path === null) return null;
+      const replaceToken = await invoke<string | null>('project_replace_token', { path });
+      return { path, replaceToken };
     },
     recoveryCopyPath: (near) =>
       invoke<string>('default_project_path', { name: recoveryName(near), near }),
@@ -109,6 +112,15 @@ export function createDesktopHost(warn: (message: string) => void): AppHost {
       if (!dest) return;
       await info(summary).catch(report);
       await invoke<void>('log_export', { dest });
+    },
+    async saveTextFile(suggestedName, contents) {
+      const dest = await save({
+        defaultPath: suggestedName,
+        filters: [{ name: 'CSV-fail', extensions: ['csv'] }],
+      });
+      if (!dest) return 'cancelled';
+      await invoke<void>('text_export', { dest, contents });
+      return 'saved';
     },
   };
 }

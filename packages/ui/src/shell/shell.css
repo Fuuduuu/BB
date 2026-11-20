@@ -171,6 +171,13 @@
   color: var(--ink);
   font-weight: 600;
 }
+.pcbk-tabs:has(> button:nth-child(4)) {
+  gap: 0;
+}
+.pcbk-tabs:has(> button:nth-child(4)) > button {
+  padding-inline: 2px;
+  font-size: 12px;
+}
 .pcbk-pane-summary {
   flex: none;
   padding: 8px 16px;

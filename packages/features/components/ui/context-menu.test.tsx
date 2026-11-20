@@ -34,6 +34,7 @@ test('context_menu_items_run_same_commands_as_keys', () => {
     ['Pööra +90°R', 'R'],
     ['Pööra −90°Shift+R', 'Shift+R'],
     ['Teisele pooleleF', 'F'],
+    ['DubleeriCtrl+D', 'Control+D'],
     ['Eemalda paigutus plaadilt', null],
   ]);
 
@@ -43,7 +44,9 @@ test('context_menu_items_run_same_commands_as_keys', () => {
     if (!shortcut) continue;
     const key = keyboard.find(
       (binding) =>
-        binding.key === shortcut.key && (binding.shift ?? false) === (shortcut.shift ?? false),
+        binding.key === shortcut.key &&
+        (binding.shift ?? false) === (shortcut.shift ?? false) &&
+        (binding.primary ?? false) === (shortcut.primary ?? false),
     );
     expect(item.run).toBe(key?.run);
   }
@@ -69,6 +72,7 @@ test('context_menu_items_run_same_commands_as_keys', () => {
   const pin = app.pinPoint('3');
   open(svg, pin.x, pin.y);
   expect(entries().map((entry) => entry.textContent)).toEqual([
+    'Alusta rada siit',
     'MõõdaM',
     'Nimeta jalg',
     'Märgi NC-ks',
@@ -109,7 +113,7 @@ test('escape_closes_menu_without_change', () => {
   fireEvent.keyDown(document.activeElement!, { key: 'r' });
   fireEvent.keyDown(document.activeElement!, { key: 'n' });
   fireEvent.keyDown(document.activeElement!, { key: 'Enter', ctrlKey: true });
-  expect(entries()).toHaveLength(4);
+  expect(entries()).toHaveLength(5);
   expect(engine.snapshot()).toBe(before);
   expect(useViewStore.getState().navigatorOpen).toBe(navigatorOpen);
   fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
@@ -152,7 +156,7 @@ test('shift_f10_opens_menu_for_selection', () => {
   const opened = menu();
   fireEvent.contextMenu(svg, { button: 0, clientX: 0, clientY: 0 });
   expect(screen.getAllByRole('menu')).toEqual([opened]);
-  expect(entries()).toHaveLength(4);
+  expect(entries()).toHaveLength(5);
   fireEvent.keyDown(document.activeElement!, { key: 'Tab' });
   expect(screen.queryByRole('menu')).toBeNull();
 
@@ -209,10 +213,7 @@ test('right_click_keeps_selected_components_and_skips_the_menu_during_tools_and_
   expect(useSessionStore.getState().selection).toEqual(selected);
   fireEvent.keyDown(document.activeElement!, { key: ' ' });
   expect(engine.snapshot().doc.components.map(({ board }) => board?.rotationDeg)).toEqual([90, 90]);
-  expect(host.drainJournal().map(({ commandId }) => commandId)).toEqual([
-    'components.rotate',
-    'components.rotate',
-  ]);
+  expect(host.drainJournal().map(({ commandId }) => commandId)).toEqual(['components.rotate']);
 
   fireEvent.keyDown(svg, { key: 'h' });
   open(svg);

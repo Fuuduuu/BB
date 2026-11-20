@@ -1,4 +1,4 @@
-import type { Snapshot } from '@pcbk/contracts';
+import type { ParamsOf, Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
 import type { ReactNode } from 'react';
 import type { LayerSpec, ToolApi, ToolSpec } from '../canvas/tools';
@@ -20,6 +20,7 @@ export interface KeySpec {
   id: string;
   key: string;
   shift?: boolean;
+  primary?: boolean;
   repeat?: boolean;
   run(api: ToolApi, selection: Selection): boolean;
 }
@@ -29,8 +30,9 @@ export interface ContextMenuItemSpec {
   appliesTo: string[];
   order: number;
   label(snapshot: Snapshot, selection: Selection): string;
-  shortcut?: { key: string; shift?: boolean };
-  run(api: ToolApi, selection: Selection, at: Vec2): boolean;
+  available?(snapshot: Snapshot, selection: Selection): boolean;
+  shortcut?: { key: string; shift?: boolean; primary?: boolean };
+  run(api: ToolApi, selection: Selection, at: Vec2, target?: SelectionItem): boolean;
 }
 
 export interface ContextSectionSpec {
@@ -47,9 +49,18 @@ export interface PinnedSpec {
   render(): ReactNode;
 }
 
+export type MoveRef = ParamsOf<'items.translate'>['items'][number];
+
+export type SelectionFrame = { min: Vec2; max: Vec2 };
+
 export interface SelectionKindSpec {
   kind: SelectionItem['kind'];
   label(snapshot: Snapshot, item: SelectionItem): string | null;
+  exists(snapshot: Snapshot, item: SelectionItem): boolean;
+  /** Viide, mida `items.translate` liigutab. `null` tähistab liikumatut objekti. */
+  moveRef?(snapshot: Snapshot, item: SelectionItem): MoveRef | null;
+  inFrame?(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[];
+  deleteId?(snapshot: Snapshot, item: SelectionItem): string | null;
 }
 
 export interface UiModule {
@@ -106,13 +117,15 @@ function uniqueIds(items: { id: string }[], kind: string): void {
 
 export class UiRegistry {
   private readonly registered: UiModule[] = [];
+  private readonly selectionKinds = new Map<SelectionItem['kind'], SelectionKindSpec>();
 
   constructor(modules: UiModule[] = []) {
     for (const module of modules) this.register(module);
   }
 
   register(module: UiModule): void {
-    const candidate = [...this.registered, copyModule(module)];
+    const added = copyModule(module);
+    const candidate = [...this.registered, added];
     uniqueIds(candidate, 'module');
     for (const slot of [
       'navigatorTabs',
@@ -128,6 +141,12 @@ export class UiRegistry {
         slot,
       );
     }
+    uniqueIds(
+      candidate.flatMap(({ selectionKinds }) =>
+        (selectionKinds ?? []).map(({ kind }) => ({ id: kind })),
+      ),
+      'selectionKinds',
+    );
     const tools = [
       { id: 'select', key: undefined },
       { id: 'pan', key: undefined },
@@ -142,7 +161,10 @@ export class UiRegistry {
     ])) {
       if (
         shortcut.key !== undefined &&
-        isShellShortcut(shortcut.key, 'shift' in shortcut && shortcut.shift === true)
+        isShellShortcut(
+          'primary' in shortcut && shortcut.primary ? 'Ctrl+' + shortcut.key : shortcut.key,
+          'shift' in shortcut && shortcut.shift === true,
+        )
       ) {
         throw new Error(`Reserved shell keyboard shortcut: ${shortcut.key}`);
       }
@@ -150,11 +172,14 @@ export class UiRegistry {
     uniqueIds(
       [
         ...tools.flatMap(({ key }) => (key === undefined ? [] : [{ id: key.toLowerCase() }])),
-        ...keys.map(({ key, shift }) => ({ id: `${shift ? 'Shift+' : ''}${key.toLowerCase()}` })),
+        ...keys.map(({ key, primary, shift }) => ({
+          id: `${primary ? 'Ctrl+' : ''}${shift ? 'Shift+' : ''}${key.toLowerCase()}`,
+        })),
       ],
       'keyboard shortcut',
     );
-    this.registered.push(candidate[candidate.length - 1]!);
+    this.registered.push(added);
+    for (const kind of added.selectionKinds ?? []) this.selectionKinds.set(kind.kind, kind);
   }
 
   modules(): UiModule[] {
@@ -184,14 +209,47 @@ export class UiRegistry {
   selectionLabel(snapshot: Snapshot, selection: Selection): string | null {
     const [item] = selection.items;
     if (selection.items.length !== 1 || !item) return null;
-    for (const module of this.registered) {
-      for (const spec of module.selectionKinds ?? []) {
-        if (spec.kind !== item.kind) continue;
-        const label = spec.label(snapshot, item);
-        if (label !== null) return label;
+    return this.selectionKinds.get(item.kind)?.label(snapshot, item) ?? null;
+  }
+  validSelection(snapshot: Snapshot, selection: Selection): Selection {
+    const items = selection.items.filter(
+      (item) => this.selectionKinds.get(item.kind)?.exists(snapshot, item) !== false,
+    );
+    return items.length === selection.items.length ? selection : { items };
+  }
+  moveRefs(snapshot: Snapshot, items: readonly SelectionItem[]): MoveRef[] {
+    const seen = new Set<string>();
+    const refs: MoveRef[] = [];
+    for (const item of items) {
+      const ref = this.selectionKinds.get(item.kind)?.moveRef?.(snapshot, item);
+      if (!ref) continue;
+      const key = `${ref.kind}:${ref.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      refs.push(ref);
+    }
+    return refs;
+  }
+  itemsInFrame(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[] {
+    const seen = new Set<string>();
+    const items: SelectionItem[] = [];
+    for (const kind of this.selectionKinds.values()) {
+      for (const item of kind.inFrame?.(snapshot, frame) ?? []) {
+        const key = JSON.stringify([item.kind, item.id, item.componentId]);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        items.push(item);
       }
     }
-    return null;
+    return items;
+  }
+  deleteIds(snapshot: Snapshot, items: readonly SelectionItem[]): string[] {
+    const ids = new Set<string>();
+    for (const item of items) {
+      const id = this.selectionKinds.get(item.kind)?.deleteId?.(snapshot, item);
+      if (id != null) ids.add(id);
+    }
+    return [...ids];
   }
   topBar(): SlotSpec[] {
     return ordered(this.modules().flatMap((module) => module.topBar ?? []));

@@ -5,7 +5,7 @@ import type { ToolApi } from './tools';
 export type HitShape =
   | { type: 'point'; at: Vec2; r: number }
   | { type: 'rect'; at: Vec2; half: Vec2; angleDeg: number }
-  | { type: 'segment'; a: Vec2; b: Vec2; width: number }
+  | { type: 'segment'; a: Vec2; b: Vec2; width: number; widthUnit?: 'screen' }
   | { type: 'area'; polygon: Vec2[] };
 
 export type HitDrag = { owner: string; commit(delta: Vec2, api: ToolApi): void };
@@ -16,13 +16,19 @@ export interface HitItem {
   componentId?: string;
   shape: HitShape;
   priority?: number;
+  // Visibility can change without rebuilding the geometry index.
+  enabled?(): boolean;
   data?: unknown;
   target?: SelectionItem;
+  moves?: SelectionItem;
   drag?: HitDrag;
 }
 
+export type HitMatch = { item: HitItem; distance: number; exact: boolean };
+
 export interface HitIndex {
   query(world: Vec2, zoom: number): HitItem | undefined;
+  queryAll(world: Vec2, zoom: number): HitMatch[];
 }
 
 type CellRange = { left: number; top: number; right: number; bottom: number };
@@ -37,7 +43,7 @@ function nativeRadius(shape: HitShape): number {
     case 'rect':
       return Math.hypot(shape.half.x, shape.half.y);
     case 'segment':
-      return shape.width / 2;
+      return shape.widthUnit === 'screen' ? 0 : shape.width / 2;
     case 'area':
       return 0;
   }
@@ -111,7 +117,7 @@ function polygonDistance(point: Vec2, polygon: Vec2[]): number {
   return inside ? 0 : nearest;
 }
 
-function shapeDistance(world: Vec2, shape: HitShape, zoom: number): number {
+function shapeDistance(world: Vec2, shape: HitShape, rectMinHalf: number): number {
   switch (shape.type) {
     case 'point':
       return Math.hypot(world.x - shape.at.x, world.y - shape.at.y);
@@ -123,8 +129,8 @@ function shapeDistance(world: Vec2, shape: HitShape, zoom: number): number {
       const sin = Math.sin(angle);
       const x = dx * cos + dy * sin;
       const y = -dx * sin + dy * cos;
-      const hx = Math.max(shape.half.x, 2.5 / zoom);
-      const hy = Math.max(shape.half.y, 2.5 / zoom);
+      const hx = Math.max(shape.half.x, rectMinHalf);
+      const hy = Math.max(shape.half.y, rectMinHalf);
       // Keep boundary points eligible despite floating-point rotation error.
       const epsilon =
         4 *
@@ -149,10 +155,20 @@ function shapeDistance(world: Vec2, shape: HitShape, zoom: number): number {
   }
 }
 
+function hitRadius(shape: HitShape, zoom: number, minRadius: number): number {
+  return shape.type === 'segment' && shape.widthUnit === 'screen'
+    ? shape.width / (2 * zoom)
+    : Math.max(minRadius, nativeRadius(shape));
+}
+
 export function createHitIndex(items: HitItem[], cellPx = 32): HitIndex {
   const cells = new Map<string, HitItem[]>();
   const oversized: HitItem[] = [];
+  let maxScreenRadius = minScreenRadius;
   for (const item of items) {
+    if (item.shape.type === 'segment' && item.shape.widthUnit === 'screen') {
+      maxScreenRadius = Math.max(maxScreenRadius, item.shape.width / 2);
+    }
     const points = shapePoints(item.shape);
     if (points.length === 0) continue;
     const range = cellRange(points, Math.max(0, nativeRadius(item.shape)), cellPx);
@@ -167,33 +183,31 @@ export function createHitIndex(items: HitItem[], cellPx = 32): HitIndex {
     }
   }
 
+  function candidatesAt(world: Vec2, zoom: number): Iterable<HitItem> {
+    const range = cellRange([world], maxScreenRadius / zoom, cellPx);
+    // For a broad query, scanning the items is cheaper than visiting empty cells.
+    if (cellCount(range) > cells.size) return items;
+    const nearby = new Set(oversized);
+    for (const key of cellKeys(range)) {
+      for (const item of cells.get(key) ?? []) nearby.add(item);
+    }
+    return nearby;
+  }
+
   return {
     query(world, zoom) {
       const minRadius = minScreenRadius / zoom;
-      const range = cellRange([world], minRadius, cellPx);
-      let candidates: Iterable<HitItem> = items;
-      // For a broad query, scanning the items is cheaper than visiting empty cells.
-      if (cellCount(range) <= cells.size) {
-        const nearby = new Set(oversized);
-        for (const key of cellKeys(range)) {
-          for (const item of cells.get(key) ?? []) nearby.add(item);
-        }
-        candidates = nearby;
-      }
-
+      const rectMinHalf = 2.5 / zoom;
       let best: HitItem | undefined;
       let bestPriority = -Infinity;
       let bestDistance = Infinity;
-      for (const item of candidates) {
+      for (const item of candidatesAt(world, zoom)) {
         const priority = item.priority ?? 0;
-        if (priority < bestPriority) continue;
-        const distance = shapeDistance(world, item.shape, zoom);
-        if (
-          !Number.isFinite(distance) ||
-          (item.shape.type !== 'rect' && distance > Math.max(minRadius, nativeRadius(item.shape)))
-        ) {
-          continue;
-        }
+        if (priority < bestPriority || item.enabled?.() === false) continue;
+        const { shape } = item;
+        const distance = shapeDistance(world, shape, rectMinHalf);
+        if (!Number.isFinite(distance)) continue;
+        if (shape.type !== 'rect' && distance > hitRadius(shape, zoom, minRadius)) continue;
         if (priority > bestPriority || distance < bestDistance) {
           best = item;
           bestPriority = priority;
@@ -201,6 +215,26 @@ export function createHitIndex(items: HitItem[], cellPx = 32): HitIndex {
         }
       }
       return best;
+    },
+    queryAll(world, zoom) {
+      const minRadius = minScreenRadius / zoom;
+      const rectMinHalf = 2.5 / zoom;
+      const matches: HitMatch[] = [];
+      for (const item of candidatesAt(world, zoom)) {
+        if (item.enabled?.() === false) continue;
+        const { shape } = item;
+        const distance = shapeDistance(world, shape, rectMinHalf);
+        if (!Number.isFinite(distance)) continue;
+        if (shape.type !== 'rect' && distance > hitRadius(shape, zoom, minRadius)) continue;
+        const exact =
+          shape.type === 'rect'
+            ? Number.isFinite(shapeDistance(world, shape, 0))
+            : distance <= hitRadius(shape, zoom, 0);
+        matches.push({ item, distance, exact });
+      }
+      return matches.sort(
+        (a, b) => (b.item.priority ?? 0) - (a.item.priority ?? 0) || a.distance - b.distance,
+      );
     },
   };
 }

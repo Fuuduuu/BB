@@ -280,7 +280,12 @@ test('context_menu_uses_the_board_area_visible_beside_overlay_panels', () => {
   try {
     fireEvent.keyDown(svg, { key: 'F10', shiftKey: true });
     fireEvent.click(screen.getByRole('menuitem'));
-    expect(run).toHaveBeenCalledWith(expect.anything(), { items: [component] }, { x: 200, y: 210 });
+    expect(run).toHaveBeenCalledWith(
+      expect.anything(),
+      { items: [component] },
+      { x: 200, y: 210 },
+      component,
+    );
 
     fireEvent.pointerDown(svg, { button: 2 });
     fireEvent.contextMenu(svg, { button: 2, clientX: 360, clientY: 380 });

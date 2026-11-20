@@ -30,6 +30,7 @@ export function componentPinHits({ doc }: Snapshot): HitItem[] {
       kind: 'pin',
       id: pinId,
       componentId: id,
+      moves: { kind: 'component', id },
       shape:
         shape === 'circle' && halfPx.x === halfPx.y
           ? { type: 'point', at, r: halfPx.x }

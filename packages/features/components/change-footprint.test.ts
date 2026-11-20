@@ -213,7 +213,7 @@ test('change_footprint_rejects_unplaced_and_missing_uid', () => {
     engine.execute('components.changeFootprint', { ...swap(14), newPinUids: {} }),
   ).toMatchObject(rejection('missing_pin_uid'));
   expect(engine.snapshot()).toBe(before);
-  expect(engine.execute('components.removeFromBoard', { id: 'cmp_a' }).ok).toBe(true);
+  expect(engine.execute('components.removeFromBoard', { ids: ['cmp_a'] }).ok).toBe(true);
   const unplaced = engine.snapshot();
   expect(engine.execute('components.changeFootprint', swap(14))).toMatchObject(
     rejection('component_not_placed'),

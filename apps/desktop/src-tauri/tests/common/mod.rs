@@ -3,7 +3,7 @@
 
 use chrono::{DateTime, FixedOffset};
 use pcbk_desktop::storage::{
-    BackupInfoDto, BackupKind, Clock, JournalDto, OpenedProjectDto, ProjectStore,
+    BackupInfoDto, BackupKind, Clock, CopyRequest, JournalDto, OpenedProjectDto, ProjectStore,
 };
 use rusqlite::{Connection, OpenFlags};
 use serde_json::{json, Value};
@@ -87,6 +87,25 @@ impl Fixture {
 
 pub(super) fn doc(rev: i64) -> String {
     json!({ "format_version": 1, "rev": rev, "name": "Plaat õäöü" }).to_string()
+}
+
+pub(super) fn copy_request<'a>(
+    source: &'a OpenedProjectDto,
+    dest: &'a Path,
+    doc_json: &'a str,
+) -> CopyRequest<'a> {
+    CopyRequest {
+        session: &source.session,
+        dest,
+        project_id: &source.project_id,
+        copied_from_project_id: None,
+        exclusive: false,
+        replace_token: None,
+        doc_json,
+        rev: 1,
+        view_json: None,
+        journal: &[],
+    }
 }
 
 pub(super) fn journal(summary: &str) -> JournalDto {

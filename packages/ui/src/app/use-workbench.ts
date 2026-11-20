@@ -19,7 +19,7 @@ import { useProjectLists } from './use-project-lists';
 import { sameProjectPath, useWorkbenchAction, useWorkbenchHost } from './use-workbench-host';
 
 type CloseIntent = 'home' | 'host' | 'reload' | { open: string };
-type CopyIntent = 'stay' | 'reload' | 'close';
+type CopyIntent = 'stay' | 'reload' | 'reload-picker' | 'close';
 
 function errorText(error: EngineError) {
   if (error.code === 'storage') return et.reason[error.reason];
@@ -69,6 +69,7 @@ export function useWorkbench(
   const [closeError, setCloseError] = useState<{
     reason: StorageReason;
     intent: CloseIntent;
+    copyError?: StorageReason;
   } | null>(null);
   const { busy, run, runClose, finishHostAction } = useWorkbenchAction(setLaunchError);
   const activePath = useRef<string | null>(null);
@@ -238,9 +239,9 @@ export function useWorkbench(
     const restored = await run(async () => {
       if (!restoreSource) return false;
       try {
-        const dest = await host.pickSavePath?.(et.project.restoreName(restoreSource.name));
-        if (!dest) return true;
-        const result = await projects.restore({ backup, dest });
+        const target = await host.pickSavePath?.(et.project.restoreName(restoreSource.name));
+        if (!target?.path) return true;
+        const result = await projects.restore({ backup, dest: target.path });
         if (!result.ok) {
           destinationExists = result.error.code === 'storage' && result.error.reason === 'exists';
           return false;
@@ -264,31 +265,59 @@ export function useWorkbench(
   const copy = (intent: CopyIntent) => {
     void run(async () => {
       if (rescueExit.current) return;
-      if (!info || (!host.pickSavePath && !(intent === 'reload' && host.recoveryCopyPath))) {
+      const reload = intent === 'reload' || intent === 'reload-picker';
+      const exclusive = intent === 'reload' && Boolean(host.recoveryCopyPath);
+      if (!info || (!host.pickSavePath && !exclusive)) {
         setLaunchError(et.project.copyUnavailable);
         return;
       }
-      const dest =
-        intent === 'reload' && host.recoveryCopyPath
-          ? await host.recoveryCopyPath(info.path)
-          : await host.pickSavePath?.(info.name);
-      if (!dest) return;
-      const result = await projects.copy({ dest, identity: 'same' });
+
+      const reportCopyError = (error: EngineError) => {
+        if (intent === 'close') {
+          setCloseError((previous) => previous && { ...previous, copyError: closeReason(error) });
+        } else setLaunchError(errorText(error));
+      };
+      const source = info;
+      async function copyToDestination() {
+        const attempted: string[] = [];
+        for (let attempt = 0; attempt < (exclusive ? 3 : 1); attempt++) {
+          const target = exclusive
+            ? { path: await host.recoveryCopyPath?.(source.path), replaceToken: null }
+            : await host.pickSavePath?.(source.name);
+          if (!target?.path) return null;
+          const { path: dest, replaceToken } = target;
+          if (attempted.some((path) => sameProjectPath(path, dest))) continue;
+          attempted.push(dest);
+          const result = await projects.copy({
+            dest,
+            identity: 'same',
+            ...(exclusive && { exclusive }),
+            ...(replaceToken !== null && { replaceToken }),
+          });
+          if (result.ok || !exclusive || closeReason(result.error) !== 'exists') return result;
+        }
+        return { ok: false, error: { code: 'storage', reason: 'exists' } } as const;
+      }
+      const result = await copyToDestination().catch(() => {
+        reportCopyError({ code: 'storage', reason: 'unknown' });
+        return null;
+      });
+      if (!result) return;
       if (!result.ok) {
-        setLaunchError(errorText(result.error));
+        reportCopyError(result.error);
         return;
       }
       const closeIntent = closeError?.intent ?? 'home';
       activate(result.value);
       if (result.value.fromMemory) {
         setRescueNotice(et.project.rescueCopy);
-        const exit = intent === 'reload' ? 'reload' : intent === 'close' ? closeIntent : null;
+        const exit = reload ? 'reload' : intent === 'close' ? closeIntent : null;
         if (exit === 'host' || exit === 'reload') {
           rescueExit.current = exit;
           return;
         }
       }
-      if (intent === 'reload') {
+      if (reload) {
         if (await finishClose('reload')) leaveWorkbench('reload');
       }
       if (intent === 'close') {

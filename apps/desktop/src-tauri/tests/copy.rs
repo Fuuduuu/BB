@@ -1,22 +1,11 @@
 mod common;
 
-use common::{doc, journal, meta, name, read_db, rev, summaries, Fixture, PROJECT_ID};
-use pcbk_desktop::storage::{BackupKind, CopyRequest, OpenedProjectDto, Reason};
+use common::{
+    copy_request as request, doc, journal, meta, name, read_db, rev, summaries, Fixture, PROJECT_ID,
+};
+use pcbk_desktop::storage::{replace_token, BackupKind, CopyRequest, Reason};
 use rusqlite::Connection;
 use std::{collections::BTreeSet, fs, path::Path};
-
-fn request<'a>(source: &'a OpenedProjectDto, dest: &'a Path, doc_json: &'a str) -> CopyRequest<'a> {
-    CopyRequest {
-        session: &source.session,
-        dest,
-        project_id: &source.project_id,
-        copied_from_project_id: None,
-        doc_json,
-        rev: 1,
-        view_json: None,
-        journal: &[],
-    }
-}
 
 #[test]
 fn stale_tmp_from_crash_does_not_block_create_copy_restore() {
@@ -229,15 +218,20 @@ fn copy_replaces_confirmed_destination_but_not_open_source() {
     let other = f.store.create(&dest, "project-other", &doc(0)).unwrap();
     let original = f.path("original.pcbk");
     for blocked in [&original, &dest] {
+        let token = replace_token(blocked).unwrap().unwrap();
         assert_eq!(
             f.store
-                .copy(request(&source, blocked, &doc(1)))
+                .copy(CopyRequest {
+                    replace_token: Some(&token),
+                    ..request(&source, blocked, &doc(1))
+                })
                 .unwrap_err()
                 .reason,
             Reason::Locked
         );
     }
     f.store.close(&other.session).unwrap();
+    let token = replace_token(&dest).unwrap().unwrap();
     #[cfg(windows)]
     {
         use std::os::windows::fs::OpenOptionsExt;
@@ -251,7 +245,10 @@ fn copy_replaces_confirmed_destination_but_not_open_source() {
             .unwrap();
         assert_eq!(
             f.store
-                .copy(request(&source, &dest, &doc(1)))
+                .copy(CopyRequest {
+                    replace_token: Some(&token),
+                    ..request(&source, &dest, &doc(1))
+                })
                 .unwrap_err()
                 .reason,
             Reason::Locked
@@ -259,7 +256,13 @@ fn copy_replaces_confirmed_destination_but_not_open_source() {
         assert_eq!(fs::read(&dest).unwrap(), before);
         drop(lock);
     }
-    let copied = f.store.copy(request(&source, &dest, &doc(1))).unwrap();
+    let copied = f
+        .store
+        .copy(CopyRequest {
+            replace_token: Some(&token),
+            ..request(&source, &dest, &doc(1))
+        })
+        .unwrap();
     assert_eq!(copied.opened.project_id, PROJECT_ID);
     f.store.close(&copied.opened.session).unwrap();
     f.store.close(&source.session).unwrap();

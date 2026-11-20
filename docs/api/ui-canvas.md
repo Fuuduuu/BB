@@ -6,7 +6,7 @@ Sisenemispunkt: `packages/ui/src/canvas/index.ts`
 
 ### `Canvas`
 ```ts
-export function Canvas({ layers, tools, keys, contextMenu, sceneTransform, view, onViewChange, snapshot, execute, surface, fitInsets, }: CanvasProps): import("react").JSX.Element;
+export function Canvas({ layers, tools, keys, contextMenu, moveRefs, itemsInFrame, deleteIds, sceneTransform, view, onViewChange, snapshot, execute, surface, fitInsets, }: CanvasProps): import("react").JSX.Element;
 ```
 
 ### `CanvasPointer`
@@ -28,6 +28,9 @@ export interface CanvasProps {
     tools: readonly ToolSpec[];
     keys?: readonly KeySpec[];
     contextMenu?: (kind: string) => ContextMenuItemSpec[];
+    moveRefs?: UiRegistry['moveRefs'];
+    itemsInFrame?: UiRegistry['itemsInFrame'];
+    deleteIds?: UiRegistry['deleteIds'];
     sceneTransform: SceneTransform;
     view: CanvasView;
     onViewChange(view: CanvasView): void;
@@ -77,6 +80,7 @@ export type HitDrag = {
 ```ts
 export interface HitIndex {
     query(world: Vec2, zoom: number): HitItem | undefined;
+    queryAll(world: Vec2, zoom: number): HitMatch[];
 }
 ```
 
@@ -88,10 +92,21 @@ export interface HitItem {
     componentId?: string;
     shape: HitShape;
     priority?: number;
+    enabled?(): boolean;
     data?: unknown;
     target?: SelectionItem;
+    moves?: SelectionItem;
     drag?: HitDrag;
 }
+```
+
+### `HitMatch`
+```ts
+export type HitMatch = {
+    item: HitItem;
+    distance: number;
+    exact: boolean;
+};
 ```
 
 ### `HitShape`
@@ -110,6 +125,7 @@ export type HitShape = {
     a: Vec2;
     b: Vec2;
     width: number;
+    widthUnit?: 'screen';
 } | {
     type: 'area';
     polygon: Vec2[];
@@ -223,7 +239,7 @@ export interface ToolSpec {
 ### `TranslatePreviewData`
 ```ts
 export type TranslatePreviewData = {
-    items: SelectionItem[];
+    items: MoveRef[];
     dx: number;
     dy: number;
 };

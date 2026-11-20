@@ -76,7 +76,7 @@ export function ChangeFootprint({ id, ids, onClose }: { id: string; ids: IdGen; 
         : footprintPinIds(entry.footprint, validated);
     if (!current?.board || !targetIds) return;
     const retainedIds = [...targetIds, ...Object.keys(current.board.customPads)];
-    const impact = footprintImpact(current, snapshot.doc.measurements, retainedIds);
+    const impact = footprintImpact(current, snapshot.doc, retainedIds);
     if (impact.hasImpact && (!confirmed || pending?.key !== impact.key)) {
       setPending(impact);
       return;

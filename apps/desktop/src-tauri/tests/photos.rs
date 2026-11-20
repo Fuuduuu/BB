@@ -327,6 +327,8 @@ fn copy_contains_original_photo() {
             dest: &dir.path().join("copy.pcbk"),
             project_id: "project",
             copied_from_project_id: None,
+            exclusive: false,
+            replace_token: None,
             doc_json: r#"{"format_version":1,"rev":0}"#,
             rev: 0,
             view_json: None,

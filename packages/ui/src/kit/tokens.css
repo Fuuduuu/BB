@@ -19,6 +19,7 @@
   --top: #d9432b;
   --bottom: #2f6fd6;
   --wire: #c38410;
+  --role-gnd: #1f2523;
   --pad: #d0a630;
   --pad-edge: #6a510b;
   --pad-ink: #241a03;
@@ -59,6 +60,7 @@
     --top: #ff6449;
     --bottom: #5f97ff;
     --wire: #f2b632;
+    --role-gnd: #9aa5a0;
     --pad: #e2bb4b;
     --pad-edge: #3a2c05;
     --pad-ink: #1f1602;
@@ -97,6 +99,7 @@
   --top: #ff6449;
   --bottom: #5f97ff;
   --wire: #f2b632;
+  --role-gnd: #9aa5a0;
   --pad: #e2bb4b;
   --pad-edge: #3a2c05;
   --pad-ink: #1f1602;

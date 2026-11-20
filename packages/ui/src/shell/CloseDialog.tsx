@@ -7,6 +7,7 @@ import { et } from './i18n/et';
 export function CloseDialog({
   open,
   reason,
+  copyError,
   opening = false,
   busy = false,
   copyAvailable = true,
@@ -17,6 +18,7 @@ export function CloseDialog({
 }: SaveRecoveryActions & {
   open: boolean;
   reason: StorageReason;
+  copyError?: StorageReason;
   opening?: boolean;
   busy?: boolean;
   onCancel(): void;
@@ -29,6 +31,7 @@ export function CloseDialog({
       onClose={onCancel}
       closeDisabled={busy}
     >
+      {copyError && <p role="alert">{et.save.copyFailed(et.reason[copyError])}</p>}
       <div className="pcbk-close-actions" aria-busy={busy}>
         {reason !== 'stale_rev' && (
           <Button variant="primary" disabled={busy} onClick={onRetrySave}>

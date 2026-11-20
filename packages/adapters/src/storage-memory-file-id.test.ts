@@ -52,3 +52,28 @@ test('memory rescue copy reports memory fallback when the original file disappea
   expect(copy.fileId).toEqual(expect.any(String));
   expect(copy.fileId).not.toBe(first.fileId);
 });
+
+test('memory copy preserves original provenance for the same identity and records a new origin', async () => {
+  const store = createMemoryStore();
+  const repo = createMemoryRepository(store);
+  const doc = newBoardDoc('Board');
+  const first = await repo.create({ projectId: 'project_source', name: doc.name, doc });
+  store.files.get(first.path)!.copiedFromProjectId = 'project_ancestor';
+  const snapshot = { session: first.session, doc, rev: 0, view: null, journal: [] };
+
+  await repo.copy({
+    ...snapshot,
+    dest: 'Same.pcbk',
+    projectId: first.projectId,
+    identity: 'same',
+  });
+  await repo.copy({
+    ...snapshot,
+    dest: 'New.pcbk',
+    projectId: 'project_new',
+    identity: 'new',
+  });
+
+  expect(store.files.get('Same.pcbk')?.copiedFromProjectId).toBe('project_ancestor');
+  expect(store.files.get('New.pcbk')?.copiedFromProjectId).toBe(first.projectId);
+});

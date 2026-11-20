@@ -11,6 +11,7 @@ import type { LayerSpec } from './tools';
 
 const component = { kind: 'component', id: 'cmp_test' };
 const pin = { kind: 'pin', id: '1', componentId: component.id };
+const pinHit = { ...pin, moves: component };
 const selection = () => useSessionStore.getState().selection;
 const preview = () => useSessionStore.getState().preview;
 const selectComponent = () =>
@@ -54,7 +55,7 @@ function setup(initial?: CanvasProps['view']) {
           ],
         },
       },
-      { ...pin, priority: 1, shape: { type: 'point', at: { x: 25, y: 25 }, r: 1 } },
+      { ...pinHit, priority: 1, shape: { type: 'point', at: { x: 25, y: 25 }, r: 1 } },
     ]),
   };
   const onViewChange = vi.fn<(next: CanvasProps['view']) => void>();
@@ -62,6 +63,8 @@ function setup(initial?: CanvasProps['view']) {
   let props: CanvasProps = {
     layers: [hitLayer],
     tools: [],
+    moveRefs: (_snapshot, items) =>
+      items.flatMap(({ kind, id }) => (kind === 'component' ? [{ kind, id }] : [])),
     sceneTransform: 'none',
     view,
     onViewChange,
@@ -248,17 +251,22 @@ test('drag_on_selected_component_keeps_group_selection', () => {
   expect(selection()).toBe(before);
 });
 
-test.each(['escape', 'pointercancel', 'tool switch', 'project switch'] as const)(
+test.each(['escape', 'pointercancel', 'tool switch', 'project switch', 'window blur'] as const)(
   'cancelled_drag_leaves_no_trace (%s)',
   (reason) => {
     const { svg, execute, update } = setup();
     selectComponent();
+    if (reason === 'window blur') {
+      fireEvent.keyDown(svg, { key: ' ' });
+      fireEvent(window, new Event('blur'));
+    }
     pointer(svg, 'pointerdown', 12, 12);
     pointer(svg, 'pointermove', 18, 20);
     expect(preview()).not.toBeNull();
     if (reason === 'escape') fireEvent.keyDown(svg, { key: 'Escape' });
     else if (reason === 'pointercancel') pointer(svg, 'pointercancel', 18, 20);
     else if (reason === 'tool switch') fireEvent.keyDown(svg, { key: 'h' });
+    else if (reason === 'window blur') fireEvent(window, new Event('blur'));
     else update({ snapshot: snapshot('next-project') });
 
     expect(preview()).toBeNull();

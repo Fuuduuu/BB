@@ -13,7 +13,7 @@ import {
   screenToSceneVector,
   useSessionStore,
 } from '@pcbk/ui';
-import type { SceneTransform } from '@pcbk/ui';
+import type { CanvasProps, SceneTransform } from '@pcbk/ui';
 import { setup } from '../../../__tests__/helpers';
 import { componentLabelBox } from './hits';
 import { COMPONENTS_LAYERS } from './index';
@@ -134,7 +134,7 @@ test('hidden_and_unplaced_labels_do_not_supply_obstacles', () => {
   const layer = COMPONENTS_LAYERS.find(({ id }) => id === 'components.labels')!;
   expect(layer.obstacles).toBeTypeOf('function');
   expect(layer.obstacles!(engine.snapshot(), 0.49, 'rot90')).toEqual([]);
-  expect(engine.execute('components.removeFromBoard', { id: 'cmp_u1' }).ok).toBe(true);
+  expect(engine.execute('components.removeFromBoard', { ids: ['cmp_u1'] }).ok).toBe(true);
   expect(layer.obstacles!(engine.snapshot(), 1, 'rot90')).toEqual([]);
 });
 
@@ -267,9 +267,13 @@ test('long_value_avoids_neighbour_component', () => {
   ).toBe(true);
 
   const layer = COMPONENTS_LAYERS.find(({ id }) => id === 'components.labels')!;
-  const props = {
+  const props: Omit<CanvasProps, 'snapshot'> = {
     layers: COMPONENTS_LAYERS,
     tools: [],
+    moveRefs: (_snapshot, items) =>
+      items.some(({ kind, id }) => kind === 'component' && id === primary.id)
+        ? [{ kind: 'component', id: primary.id }]
+        : [],
     view,
     sceneTransform: 'none' as const,
     onViewChange: () => {},

@@ -1,4 +1,6 @@
 import type { IdGen, Snapshot } from '@pcbk/contracts';
+import type { Vec2 } from '@pcbk/domain';
+import { bodyOutline } from '@pcbk/domain/geometry';
 import { useSessionStore, useViewStore } from '@pcbk/ui';
 import type { ContextMenuItemSpec, Selection, UiModule } from '@pcbk/ui';
 import { selectComponent } from '../contract';
@@ -6,6 +8,7 @@ import { alignToolSpec } from './AlignTool';
 import { useAlignStore } from './align-store';
 import { ComponentDetails } from './ComponentDetails';
 import { ComponentsPanel } from './ComponentsPanel';
+import { createDuplicateAction } from './duplicate';
 import { useHoverStore } from './hover-store';
 import { PinCard, usePinNameFocus } from './PinCard';
 import { Library } from './Library';
@@ -109,13 +112,27 @@ const contextMenu: ContextMenuItemSpec[] = [
 ];
 
 export function createComponentsUi(ids: IdGen): UiModule {
+  const duplicate = createDuplicateAction(ids);
   return {
     id: 'components',
     title: componentEt.title,
     canvasLayers: [...COMPONENTS_LAYERS, HOVER_LAYER, ALIGN_LAYER],
     tools: [createPlaceToolSpec(ids), alignToolSpec(), ownPinToolSpec(ids)],
-    keys: placementKeys,
-    contextMenu,
+    keys: [
+      ...placementKeys,
+      { id: 'components.duplicate', key: 'D', primary: true, run: duplicate },
+    ],
+    contextMenu: [
+      ...contextMenu,
+      {
+        id: 'components.duplicate',
+        appliesTo: ['component'],
+        order: 35,
+        label: () => placementEt.duplicate,
+        shortcut: { key: 'D', primary: true },
+        run: duplicate,
+      },
+    ],
     bottomBar: [
       { id: 'components.align', render: () => <AlignHint /> },
       { id: OWN_PIN_TOOL_ID, render: () => <OwnPinHint /> },
@@ -150,6 +167,19 @@ export function createComponentsUi(ids: IdGen): UiModule {
       {
         kind: 'component',
         label: (snapshot, item) => selectComponent(snapshot, item.id)?.ref ?? null,
+        exists: (snapshot, item) => selectComponent(snapshot, item.id) !== undefined,
+        moveRef: (snapshot, item) =>
+          selectComponent(snapshot, item.id)?.board ? { kind: 'component', id: item.id } : null,
+        inFrame: ({ doc }, { min, max }) => {
+          const inside = ({ x, y }: Vec2) => min.x <= x && x <= max.x && min.y <= y && y <= max.y;
+          return doc.components.flatMap(({ id, board }) => {
+            if (!board) return [];
+            const outline = bodyOutline(board, doc.scale.pxPerMm);
+            const fits = outline.length ? outline.every(inside) : inside(board.center);
+            return fits ? [{ kind: 'component', id }] : [];
+          });
+        },
+        deleteId: (snapshot, item) => selectComponent(snapshot, item.id)?.id ?? null,
       },
       {
         kind: 'pin',
@@ -158,6 +188,13 @@ export function createComponentsUi(ids: IdGen): UiModule {
           const component = selectComponent(snapshot, item.componentId);
           const pin = component?.pins.find(({ id }) => id === item.id);
           return component && pin ? `${component.ref}.${pin.name || pin.id}` : null;
+        },
+        exists: (snapshot, item) => {
+          if (!item.componentId) return false;
+          return (
+            selectComponent(snapshot, item.componentId)?.pins.some(({ id }) => id === item.id) ??
+            false
+          );
         },
       },
     ],

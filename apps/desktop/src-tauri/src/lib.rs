@@ -7,6 +7,8 @@ pub mod ipc_photo;
 #[cfg(any(feature = "tauri-ipc", test))]
 mod logging;
 pub mod storage;
+#[cfg(any(feature = "tauri-ipc", test))]
+mod text_export;
 
 #[cfg(any(feature = "tauri-ipc", test))]
 fn photo_protocol_probe_request(path_and_query: &str) -> (&str, Option<&'static str>) {

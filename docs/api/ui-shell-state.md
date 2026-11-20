@@ -16,11 +16,13 @@ export interface ContextMenuItemSpec {
     appliesTo: string[];
     order: number;
     label(snapshot: Snapshot, selection: Selection): string;
+    available?(snapshot: Snapshot, selection: Selection): boolean;
     shortcut?: {
         key: string;
         shift?: boolean;
+        primary?: boolean;
     };
-    run(api: ToolApi, selection: Selection, at: Vec2): boolean;
+    run(api: ToolApi, selection: Selection, at: Vec2, target?: SelectionItem): boolean;
 }
 ```
 
@@ -72,9 +74,10 @@ export const et: {
         readonly navigator: "Navigaator";
         readonly showNavigator: "Näita navigaatorit";
         readonly hideNavigator: "Peida navigaator";
-        readonly components: "Komponendid";
         readonly navigatorEmpty: "Siia ilmuvad plaadi komponendid.";
         readonly context: "Omadused";
+        readonly selectedCount: (count: number) => string;
+        readonly multipleSelected: "Mitu objekti on valitud.";
         readonly contextEmpty: "Omadused · vali komponent või jalg";
         readonly showContext: "Näita omadusi";
         readonly hideContext: "Peida omadused";
@@ -107,6 +110,7 @@ export const et: {
         readonly saved: (time: string) => string;
         readonly failed: (why: string) => string;
         readonly closeTitle: (why: string) => string;
+        readonly copyFailed: (why: string) => string;
         readonly discard: "Sulge salvestamata";
         readonly openDiscard: "Ava salvestamata";
         readonly discardHint: "Viimased muudatused kaovad";
@@ -115,6 +119,7 @@ export const et: {
         readonly root: "Midagi läks valesti.";
         readonly panel: "Selle osa kuvamisel tekkis viga.";
         readonly copyReload: "Salvesta koopia ja lae uuesti";
+        readonly copyElsewhere: "Vali koopia koht…";
         readonly diagnostics: "Salvesta diagnostika…";
     };
     readonly project: {
@@ -166,9 +171,15 @@ export interface KeySpec {
     id: string;
     key: string;
     shift?: boolean;
+    primary?: boolean;
     repeat?: boolean;
     run(api: ToolApi, selection: Selection): boolean;
 }
+```
+
+### `MoveRef`
+```ts
+export type MoveRef = ParamsOf<'items.translate'>['items'][number];
 ```
 
 ### `PanelSpec`
@@ -204,6 +215,14 @@ export type Selection = {
 };
 ```
 
+### `SelectionFrame`
+```ts
+export type SelectionFrame = {
+    min: Vec2;
+    max: Vec2;
+};
+```
+
 ### `SelectionItem`
 ```ts
 export type SelectionItem = {
@@ -218,6 +237,10 @@ export type SelectionItem = {
 export interface SelectionKindSpec {
     kind: SelectionItem['kind'];
     label(snapshot: Snapshot, item: SelectionItem): string | null;
+    exists(snapshot: Snapshot, item: SelectionItem): boolean;
+    moveRef?(snapshot: Snapshot, item: SelectionItem): MoveRef | null;
+    inFrame?(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[];
+    deleteId?(snapshot: Snapshot, item: SelectionItem): string | null;
 }
 ```
 
@@ -272,6 +295,9 @@ export const SHELL_KEYS: {
     readonly nudgeRight: {
         readonly key: "ArrowRight";
         readonly shift: "any";
+    };
+    readonly delete: {
+        readonly key: "Delete";
     };
     readonly nudgeUp: {
         readonly key: "ArrowUp";
@@ -328,6 +354,10 @@ export class UiRegistry {
     contextPinned(): PinnedSpec[];
     contextMenu(kind: string): ContextMenuItemSpec[];
     selectionLabel(snapshot: Snapshot, selection: Selection): string | null;
+    validSelection(snapshot: Snapshot, selection: Selection): Selection;
+    moveRefs(snapshot: Snapshot, items: readonly SelectionItem[]): MoveRef[];
+    itemsInFrame(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[];
+    deleteIds(snapshot: Snapshot, items: readonly SelectionItem[]): string[];
     topBar(): SlotSpec[];
     bottomBar(): SlotSpec[];
     canvasLayers(): LayerSpec[];

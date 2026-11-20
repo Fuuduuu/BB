@@ -68,7 +68,7 @@ test('placed_footprint_pins_and_pads_stay_matched', () => {
   expect(engine.execute('components.addOwnPin', { id, pin: ownPin, local, sizeMm }).ok).toBe(true);
   const withOwn = engine.snapshot();
   expectMatching(withOwn, numbers(9));
-  expect(engine.execute('components.removeFromBoard', { id }).ok).toBe(true);
+  expect(engine.execute('components.removeFromBoard', { ids: [id] }).ok).toBe(true);
   const unplaced = engine.snapshot();
   expect(current(unplaced).pins).toEqual(current(withOwn).pins);
   expect(engine.execute('components.placeOnBoard', { id, board: soic })).toMatchObject(
@@ -85,7 +85,7 @@ test('placed_footprint_pins_and_pads_stay_matched', () => {
   expectMatching(engine.snapshot(), numbers(8));
   expect(current(engine.snapshot()).board).toMatchObject({ customPads: {}, padMap: {} });
 
-  expect(engine.execute('components.removeFromBoard', { id }).ok).toBe(true);
+  expect(engine.execute('components.removeFromBoard', { ids: [id] }).ok).toBe(true);
   expect(engine.execute('components.placeOnBoard', { id, board: soic }).ok).toBe(true);
   expectMatching(engine.snapshot(), numbers(8));
 
@@ -105,9 +105,9 @@ test('placed_footprint_pins_and_pads_stay_matched', () => {
 test('own_pin_survives_rotate_scale_and_reopen', () => {
   const { engine } = placed();
   expect(engine.execute('components.addOwnPin', { id, pin: ownPin, local, sizeMm }).ok).toBe(true);
-  expect(engine.execute('components.rotate', { id, deltaDeg: 90 }).ok).toBe(true);
+  expect(engine.execute('components.rotate', { ids: [id], deltaDeg: 90 }).ok).toBe(true);
   expect(engine.execute('components.setScale', { id, scaleX: 1.5, scaleY: 0.5 }).ok).toBe(true);
-  expect(engine.execute('components.flipSide', { id }).ok).toBe(true);
+  expect(engine.execute('components.flipSide', { ids: [id] }).ok).toBe(true);
 
   const serialized = JSON.stringify(engine.snapshot().doc);
   const { engine: reopened } = setup(BoardDocSchema.parse(JSON.parse(serialized)));
@@ -158,7 +158,7 @@ test.each([
 
 test('addOwnPin requires a placed component', () => {
   const { engine } = placed();
-  expect(engine.execute('components.removeFromBoard', { id }).ok).toBe(true);
+  expect(engine.execute('components.removeFromBoard', { ids: [id] }).ok).toBe(true);
   const before = engine.snapshot();
   expect(engine.execute('components.addOwnPin', { id, pin: ownPin, local, sizeMm })).toMatchObject(
     rejectWith('component_not_placed'),

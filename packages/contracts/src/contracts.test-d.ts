@@ -40,6 +40,10 @@ declare const collections: DeepReadonly<{
   map: Map<{ id: string }, { count: number }>;
   set: Set<{ id: string }>;
 }>;
+declare const derived: DeepReadonly<{
+  unplacedBoard: string[];
+  unplacedSchematic: string[];
+}>;
 
 expectTypeOf<Snapshot['doc']>().toEqualTypeOf<DeepReadonly<BoardDoc>>();
 expectTypeOf<Snapshot['derived']>().toEqualTypeOf<DeepReadonly<Derived>>();
@@ -78,9 +82,9 @@ snapshot.doc.components[0]!.board!.params['pitch'] = 1.27;
 // @ts-expect-error tuple members are readonly too
 snapshot.doc.photos[0]!.toBoard![0] = 2;
 // @ts-expect-error derived arrays cannot be extended
-snapshot.derived.unplacedBoard.push('cmp_test');
+derived.unplacedBoard.push('cmp_test');
 // @ts-expect-error derived properties cannot be replaced
-snapshot.derived.unplacedSchematic = [];
+derived.unplacedSchematic = [];
 
 expectTypeOf<DocumentEngine['execute']>().returns.toEqualTypeOf<Result<CommandOk, EngineError>>();
 expectTypeOf<DocumentEngine['undo']>().returns.toEqualTypeOf<Result<CommandOk, EngineError>>();

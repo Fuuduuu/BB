@@ -112,7 +112,7 @@ test('properties_header_shows_selected_ref', () => {
   expect(pane.getByText(longTitle).title).toBe(longTitle);
   expect(pane.getByRole('button', { name: 'Peida omadused' })).toBeTruthy();
   act(() => useSessionStore.getState().setSelection({ items: [component, pin] }));
-  expect(pane.getByText('Omadused')).toBeTruthy();
+  expect(pane.getByText('Omadused · 2 valitud')).toBeTruthy();
   act(() => useSessionStore.getState().setSelection({ items: [{ kind: 'net', id: 'net_1' }] }));
   expect(pane.getByText('Omadused')).toBeTruthy();
 });

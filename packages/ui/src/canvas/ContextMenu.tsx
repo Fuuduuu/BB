@@ -107,22 +107,21 @@ export function ContextMenu({
     >
       {items.map((item) => {
         const shortcut = item.shortcut;
+        const key = shortcut && `${shortcut.shift ? 'Shift+' : ''}${shortcut.key}`;
         return (
           <button
             key={item.id}
             type="button"
             role="menuitem"
             tabIndex={-1}
-            aria-keyshortcuts={
-              shortcut ? `${shortcut.shift ? 'Shift+' : ''}${shortcut.key}` : undefined
-            }
+            aria-keyshortcuts={shortcut ? `${shortcut.primary ? 'Control+' : ''}${key}` : undefined}
             onClick={() => activate(item)}
           >
             <span>{item.label(snapshot, selection)}</span>
             {shortcut && (
               <kbd aria-hidden="true">
-                {shortcut.shift ? 'Shift+' : ''}
-                {shortcut.key}
+                {shortcut.primary ? 'Ctrl+' : ''}
+                {key}
               </kbd>
             )}
           </button>

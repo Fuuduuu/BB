@@ -81,11 +81,11 @@ test('remove_from_board_keeps_component_and_pins', () => {
   const { engine } = setup(doc);
   expect(engine.execute('components.add', { ...add(), board: chipBoard }).ok).toBe(true);
   const { board, ...unplaced } = engine.snapshot().doc.components[0]!;
-  expect(engine.execute('components.removeFromBoard', { id: 'cmp_a' }).ok).toBe(true);
+  expect(engine.execute('components.removeFromBoard', { ids: ['cmp_a'] }).ok).toBe(true);
   expect(engine.snapshot().doc.components).toEqual([unplaced]);
   expect(engine.snapshot().doc.measurements).toEqual(doc.measurements);
   const after = engine.snapshot();
-  expect(engine.execute('components.removeFromBoard', { id: 'cmp_a' })).toEqual({
+  expect(engine.execute('components.removeFromBoard', { ids: ['cmp_a'] })).toEqual({
     ok: true,
     value: { rev: after.doc.rev },
   });
@@ -102,7 +102,7 @@ test('area_replaces_board_placement_preserving_manual_pins', () => {
   ];
   const board = { ...chipBoard, footprint: 'area' };
   expect(engine.execute('components.add', { ...add(), kind: 'other', pins, board }).ok).toBe(true);
-  expect(engine.execute('components.removeFromBoard', { id: 'cmp_a' }).ok).toBe(true);
+  expect(engine.execute('components.removeFromBoard', { ids: ['cmp_a'] }).ok).toBe(true);
   const replacement = { ...board, params: { w: 15 } };
   expect(engine.execute('components.placeOnBoard', { id: 'cmp_a', board: replacement }).ok).toBe(
     true,
@@ -119,9 +119,9 @@ test('area_replaces_board_placement_preserving_manual_pins', () => {
 test('rotate_normalizes_to_0_360', () => {
   const { engine } = setup();
   engine.execute('components.add', { ...add(), board: { ...chipBoard, rotationDeg: 350 } });
-  expect(engine.execute('components.rotate', { id: 'cmp_a', deltaDeg: 25 }).ok).toBe(true);
+  expect(engine.execute('components.rotate', { ids: ['cmp_a'], deltaDeg: 25 }).ok).toBe(true);
   expect(engine.snapshot().doc.components[0]!.board?.rotationDeg).toBe(15);
-  expect(engine.execute('components.rotate', { id: 'cmp_a', deltaDeg: -400 }).ok).toBe(true);
+  expect(engine.execute('components.rotate', { ids: ['cmp_a'], deltaDeg: -400 }).ok).toBe(true);
   expect(engine.snapshot().doc.components[0]!.board?.rotationDeg).toBe(335);
   expect(engine.undo().ok).toBe(true);
   expect(engine.snapshot().doc.components[0]!.board?.rotationDeg).toBe(15);
@@ -131,7 +131,7 @@ test('rotate preserves an in-range fractional angle', () => {
   const { engine } = setup();
   engine.execute('components.add', { ...add(), board: { ...chipBoard, rotationDeg: 0.1 } });
   expect(engine.snapshot().doc.components[0]?.board?.rotationDeg).toBe(0.1);
-  expect(engine.execute('components.rotate', { id: 'cmp_a', deltaDeg: -0.05 }).ok).toBe(true);
+  expect(engine.execute('components.rotate', { ids: ['cmp_a'], deltaDeg: -0.05 }).ok).toBe(true);
   expect(engine.snapshot().doc.components[0]!.board?.rotationDeg).toBe(0.05);
 });
 
@@ -139,9 +139,9 @@ test('flip_side_toggles_top_bottom', () => {
   const { engine } = setup();
   engine.execute('components.add', { ...add(), board: chipBoard });
   const original = engine.snapshot().doc.components[0];
-  expect(engine.execute('components.flipSide', { id: 'cmp_a' }).ok).toBe(true);
+  expect(engine.execute('components.flipSide', { ids: ['cmp_a'] }).ok).toBe(true);
   expect(engine.snapshot().doc.components[0]!.board?.side).toBe('bottom');
-  expect(engine.execute('components.flipSide', { id: 'cmp_a' }).ok).toBe(true);
+  expect(engine.execute('components.flipSide', { ids: ['cmp_a'] }).ok).toBe(true);
   expect(engine.snapshot().doc.components[0]).toEqual(original);
   expect(engine.undo().ok).toBe(true);
   expect(engine.snapshot().doc.components[0]!.board?.side).toBe('bottom');
@@ -290,7 +290,7 @@ test('board commands reject non-finite rotation and label offset', () => {
   const before = engine.snapshot();
   const expected = { ok: false, error: { code: 'validation' } };
   expect(
-    engine.execute('components.rotate', { id, deltaDeg: Number.POSITIVE_INFINITY }),
+    engine.execute('components.rotate', { ids: [id], deltaDeg: Number.POSITIVE_INFINITY }),
   ).toMatchObject(expected);
   expect(
     engine.execute('components.setLabelOffset', { id, offset: { x: 1, y: Number.NaN } }),
@@ -307,8 +307,8 @@ test('commands_on_unplaced_component_return_component_not_placed', () => {
     ok: false,
     error: { code: 'validation', issues: [{ message: 'component_not_placed' }] },
   };
-  expect(engine.execute('components.rotate', { id, deltaDeg: 45 })).toMatchObject(expected);
-  expect(engine.execute('components.flipSide', { id })).toMatchObject(expected);
+  expect(engine.execute('components.rotate', { ids: [id], deltaDeg: 45 })).toMatchObject(expected);
+  expect(engine.execute('components.flipSide', { ids: [id] })).toMatchObject(expected);
   expect(engine.execute('components.setLabelOffset', { id, offset: null })).toMatchObject(expected);
   expect(engine.snapshot()).toBe(before);
 });
@@ -318,9 +318,9 @@ test('board commands return not_found for a missing component', () => {
   const id = 'cmp_missing';
   const expected = { ok: false, error: { code: 'not_found', id } };
   expect(engine.execute('components.placeOnBoard', { id, board: chipBoard })).toEqual(expected);
-  expect(engine.execute('components.removeFromBoard', { id })).toEqual(expected);
-  expect(engine.execute('components.rotate', { id, deltaDeg: 45 })).toEqual(expected);
-  expect(engine.execute('components.flipSide', { id })).toEqual(expected);
+  expect(engine.execute('components.removeFromBoard', { ids: [id] })).toEqual(expected);
+  expect(engine.execute('components.rotate', { ids: [id], deltaDeg: 45 })).toEqual(expected);
+  expect(engine.execute('components.flipSide', { ids: [id] })).toEqual(expected);
   expect(engine.execute('components.setLabelOffset', { id, offset: null })).toEqual(expected);
 });
 
@@ -333,7 +333,7 @@ test('derived_unplaced_board_updates', () => {
   );
   expect(engine.snapshot().derived.unplacedBoard).toEqual([]);
   expect(engine.snapshot().derived.unplacedSchematic).toEqual(['cmp_a']);
-  expect(engine.execute('components.removeFromBoard', { id: 'cmp_a' }).ok).toBe(true);
+  expect(engine.execute('components.removeFromBoard', { ids: ['cmp_a'] }).ok).toBe(true);
   expect(engine.snapshot().derived.unplacedBoard).toEqual(['cmp_a']);
   expect(engine.undo().ok).toBe(true);
   expect(engine.snapshot().derived.unplacedBoard).toEqual([]);

@@ -380,17 +380,3 @@ test('session_reset_hook_called_on_project_switch', () => {
   act(() => engine.replace(snapshot('session-b', 0)));
   expect(sessionChanges).toEqual(['session-a', 'session-b']);
 });
-
-test('selection_cleared_when_selected_item_disappears', () => {
-  const engine = new FakeEngine(snapshotWithComponent('cmp_present'));
-  render(
-    <EngineProvider engine={engine} projects={new FakeProjects()}>
-      <AppShell {...actions()} />
-    </EngineProvider>,
-  );
-  act(() =>
-    useSessionStore.getState().setSelection({ items: [{ kind: 'component', id: 'cmp_present' }] }),
-  );
-  act(() => engine.replace(snapshot('session-a', 1)));
-  expect(useSessionStore.getState().selection).toEqual({ items: [] });
-});

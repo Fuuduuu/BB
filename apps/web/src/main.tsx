@@ -15,7 +15,7 @@ createRoot(document.getElementById('root')!).render(
   <EngineProvider engine={runtime.engine} projects={runtime.projects}>
     <Workbench
       host={host}
-      uiModules={(onHome) => uiFeatures(runtime.ids, onHome)}
+      uiModules={(onHome) => uiFeatures(runtime.ids, onHome, host)}
       validateModules={(modules) =>
         assertModulePairs(
           engineFeatures.map(({ id }) => id),

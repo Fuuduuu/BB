@@ -33,7 +33,12 @@ export type ProjectInfo = {
 
 export type CreateReq = { name: string; device?: string; problem?: string; path?: string };
 export type OpenReq = { path: string };
-export type CopyReq = { dest: string; identity: 'same' | 'new' };
+export type CopyReq = {
+  dest: string;
+  identity: 'same' | 'new';
+  exclusive?: boolean;
+  replaceToken?: string;
+};
 export type BackupsReq = { projectId: string };
 export type BackupInfo = {
   file: string;

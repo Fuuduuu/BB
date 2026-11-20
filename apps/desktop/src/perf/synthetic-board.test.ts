@@ -19,6 +19,17 @@ test('synthetic_board_has_300_components_3000_pins_1500_measurements', () => {
   expect(board.components).toHaveLength(300);
   expect(board.components.flatMap((component) => component.pins)).toHaveLength(3000);
   expect(board.measurements).toHaveLength(1500);
+  expect(board.connections.items).toHaveLength(1000);
+  expect(new Set(board.connections.items.map(({ board }) => board?.layer))).toEqual(
+    new Set(['top', 'bottom']),
+  );
+  expect(
+    board.connections.items.every(
+      ({ board }) => board?.kind === 'trace' && [1, 2, 3].includes(board.waypoints.length),
+    ),
+  ).toBe(true);
+  expect(board.netLabels.every(({ name, roleId }) => !!name && !!roleId)).toBe(true);
+  expect(new Set(board.netLabels.map(({ roleId }) => roleId)).size).toBeGreaterThan(1);
   expect(new Set(board.components.map((component) => component.ref)).size).toBe(300);
   expect(board.components.every((component) => /^[RCQUJ]\d+$/.test(component.ref ?? ''))).toBe(
     true,
@@ -126,6 +137,17 @@ test('synthetic_board_commands_pass_engine', () => {
     const result = engine.execute('measurements.add', measurement);
     expect(result.ok, JSON.stringify(result)).toBe(true);
   }
+  const traced = engine.execute('connections.add', board.connections);
+  expect(traced.ok, JSON.stringify(traced)).toBe(true);
+  for (const label of board.netLabels) {
+    const result = engine.execute('nets.assign', label);
+    expect(result.ok, JSON.stringify(result)).toBe(true);
+  }
+  expect(engine.snapshot().doc.connections).toHaveLength(1000);
+  expect(engine.snapshot().doc.netLabels).toHaveLength(board.netLabels.length);
+  const sample = engine.execute('connections.add', board.sampleConnection);
+  expect(sample.ok, JSON.stringify(sample)).toBe(true);
+  expect(engine.undo().ok).toBe(true);
   expect(engine.snapshot().doc.components).toHaveLength(300);
   expect(engine.snapshot().doc.components.flatMap((component) => component.pins)).toHaveLength(
     3000,

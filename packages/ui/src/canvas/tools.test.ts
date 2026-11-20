@@ -4,6 +4,7 @@ import type { Vec2 } from '@pcbk/domain';
 import { expect, test, vi } from 'vitest';
 import { newBoardDoc } from '../../../domain/src/doc';
 import type { Preview, Selection } from '../shell/session-store';
+import type { MoveRef, UiRegistry } from '../shell/UiRegistry';
 import type { HitItem } from './hit-index';
 import { createPanToolSpec } from './PanTool';
 import { createSelectToolSpec } from './SelectTool';
@@ -26,6 +27,7 @@ const pinHit: HitItem = {
   kind: 'pin',
   id: 'pin_r1_1',
   componentId: component.id,
+  moves: component,
   shape: { type: 'point', at: { x: 20, y: 30 }, r: 1 },
 };
 
@@ -33,7 +35,16 @@ function pointer(screen: Vec2, world: Vec2, hit?: HitItem): CanvasPointer {
   return { screen, world, hit, shift: false, alt: false, ctrl: false };
 }
 
-function setup(initialSelection: Selection = { items: [] }, unplacedBoard: string[] = []) {
+type TestMoveRefs = UiRegistry['moveRefs'];
+
+function setup(
+  initialSelection: Selection = { items: [] },
+  unplacedBoard: string[] = [],
+  moveRefs: TestMoveRefs = (_snapshot, items) =>
+    items.flatMap(({ kind, id }) =>
+      kind === 'component' && !unplacedBoard.includes(id) ? [{ kind, id }] : [],
+    ),
+) {
   let selection = initialSelection;
   let preview: Preview | null = null;
   const execute = vi.fn<ToolApi['execute']>(() => ({ ok: true, value: { rev: 1 } }));
@@ -48,13 +59,66 @@ function setup(initialSelection: Selection = { items: [] }, unplacedBoard: strin
     execute,
     select: (next) => (selection = next),
     setPreview: (next) => (preview = next),
-    hitIndex: { query: () => undefined },
+    hitIndex: { query: () => undefined, queryAll: () => [] },
     snapshot: () => snapshot,
     sceneTransform: () => 'none',
   };
-  const selectTool = createSelectToolSpec(() => selection).create();
+  const selectTool = createSelectToolSpec(() => selection, moveRefs).create();
   return { api, execute, selectTool, selection: () => selection, preview: () => preview };
 }
+
+test('select_tool_moves_only_registry_movable_items', () => {
+  const stationary = { kind: 'component', id: 'not-movable' };
+  const movable = { kind: 'some-module-kind', id: 'dragged' };
+  const second = { kind: 'some-module-kind', id: 'also-selected' };
+  const move = { kind: 'component', id: 'registry-dragged' } as const;
+  const secondMove = { kind: 'component', id: 'registry-also-selected' } as const;
+  const moveRefs: TestMoveRefs = (_snapshot, items) =>
+    items.flatMap<MoveRef>((item) => {
+      if (item.kind !== 'some-module-kind') return [];
+      if (item.id === movable.id) return [move];
+      return item.id === second.id ? [secondMove] : [];
+    });
+  const initial = { items: [movable] };
+  const { api, execute, selectTool, selection, preview } = setup(initial, [], moveRefs);
+  const down = (hit: HitItem) => pointer({ x: 50, y: 50 }, { x: 22, y: 29 }, hit);
+  const up = pointer({ x: 58, y: 54 }, { x: 26, y: 31 });
+
+  const stationaryHit = down({ ...componentHit, ...stationary });
+  selectTool.onPointerDown(stationaryHit, api);
+  expect(selection()).toBe(initial);
+  selectTool.onPointerMove(up, api);
+  selectTool.onPointerUp(up, api);
+  expect(preview()).toBeNull();
+  expect(selection()).toBe(initial);
+  expect(execute).not.toHaveBeenCalled();
+
+  selectTool.onPointerDown(stationaryHit, api);
+  selectTool.onPointerUp(stationaryHit, api);
+  expect(selection()).toEqual({ items: [stationary] });
+  expect(selectTool.onKey?.(new KeyboardEvent('keydown', { key: 'ArrowRight' }), api)).toBe(false);
+  expect(execute).not.toHaveBeenCalled();
+
+  const beforeOwnedDrag = selection();
+  const ownedHit = { ...componentHit, kind: 'some-module-handle', id: 'handle', moves: movable };
+  selectTool.onPointerDown(down(ownedHit), api);
+  selectTool.onPointerMove(up, api);
+  expect(preview()).toEqual({ owner: 'select', data: { items: [move], dx: 4, dy: 2 } });
+  selectTool.onPointerUp(up, api);
+  expect(selection()).toBe(beforeOwnedDrag);
+
+  const selected = { items: [second, movable, stationary] };
+  api.select(selected);
+  selectTool.onPointerDown(down({ ...componentHit, ...movable }), api);
+  selectTool.onPointerMove(up, api);
+  expect(preview()).toEqual({ owner: 'select', data: { items: [secondMove, move], dx: 4, dy: 2 } });
+  selectTool.onPointerUp(up, api);
+  expect(selection()).toBe(selected);
+  expect(execute.mock.calls).toEqual([
+    ['items.translate', { items: [move], dx: 4, dy: 2 }],
+    ['items.translate', { items: [secondMove, move], dx: 4, dy: 2 }],
+  ]);
+});
 
 test('click_selects_component_then_pin', () => {
   const { api, selection, selectTool, execute } = setup();

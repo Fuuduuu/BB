@@ -82,8 +82,9 @@ test('board_pads_return_pad_size_angle_and_shape', () => {
     at: { x: expect.closeTo(-40, 10), y: expect.closeTo(-120, 10) },
     halfPx: { x: 60, y: 40 },
     angleDeg: 90,
-    shape: 'circle',
+    shape: 'rect',
     radiusPx: 60,
+    through: false,
   });
 });
 
@@ -98,6 +99,26 @@ test('board_pads_keep_round_footprint_pad_shape', () => {
     { pinId: '1', shape: 'rect' },
     { pinId: '2', shape: 'circle' },
   ]);
+});
+
+test('rect_custom_pad_keeps_shape_and_hit', () => {
+  const board = placement({
+    footprint: 'header1',
+    params: { pins: 4, pitch: 2.54 },
+    customPads: {
+      own: { local: { x: 0, y: 3 }, sizeMm: 2, shape: 'rect', through: false },
+    },
+  });
+  const [header, own] = boardPads(board, ['2', 'own'], 10);
+
+  expect(own).toMatchObject({
+    pinId: 'own',
+    at: { x: 100, y: 230 },
+    halfPx: { x: 10, y: 10 },
+    shape: 'rect',
+    through: false,
+  });
+  expect(header).toMatchObject({ pinId: '2', shape: 'circle', through: true });
 });
 
 test.each([
@@ -150,6 +171,7 @@ test('pad_map_redirects_pad_to_pin', () => {
       halfPx: { x: 12, y: expect.closeTo(8.1, 10) },
       angleDeg: 0,
       shape: 'rect',
+      through: false,
     },
     {
       pinId: 'x1',
@@ -157,7 +179,8 @@ test('pad_map_redirects_pad_to_pin', () => {
       radiusPx: 24,
       halfPx: { x: 24, y: 12 },
       angleDeg: 0,
-      shape: 'circle',
+      shape: 'rect',
+      through: false,
     },
   ]);
 });
@@ -212,6 +235,7 @@ test('invalid or unknown footprints keep manual pads for known pins', () => {
         halfPx: { x: 5, y: 5 },
         angleDeg: 0,
         shape: 'circle',
+        through: true,
       },
     ]);
   }
@@ -227,6 +251,7 @@ test('two physical pads mapped to one pin remain separate', () => {
       halfPx: { x: 5, y: 6.75 },
       angleDeg: 0,
       shape: 'rect',
+      through: false,
     },
     {
       pinId: 'A',
@@ -235,6 +260,7 @@ test('two physical pads mapped to one pin remain separate', () => {
       halfPx: { x: 5, y: 6.75 },
       angleDeg: 0,
       shape: 'rect',
+      through: false,
     },
   ]);
 });

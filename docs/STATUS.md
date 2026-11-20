@@ -10,6 +10,7 @@ Claude on arhitekt ja Codex on ehitaja; tööriistu ehitab ka Astra põhikaustas
 
 | Versioon | Verstapost | Kuupäev | Märkus |
 |---|---|---|---|
+| `v0.5.0` | M2.1 ühendused ja võrgud plaadil | 2026-11-20 | liidetud `92f001c`, silt `v0.5.0`; Astra sõltumatu ülevaatuse parandused M2-1-12–14; kasutaja suitsukatsed 12/12 ja 6/6 oma plaadi fotoga |
 | `v0.4.0` | M1.4 suurus, joondus, oma jalad ja jõudlus | 2026-11-19 | liidetud `7e37c59`, silt `v0.4.0`; kasutaja suitsukatse 12/12 oma tiheda plaadi fotoga |
 | `v0.3.0` | M1.3 tööpind, valik, korpuste teek | 2026-11-17 | liidetud `6fa7a85`, silt `a995825`; kasutaja oma fotoga kontroll jäi vahele, ehitaja sünteetiline suitsukatse 10/12 |
 | `v0.2.0` | M1.2 foto ja kalibreerimine | 2026-11-14 | |
@@ -18,21 +19,21 @@ Claude on arhitekt ja Codex on ehitaja; tööriistu ehitab ka Astra põhikaustas
 
 Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani vastuvõtutabelis.
 
-## Järgmine: M2.1 ühendused ja võrgud plaadil
+## Järgmine: M2.2 piiksumisrežiim ja ühenduse tase
 
-- M1.4 on avaldatud versioonina `v0.4.0` (liidetud `7e37c59`). Kaardid ja commit'id, jõudlustabel, ühilduvusfailid ja suitsukatse on [M1.4 üleandmises](plans/M1-4-uleandmine.md).
-- [M2.1 teostusplaan](plans/M2-1-uhendused-ja-vorgud.md) on kinnitatud (2026-11-19, kasutaja kinnitas soovitused O1–O5). [M2-1-2](tasks/M2-1-2.md) reeglid domeeni ([ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md), rada B): **vastu võetud** `8db131c`. [M2-1-3](tasks/M2-1-3.md) valiku kehtivus registrisse (rada A): **vastu võetud** `f6c71d6`. [M2-1-4](tasks/M2-1-4.md) mitmikvalik, raamvalik ja dubleerimine (rada A): **vastu võetud** `75192c1`. Rada A täisring läbis pärast viie kinnitatud testiootuse uuendamist. [M2-1-5](tasks/M2-1-5.md) moodul `connections`, kiirühendus ja kustutamise reeglid (rada B): **vastu võetud** `3ab11ac`. [M2-1-6](tasks/M2-1-6.md) tööriist Rada (rada B): **vastu võetud** `f3a99c8`. [M2-1-7](tasks/M2-1-7.md) raja muutmine (rada A): **vastu võetud** `5ac0d20`. [M2-1-8](tasks/M2-1-8.md) moodul `nets`: arvutus ja käsud (rada B): **vastu võetud** `dea9f0b`. [M2-1-9](tasks/M2-1-9.md) vahekaart „Võrgud“, värvid ja võrguloend (rada A): **vastu võetud** `dcd8425`. [M2-1-10](tasks/M2-1-10.md) raja silt ja paremklõps (rada A): **vastu võetud** `a29cef4`. [M2-1-11](tasks/M2-1-11.md) vastuvõtt: jõudlus, E2E, võrguloendi salvestus ja suitsukatse (rada B): **vastu võetud** `8a2304d`. Rada B täisring läbis. Kasutaja aktsepteeris lohistuse 40,68 fps v0.5.0 jaoks. [Üleandmine ja suitsukatse](plans/M2-1-uleandmine.md). Kasutaja suitsukatse **läbis** 2026-11-20 (kõik 12 sammu). Astra [sõltumatu ülevaatus](review/2026-11-20-m2-1-ulevaatus-8a2304d.md) (`8a2304d`) leidis 7 P1, 8 P2 ja 5 P3 viga. Väljalase on peatatud. Kasutaja kinnitas parandused: [M2-1-12](tasks/M2-1-12.md) projektifaili kaitse (B): **vastu võetud** `fbc590c`, rada B täisring läbis, CI järelparandus `763c373`, [M2-1-13](tasks/M2-1-13.md) ühenduste andmete terviklus (B): **vastu võetud** `fa8e0e9`, rada B täisring läbis ja [M2-1-14](tasks/M2-1-14.md) tööriista siht ja kasutajaliides (A): **vastu võetud** `d12a39d`, rada A täisring läbis. Rada A täisring läbis. Täisring `d12a39d` peal läbis (arhitekt) ja kasutaja lühike suitsukatse **läbis** 2026-11-20 (kuus sammu). Järgmine: liitmine `main`-i ja `v0.5.0` (kasutaja loal). Plaan seob M1.4 sisendid ja koodiülevaatuse väiksemad leiud ülesannetega.
-- Haru `codex/m1-4` on liidetud. M2.1 tööpuu on `C:/Users/TRUMPIT/.codex/worktrees/bb-m2-1/BB`, haru `codex/m2-1`.
-- [Koodiülevaatus 2026-11-19](review/2026-11-19-koodiulevaatus-00a424e.md) (`00a424e`, 34 leidu, triaaž dokumendi lõpus). Enne M2.1 tööd:
-  1. [M2-1-H](tasks/M2-1-H.md) projektifaili terviklus ja päästekoopia (B), M2.1 ainus hooldusvoor: **vastu võetud** `af5716b`.
-  2. [M2-1-1](tasks/M2-1-1.md) paigutus ja kalibreerimine ilma üllatusteta (`R` paigutamisel, teegi parameetrid paigutamise ajal, kalibreerimine akna vahetusel) (A): **vastu võetud** `d0bf319`.
-  3. Astra tööriistad: leid 25 (kaardikontroll ei tohi nõutud testi vaikselt välja jätta), seejärel 26–30.
+- M2.1 on avaldatud versioonina `v0.5.0`: haru on liidetud `92f001c`, versioon `0bc063b`, silt `v0.5.0`.
+  - Kaardid [M2-1-H](tasks/M2-1-H.md), [M2-1-1](tasks/M2-1-1.md)–[M2-1-14](tasks/M2-1-14.md), jõudlus, ühilduvus ja mõlemad suitsukatsed on [M2.1 üleandmises](plans/M2-1-uleandmine.md).
+  - Astra [sõltumatu ülevaatuse](review/2026-11-20-m2-1-ulevaatus-8a2304d.md) P1-leiud parandati kaartidega M2-1-12–M2-1-14.
+- M2.2 teostusplaan on kirjutamata. Plaan vajab kasutaja kinnitust enne esimest kaarti ja seob need lahtised leiud:
+  - Astra 2026-11-20 leiud 14–20;
+  - [koodiülevaatuse 2026-11-19](review/2026-11-19-koodiulevaatus-00a424e.md) leiud 15 ja 18 (sondipaari mustand, võrdse ajatempliga näidud);
+  - salvestuse leiud 04–06 ning lühinimega tee normaliseerimine (`absolute()`, M2-1-12 CI järelparandus) järgmisele salvestuse kaardile, hiljemalt M4.3.
+- Astra tööriistad: leid 25 (kaardikontroll ei tohi nõutud testi vaikselt välja jätta), seejärel 26–30.
 - 02 § 16 ja § 6.2 kasutavad pööramiseks `R`/`Shift+R`-i (O2). 03 § 7.3 kirjeldab M1-4-10 sildi külje valikut.
 
 ## Kehtivad otsused, mis pole veel koodis näha
 
 - Failivorming ei muutu ilma kasutaja loata (M1.3 O2).
-- [ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md) (kasutaja 2026-11-17): moodulitevahelised reeglid ja invariandid lähevad domeeni, valiku kehtivus registrisse. Teostus on M2.1 esimesed ülesanded; kaardid tulevad M2.1 plaaniga.
 - SVG jääb lõuendi aluseks. M1.4 kordusmõõtmine täitis eelarve, seega jalgade Canvas-kihti ei tehta ([M1-4-11](tasks/M1-4-11.md)).
 - PNG-eksport (M4) komponeeritakse veebivaates; fotoprotokoll saab tootmises oma päritolu CORS-päise.
 - Windowsi eelkontroll jääb kasutaja suitsuloendiks; uut automaatikat ei lisata.
@@ -44,7 +45,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 
 - Otsust vajab: koodiallkirjastamine enne laiemat jagamist (v1.0 tingimuslik, A2).
 - Otsust vajab: CLAUDE.md laadib ARHITEKT-i `@`-impordiga ja ARHITEKT §7 saab tööpuu-seansi lõksu (md-auditi ettepanek 2026-11-17).
-- Koristamiseks (kasutaja võib kustutada): `%TEMP%\bb-m1-4-katse\` (pärast varukoopia kontrolli), `%TEMP%\bb030-m1411\`, `%TEMP%\bb-m1-3-katse\v0.2.0-worktree\` ja `%TEMP%\bb-m1-2-katse\v0.1.1-worktree\`.
+- Koristamiseks (kasutaja võib kustutada): `%TEMP%\bb-m2-1-katse\`, `%TEMP%\bb-m1-4-katse\` (pärast varukoopia kontrolli), `%TEMP%\bb030-m1411\`, `%TEMP%\bb-m1-3-katse\v0.2.0-worktree\` ja `%TEMP%\bb-m1-2-katse\v0.1.1-worktree\`.
 
 ## Tööriistad
 

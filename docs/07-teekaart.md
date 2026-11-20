@@ -140,7 +140,7 @@ _M1.1 töötab virtuaalsel tööpinnal ilma fotota ([03 § 7.1](03-arhitektuur.m
 M2 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse järjest: võrgud plaadil, siis mõõtmisest tulenev tase, siis skeemi sümbolid ja paigutus, siis skeemi juhtmed ja sildid.
 
 ### M2.1 · Ühendused ja võrgud plaadil
-**Olek:** [teostusplaan](plans/M2-1-uhendused-ja-vorgud.md) on kinnitatud (2026-11-19, otsused O1–O5). Eeltööd [M2-1-H](tasks/M2-1-H.md) ja [M2-1-1](tasks/M2-1-1.md) on vastu võetud.
+**Olek: valmis ja avaldatud** versioonina `v0.5.0` (2026-11-20). Tõendid, jõudlus ja kasutaja suitsukatsed (12/12 ja väljalaske-eelne 6/6 oma plaadi fotoga) on [M2.1 üleandmises](plans/M2-1-uleandmine.md). Astra [sõltumatu ülevaatuse](review/2026-11-20-m2-1-ulevaatus-8a2304d.md) P1-leiud parandati kaartidega [M2-1-12](tasks/M2-1-12.md)–[M2-1-14](tasks/M2-1-14.md); leiud 14–20 on M2.2-s.
 
 **Sisu:** moodulid `connections` ja `nets`.
 - **esmalt [ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md):** olemasolevad üldkäsud, invariandid ja „paigutamata“ tuletis viiakse domeeni reegliteks ning valiku kehtivus registrisse; käitumine ei muutu;
@@ -155,11 +155,11 @@ M2 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse jär
 - **raamvalik ja mitmikvalik** (`Shift`+klõps), mida kiirühendus vajab ([02](02-kasutaja-teekond.md)).
 
 **Valmis kui:**
-- [ ] Kaks ristuvat rada ja raja ots 1 px kaugusel teisest rajast **ei** liitu. Haru tekib ainult liitepunktiga. Mõõtkava muutmine ei muuda ühtegi võrku. Pealmise ja alumise kihi rajad ühinevad ainult läbiva jala kaudu (ühiktestid).
-- [ ] Liitepunkti eemaldamine ei jäta võrgusildile katkist ankrut.
-- [ ] Kaks eraldi GND-nimega võrku jäävad eraldi; GND + 5V liitmine annab konflikti ja ei kirjuta rolli üle; tagasivõtmine taastab.
-- [ ] „Eemalda joonistus“ jätab ühenduse alles (õhujoonena); „Kustuta ühendus“ eemaldab selle; mõlemad on tagasivõetavad.
-- [ ] **Jõudlus:** sünteetiline plaat 300 komponendi, 3000 jala ja 1000 rajaga püsib [03 § 7.3](03-arhitektuur.md#73-kihid-ja-jõudlus) eelarves; võrkude arvutus käsu järel on mõõdetud ja kirja pandud.
+- [x] Kaks ristuvat rada ja raja ots 1 px kaugusel teisest rajast **ei** liitu. Haru tekib ainult liitepunktiga. Mõõtkava muutmine ei muuda ühtegi võrku. Pealmise ja alumise kihi rajad ühinevad ainult läbiva jala kaudu (ühiktestid).
+- [x] Liitepunkti eemaldamine ei jäta võrgusildile katkist ankrut.
+- [x] Kaks eraldi GND-nimega võrku jäävad eraldi; GND + 5V liitmine annab konflikti ja ei kirjuta rolli üle; tagasivõtmine taastab.
+- [x] „Eemalda joonistus“ jätab ühenduse alles (õhujoonena); „Kustuta ühendus“ eemaldab selle; mõlemad on tagasivõetavad.
+- [x] **Jõudlus:** sünteetiline plaat 300 komponendi, 3000 jala ja 1000 rajaga püsib [03 § 7.3](03-arhitektuur.md#73-kihid-ja-jõudlus) eelarves; võrkude arvutus käsu järel on mõõdetud ja kirja pandud. Lohistus jäi 40,68 fps-ni (eelarve 45), kasutaja aktsepteeris selle `v0.5.0` jaoks ([M2.1 üleandmine](plans/M2-1-uleandmine.md)).
 
 ### M2.2 · Piiksumisrežiim ja ühenduse tase
 **Sisu:** piiksumisrežiim moodulis `measurements` (`beep.record`) ja ühenduse tase (`connectionLevels`).

@@ -110,5 +110,14 @@ export function createDesktopHost(warn: (message: string) => void): AppHost {
       await info(summary).catch(report);
       await invoke<void>('log_export', { dest });
     },
+    async saveTextFile(suggestedName, contents) {
+      const dest = await save({
+        defaultPath: suggestedName,
+        filters: [{ name: 'CSV-fail', extensions: ['csv'] }],
+      });
+      if (!dest) return 'cancelled';
+      await invoke<void>('text_export', { dest, contents });
+      return 'saved';
+    },
   };
 }

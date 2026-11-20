@@ -1,6 +1,9 @@
 export const netsEt = {
   title: 'Võrgud',
   summary: (count: number) => `${count} võrku`,
+  exportNetlist: 'Ekspordi võrguloend (CSV)',
+  exportFileName: (name: string) => `${name} võrguloend.csv`,
+  exportFailed: 'Võrguloendi salvestamine ebaõnnestus',
   back: '← Võrgud',
   newRole: '+ Uus roll',
   newRoleTitle: 'Uus roll',

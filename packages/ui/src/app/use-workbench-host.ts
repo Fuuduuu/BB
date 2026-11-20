@@ -3,8 +3,6 @@ import { useEngine, useProjects } from '@pcbk/client';
 import type { AppHost } from '@pcbk/contracts';
 import { et } from '../shell/i18n/et';
 
-declare const __PCBK_APP_VERSION__: string;
-
 type WorkbenchAction = () => Promise<boolean | void>;
 type CloseRequest = { action: WorkbenchAction; resolve(allowed: boolean): void };
 

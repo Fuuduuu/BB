@@ -1,18 +1,27 @@
 import type { IdGen } from '@pcbk/contracts';
-import { refPrefix } from '@pcbk/domain';
-import type { FootprintParams } from '@pcbk/domain';
+import { boardPads, DEFAULT_ROLES, newBoardDoc, refPrefix } from '@pcbk/domain';
+import type { BoardPlacement, FootprintParams, Layer, PinRef, Vec2 } from '@pcbk/domain';
 import {
   COMPONENT_LIBRARY,
   makePlacedComponent,
   type AddComponentParams,
 } from '@pcbk/features/components/contract';
+import { TRACE_WIDTH_MM, type AddConnectionsParams } from '@pcbk/features/connections/contract';
 import type { AddMeasurementParams } from '@pcbk/features/measurements/contract';
+import type { AssignNetParams } from '@pcbk/features/nets/contract';
 
 export type SyntheticBoard = {
   components: AddComponentParams[];
   measurements: AddMeasurementParams[];
+  connections: AddConnectionsParams;
+  netLabels: AssignNetParams[];
+  sampleConnection: AddConnectionsParams;
   surface: { width: number; height: number };
 };
+
+type TracePin = { pin: PinRef; at: Vec2 };
+type Trace = AddConnectionsParams['items'][number];
+const scale = newBoardDoc('').scale.pxPerMm;
 
 export function generateSyntheticBoard(opts: {
   seed: number;
@@ -70,7 +79,103 @@ export function generateSyntheticBoard(opts: {
       });
     }
   }
-  return { components, measurements, surface: { width: 4000, height: 3000 } };
+  return {
+    components,
+    measurements,
+    ...syntheticTraces(components, opts.ids, random),
+    surface: { width: 4000, height: 3000 },
+  };
+}
+
+function tracePins(components: AddComponentParams[], layer: Layer): TracePin[] {
+  const byComponent = components
+    .filter((component) => component.board?.side === layer)
+    .map((component) => {
+      const placement: BoardPlacement = {
+        ...component.board!,
+        params: component.board!.params ?? {},
+        rotationDeg: component.board!.rotationDeg ?? 0,
+        side: layer,
+        scaleX: 1,
+        scaleY: 1,
+        customPads: {},
+      };
+      const points = new Map(
+        boardPads(
+          placement,
+          component.pins.map((pin) => pin.id),
+          scale,
+        ).map(({ pinId, at }) => [pinId, at] as const),
+      );
+      return component.pins.map((pin): TracePin => ({
+        pin: { c: component.id, p: pin.id },
+        at: points.get(pin.id)!,
+      }));
+    });
+  // Interleave pin numbers across parts to distribute the traces across the board.
+  const pinCount = Math.max(...byComponent.map((pins) => pins.length));
+  return Array.from({ length: pinCount }, (_, index) =>
+    byComponent.flatMap((pins) => (pins[index] ? [pins[index]] : [])),
+  ).flat();
+}
+
+function syntheticTraces(
+  components: AddComponentParams[],
+  ids: IdGen,
+  random: () => number,
+): Pick<SyntheticBoard, 'connections' | 'netLabels' | 'sampleConnection'> {
+  const top = tracePins(components, 'top');
+  const bottom = tracePins(components, 'bottom');
+  const traceCount = 1000;
+  const bottomCount = Math.round((traceCount * bottom.length) / (top.length + bottom.length));
+  const trace = (pins: TracePin[], index: number, layer: Layer): Trace => {
+    const a = pins[index * 2]!;
+    const b = pins[index * 2 + 1]!;
+    const count = 1 + Math.floor(random() * 3);
+    return {
+      id: ids.newId('con'),
+      a: { pin: a.pin },
+      b: { pin: b.pin },
+      board: {
+        kind: 'trace',
+        layer,
+        widthMm: TRACE_WIDTH_MM,
+        waypoints: Array.from({ length: count }, (_, bend) => {
+          const t = (bend + 1) / (count + 1);
+          return {
+            x: a.at.x + (b.at.x - a.at.x) * t + (random() - 0.5) * 24,
+            y: a.at.y + (b.at.y - a.at.y) * t + (random() - 0.5) * 24,
+          };
+        }),
+      },
+    };
+  };
+  const spread = (pins: TracePin[], count: number, layer: Layer) =>
+    Array.from({ length: count }, (_, index) =>
+      trace(pins, Math.floor((index * (Math.floor(pins.length / 2) - 1)) / count), layer),
+    );
+  const upper = spread(top, traceCount - bottomCount, 'top');
+  const lower = spread(bottom, bottomCount, 'bottom');
+  const namedLabels = (items: Trace[], layer: Layer) =>
+    Array.from({ length: DEFAULT_ROLES.length }, (_, index): AssignNetParams => ({
+      anchor: items[Math.floor((index * items.length) / DEFAULT_ROLES.length)]!.a,
+      labelId: ids.newId('lbl'),
+      name: `${layer}-${index + 1}`,
+      roleId: DEFAULT_ROLES[index]!.id,
+    }));
+  const connections: AddConnectionsParams = {
+    items: [...upper, ...lower],
+    basis: 'visual',
+    skipJoined: false,
+  };
+  return {
+    connections,
+    netLabels: [...namedLabels(upper, 'top'), ...namedLabels(lower, 'bottom')],
+    sampleConnection: {
+      ...connections,
+      items: [trace(top, Math.floor(top.length / 2) - 1, 'top')],
+    },
+  };
 }
 
 function mulberry32(seed: number): () => number {

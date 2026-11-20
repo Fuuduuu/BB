@@ -1,4 +1,4 @@
-import type { IdGen, Snapshot } from '@pcbk/contracts';
+import type { AppHost, IdGen, Snapshot } from '@pcbk/contracts';
 import { createComponentsUi } from './components/ui';
 import { connectionPoints, createConnectionsUi } from './connections/ui';
 import { createMeasurementsUi } from './measurements/ui';
@@ -23,11 +23,15 @@ function netName({ derived: { nets } }: Snapshot, memberKey: string): string | u
   return names.get(key);
 }
 
-export const uiFeatures = (ids: IdGen, onHome: () => void) => [
+export const uiFeatures = (
+  ids: IdGen,
+  onHome: () => void,
+  { saveTextFile }: Pick<AppHost, 'saveTextFile'> = {},
+) => [
   createProjectUi({ onHome }),
   createPhotoUi(),
   createComponentsUi(ids),
   createConnectionsUi(ids, { roleColor: netRoleColor, netName }),
-  createNetsUi(ids, connectionPoints),
+  createNetsUi(ids, connectionPoints, saveTextFile),
   createMeasurementsUi(ids),
 ];

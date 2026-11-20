@@ -9,6 +9,15 @@ type ProjectIndex = Pick<
 const noSubscription = () => () => undefined;
 const reload = () => window.location.reload();
 
+function downloadFile(name: string, blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export function createWebHost(repo: ProjectIndex): AppHost {
   return {
     kind: 'web',
@@ -29,13 +38,11 @@ export function createWebHost(repo: ProjectIndex): AppHost {
     closeNow: reload,
     reload,
     async saveDiagnostics(summary) {
-      const blob = new Blob([summary], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'pcbk-diagnostika.json';
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      downloadFile('pcbk-diagnostika.json', new Blob([summary], { type: 'application/json' }));
+    },
+    async saveTextFile(suggestedName, contents) {
+      downloadFile(suggestedName, new Blob([contents], { type: 'text/csv;charset=utf-8' }));
+      return 'saved';
     },
   };
 }

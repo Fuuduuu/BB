@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
-import type { IdGen, Snapshot } from '@pcbk/contracts';
+import type { AppHost, IdGen, Snapshot } from '@pcbk/contracts';
 import { Button, Dialog, Field, useSessionStore } from '@pcbk/ui';
-import { netRoleColor, roleSwatchColor } from '../contract';
+import { netlistCsv, netRoleColor, roleSwatchColor } from '../contract';
 import type { AssignNetParams } from '../contract';
 import { netsEt } from './i18n/et';
 import { netAnchor, netCommandError, netDetails, pinMembers } from './net-details';
@@ -10,7 +10,11 @@ import type { ConnectionPoints, Net } from './net-details';
 import { NetRoleDialog } from './NetRoleDialog';
 import './nets-tab.css';
 
-type NetsTabProps = { ids: IdGen; connectionPoints: ConnectionPoints };
+type NetsTabProps = {
+  ids: IdGen;
+  connectionPoints: ConnectionPoints;
+  saveTextFile?: AppHost['saveTextFile'];
+};
 
 function Swatch({ color }: { color: string }) {
   return <span className="pcbk-net-swatch" style={{ backgroundColor: color }} aria-hidden="true" />;
@@ -280,14 +284,31 @@ function NetView({
   );
 }
 
-function NetsNavigator({ ids, connectionPoints, snapshot }: NetsTabProps & { snapshot: Snapshot }) {
+function NetsNavigator({
+  ids,
+  connectionPoints,
+  saveTextFile,
+  snapshot,
+}: NetsTabProps & { snapshot: Snapshot }) {
   const [selected, setSelected] = useState<string>();
   const [addingRole, setAddingRole] = useState(false);
+  const [exportError, setExportError] = useState(false);
   const derived = snapshot.derived.nets;
   const nets = derived?.list ?? [];
   const selectedKey = selected === undefined ? undefined : derived?.netOf[selected];
   const active = nets.find(({ key }) => key === selectedKey);
   const openRole = () => setAddingRole(true);
+
+  async function exportNetlist() {
+    if (!saveTextFile || !nets.length) return;
+    setExportError(false);
+    const name = snapshot.doc.name.replace(/[\\/:*?"<>|]/g, '').trim();
+    try {
+      await saveTextFile(netsEt.exportFileName(name), netlistCsv(snapshot));
+    } catch {
+      setExportError(true);
+    }
+  }
 
   return (
     <div className="pcbk-nets-tab">
@@ -305,6 +326,14 @@ function NetsNavigator({ ids, connectionPoints, snapshot }: NetsTabProps & { sna
       ) : (
         <>
           <NetList snapshot={snapshot} nets={nets} select={(net) => setSelected(net.key)} />
+          <Button disabled={!saveTextFile || !nets.length} onClick={() => void exportNetlist()}>
+            {netsEt.exportNetlist}
+          </Button>
+          {exportError && (
+            <p className="bb-field__error" role="alert">
+              {netsEt.exportFailed}
+            </p>
+          )}
           <RoleChips roles={snapshot.doc.roles} addRole={openRole} />
         </>
       )}

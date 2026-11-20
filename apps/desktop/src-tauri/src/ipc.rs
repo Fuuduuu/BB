@@ -95,6 +95,11 @@ pub fn log_export<R: Runtime>(app: AppHandle<R>, dest: String) -> Result<(), Sto
     Ok(())
 }
 
+#[tauri::command(rename_all = "snake_case")]
+pub fn text_export(dest: String, contents: String) -> Result<(), StorageErrorDto> {
+    crate::text_export::write_csv(Path::new(&dest), &contents)
+}
+
 fn project_file(path: &str) -> Result<&Path, StorageErrorDto> {
     let path = Path::new(path);
     if path

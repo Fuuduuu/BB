@@ -1,4 +1,5 @@
 import { info } from '@tauri-apps/plugin-log';
+import { invoke } from '@tauri-apps/api/core';
 import { boardPads } from '@pcbk/domain';
 import { addPhoto } from '@pcbk/features/photo/ui';
 import { et, useSessionStore, useViewStore } from '@pcbk/ui';
@@ -6,6 +7,7 @@ import type { Result, SaveStatus, Snapshot } from '@pcbk/contracts';
 import type { createRuntime } from '../runtime';
 import { frameStats } from './frame-stats';
 import { measureProjectIpc } from './ipc-timing';
+import { measureCommands } from './probe-commands';
 import { generateSyntheticBoard } from './synthetic-board';
 import { createSyntheticPhoto } from './synthetic-photo';
 import {
@@ -139,8 +141,13 @@ async function measure(runtime: Runtime) {
     await awaitProbeReady(() => button(et.project.open) !== null);
     foreground = trackForeground();
     const creationStart = performance.now();
+    const name = 'Jõudlusproov (sünteetiline)';
+    const near = import.meta.env.VITE_PCBK_PERF_NEAR;
     const created = unwrap(
-      await runtime.projects.create({ name: 'Jõudlusproov (sünteetiline)' }),
+      await runtime.projects.create({
+        name,
+        ...(near ? { path: await invoke<string>('default_project_path', { name, near }) } : {}),
+      }),
       'create',
     );
     projectPath = created.path;
@@ -161,6 +168,9 @@ async function measure(runtime: Runtime) {
     await saveQuiet(runtime);
     for (const measurement of synthetic.measurements)
       unwrap(runtime.engine.execute('measurements.add', measurement), 'measurements.add');
+    unwrap(runtime.engine.execute('connections.add', synthetic.connections), 'connections.add');
+    for (const label of synthetic.netLabels)
+      unwrap(runtime.engine.execute('nets.assign', label), 'nets.assign');
     await saveQuiet(runtime);
     const creationMs = performance.now() - creationStart;
     unwrap(await runtime.projects.close(), 'close created project');
@@ -175,6 +185,8 @@ async function measure(runtime: Runtime) {
     }
     if (!canvas) throw new Error('Canvas missing after open');
     const snapshot = runtime.engine.snapshot();
+    const connections = snapshot.doc.connections.filter(({ board }) => board?.kind === 'trace');
+    if (connections.length !== 1000) throw new Error('Probe board did not reopen with 1000 traces');
     const target = selectDenseTarget(snapshot.doc.components, synthetic.surface);
     if (!target?.board) throw new Error('No placed drag target');
     const baseZoom = probeBaseZoom(snapshot.doc);
@@ -217,6 +229,7 @@ async function measure(runtime: Runtime) {
     const drag = await dragComponent(runtime, canvas, target.id);
     await saveQuiet(runtime);
     const dom = canvasCounts(canvas);
+    const commands = await measureCommands(runtime.engine, target.id, synthetic.sampleConnection);
     await closeWorkbench(runtime);
     const ipc = { stage: 'after_gestures', samples: await measureProjectIpc(created.path) };
     const reasons = foreground.reasons();
@@ -227,20 +240,29 @@ async function measure(runtime: Runtime) {
       seed: 127,
       creationMs,
       open: { runsMs: openMs, medianMs: [...openMs].sort((a, b) => a - b)[1]!, budgetMs: 1500 },
-      pan: { ...pan, budgetFps: 60 },
-      zoom: { ...zoom, budgetFps: 60 },
+      pan: { ...pan, budgetFps: 57 },
+      zoom: { ...zoom, budgetFps: 57 },
       zoomSettle,
       drag: {
         ...frameStats(drag.intervals),
         budgetFps: 45,
         captureShim: drag.captureShim,
+        bodyHitAttempts: drag.bodyHitAttempts,
         committed: drag.committed,
         revDelta: drag.revDelta,
         previewFrames: drag.previewFrames,
       },
       ...environment(),
       dom,
+      board: {
+        traces: connections.length,
+        topTraces: connections.filter(({ board }) => board?.layer === 'top').length,
+        bottomTraces: connections.filter(({ board }) => board?.layer === 'bottom').length,
+        measurements: snapshot.doc.measurements.length,
+        namedNets: snapshot.derived.nets?.list.filter((net) => net.named).length,
+      },
       ipc,
+      commands: { budgetMs: 16, samples: commands },
       baseZoom,
       target: { id: target.id, footprint: target.board.footprint, center: target.board.center },
     };

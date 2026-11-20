@@ -24,4 +24,5 @@ export interface AppHost {
   closeNow(): void;
   reload(): void;
   saveDiagnostics(summary: string): Promise<void>;
+  saveTextFile?(suggestedName: string, contents: string): Promise<'saved' | 'cancelled'>;
 }

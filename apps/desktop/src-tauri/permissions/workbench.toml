@@ -1,6 +1,6 @@
 [[permission]]
 identifier = "allow-workbench"
-description = "PCB projektihoidla, avamistee ja diagnostika käsud."
+description = "PCB projektihoidla, avamistee, diagnostika ja tekstiekspordi käsud."
 commands.allow = [
   "project_create",
   "project_open",
@@ -20,4 +20,5 @@ commands.allow = [
   "default_project_path",
   "take_initial_path",
   "log_export",
+  "text_export",
 ]

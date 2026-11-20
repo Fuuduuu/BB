@@ -1,9 +1,11 @@
 import type { IdGen, Snapshot } from '@pcbk/contracts';
 import type { EndRef } from '@pcbk/domain';
 import type { Selection, UiModule } from '@pcbk/ui';
+import { createTraceToolSpec, resetTraceTool, startExistingTrace } from './TraceTool';
+import { TraceHint } from './TraceHint';
 import { AirLinesToggle } from './air-lines-view';
 import { connectionsEt } from './i18n/et';
-import { airLinesLayer, junctionsLayer } from './layers';
+import { airLinesLayer, junctionsLayer, tracesLayer } from './layers';
 
 function endLabel({ doc }: Snapshot, end: EndRef): string | null {
   if ('junction' in end) return connectionsEt.junctionEnd;
@@ -16,6 +18,11 @@ function idsOfKind(selection: Selection, kind: string): string[] {
   return selection.items.filter((item) => item.kind === kind).map(({ id }) => id);
 }
 
+function selectedConnection({ doc }: Snapshot, selection: Selection) {
+  const ids = idsOfKind(selection, 'connection');
+  return ids.length === 1 ? doc.connections.find(({ id }) => id === ids[0]) : undefined;
+}
+
 function junctionConnectionCount({ doc }: Snapshot, ids: readonly string[]): number {
   const selected = new Set(ids);
   const touches = (end: EndRef) => 'junction' in end && selected.has(end.junction);
@@ -26,8 +33,11 @@ export function createConnectionsUi(ids: IdGen): UiModule {
   return {
     id: 'connections',
     title: connectionsEt.title,
-    canvasLayers: [airLinesLayer, junctionsLayer],
+    canvasLayers: [tracesLayer, airLinesLayer, junctionsLayer],
+    tools: [createTraceToolSpec(ids)],
     topBar: [{ id: 'connections.airLines', render: () => <AirLinesToggle /> }],
+    bottomBar: [{ id: 'connections.trace', render: () => <TraceHint /> }],
+    onSessionReset: resetTraceTool,
     keys: [
       {
         id: 'connections.quickConnect',
@@ -70,6 +80,34 @@ export function createConnectionsUi(ids: IdGen): UiModule {
       },
     ],
     contextMenu: [
+      {
+        id: 'connections.drawOnBoard',
+        appliesTo: ['connection'],
+        order: -1,
+        label: () => connectionsEt.drawOnBoard,
+        available(snapshot, selection) {
+          const connection = selectedConnection(snapshot, selection);
+          return !!connection && !connection.board;
+        },
+        run(api, selection) {
+          const connection = selectedConnection(api.snapshot(), selection);
+          return !!connection && startExistingTrace(api, connection.id);
+        },
+      },
+      {
+        id: 'connections.removeBoardDrawing',
+        appliesTo: ['connection'],
+        order: -1,
+        label: () => connectionsEt.removeBoardDrawing,
+        available: (snapshot, selection) => !!selectedConnection(snapshot, selection)?.board,
+        run(api, selection) {
+          const connection = selectedConnection(api.snapshot(), selection);
+          return (
+            !!connection?.board &&
+            api.execute('connections.removeBoardDrawing', { ids: [connection.id] }).ok
+          );
+        },
+      },
       {
         id: 'connections.remove',
         appliesTo: ['connection'],

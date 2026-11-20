@@ -16,6 +16,7 @@ export interface ContextMenuItemSpec {
     appliesTo: string[];
     order: number;
     label(snapshot: Snapshot, selection: Selection): string;
+    available?(snapshot: Snapshot, selection: Selection): boolean;
     shortcut?: {
         key: string;
         shift?: boolean;

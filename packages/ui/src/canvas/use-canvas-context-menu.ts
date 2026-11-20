@@ -52,6 +52,14 @@ function menuSelection(kind: string, selection: Selection): Selection {
   return { items: pin ? [pin] : [] };
 }
 
+function availableItems(
+  items: ContextMenuItemSpec[],
+  snapshot: ReturnType<ToolApi['snapshot']>,
+  selection: Selection,
+): ContextMenuItemSpec[] {
+  return items.filter((item) => item.available?.(snapshot, selection) !== false);
+}
+
 export function useCanvasContextMenu({
   api,
   contextMenu,
@@ -104,10 +112,11 @@ export function useCanvasContextMenu({
 
   const openFromKeyboard = useCallback(() => {
     if (!contextMenu || isGesturing() || !scene.current || !viewport.current) return;
-    const { selection, toolId: currentTool } = useSessionStore.getState();
+    const { selection: currentSelection, toolId: currentTool } = useSessionStore.getState();
     if (currentTool !== 'select') return;
-    const kind = selection.items[0]?.kind ?? 'empty';
-    const items = contextMenu(kind);
+    const kind = currentSelection.items[0]?.kind ?? 'empty';
+    const selection = menuSelection(kind, currentSelection);
+    const items = availableItems(contextMenu(kind), api.snapshot(), selection);
     keyboardOpening.current = true;
     if (items.length === 0) return;
     const bounds = visibleCanvasBounds(viewport.current.getBoundingClientRect(), fitInsets);
@@ -119,9 +128,9 @@ export function useCanvasContextMenu({
       at: pointerWorld(scene.current, screen),
       screen,
       items,
-      selection: menuSelection(kind, selection),
+      selection,
     });
-  }, [contextMenu, fitInsets, isGesturing, scene, viewport]);
+  }, [api, contextMenu, fitInsets, isGesturing, scene, viewport]);
 
   function onContextMenu(event: MouseEvent<HTMLDivElement>) {
     event.preventDefault();
@@ -144,7 +153,7 @@ export function useCanvasContextMenu({
     const hit = api.hitIndex.query(at, viewRef.current.zoom);
     const hitSelection = selectionForHit(hit);
     const target = hitSelection.items[0];
-    const selection =
+    const currentSelection =
       target &&
       !session.selection.items.some(
         ({ kind, id, componentId }) =>
@@ -152,10 +161,11 @@ export function useCanvasContextMenu({
       )
         ? hitSelection
         : session.selection;
-    if (selection !== session.selection) api.select(selection);
+    if (currentSelection !== session.selection) api.select(currentSelection);
     const kind = target?.kind ?? 'empty';
-    const items = contextMenu(kind);
-    if (items.length > 0) setOpen({ at, screen, items, selection: menuSelection(kind, selection) });
+    const selection = menuSelection(kind, currentSelection);
+    const items = availableItems(contextMenu(kind), api.snapshot(), selection);
+    if (items.length > 0) setOpen({ at, screen, items, selection });
     else close();
   }
 

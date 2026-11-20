@@ -4,9 +4,29 @@
 
 Sisenemispunkt: `packages/domain/src/rules/index.ts`
 
+### `branchConnection`
+
+Prepare all edits together so the preview and the command validate the same branch.
+
+```ts
+export function branchConnection(doc: DrawingPositions & {
+    readonly connections: readonly BranchTarget[];
+}, input: BranchInput): BranchPlan;
+```
+
 ### `deleteItems`
 ```ts
 export function deleteItems(doc: BoardDoc, ids: readonly string[]): RuleReport;
+```
+
+### `DrawingKind`
+```ts
+export type DrawingKind = NonNullable<Connection['board']>['kind'];
+```
+
+### `endAcceptsDrawing`
+```ts
+export function endAcceptsDrawing(doc: DrawingPositions, end: EndRef, kind: DrawingKind, layer: Layer): boolean;
 ```
 
 ### `endKey`

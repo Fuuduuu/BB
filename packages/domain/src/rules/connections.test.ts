@@ -244,3 +244,80 @@ test('orphan_junction_label_moves_or_is_removed', () => {
   expect(replaced.junctions).toEqual([{ id: 'jun_cmp_a_1' }, { id: 'jun_cmp_b_1' }]);
   expect(replaced.netLabels).toEqual([]);
 });
+
+test('branch_on_trace_creates_junction_and_splits_in_one_step', () => {
+  const { doc, part } = placedDoc();
+  const from = pin(part.id, '1');
+  const to = pin(part.id, '2');
+  const branchStart = pin(part.id, '3');
+  const waypoints = [
+    { x: 120, y: 160 },
+    { x: 160, y: 160 },
+  ];
+  const target: Connection = {
+    ...connection('con_target', from, to),
+    board: {
+      kind: 'trace',
+      layer: 'bottom',
+      waypoints,
+      widthMm: 0.45,
+      labelOffset: { x: 3, y: 4 },
+    },
+  };
+  const undrawn = connection('con_undrawn', from, branchStart);
+  doc.connections.push(target, undrawn);
+  const engine = setup(doc);
+  const before = engine.snapshot();
+  const junctionId = 'jun_branch';
+  const end = junction(junctionId);
+  const at = { x: 140, y: 160 };
+  const params = {
+    target: target.id,
+    segment: 1,
+    at,
+    junctionId,
+    splitId: 'con_split',
+    trace: {
+      id: 'con_branch',
+      a: branchStart,
+      b: end,
+      board: {
+        kind: 'trace' as const,
+        layer: 'bottom' as const,
+        widthMm: 0.3,
+        waypoints: [{ x: 140, y: 180 }],
+      },
+    },
+  };
+
+  for (const [change, message] of [
+    [{ segment: 3 }, 'invalid_segment'],
+    [{ target: undrawn.id }, 'not_drawn'],
+    [{ trace: { ...params.trace, b: to } }, 'branch_end_mismatch'],
+  ] as const) {
+    expect(engine.execute('connections.branch', { ...params, ...change })).toEqual({
+      ok: false,
+      error: { code: 'validation', issues: [{ code: 'custom', path: [], message }] },
+    });
+    expect(engine.snapshot()).toBe(before);
+  }
+  expect(engine.execute('connections.branch', params).ok).toBe(true);
+  expect(engine.snapshot().doc.junctions).toEqual([
+    { id: junctionId, board: { at, layer: 'bottom' } },
+  ]);
+  expect(engine.snapshot().doc.connections).toEqual([
+    { ...target, b: end, board: { ...target.board, waypoints: [waypoints[0]] } },
+    undrawn,
+    {
+      id: 'con_split',
+      a: end,
+      b: to,
+      basis: 'assumed',
+      board: { kind: 'trace', layer: 'bottom', widthMm: 0.45, waypoints: [waypoints[1]] },
+    },
+    { ...params.trace, basis: 'visual' },
+  ]);
+  expect(engine.undo().ok).toBe(true);
+  expect(engine.snapshot().doc).toEqual({ ...before.doc, rev: before.doc.rev + 2 });
+  expect(engine.snapshot().history.canUndo).toBe(false);
+});

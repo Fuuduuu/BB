@@ -276,6 +276,21 @@ test('circle_render_and_selection_use_scaled_ellipse_radii', () => {
   expect(number(selected, 'ry')).toBe(34);
 });
 
+test('rect_custom_pad_draws_and_accepts_a_corner_click', () => {
+  const part = component({
+    footprint: 'area',
+    customPads: { '1': { local: { x: 0, y: 0 }, sizeMm: 2, shape: 'rect', through: true } },
+  });
+  const doc = newBoardDoc('Plaat');
+  doc.components.push(part);
+  const pad = outline(mount(part));
+  const index = createHitIndex(componentPinHits(setup(doc).engine.snapshot()));
+
+  expect(pad.tagName).toBe('rect');
+  expect(index.query({ x: 109, y: 89 }, 1)?.id).toBe('1');
+  expect(index.query({ x: 111, y: 89 }, 1)).toBeUndefined();
+});
+
 test('pin_name_starts_outside_long_rect_at_visible_name_zoom', () => {
   for (const [rotationDeg, rightEdge] of [
     [0, 7.75],

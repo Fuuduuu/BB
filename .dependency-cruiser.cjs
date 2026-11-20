@@ -78,7 +78,7 @@ module.exports = {
       from: { path: '^packages/(?:ui/|client/|features/[^/]+/ui/)', pathNot: tests },
       to: {
         path: '^packages/domain/',
-        pathNot: '^packages/domain/src/(?:geometry/|footprints/|measure/reading[.]ts$)',
+        pathNot: '^packages/domain/src/(?:geometry/|footprints/|rules/|measure/reading[.]ts$)',
         dependencyTypesNot: ['type-only'],
       },
     },

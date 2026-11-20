@@ -100,3 +100,37 @@ test('removal_commands_reject_a_missing_id_without_changing_document', () => {
   }
   expect(host.drainJournal()).toEqual([]);
 });
+
+test('trace_on_existing_connection_adds_only_drawing', () => {
+  const airLine: Connection = {
+    id: 'con_assumed',
+    a: { pin: { c: 'cmp_u1', p: '1' } },
+    b: { pin: { c: 'cmp_u1', p: '4' } },
+    basis: 'assumed',
+  };
+  const { engine, host } = mountMeasurements({ seed: (doc) => doc.connections.push(airLine) });
+  const board: NonNullable<Connection['board']> = {
+    kind: 'trace',
+    layer: 'top',
+    waypoints: [{ x: 160, y: 130 }],
+    widthMm: 0.3,
+  };
+  act(() => {
+    const result = engine.execute('connections.drawOnBoard', { id: airLine.id, board });
+    expect(result, JSON.stringify(result)).toMatchObject({ ok: true });
+  });
+  const drawn = engine.snapshot();
+  expect(drawn.doc.connections).toEqual([{ ...airLine, basis: 'visual', board }]);
+  expect(drawn.doc.junctions).toEqual([]);
+  expect(engine.execute('connections.drawOnBoard', { id: airLine.id, board })).toEqual({
+    ok: false,
+    error: {
+      code: 'validation',
+      issues: [{ code: 'custom', path: [], message: 'already_drawn' }],
+    },
+  });
+  expect(engine.snapshot()).toBe(drawn);
+  expect(host.drainJournal().map(({ commandId }) => commandId)).toEqual([
+    'connections.drawOnBoard',
+  ]);
+});

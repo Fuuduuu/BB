@@ -3,7 +3,10 @@ import type { BoardDoc } from '../model/board';
 import type { Component } from '../model/component';
 import type { Connection, Junction } from '../model/connection';
 import type { NetLabel } from '../model/net';
-import type { EndRef, Layer, PinRef } from '../model/primitives';
+import type { EndRef, Layer, PinRef, Vec2 } from '../model/primitives';
+import { RuleRejected, RuleTargetNotFound } from './errors';
+import { endAcceptsDrawing } from './layers';
+import type { DrawingPositions } from './layers';
 import { endRefsByKey, pinKey, resolveNets } from './nets';
 import type { NetMembership } from './nets';
 
@@ -175,4 +178,74 @@ export function removeBoardDrawing(doc: BoardDoc, ids: readonly string[]): void 
   for (const connection of doc.connections) {
     if (selected.has(connection.id)) delete connection.board;
   }
+}
+
+type Drawing = NonNullable<Connection['board']>;
+type BranchTarget = Pick<Connection, 'id' | 'b' | 'basis'> & {
+  readonly board?:
+    (Omit<Drawing, 'waypoints'> & { readonly waypoints: readonly Vec2[] }) | undefined;
+};
+
+interface BranchInput {
+  target: string;
+  segment: number;
+  at: Vec2;
+  junctionId: string;
+  splitId: string;
+  trace: Pick<Connection, 'id' | 'a' | 'b' | 'board'>;
+}
+
+interface BranchPlan {
+  targetIndex: number;
+  junction: Junction;
+  targetEnd: EndRef;
+  targetWaypoints: Vec2[];
+  split: Connection;
+  trace: Connection;
+}
+
+/** Prepare all edits together so the preview and the command validate the same branch. */
+export function branchConnection(
+  doc: DrawingPositions & { readonly connections: readonly BranchTarget[] },
+  input: BranchInput,
+): BranchPlan {
+  const { at, junctionId, segment, splitId, trace } = input;
+  const targetIndex = doc.connections.findIndex(({ id }) => id === input.target);
+  const target = doc.connections[targetIndex];
+  if (!target) throw new RuleTargetNotFound(input.target);
+
+  const board = target.board;
+  if (!board) throw new RuleRejected('not_drawn');
+  if (!Number.isInteger(segment) || segment < 0 || segment > board.waypoints.length)
+    throw new RuleRejected('invalid_segment');
+  if (!('junction' in trace.b) || trace.b.junction !== junctionId)
+    throw new RuleRejected('branch_end_mismatch');
+  const newDrawing = trace.board;
+  if (!newDrawing) throw new RuleRejected('not_drawn');
+  if (
+    (newDrawing.kind === 'trace' && newDrawing.layer !== board.layer) ||
+    !endAcceptsDrawing(doc, trace.a, newDrawing.kind, newDrawing.layer)
+  ) {
+    throw new RuleRejected('layer_mismatch');
+  }
+
+  return {
+    targetIndex,
+    junction: { id: junctionId, board: { at, layer: board.layer } },
+    targetEnd: { junction: junctionId },
+    targetWaypoints: board.waypoints.slice(0, segment),
+    split: {
+      id: splitId,
+      a: { junction: junctionId },
+      b: target.b,
+      basis: target.basis,
+      board: {
+        kind: board.kind,
+        layer: board.layer,
+        widthMm: board.widthMm,
+        waypoints: board.waypoints.slice(segment),
+      },
+    },
+    trace: { ...trace, basis: 'visual' },
+  };
 }

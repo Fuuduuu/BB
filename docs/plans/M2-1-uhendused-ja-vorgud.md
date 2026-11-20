@@ -59,7 +59,7 @@ Lisaks:
 - uusi sõltuvusi ei lisata ilma kasutaja loata;
 - Codex kasutab ainult sünteetilisi projekte ja fotosid.
 
-Rajad: ülesanded 2, 5, 6 ja 11 on **rada B** (tuuma piir, andmereeglid ja invariandid, vastuvõtt), ülejäänud **rada A**. Hooldusvoor on juba tehtud ([M2-1-H](../tasks/M2-1-H.md)); väiksemad tööd lähevad märkusena ehituskaardi juurde.
+Rajad: ülesanded 2, 5, 6, 8 ja 11 on **rada B** (tuuma piir, andmereeglid ja invariandid, mootori teavitus, vastuvõtt), ülejäänud **rada A**. Hooldusvoor on juba tehtud ([M2-1-H](../tasks/M2-1-H.md)); väiksemad tööd lähevad märkusena ehituskaardi juurde.
 
 ## Ülesanded
 
@@ -151,6 +151,7 @@ Rajad: ülesanded 2, 5, 6 ja 11 on **rada B** (tuuma piir, andmereeglid ja invar
      - `scale_change_leaves_nets_unchanged`
      - `negative_beep_then_connect_flags_contradiction`
      - `shorted_two_pin_component_is_reported`
+     - `label_removal_shows_notice_with_undo_hint` ([M2-1-8](../tasks/M2-1-8.md): teade ja rollide haldus)
 9. **Võrgud vahekaart, värvid ja eksport.**
    - Navigaatori vahekaart **Võrgud**: loend, rolli kiibid (GND · 3V3 · 5V · 12V · Signaal · Teadmata · + Uus roll), nimi ja uue rolli dialoog.
    - Rajad, õhujooned ja ühendatud jalad joonistatakse rolli värviga. Tumedas teemas on GND `#9aa5a0`.

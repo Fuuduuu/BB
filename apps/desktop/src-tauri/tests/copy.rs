@@ -218,9 +218,13 @@ fn copy_replaces_confirmed_destination_but_not_open_source() {
     let other = f.store.create(&dest, "project-other", &doc(0)).unwrap();
     let original = f.path("original.pcbk");
     for blocked in [&original, &dest] {
+        let token = replace_token(blocked).unwrap().unwrap();
         assert_eq!(
             f.store
-                .copy(request(&source, blocked, &doc(1)))
+                .copy(CopyRequest {
+                    replace_token: Some(&token),
+                    ..request(&source, blocked, &doc(1))
+                })
                 .unwrap_err()
                 .reason,
             Reason::Locked

@@ -176,8 +176,7 @@ Rajad: ülesanded 2, 5, 6, 8 ja 11 on **rada B** (tuuma piir, andmereeglid ja in
       - `trace_label_drag_is_one_step_and_survives_reopen`
       - `labels_do_not_overlap_each_other`
       - `context_menu_starts_trace_from_pin`
-      - `context_menu_remove_drawing_vs_remove_connection`
-      - `junction_delete_states_connection_count`
+      - „Eemalda joonistus“, „Kustuta ühendus“ ja liitepunkti ühenduste arv on juba olemas ja testitud M2-1-5 ning M2-1-6 kaartides; eraldi teste ei lisata ([M2-1-10](../tasks/M2-1-10.md)).
 
 **Osa F · Vastuvõtt**
 

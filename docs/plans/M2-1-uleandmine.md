@@ -11,7 +11,7 @@ Kaart [M2-1-11](../tasks/M2-1-11.md), haru `codex/m2-1`, alus `a29cef4`. Tööpu
 | Võrguloendi CSV | TS-test kontrollib nupu olekuid, puhastatud failinime, CSV sisu ja veateadet. E2E kontrollib veebist allalaaditud faili. Rusti test kontrollib laiendipiirangut ja faili baite. Jõudlusparanduse eelne katse-EXE salvestas Windowsi dialoogist sünteetilise projekti kahe reaga UTF-8 CSV. |
 | v0.4.0 ühilduvus | `v0_4_0_file_opens_and_keeps_data` avab koopia kaks korda. Säilisid `file_id`, dokument ja originaalfoto baidid. |
 | Suure plaadi jõudlus | Kolm kehtivat Tauri jooksu mõlemas mõõtmises. Lohistuse mediaan tõusis 32,29 fps-lt 40,68 fps-ni. Kasutaja aktsepteeris 45 fps eelarvest madalamat tulemust v0.5.0 jaoks. Muud eelarved täitusid. |
-| Kasutaja suitsukatse | Sammud on allpool. Kasutaja vastuvõtt ootab katset. |
+| Kasutaja suitsukatse | Läbis 2026-11-20: kasutaja tegi kõik 12 sammu oma plaadi fotoga ja kõik läbisid. |
 
 ## Automaatsed tõendid
 
@@ -91,9 +91,11 @@ v0.4.0 näidis loodi sildi `v0.4.0` (`00a424e`) töölauarakenduse kasutajaliide
 
 ## Kasutaja suitsukatse
 
+Staatus: **läbis 2026-11-20**. Kasutaja tegi kõik 12 sammu oma plaadi fotoga ja teatas, et kõik läbisid. Lohistus oli tema plaadil vastuvõetav.
+
 Katse-EXE on `%TEMP%/bb-m2-1-katse/pcbk-m2-1-11-katse.exe`, SHA-256 `0d3e8e45eac94e723a0a03457434ead42e443f53a1e8e62d8825a9ff7b2fd4c6`. Uue projekti ja „Salvesta mujale…“ vaikekaust on `%TEMP%/bb-m2-1-katse/`. Ehituse logi on tööpuus `output/playwright/m2-1-11/smoke-build.log`. Vana faili avamist saab proovida sünteetilise koopiaga `%TEMP%/bb-m2-1-katse/v0.4.0-suitsukatse.pcbk`.
 
-Enne lohistuse parandust kontrollis ehitaja sünteetilise projekti loomist vaikekausta, selle taasavamist, CSV-dialoogi tühistamist veateateta ja 57-baidise BOM-iga UTF-8 CSV salvestust. Tõend on tööpuus `output/playwright/m2-1-11/smoke-exe-pre-memo-proof.json`. Pärast lohistuse parandust kontrolliti uue EXE käivitust (`output/playwright/m2-1-11/smoke-exe-proof.json`). Aknale sisendi saatmise tõrge takistas selles ehituses töölaua CSV salvestuse kordamist. Allolevad kasutaja sammud ootavad vastuvõttu.
+Enne lohistuse parandust kontrollis ehitaja sünteetilise projekti loomist vaikekausta, selle taasavamist, CSV-dialoogi tühistamist veateateta ja 57-baidise BOM-iga UTF-8 CSV salvestust. Tõend on tööpuus `output/playwright/m2-1-11/smoke-exe-pre-memo-proof.json`. Pärast lohistuse parandust kontrolliti uue EXE käivitust (`output/playwright/m2-1-11/smoke-exe-proof.json`). Aknale sisendi saatmise tõrge takistas selles ehituses töölaua CSV salvestuse kordamist. Kasutaja kinnitas allolevad sammud 2026-11-20.
 
 1. Käivita katse-EXE ja lohista oma plaadi foto avalehele. Kalibreeri `K`-ga teadaolev vahe.
 2. Paiguta kaks komponenti. Joonista `T`-ga rada jalast jalani mööda fotol nähtavat rada. Proovi käänupunkte, `Shift`-i 45° nurka, `L`-iga kihi vahetust ja `Esc`-iga katkestamist.

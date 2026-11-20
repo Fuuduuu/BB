@@ -188,6 +188,24 @@ Rajad: ülesanded 2, 5, 6, 8 ja 11 on **rada B** (tuuma piir, andmereeglid ja in
     - Kasutaja suitsukatse oma plaadi fotoga (Codex kasutaja fotosid ei ava) ja väljalase `v0.5.0` (O5).
     - Hooldus samal puudutusel: `old_files.rs` (445 rida) jagamine, kui ühilduvustest seda muudab, ja ühine `__PCBK_APP_VERSION__` deklaratsioon.
 
+**Osa G · Väljalaske-eelsed parandused** (kasutaja kinnitas 2026-11-20 pärast Astra [sõltumatut ülevaatust](../review/2026-11-20-m2-1-ulevaatus-8a2304d.md))
+
+12. **Projektifaili kaitse** (rada B, leiud 01 ja 02). Katkestatud failiasendus avab alati viimase kinnitatud versiooni. „Vali asukoht“ päästekoopial ja „Salvesta mujale“ ei kirjuta olemasolevat faili üle ilma kasutaja kinnituseta; otsus kehtib ka avaldamise hetkel.
+13. **Ühenduste andmete terviklus** (rada B, leiud 04, 05, 07 ja 13).
+    - Poolevahetus muudab pinnajala sobimatute joonistatud radade otsad liitepunktideks jala kohal; poolevahetus üksi ei loo läbivat ühendust.
+    - Läbiva jala kadumisel (kustutamine, jala eemaldamine, korpuse vahetus) tekib iga kasutatud kihi jaoks oma liitepunkt ja nende vahele oletatud ühendus, sest plaaditud ava ühendab kihte edasi. Tulemus ei sõltu ühenduste järjekorrast failis.
+    - Võrgu liikmete võtmed on liigi järgi üheselt kodeeritud. Jalaviide ja liitepunkti viide kontrollitakse oma kogumis. Seniste failide identifikaatorid säilivad.
+    - Kiirühendus arvutab võrgud käsu alguses üks kord ja uuendab neid lisatud paaride järel.
+14. **Tööriista siht ja kasutajaliides** (rada A, leiud 03, 06, 08, 09, 10, 11 ja 12).
+    - Raja tööriist arvestab padjandi nähtavat kuju ja kõiki klõpsukohas tabatud jooni.
+    - Klaviatuurimenüü kasutab avamise sihti, mitte viimast osutikohta.
+    - Korpuse vahetuse dialoog loetleb kaduvate jalgade ühendused ja sildid.
+    - Võrgu vaates on piiksu vastuolu ja lühistatud komponendi hoiatus.
+    - „Ühenda võrguga…“ eristab samanimelisi võrke.
+    - CSV ekspordil on hoiatus, kui mitmel võrgul on sama nimi.
+
+Leiud 14–20 lähevad M2.2-sse või sama koodi puudutava kaardi märkusteks. Pärast ülesandeid 12–14 tuleb täpselt avaldataval commit'il täisring ja lühike suitsukatse tihedate padjandite ning mõlema kihi radadega. Seejärel liitmine ja `v0.5.0`.
+
 ## Väiksemad tööd koodiülevaatusest
 
 Triaaži järgi kuuluvad need M2.1 plaani loendisse. Eraldi hooldusvooru ei tehta, iga leid liigub selle tööga, mis sama koodi niikuinii puudutab.

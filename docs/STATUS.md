@@ -24,7 +24,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 - M2.1 on avaldatud versioonina `v0.5.0`: haru on liidetud `92f001c`, versioon `0bc063b`, silt `v0.5.0`.
   - Kaardid [M2-1-H](tasks/M2-1-H.md), [M2-1-1](tasks/M2-1-1.md)–[M2-1-14](tasks/M2-1-14.md), jõudlus, ühilduvus ja mõlemad suitsukatsed on [M2.1 üleandmises](plans/M2-1-uleandmine.md).
   - Astra [sõltumatu ülevaatuse](review/2026-11-20-m2-1-ulevaatus-8a2304d.md) P1-leiud parandati kaartidega M2-1-12–M2-1-14.
-- [M2.2 teostusplaan](plans/M2-2-piiksumisreziim.md) on kinnitatud (2026-11-20, kasutaja kinnitas soovitused O1–O6). Esimene kaart on M2-2-1, läbivus Mõõda-plokis. Plaan seob need lahtised leiud:
+- [M2.2 teostusplaan](plans/M2-2-piiksumisreziim.md) on kinnitatud (2026-11-20, kasutaja kinnitas soovitused O1–O6). Esimene kaart on [M2-2-1](tasks/M2-2-1.md), läbivus Mõõda-plokis (A, kaart kirjutatud). Plaan seob need lahtised leiud:
   - Astra 2026-11-20 leiud 14–20;
   - [koodiülevaatuse 2026-11-19](review/2026-11-19-koodiulevaatus-00a424e.md) leiud 15 ja 18 (sondipaari mustand, võrdse ajatempliga näidud);
   - salvestuse leiud 04–06 ning lühinimega tee normaliseerimine (`absolute()`, M2-1-12 CI järelparandus) järgmisele salvestuse kaardile, hiljemalt M4.3.

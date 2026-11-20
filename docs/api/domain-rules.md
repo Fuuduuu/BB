@@ -19,6 +19,22 @@ export function branchConnection(doc: DrawingPositions & {
 }, input: BranchInput): BranchPlan;
 ```
 
+### `createNetConnectivity`
+```ts
+export function createNetConnectivity(doc: BoardDoc, endpoints?: ReadonlyMap<string, {
+    pin: {
+        c: string;
+        p: string;
+    };
+} | {
+    junction: string;
+}>): {
+    keys: readonly string[];
+    find: (key: string) => string | undefined;
+    union: (left: string, right: string) => void;
+};
+```
+
 ### `deleteItems`
 ```ts
 export function deleteItems(doc: BoardDoc, ids: readonly string[]): RuleReport;
@@ -47,6 +63,11 @@ export const endKey: (end: EndRef) => string;
 ### `endRefsByKey`
 ```ts
 export function endRefsByKey(doc: BoardDoc): ReadonlyMap<string, EndRef>;
+```
+
+### `flipComponentSides`
+```ts
+export function flipComponentSides(doc: BoardDoc, ids: readonly string[]): void;
 ```
 
 ### `Invariant`

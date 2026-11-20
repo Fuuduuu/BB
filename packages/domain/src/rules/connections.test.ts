@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import type { Snapshot } from '../../../contracts/src';
 import { createEngine } from '../../../engine/src';
 import { engineFeatures, RESERVED_FIELDS } from '../../../features/engine';
 import { newBoardDoc } from '../doc';
@@ -6,8 +7,10 @@ import { boardPads } from '../geometry/board';
 import type { BoardDoc } from '../model/board';
 import type { Component } from '../model/component';
 import type { Connection } from '../model/connection';
-import type { EndRef } from '../model/primitives';
+import type { EndRef, Layer } from '../model/primitives';
 import { deleteItems } from './items';
+import { endAcceptsDrawing } from './layers';
+import { endKey } from './nets';
 
 const pin = (c: string, p = '1'): EndRef => ({ pin: { c, p } });
 const junction = (id: string): EndRef => ({ junction: id });
@@ -371,4 +374,150 @@ test('attach_junction_to_pin_moves_labels', () => {
   expect(engine.undo().ok).toBe(true);
   expect(engine.snapshot().doc).toEqual({ ...before.doc, rev: before.doc.rev + 2 });
   expect(engine.snapshot().history.canUndo).toBe(false);
+});
+
+function terminal(id: string, ref: string, side: Layer, x: number, through = false): Component {
+  return {
+    ...component(id, ref),
+    board: {
+      footprint: 'area',
+      params: { w: 8, h: 10 },
+      center: { x, y: 100 },
+      side,
+      rotationDeg: 0,
+      scaleX: 1,
+      scaleY: 1,
+      customPads: { '1': { local: { x: 2, y: 0 }, sizeMm: 1, shape: 'circle', through } },
+    },
+  };
+}
+
+function trace(id: string, a: EndRef, b: EndRef, layer: Layer): Connection {
+  return {
+    id,
+    a,
+    b,
+    basis: 'visual',
+    board: { kind: 'trace', layer, widthMm: 0.3, waypoints: [] },
+  };
+}
+
+function expectDrawingsOnLayer(doc: Snapshot['doc']) {
+  for (const { a, b, board } of doc.connections) {
+    if (!board) continue;
+    expect(endAcceptsDrawing(doc, a, board.kind, board.layer)).toBe(true);
+    expect(endAcceptsDrawing(doc, b, board.kind, board.layer)).toBe(true);
+  }
+}
+
+test('flip_side_turns_incompatible_trace_ends_into_junctions', () => {
+  const doc = newBoardDoc('Side flip');
+  const part = terminal('cmp_a', 'U1', 'top', 100);
+  const a = pin(part.id);
+  const b = pin('cmp_b');
+  const c = pin('cmp_c');
+  const top = trace('con_top', a, b, 'top');
+  const bottom = trace('con_bottom', a, c, 'bottom');
+  const at = boardPads(part.board!, ['1'], doc.scale.pxPerMm)[0]!.at;
+  const moved = junction('jun_cmp_a_1');
+  doc.components.push(
+    part,
+    terminal('cmp_b', 'U2', 'top', 200),
+    terminal('cmp_c', 'U3', 'bottom', 300),
+  );
+  doc.connections.push(top);
+  const throughDoc = structuredClone(doc);
+  throughDoc.components[0]!.board!.customPads['1']!.through = true;
+  const engine = setup(doc);
+  const before = engine.snapshot().doc;
+
+  expect(engine.execute('components.flipSide', { ids: [part.id] }).ok).toBe(true);
+  const flipped = engine.snapshot();
+  expect(flipped.doc.components[0]?.board?.side).toBe('bottom');
+  expect(flipped.doc.connections).toEqual([{ ...top, a: moved }]);
+  expect(flipped.doc.junctions).toEqual([{ id: 'jun_cmp_a_1', board: { at, layer: 'top' } }]);
+  const flippedNets = flipped.derived.nets!.netOf;
+  expect(flippedNets[endKey(a)]).not.toBe(flippedNets[endKey(b)]);
+  expectDrawingsOnLayer(flipped.doc);
+
+  expect(engine.undo().ok).toBe(true);
+  expect(engine.snapshot().doc).toEqual({ ...before, rev: before.rev + 2 });
+  expect(engine.snapshot().history.canUndo).toBe(false);
+  expect(engine.redo().ok).toBe(true);
+  const { basis, ...boardItem } = bottom;
+  expect(
+    engine.execute('connections.add', { items: [boardItem], basis, skipJoined: false }).ok,
+  ).toBe(true);
+  const finished = engine.snapshot();
+  const nets = finished.derived.nets!.netOf;
+  expect(nets[endKey(a)]).toBe(nets[endKey(c)]);
+  expect(nets[endKey(b)]).toBe(nets[endKey(moved)]);
+  expect(nets[endKey(a)]).not.toBe(nets[endKey(b)]);
+  expectDrawingsOnLayer(finished.doc);
+
+  const through = setup(throughDoc);
+  expect(through.execute('components.flipSide', { ids: [part.id] }).ok).toBe(true);
+  expect(through.snapshot().doc.connections).toEqual([top]);
+  expect(through.snapshot().doc.junctions).toEqual([]);
+  expectDrawingsOnLayer(through.snapshot().doc);
+});
+
+test('lost_through_pin_keeps_layers_joined_by_assumed_connection', () => {
+  const doc = newBoardDoc('Through pin');
+  const part = terminal('cmp_via', 'U1', 'bottom', 100, true);
+  const contact = pin(part.id);
+  const top = trace('con_top', contact, pin('cmp_top'), 'top');
+  const bottom = trace('con_bottom', pin('cmp_bottom'), contact, 'bottom');
+  const air = connection('con_air', contact, pin('cmp_air'));
+  doc.components.push(
+    part,
+    terminal('cmp_top', 'U2', 'top', 200),
+    terminal('cmp_bottom', 'U3', 'bottom', 300),
+    terminal('cmp_air', 'U4', 'bottom', 400),
+  );
+  doc.connections.push(top, bottom, air);
+  const at = boardPads(part.board!, ['1'], doc.scale.pxPerMm)[0]!.at;
+  const junctionBottom = junction('jun_cmp_via_1');
+  const junctionTop = junction('jun_cmp_via_1_2');
+  const reversed = structuredClone(doc);
+  reversed.connections.reverse();
+  const engine = setup(doc);
+  const peerKeys = [endKey(bottom.a), endKey(top.b), endKey(air.b)];
+  const peerMembers = (source: typeof engine) =>
+    source
+      .snapshot()
+      .derived.nets!.list.map(({ members }) => members.filter((key) => peerKeys.includes(key)))
+      .filter(({ length }) => length > 0);
+  const before = peerMembers(engine);
+  expect(before).toHaveLength(1);
+  expect(engine.execute('items.delete', { ids: [part.id] }).ok).toBe(true);
+  const result = engine.snapshot().doc;
+  expect(result.junctions).toHaveLength(2);
+  expect(result.junctions).toContainEqual({ id: 'jun_cmp_via_1', board: { at, layer: 'bottom' } });
+  expect(result.junctions).toContainEqual({ id: 'jun_cmp_via_1_2', board: { at, layer: 'top' } });
+  expect(result.connections).toEqual([
+    { ...top, a: junctionTop },
+    { ...bottom, b: junctionBottom },
+    { ...air, a: junctionBottom },
+    connection('con_via_cmp_via_1', junctionBottom, junctionTop),
+  ]);
+  expect(peerMembers(engine)).toEqual(before);
+  expectDrawingsOnLayer(result);
+
+  const reverse = setup(reversed);
+  expect(reverse.execute('items.delete', { ids: [part.id] }).ok).toBe(true);
+  const compareConnections = (a: Pick<Connection, 'id'>, b: Pick<Connection, 'id'>) =>
+    a.id.localeCompare(b.id);
+  expect(reverse.snapshot().doc.junctions).toEqual(result.junctions);
+  expect([...reverse.snapshot().doc.connections].sort(compareConnections)).toEqual(
+    [...result.connections].sort(compareConnections),
+  );
+  expect(peerMembers(reverse)).toEqual(before);
+
+  const mixed = setup(structuredClone(doc));
+  expect(mixed.execute('items.delete', { ids: [part.id, top.id, bottom.id] }).ok).toBe(true);
+  expect(mixed.snapshot().doc.connections).toEqual([{ ...air, a: junctionBottom }]);
+  expect(mixed.snapshot().doc.junctions).toEqual([
+    { id: 'jun_cmp_via_1', board: { at, layer: 'bottom' } },
+  ]);
 });

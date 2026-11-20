@@ -20,53 +20,131 @@ export function isEmptyReport(report: RuleReport): boolean {
 
 type PinRemoval = { component: Component; pinIds: ReadonlySet<string> };
 
-function newJunction(
-  component: Component,
-  pinId: string,
-  pxPerMm: number,
-  used: Set<string>,
-  layer?: Layer,
-): Junction {
-  const base = `jun_${component.id}_${pinId}`;
+function newId(base: string, used: Set<string>): string {
   let id = base;
   for (let suffix = 2; used.has(id); suffix++) id = `${base}_${suffix}`;
   used.add(id);
-  const result: Junction = { id };
-  const { board, schematic } = component;
-  if (board) {
-    const pad = boardPads(board, [pinId], pxPerMm)[0];
-    if (pad) result.board = { at: pad.at, layer: layer ?? board.side };
-  }
-  if (schematic) result.schematic = { at: { ...schematic.at } };
+  return id;
+}
+
+export function newJunction(
+  component: Component,
+  pinId: string,
+  used: Set<string>,
+  board?: Junction['board'],
+): Junction {
+  const result: Junction = { id: newId(`jun_${component.id}_${pinId}`, used) };
+  if (board) result.board = { at: { ...board.at }, layer: board.layer };
+  if (component.schematic) result.schematic = { at: { ...component.schematic.at } };
   return result;
 }
 
-export function detachPins(doc: BoardDoc, removals: ReadonlyMap<string, PinRemoval>): RuleReport {
+export const otherLayer = (layer: Layer): Layer => (layer === 'top' ? 'bottom' : 'top');
+
+type RemovedContact = {
+  component: Component;
+  pinId: string;
+  traces: Set<Layer>;
+  wires: Set<Layer>;
+};
+type ContactJunctions = { primary: string; secondary?: { layer: Layer; id: string } };
+type RemovedConnectionItems = {
+  connectionIds: ReadonlySet<string>;
+  junctionIds: ReadonlySet<string>;
+};
+
+export function detachPins(
+  doc: BoardDoc,
+  removals: ReadonlyMap<string, PinRemoval>,
+  removedItems?: RemovedConnectionItems,
+): RuleReport {
+  const retained = removedItems
+    ? doc.connections.filter((connection) => !connectionIsRemoved(connection, removedItems))
+    : doc.connections;
   const target = ({ c, p }: PinRef) => {
     const removal = removals.get(c);
     return removal?.pinIds.has(p) ? removal.component : undefined;
   };
-  const used = new Set(doc.junctions.map(({ id }) => id));
-  const replacements = new Map<string, string>();
-  function replace(end: EndRef, layer?: Layer): EndRef {
-    if (!('pin' in end)) return end;
+  const contacts = new Map<string, RemovedContact>();
+  function record(end: EndRef, drawing: Connection['board']) {
+    if (!('pin' in end)) return;
     const component = target(end.pin);
-    if (!component) return end;
+    if (!component) return;
     const key = pinKey(end.pin);
-    const previous = replacements.get(key);
-    if (previous !== undefined) return { junction: previous };
-    const junction = newJunction(component, end.pin.p, doc.scale.pxPerMm, used, layer);
-    doc.junctions.push(junction);
-    replacements.set(key, junction.id);
-    return { junction: junction.id };
+    const contact = contacts.get(key) ?? {
+      component,
+      pinId: end.pin.p,
+      traces: new Set<Layer>(),
+      wires: new Set<Layer>(),
+    };
+    if (drawing) {
+      const layers = drawing.kind === 'trace' ? contact.traces : contact.wires;
+      layers.add(drawing.layer);
+    }
+    contacts.set(key, contact);
   }
-  for (const connection of doc.connections) {
+  for (const { a, b, board } of retained) {
+    record(a, board);
+    record(b, board);
+  }
+
+  const usedJunctions = new Set(doc.junctions.map(({ id }) => id));
+  const usedConnections = new Set(doc.connections.map(({ id }) => id));
+  const replacements = new Map<string, ContactJunctions>();
+  const bridges: Connection[] = [];
+  // Stable allocation also covers distinct contacts with the same junction base ID.
+  for (const key of [...contacts.keys()].sort()) {
+    const { component, pinId, traces, wires } = contacts.get(key)!;
+    const { board } = component;
+    const pad = board && boardPads(board, [pinId], doc.scale.pxPerMm)[0];
+    const layer =
+      traces.size === 1
+        ? traces.values().next().value
+        : traces.size === 0 && wires.size === 1
+          ? wires.values().next().value
+          : board?.side;
+    const primary = newJunction(
+      component,
+      pinId,
+      usedJunctions,
+      pad && layer ? { at: pad.at, layer } : undefined,
+    );
+    doc.junctions.push(primary);
+    const replacement: ContactJunctions = { primary: primary.id };
+    if (board && pad?.through && traces.size === 2) {
+      const layer = otherLayer(board.side);
+      const secondary = newJunction(component, pinId, usedJunctions, { at: pad.at, layer });
+      doc.junctions.push(secondary);
+      replacement.secondary = { layer, id: secondary.id };
+      bridges.push({
+        id: newId(`con_via_${component.id}_${pinId}`, usedConnections),
+        a: { junction: primary.id },
+        b: { junction: secondary.id },
+        basis: 'assumed',
+      });
+    }
+    replacements.set(key, replacement);
+  }
+
+  function replace(end: EndRef, drawing: Connection['board']): EndRef {
+    if (!('pin' in end)) return end;
+    const replacement = replacements.get(pinKey(end.pin));
+    if (!replacement) return end;
+    const { primary, secondary } = replacement;
+    const id =
+      secondary && drawing?.kind === 'trace' && drawing.layer === secondary.layer
+        ? secondary.id
+        : primary;
+    return { junction: id };
+  }
+  for (const connection of retained) {
     const { a, b, board } = connection;
-    const updatedA = replace(a, board?.layer);
-    const updatedB = replace(b, board?.layer);
+    const updatedA = replace(a, board);
+    const updatedB = replace(b, board);
     if (updatedA !== a) connection.a = updatedA;
     if (updatedB !== b) connection.b = updatedB;
   }
+  doc.connections.push(...bridges);
 
   const removedLabels: NetLabel[] = [];
   const labels = doc.netLabels.filter((label) => {
@@ -80,6 +158,19 @@ export function detachPins(doc: BoardDoc, removals: ReadonlyMap<string, PinRemov
 
 function junctionId(end: EndRef): string | undefined {
   return 'junction' in end ? end.junction : undefined;
+}
+
+function connectionIsRemoved(
+  { id, a, b }: Connection,
+  { connectionIds, junctionIds }: RemovedConnectionItems,
+): boolean {
+  const aId = junctionId(a);
+  const bId = junctionId(b);
+  return (
+    connectionIds.has(id) ||
+    (aId !== undefined && junctionIds.has(aId)) ||
+    (bId !== undefined && junctionIds.has(bId))
+  );
 }
 
 export function connectedJunctionIds(connections: readonly Connection[]): Set<string> {
@@ -100,7 +191,7 @@ function repairJunctionLabels(
   const available = endRefsByKey(doc);
   const chosen = new Map<string, EndRef | undefined>();
   function anchorFor(junction: string): EndRef | undefined {
-    const net = before.netOf.get(junction);
+    const net = before.netOf.get(endKey({ junction }));
     if (net === undefined) return undefined;
     if (!chosen.has(net)) {
       let fallback: EndRef | undefined;
@@ -140,15 +231,10 @@ export function removeConnectionItems(
   junctionIds: ReadonlySet<string>,
   before?: NetMembership,
 ): RuleReport {
-  const connections = doc.connections.filter(({ id, a, b }) => {
-    const aId = junctionId(a);
-    const bId = junctionId(b);
-    return (
-      !connectionIds.has(id) &&
-      (aId === undefined || !junctionIds.has(aId)) &&
-      (bId === undefined || !junctionIds.has(bId))
-    );
-  });
+  const selected = { connectionIds, junctionIds };
+  const connections = doc.connections.filter(
+    (connection) => !connectionIsRemoved(connection, selected),
+  );
   const lostConnections = connections.length !== doc.connections.length;
   if (!lostConnections && !doc.junctions.some(({ id }) => junctionIds.has(id))) {
     return { removedLabels: [] };

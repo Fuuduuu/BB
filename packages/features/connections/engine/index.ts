@@ -2,6 +2,7 @@ import type { BoardDoc, EndRef } from '@pcbk/domain';
 import {
   attachJunctionToPin,
   branchConnection,
+  createNetConnectivity,
   endAcceptsDrawing,
   endKey,
   endRefsByKey,
@@ -9,7 +10,6 @@ import {
   removeBoardDrawing,
   removeConnections,
   removeJunctions,
-  resolveNets,
 } from '@pcbk/domain/rules';
 import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec, EngineModule } from '@pcbk/engine';
@@ -51,6 +51,7 @@ const add: CommandSpec<AddConnectionsParams> = {
   run(doc, { items, basis, skipJoined, junctions }) {
     if (junctions) doc.junctions.push(...junctions);
     const endpoints = endRefsByKey(doc);
+    const connectivity = skipJoined ? createNetConnectivity(doc, endpoints) : undefined;
     for (const item of items) {
       const a = endKey(item.a);
       const b = endKey(item.b);
@@ -58,11 +59,9 @@ const add: CommandSpec<AddConnectionsParams> = {
       if (!endpoints.has(b)) throw new CommandTargetNotFound(b);
       if (a === b) reject('connection_ends_equal');
       if (item.board) verifyDrawing(doc, item.a, item.b, item.board);
-      if (skipJoined) {
-        const { netOf } = resolveNets(doc);
-        if (netOf.get(a) === netOf.get(b)) continue;
-      }
+      if (connectivity && connectivity.find(a) === connectivity.find(b)) continue;
       doc.connections.push({ ...item, basis });
+      connectivity?.union(a, b);
     }
   },
 };

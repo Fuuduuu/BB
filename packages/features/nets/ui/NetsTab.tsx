@@ -132,7 +132,7 @@ function NetView({
     () => netDetails(snapshot, net, pins, connectionPoints),
     [snapshot, net, pins, connectionPoints],
   );
-  const anchor = netAnchor(net, pins);
+  const anchor = netAnchor(net, pins, snapshot.doc.junctions);
   const [draft, setDraft] = useState<string>();
   const [choosingRole, setChoosingRole] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -157,7 +157,7 @@ function NetView({
   }
 
   function join(other: Net) {
-    const target = netAnchor(other, pins);
+    const target = netAnchor(other, pins, snapshot.doc.junctions);
     if (!anchor || !target) return;
     const result = engine.execute('nets.join', {
       connectionId: ids.newId('con'),

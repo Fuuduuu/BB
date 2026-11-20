@@ -20,13 +20,17 @@ export function pinMembers(components: Snapshot['doc']['components']) {
   return pins;
 }
 
-export function netAnchor(net: Net, pins: ReturnType<typeof pinMembers>): EndRef | undefined {
+export function netAnchor(
+  net: Net,
+  pins: ReturnType<typeof pinMembers>,
+  junctions: Snapshot['doc']['junctions'],
+): EndRef | undefined {
   for (const member of net.members) {
     const pin = pins.get(member);
     if (pin) return { pin: { c: pin.c, p: pin.p } };
   }
-  const junction = net.members[0];
-  if (junction) return { junction };
+  const junction = junctions.find(({ id }) => endKey({ junction: id }) === net.members[0]);
+  if (junction) return { junction: junction.id };
 }
 
 function currentMember(

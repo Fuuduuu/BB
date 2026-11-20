@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
 import { act, fireEvent } from '@testing-library/react';
+import { newBoardDoc } from '@pcbk/domain';
 import type { BoardDoc, Connection, EndRef } from '@pcbk/domain';
-import { resolveNets } from '@pcbk/domain/rules';
-import { expect, test } from 'vitest';
+import * as rules from '@pcbk/domain/rules';
+import { expect, test, vi } from 'vitest';
+import { setup } from '../__tests__/helpers';
 import { mountMeasurements, pointer } from '../measurements/__tests__/workspace';
+
+const { resolveNets } = rules;
 
 test('remove_board_drawing_keeps_connection_as_air_line', () => {
   const connection: Connection = {
@@ -71,6 +75,68 @@ test('skip_joined_considers_earlier_connections_in_the_same_command', () => {
   });
   expect(engine.snapshot()).toBe(before);
   expect(host.drainJournal()).toEqual([]);
+});
+
+test('quick_connect_resolves_nets_once', () => {
+  const doc = newBoardDoc('Sünteetiline kiirühenduse plaat');
+  doc.components = Array.from({ length: 300 }, (_, component) => ({
+    id: `cmp_${component}`,
+    ref: `U${component + 1}`,
+    kind: 'connector',
+    marking: '',
+    value: '',
+    identified: true,
+    dnp: false,
+    note: '',
+    pins: Array.from({ length: 10 }, (_, pin) => ({
+      id: String(pin + 1),
+      uid: `pin_${component}_${pin}`,
+      nc: false,
+    })),
+  }));
+  const pins = doc.components.flatMap(({ id, pins }) =>
+    pins.map((pin) => ({ pin: { c: id, p: pin.id } })),
+  );
+  const selected = pins.slice(0, 64);
+  const basis = 'assumed' as const;
+  doc.connections = Array.from({ length: 899 }, (_, index) => ({
+    id: `con_existing_${index}`,
+    a: pins[64 + 2 * index]!,
+    b: pins[65 + 2 * index]!,
+    basis,
+  }));
+  doc.connections.push({ id: 'con_prior_path', a: selected[0]!, b: selected[3]!, basis });
+  const items = selected.slice(1).map((b, index) => ({
+    id: `con_quick_${index}`,
+    a: selected[index]!,
+    b,
+  }));
+
+  const reference = structuredClone(doc);
+  for (const item of items) {
+    const { netOf } = resolveNets(reference);
+    if (netOf.get(rules.endKey(item.a)) !== netOf.get(rules.endKey(item.b))) {
+      reference.connections.push({ ...item, basis });
+    }
+  }
+  expect(reference.connections.slice(900).map(({ id }) => id)).toEqual(
+    items.filter((_, index) => index !== 2).map(({ id }) => id),
+  );
+  const { engine } = setup(doc);
+  // Count the corresponding graph builds when rerunning the test on the baseline.
+  const factory = 'createNetConnectivity' in rules ? 'createNetConnectivity' : 'resolveNets';
+  const buildNets = vi.spyOn(rules, factory);
+  try {
+    const result = engine.execute('connections.add', { items, basis, skipJoined: true });
+    expect(result).toMatchObject({ ok: true });
+    expect(engine.snapshot().doc.connections).toEqual(reference.connections);
+    expect(buildNets).toHaveBeenCalledTimes(1);
+  } finally {
+    buildNets.mockRestore();
+  }
+  expect(resolveNets(structuredClone(engine.snapshot().doc) as BoardDoc)).toEqual(
+    resolveNets(reference),
+  );
 });
 
 test('removal_commands_reject_a_missing_id_without_changing_document', () => {

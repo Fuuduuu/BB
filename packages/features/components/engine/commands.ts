@@ -6,7 +6,7 @@ import {
   nextRef,
 } from '@pcbk/domain';
 import type { BoardDoc, BoardPlacement, Component, Pin } from '@pcbk/domain';
-import { isEmptyReport, removePins } from '@pcbk/domain/rules';
+import { flipComponentSides, isEmptyReport, removePins } from '@pcbk/domain/rules';
 import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec } from '@pcbk/engine';
 import {
@@ -298,11 +298,9 @@ const flipSide: CommandSpec<ComponentListParams> = {
   id: 'components.flipSide',
   title: 'components.flipSide',
   params: ComponentListSchema,
+  alsoWrites: ['connections', 'junctions'],
   run(doc, { ids }) {
-    for (const id of new Set(ids)) {
-      const board = placedBoard(doc, id);
-      board.side = board.side === 'top' ? 'bottom' : 'top';
-    }
+    flipComponentSides(doc, ids);
   },
 };
 const duplicate: CommandSpec<DuplicateParams> = {

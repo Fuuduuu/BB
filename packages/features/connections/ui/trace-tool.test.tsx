@@ -274,3 +274,46 @@ test('trace_hover_outlines_the_actual_scaled_pad_and_labels_only_the_unfinished_
   click(svg, { x: 180, y: 150 });
   expect(overlay(svg)?.textContent).toBe('');
 });
+
+test('trace_start_on_junction_takes_its_layer', () => {
+  const left = { x: 80, y: 240 };
+  const right = { x: 200, y: 240 };
+  const junction = { junction: 'jun_bottom_left' };
+  const { engine, svg } = mountMeasurements({
+    seed(doc) {
+      doc.junctions.push(
+        { id: junction.junction, board: { at: left, layer: 'bottom' } },
+        { id: 'jun_bottom_right', board: { at: right, layer: 'bottom' } },
+      );
+      doc.connections.push({
+        id: 'con_bottom_wire',
+        a: junction,
+        b: { junction: 'jun_bottom_right' },
+        basis: 'visual',
+        board: { kind: 'wire', layer: 'bottom', widthMm: 0.5, waypoints: [] },
+      });
+    },
+  });
+  const wire = svg.querySelector('[data-layer="connections.traces"] path[stroke="var(--wire)"]');
+  expect.soft(wire?.getAttribute('opacity')).toBe('1');
+
+  fireEvent.keyDown(svg, { key: 't' });
+  expect(screen.getByText('Rada · pealmine', { exact: true })).toBeTruthy();
+  click(svg, left);
+  expect.soft(screen.queryByText('Rada · alumine', { exact: true })).not.toBeNull();
+  expect.soft(screen.queryByText(/Ots ei sobi valitud kihiga/)).toBeNull();
+  const openEnd = { x: 80, y: 300 };
+  click(svg, openEnd);
+  click(svg, openEnd);
+  expect(engine.snapshot().doc.connections[1]).toMatchObject({
+    a: junction,
+    board: { kind: 'trace', layer: 'bottom' },
+  });
+
+  fireEvent.keyDown(svg, { key: 'Escape' });
+  fireEvent.keyDown(svg, { key: 't' });
+  fireEvent.keyDown(svg, { key: 'l' });
+  fireEvent.keyDown(svg, { key: 'l' });
+  click(svg, left);
+  expect(screen.getByText('Juhe', { exact: true })).toBeTruthy();
+});

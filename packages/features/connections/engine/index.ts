@@ -1,5 +1,6 @@
 import type { BoardDoc, EndRef } from '@pcbk/domain';
 import {
+  attachJunctionToPin,
   branchConnection,
   endAcceptsDrawing,
   endKey,
@@ -13,15 +14,25 @@ import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec, EngineModule } from '@pcbk/engine';
 import {
   AddConnectionsSchema,
+  AttachJunctionToPinSchema,
   BranchConnectionSchema,
   ConnectionIdsSchema,
   DrawOnBoardSchema,
+  InsertWaypointSchema,
+  MoveJunctionSchema,
+  RemoveWaypointSchema,
+  UpdateConnectionSchema,
 } from '../contract';
 import type {
   AddConnectionsParams,
+  AttachJunctionToPinParams,
   BranchConnectionParams,
   ConnectionIdsParams,
   DrawOnBoardParams,
+  InsertWaypointParams,
+  MoveJunctionParams,
+  RemoveWaypointParams,
+  UpdateConnectionParams,
 } from '../contract';
 
 function verifyDrawing(doc: BoardDoc, a: EndRef, b: EndRef, board: DrawOnBoardParams['board']) {
@@ -81,6 +92,70 @@ const branch: CommandSpec<BranchConnectionParams> = {
   },
 };
 
+function boardDrawing(doc: BoardDoc, id: string) {
+  const connection = doc.connections.find((connection) => connection.id === id);
+  if (!connection) throw new CommandTargetNotFound(id);
+  if (!connection.board) reject('not_drawn');
+  return connection.board;
+}
+
+function verifyWaypointIndex(index: number, last: number) {
+  if (!Number.isInteger(index) || index < 0 || index > last) reject('invalid_waypoint');
+}
+
+const update: CommandSpec<UpdateConnectionParams> = {
+  id: 'connections.update',
+  title: 'connections.update',
+  params: UpdateConnectionSchema,
+  run(doc, { id, waypoints }) {
+    boardDrawing(doc, id).waypoints = waypoints;
+  },
+};
+
+const insertWaypoint: CommandSpec<InsertWaypointParams> = {
+  id: 'connections.insertWaypoint',
+  title: 'connections.insertWaypoint',
+  params: InsertWaypointSchema,
+  run(doc, { id, index, at }) {
+    const { waypoints } = boardDrawing(doc, id);
+    verifyWaypointIndex(index, waypoints.length);
+    waypoints.splice(index, 0, at);
+  },
+};
+
+const removeWaypoint: CommandSpec<RemoveWaypointParams> = {
+  id: 'connections.removeWaypoint',
+  title: 'connections.removeWaypoint',
+  params: RemoveWaypointSchema,
+  run(doc, { id, index }) {
+    const { waypoints } = boardDrawing(doc, id);
+    verifyWaypointIndex(index, waypoints.length - 1);
+    waypoints.splice(index, 1);
+  },
+};
+
+const moveJunction: CommandSpec<MoveJunctionParams> = {
+  id: 'junctions.move',
+  title: 'junctions.move',
+  params: MoveJunctionSchema,
+  run(doc, { id, at }) {
+    const junction = doc.junctions.find((junction) => junction.id === id);
+    if (!junction) throw new CommandTargetNotFound(id);
+    if (!junction.board) reject('not_on_board');
+    junction.board.at = at;
+  },
+};
+
+const attachJunction: CommandSpec<AttachJunctionToPinParams> = {
+  id: 'junctions.attachToPin',
+  title: 'junctions.attachToPin',
+  params: AttachJunctionToPinSchema,
+  alsoWrites: ['netLabels'],
+  run(doc, { id, pin }) {
+    attachJunctionToPin(doc, id, pin);
+  },
+};
+
 function existingIds(records: readonly { id: string }[], ids: readonly string[]): string[] {
   const available = new Set(records.map(({ id }) => id));
   const selected = [...new Set(ids)];
@@ -122,5 +197,17 @@ const removeJunction: CommandSpec<ConnectionIdsParams> = {
 export const connectionsEngine: EngineModule = {
   id: 'connections',
   owns: ['connections', 'junctions'],
-  commands: [add, drawOnBoard, branch, remove, removeDrawing, removeJunction],
+  commands: [
+    add,
+    drawOnBoard,
+    branch,
+    update,
+    insertWaypoint,
+    removeWaypoint,
+    remove,
+    removeDrawing,
+    moveJunction,
+    attachJunction,
+    removeJunction,
+  ],
 };

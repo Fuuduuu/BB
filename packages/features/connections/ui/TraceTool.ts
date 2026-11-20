@@ -35,9 +35,12 @@ function accepts(doc: Doc, end: EndRef, mode: TraceMode) {
 }
 
 function startMode(doc: Doc, start: EndRef, mode: TraceMode): TraceMode {
-  if (mode.kind === 'wire' || !('pin' in start) || accepts(doc, start, mode)) return mode;
-  const side = doc.components.find(({ id }) => id === start.pin.c)?.board?.side;
-  return side ? { kind: 'trace', layer: side } : mode;
+  if (mode.kind === 'wire' || accepts(doc, start, mode)) return mode;
+  const layer =
+    'pin' in start
+      ? doc.components.find(({ id }) => id === start.pin.c)?.board?.side
+      : doc.junctions.find(({ id }) => id === start.junction)?.board?.layer;
+  return layer ? { kind: 'trace', layer } : mode;
 }
 
 function nextMode(mode: TraceMode): TraceMode {

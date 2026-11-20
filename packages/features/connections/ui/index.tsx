@@ -1,11 +1,15 @@
 import type { IdGen, Snapshot } from '@pcbk/contracts';
-import type { EndRef } from '@pcbk/domain';
+import type { EndRef, Vec2 } from '@pcbk/domain';
+import { useViewStore } from '@pcbk/ui';
 import type { Selection, UiModule } from '@pcbk/ui';
 import { createTraceToolSpec, resetTraceTool, startExistingTrace } from './TraceTool';
 import { TraceHint } from './TraceHint';
 import { AirLinesToggle } from './air-lines-view';
+import { connectionPoints, projectDrawingSegment } from './connection-geometry';
 import { connectionsEt } from './i18n/et';
 import { airLinesLayer, junctionsLayer, tracesLayer } from './layers';
+import { distance } from './trace-geometry';
+import { connectionEditingLayer, selectedConnectionId } from './connection-editing-layer';
 
 function endLabel({ doc }: Snapshot, end: EndRef): string | null {
   if ('junction' in end) return connectionsEt.junctionEnd;
@@ -19,8 +23,17 @@ function idsOfKind(selection: Selection, kind: string): string[] {
 }
 
 function selectedConnection({ doc }: Snapshot, selection: Selection) {
-  const ids = idsOfKind(selection, 'connection');
-  return ids.length === 1 ? doc.connections.find(({ id }) => id === ids[0]) : undefined;
+  const id = selectedConnectionId(selection);
+  return id === undefined ? undefined : doc.connections.find((connection) => connection.id === id);
+}
+
+function nearestPoint(points: readonly Vec2[], at: Vec2) {
+  let nearest: { index: number; point: Vec2; distance: number } | undefined;
+  for (const [index, point] of points.entries()) {
+    const gap = distance(point, at);
+    if (!nearest || gap < nearest.distance) nearest = { index, point, distance: gap };
+  }
+  return nearest;
 }
 
 function junctionConnectionCount({ doc }: Snapshot, ids: readonly string[]): number {
@@ -33,7 +46,7 @@ export function createConnectionsUi(ids: IdGen): UiModule {
   return {
     id: 'connections',
     title: connectionsEt.title,
-    canvasLayers: [tracesLayer, airLinesLayer, junctionsLayer],
+    canvasLayers: [tracesLayer, airLinesLayer, junctionsLayer, connectionEditingLayer],
     tools: [createTraceToolSpec(ids)],
     topBar: [{ id: 'connections.airLines', render: () => <AirLinesToggle /> }],
     bottomBar: [{ id: 'connections.trace', render: () => <TraceHint /> }],
@@ -80,6 +93,55 @@ export function createConnectionsUi(ids: IdGen): UiModule {
       },
     ],
     contextMenu: [
+      {
+        id: 'connections.insertWaypoint',
+        appliesTo: ['connection'],
+        order: -3,
+        label: () => connectionsEt.insertWaypoint,
+        available: (snapshot, selection) => !!selectedConnection(snapshot, selection)?.board,
+        run(api, selection, at) {
+          const snapshot = api.snapshot();
+          const connection = selectedConnection(snapshot, selection);
+          if (!connection?.board) return false;
+          const points = connectionPoints(snapshot.doc, connection);
+          if (!points) return false;
+          const { kind } = connection.board;
+          const projections = points
+            .slice(1)
+            .map((point, index) => projectDrawingSegment(at, points[index]!, point, kind));
+          const nearest = nearestPoint(projections, at);
+          return (
+            !!nearest &&
+            api.execute('connections.insertWaypoint', {
+              id: connection.id,
+              index: nearest.index,
+              at: nearest.point,
+            }).ok
+          );
+        },
+      },
+      {
+        id: 'connections.removeWaypoint',
+        appliesTo: ['connection'],
+        order: -2,
+        label: () => connectionsEt.removeWaypoint,
+        available: (snapshot, selection) =>
+          !!selectedConnection(snapshot, selection)?.board?.waypoints.length,
+        run(api, selection, at) {
+          const connection = selectedConnection(api.snapshot(), selection);
+          if (!connection?.board) return false;
+          const nearest = nearestPoint(connection.board.waypoints, at);
+          const zoom = useViewStore.getState().boardView.zoom;
+          return (
+            !!nearest &&
+            nearest.distance * zoom <= 8 &&
+            api.execute('connections.removeWaypoint', {
+              id: connection.id,
+              index: nearest.index,
+            }).ok
+          );
+        },
+      },
       {
         id: 'connections.drawOnBoard',
         appliesTo: ['connection'],

@@ -1,6 +1,6 @@
 import type { Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
-import type { LayerSpec } from '@pcbk/ui';
+import type { LayerSpec, Preview } from '@pcbk/ui';
 import { airLineHitsEnabled, useAirLinesVisible } from './air-lines-view';
 import {
   connectionPoints,
@@ -8,12 +8,21 @@ import {
   drawingWidth,
   wirePath,
 } from './connection-geometry';
+import {
+  CONNECTION_PREVIEW_OWNERS,
+  connectionMotion,
+  previewConnectionPoints,
+  previewEnd,
+  previewJunction,
+} from './connection-preview';
+import { junctionDrag } from './junction-attachment';
 import { activeLayer } from './trace-geometry';
 
-type AirLine = { id: string; a: Vec2; b: Vec2 };
 type Doc = Snapshot['doc'];
-type Drawing = NonNullable<Doc['connections'][number]['board']>;
-type Trace = { id: string; board: Drawing; points: Vec2[] };
+type Connection = Doc['connections'][number];
+type Drawing = NonNullable<Connection['board']>;
+type AirLine = { connection: Connection; a: Vec2; b: Vec2 };
+type Trace = { connection: Connection; board: Drawing; points: Vec2[] };
 type Incident = { count: number; drawnWidth: number };
 
 const airLineCache = new WeakMap<Doc, AirLine[]>();
@@ -27,31 +36,36 @@ function airLines(doc: Doc): AirLine[] {
   for (const connection of doc.connections) {
     if (connection.board) continue;
     const points = connectionPoints(doc, connection);
-    if (points) lines.push({ id: connection.id, a: points[0]!, b: points[1]! });
+    if (points) lines.push({ connection, a: points[0]!, b: points[1]! });
   }
   airLineCache.set(doc, lines);
   return lines;
 }
 
-function AirLines({ doc }: { doc: Doc }) {
+function AirLines({ doc, preview }: { doc: Doc; preview: Preview | null }) {
   const visible = useAirLinesVisible();
   const lines = visible ? airLines(doc) : [];
   if (lines.length === 0) return null;
+  const motion = connectionMotion(preview);
   return (
     <g data-layer="connections.airLines" pointerEvents="none" aria-hidden="true">
-      {lines.map(({ id, a, b }) => (
-        <line
-          key={id}
-          x1={a.x}
-          y1={a.y}
-          x2={b.x}
-          y2={b.y}
-          stroke="var(--wire)"
-          strokeWidth={1.5}
-          strokeDasharray="6 4"
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
+      {lines.map(({ connection, a, b }) => {
+        const start = previewEnd(a, connection.a, motion);
+        const end = previewEnd(b, connection.b, motion);
+        return (
+          <line
+            key={connection.id}
+            x1={start.x}
+            y1={start.y}
+            x2={end.x}
+            y2={end.y}
+            stroke="var(--wire)"
+            strokeWidth={1.5}
+            strokeDasharray="6 4"
+            vectorEffect="non-scaling-stroke"
+          />
+        );
+      })}
     </g>
   );
 }
@@ -59,10 +73,11 @@ function AirLines({ doc }: { doc: Doc }) {
 export const airLinesLayer: LayerSpec = {
   id: 'connections.airLines',
   z: 40,
-  render: ({ snapshot }) => <AirLines doc={snapshot.doc} />,
+  previewOwners: CONNECTION_PREVIEW_OWNERS,
+  render: ({ snapshot, preview }) => <AirLines doc={snapshot.doc} preview={preview} />,
   hits: ({ doc }) =>
-    airLines(doc).map(({ id, a, b }) => ({
-      id,
+    airLines(doc).map(({ connection, a, b }) => ({
+      id: connection.id,
       kind: 'connection',
       shape: { type: 'segment', a, b, width: 6, widthUnit: 'screen' },
       priority: 1,
@@ -77,7 +92,7 @@ function traces(doc: Doc): Trace[] {
   for (const connection of doc.connections) {
     if (!connection.board) continue;
     const points = connectionPoints(doc, connection);
-    if (points) items.push({ id: connection.id, board: connection.board, points });
+    if (points) items.push({ connection, board: connection.board, points });
   }
   traceCache.set(doc, items);
   return items;
@@ -86,26 +101,29 @@ function traces(doc: Doc): Trace[] {
 export const tracesLayer: LayerSpec = {
   id: 'connections.traces',
   z: 38,
-  render({ snapshot: { doc }, zoom }) {
+  previewOwners: CONNECTION_PREVIEW_OWNERS,
+  render({ snapshot: { doc }, preview, zoom }) {
     const items = traces(doc);
     if (!items.length) return null;
     const side = activeLayer(doc);
+    const motion = connectionMotion(preview);
     return (
       <g data-layer="connections.traces" pointerEvents="none" aria-hidden="true">
-        {items.map(({ id, board, points }) => {
+        {items.map(({ connection, board, points }) => {
+          const adjusted = previewConnectionPoints(points, connection, motion);
           const style = {
             fill: 'none',
             strokeWidth: drawingWidth(board.widthMm, doc.scale.pxPerMm, zoom),
             strokeLinecap: 'round' as const,
             strokeLinejoin: 'round' as const,
-            opacity: side === board.layer ? 1 : 0.3,
+            opacity: board.kind === 'wire' || side === board.layer ? 1 : 0.3,
           };
           return board.kind === 'wire' ? (
-            <path key={id} d={wirePath(points)} stroke="var(--wire)" {...style} />
+            <path key={connection.id} d={wirePath(adjusted)} stroke="var(--wire)" {...style} />
           ) : (
             <polyline
-              key={id}
-              points={points.map(({ x, y }) => `${x},${y}`).join(' ')}
+              key={connection.id}
+              points={adjusted.map(({ x, y }) => `${x},${y}`).join(' ')}
               stroke={board.layer === 'top' ? 'var(--top)' : 'var(--bottom)'}
               {...style}
             />
@@ -115,12 +133,12 @@ export const tracesLayer: LayerSpec = {
     );
   },
   hits: ({ doc }, zoom) =>
-    traces(doc).flatMap(({ id, board, points }) => {
+    traces(doc).flatMap(({ connection, board, points }) => {
       const width = drawingWidth(board.widthMm, doc.scale.pxPerMm, zoom);
       return points.slice(1).flatMap((b, segment) => {
         const line = drawingSegmentPoints(points[segment]!, b, board.kind, zoom);
         return line.slice(1).map((point, index) => ({
-          id,
+          id: connection.id,
           kind: 'connection',
           shape: { type: 'segment', a: line[index]!, b: point, width },
           priority: 1,
@@ -154,8 +172,10 @@ function junctionRadius(info: Incident | undefined, pxPerMm: number, zoom: numbe
 export const junctionsLayer: LayerSpec = {
   id: 'connections.junctions',
   z: 45,
-  render({ snapshot: { doc }, zoom }) {
+  previewOwners: CONNECTION_PREVIEW_OWNERS,
+  render({ snapshot: { doc }, preview, zoom }) {
     const incidents = junctionIncidents(doc);
+    const motion = connectionMotion(preview);
     return (
       <g data-layer="connections.junctions" pointerEvents="none" aria-hidden="true">
         {doc.junctions.map(({ id, board }) => {
@@ -163,11 +183,12 @@ export const junctionsLayer: LayerSpec = {
           const info = incidents.get(id);
           const open = info?.count === 1 && info.drawnWidth > 0;
           const color = board.layer === 'top' ? 'var(--top)' : 'var(--bottom)';
+          const at = previewJunction(board.at, id, motion);
           return (
             <circle
               key={id}
-              cx={board.at.x}
-              cy={board.at.y}
+              cx={at.x}
+              cy={at.y}
               r={junctionRadius(info, doc.scale.pxPerMm, zoom)}
               fill={open ? 'none' : color}
               stroke={open ? color : undefined}
@@ -192,6 +213,7 @@ export const junctionsLayer: LayerSpec = {
                 r: junctionRadius(incidents.get(id), doc.scale.pxPerMm, zoom),
               },
               priority: 3,
+              drag: junctionDrag(id, zoom),
             },
           ]
         : [],

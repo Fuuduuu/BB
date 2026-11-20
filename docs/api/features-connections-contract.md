@@ -19,6 +19,19 @@ export type AddConnectionsParams = {
 export const AddConnectionsSchema: ZodType<AddConnectionsParams>;
 ```
 
+### `AttachJunctionToPinParams`
+```ts
+export type AttachJunctionToPinParams = {
+    id: string;
+    pin: { c: string; p: string; };
+};
+```
+
+### `AttachJunctionToPinSchema`
+```ts
+export const AttachJunctionToPinSchema: ZodType<AttachJunctionToPinParams>;
+```
+
 ### `BranchConnectionParams`
 ```ts
 export type BranchConnectionParams = {
@@ -61,9 +74,62 @@ export type DrawOnBoardParams = {
 export const DrawOnBoardSchema: ZodType<DrawOnBoardParams>;
 ```
 
+### `InsertWaypointParams`
+```ts
+export type InsertWaypointParams = {
+    id: string;
+    index: number;
+    at: { x: number; y: number; };
+};
+```
+
+### `InsertWaypointSchema`
+```ts
+export const InsertWaypointSchema: ZodType<InsertWaypointParams>;
+```
+
+### `MoveJunctionParams`
+```ts
+export type MoveJunctionParams = {
+    id: string;
+    at: { x: number; y: number; };
+};
+```
+
+### `MoveJunctionSchema`
+```ts
+export const MoveJunctionSchema: ZodType<MoveJunctionParams>;
+```
+
+### `RemoveWaypointParams`
+```ts
+export type RemoveWaypointParams = {
+    id: string;
+    index: number;
+};
+```
+
+### `RemoveWaypointSchema`
+```ts
+export const RemoveWaypointSchema: ZodType<RemoveWaypointParams>;
+```
+
 ### `TRACE_WIDTH_MM`
 ```ts
 export const TRACE_WIDTH_MM: 0.3;
+```
+
+### `UpdateConnectionParams`
+```ts
+export type UpdateConnectionParams = {
+    id: string;
+    waypoints: { x: number; y: number; }[];
+};
+```
+
+### `UpdateConnectionSchema`
+```ts
+export const UpdateConnectionSchema: ZodType<UpdateConnectionParams>;
 ```
 
 ### `WIRE_WIDTH_MM`

@@ -1,6 +1,7 @@
 import { SceneText } from '@pcbk/ui';
 import { wirePath } from './connection-geometry';
 import { connectionsEt } from './i18n/et';
+import { PadHighlight } from './pad-highlight';
 import { distance } from './trace-geometry';
 import type { DrawingHit, EndpointHit } from './trace-geometry';
 import { useTraceStore } from './trace-store';
@@ -26,29 +27,7 @@ function TraceTarget({ target, zoom }: { target: EndpointHit | DrawingHit; zoom:
   if (outline.type === 'junction') {
     return <circle {...highlight} cx={outline.at.x} cy={outline.at.y} r={outline.radius} />;
   }
-  const {
-    at: { x, y },
-    halfPx,
-    angleDeg,
-    shape,
-  } = outline.pad;
-  const rx = Math.max(halfPx.x, 2.5 / zoom);
-  const ry = Math.max(halfPx.y, 2.5 / zoom);
-  const transform = `rotate(${angleDeg} ${x} ${y})`;
-  if (shape === 'circle') {
-    return <ellipse {...highlight} cx={x} cy={y} rx={rx} ry={ry} transform={transform} />;
-  }
-  return (
-    <rect
-      {...highlight}
-      x={x - rx}
-      y={y - ry}
-      width={2 * rx}
-      height={2 * ry}
-      rx={shape === 'oval' ? Math.min(rx, ry) : undefined}
-      transform={transform}
-    />
-  );
+  return <PadHighlight pad={outline.pad} zoom={zoom} marker="data-trace-target" />;
 }
 
 export function TraceOverlay() {

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { act } from '@testing-library/react';
-import type { Connection, EndRef } from '@pcbk/domain';
+import { act, fireEvent } from '@testing-library/react';
+import type { BoardDoc, Connection, EndRef } from '@pcbk/domain';
+import { resolveNets } from '@pcbk/domain/rules';
 import { expect, test } from 'vitest';
-import { mountMeasurements } from '../measurements/__tests__/workspace';
+import { mountMeasurements, pointer } from '../measurements/__tests__/workspace';
 
 test('remove_board_drawing_keeps_connection_as_air_line', () => {
   const connection: Connection = {
@@ -133,4 +134,114 @@ test('trace_on_existing_connection_adds_only_drawing', () => {
   expect(host.drainJournal().map(({ commandId }) => commandId)).toEqual([
     'connections.drawOnBoard',
   ]);
+});
+
+test('junction_move_keeps_connectivity', () => {
+  const original = { x: 220, y: 160 };
+  const moved = { x: 250, y: 190 };
+  const { engine, host, svg } = mountMeasurements({
+    seed(doc) {
+      doc.junctions.push(
+        { id: 'jun_drawn', board: { at: original, layer: 'top' } },
+        { id: 'jun_no_board' },
+      );
+      doc.connections.push(
+        {
+          id: 'con_drawn',
+          a: { pin: { c: 'cmp_u1', p: '1' } },
+          b: { junction: 'jun_drawn' },
+          basis: 'visual',
+          board: { kind: 'trace', layer: 'top', waypoints: [], widthMm: 0.5 },
+        },
+        {
+          id: 'con_air',
+          a: { junction: 'jun_drawn' },
+          b: { pin: { c: 'cmp_u1', p: '2' } },
+          basis: 'assumed',
+        },
+        {
+          id: 'con_no_board',
+          a: { pin: { c: 'cmp_u1', p: '3' } },
+          b: { junction: 'jun_no_board' },
+          basis: 'assumed',
+        },
+      );
+    },
+  });
+  const before = engine.snapshot();
+  const trace = () =>
+    svg.querySelector('[data-layer="connections.traces"] polyline')?.getAttribute('points');
+  const air = () => svg.querySelector('[data-layer="connections.airLines"] line');
+  const dots = () => svg.querySelector('[data-layer="connections.junctions"] circle');
+  const at = (point: typeof original) => `${point.x},${point.y}`;
+
+  expect(trace()).toMatch(new RegExp(` ${at(original)}$`));
+  pointer(svg, 'pointerdown', original.x, original.y);
+  pointer(svg, 'pointermove', moved.x, moved.y);
+  expect(trace()).toMatch(new RegExp(` ${at(moved)}$`));
+  expect(air()?.getAttribute('x1')).toBe(String(moved.x));
+  expect(air()?.getAttribute('y1')).toBe(String(moved.y));
+  expect(dots()?.getAttribute('cx')).toBe(String(moved.x));
+  expect(engine.snapshot().doc).toBe(before.doc);
+  expect(host.drainJournal()).toEqual([]);
+  pointer(svg, 'pointerup', moved.x, moved.y);
+
+  expect(trace()).toMatch(new RegExp(` ${at(moved)}$`));
+  const after = engine.snapshot();
+  expect(after.doc).toEqual({
+    ...before.doc,
+    rev: before.doc.rev + 1,
+    junctions: [{ id: 'jun_drawn', board: { at: moved, layer: 'top' } }, { id: 'jun_no_board' }],
+  });
+  expect(resolveNets(structuredClone(after.doc) as BoardDoc)).toEqual(
+    resolveNets(structuredClone(before.doc) as BoardDoc),
+  );
+  expect(host.drainJournal().map(({ commandId }) => commandId)).toEqual(['junctions.move']);
+  expect(engine.execute('junctions.move', { id: 'jun_no_board', at: moved })).toEqual({
+    ok: false,
+    error: { code: 'validation', issues: [{ code: 'custom', path: [], message: 'not_on_board' }] },
+  });
+  expect(engine.snapshot()).toBe(after);
+  fireEvent.keyDown(svg, { key: 'z', ctrlKey: true });
+  expect(engine.snapshot().doc).toEqual({ ...before.doc, rev: before.doc.rev + 2 });
+  expect(engine.snapshot().history.canUndo).toBe(false);
+});
+
+test('drawing_edits_reject_an_invalid_index_or_missing_drawing', () => {
+  const { engine, host } = mountMeasurements({
+    seed(doc) {
+      const a = { pin: { c: 'cmp_u1', p: '1' } };
+      const b = { pin: { c: 'cmp_u1', p: '2' } };
+      doc.connections.push(
+        { id: 'con_air', a, b, basis: 'assumed' },
+        {
+          id: 'con_drawn',
+          a,
+          b,
+          basis: 'visual',
+          board: { kind: 'trace', layer: 'top', waypoints: [{ x: 6, y: 4 }], widthMm: 0.3 },
+        },
+      );
+    },
+  });
+  const before = engine.snapshot();
+  const invalid = (message: string) => ({
+    ok: false,
+    error: { code: 'validation', issues: [{ code: 'custom', path: [], message }] },
+  });
+  expect(
+    engine.execute('connections.insertWaypoint', {
+      id: 'con_drawn',
+      index: 0.5,
+      at: { x: 4, y: 5 },
+    }),
+  ).toEqual(invalid('invalid_waypoint'));
+  expect(engine.execute('connections.removeWaypoint', { id: 'con_drawn', index: 1 })).toEqual(
+    invalid('invalid_waypoint'),
+  );
+  expect(engine.execute('connections.update', { id: 'con_air', waypoints: [] })).toEqual(
+    invalid('not_drawn'),
+  );
+  expect(engine.snapshot()).toBe(before);
+  expect(host.drainJournal()).toEqual([]);
 });

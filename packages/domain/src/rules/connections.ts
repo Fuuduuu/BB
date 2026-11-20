@@ -7,7 +7,7 @@ import type { EndRef, Layer, PinRef, Vec2 } from '../model/primitives';
 import { RuleRejected, RuleTargetNotFound } from './errors';
 import { endAcceptsDrawing } from './layers';
 import type { DrawingPositions } from './layers';
-import { endRefsByKey, pinKey, resolveNets } from './nets';
+import { endKey, endRefsByKey, pinKey, resolveNets } from './nets';
 import type { NetMembership } from './nets';
 
 export interface RuleReport {
@@ -181,6 +181,45 @@ export function removeBoardDrawing(doc: BoardDoc, ids: readonly string[]): void 
 }
 
 type Drawing = NonNullable<Connection['board']>;
+
+type AttachmentConnection = Pick<Connection, 'a' | 'b'> & {
+  readonly board?: Pick<Drawing, 'kind' | 'layer'> | undefined;
+};
+
+export function validateJunctionAttachment(
+  doc: DrawingPositions & { readonly connections: readonly AttachmentConnection[] },
+  id: string,
+  pin: PinRef,
+): void {
+  if (!doc.junctions.some((junction) => junction.id === id)) throw new RuleTargetNotFound(id);
+  const component = doc.components.find(({ id }) => id === pin.c);
+  if (!component?.pins.some(({ id }) => id === pin.p)) throw new RuleTargetNotFound(pinKey(pin));
+  for (const { a, b, board } of doc.connections) {
+    if (!board || (junctionId(a) !== id && junctionId(b) !== id)) continue;
+    if (!endAcceptsDrawing(doc, { pin }, board.kind, board.layer)) {
+      throw new RuleRejected('layer_mismatch');
+    }
+  }
+}
+
+export function attachJunctionToPin(doc: BoardDoc, id: string, pin: PinRef): RuleReport {
+  validateJunctionAttachment(doc, id, pin);
+  const replace = (end: EndRef): EndRef => (junctionId(end) === id ? { pin: { ...pin } } : end);
+
+  doc.connections = doc.connections.flatMap((connection) => {
+    const a = replace(connection.a);
+    const b = replace(connection.b);
+    if (a === connection.a && b === connection.b) return [connection];
+    return endKey(a) === endKey(b) ? [] : [{ ...connection, a, b }];
+  });
+  for (const label of doc.netLabels) {
+    const anchor = replace(label.anchor);
+    if (anchor !== label.anchor) label.anchor = anchor;
+  }
+  doc.junctions = doc.junctions.filter((junction) => junction.id !== id);
+  return { removedLabels: [] };
+}
+
 type BranchTarget = Pick<Connection, 'id' | 'b' | 'basis'> & {
   readonly board?:
     (Omit<Drawing, 'waypoints'> & { readonly waypoints: readonly Vec2[] }) | undefined;

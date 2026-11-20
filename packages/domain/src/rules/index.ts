@@ -1,8 +1,10 @@
 export {
+  attachJunctionToPin,
   branchConnection,
   removeBoardDrawing,
   removeConnections,
   removeJunctions,
+  validateJunctionAttachment,
 } from './connections';
 export type { RuleReport } from './connections';
 export * from './errors';

@@ -1,4 +1,4 @@
-import { EndRefSchema, IdSchema, LayerSchema, Vec2Schema } from '@pcbk/domain';
+import { EndRefSchema, IdSchema, LayerSchema, PinRefSchema, Vec2Schema } from '@pcbk/domain';
 import { z } from 'zod';
 
 export const TRACE_WIDTH_MM = 0.3;
@@ -37,19 +37,41 @@ export const BranchConnectionSchema = z.strictObject({
   splitId: z.string(),
   trace: EndInput,
 });
+export const UpdateConnectionSchema = z.strictObject({
+  id: z.string(),
+  waypoints: z.array(Vec2Schema),
+});
+export const InsertWaypointSchema = z.strictObject({
+  id: z.string(),
+  index: z.number(),
+  at: Vec2Schema,
+});
+export const RemoveWaypointSchema = z.strictObject({ id: z.string(), index: z.number() });
+export const MoveJunctionSchema = z.strictObject({ id: z.string(), at: Vec2Schema });
+export const AttachJunctionToPinSchema = z.strictObject({ id: z.string(), pin: PinRefSchema });
 
 export type AddConnectionsParams = z.infer<typeof AddConnectionsSchema>;
 export type ConnectionIdsParams = z.infer<typeof ConnectionIdsSchema>;
 export type DrawOnBoardParams = z.infer<typeof DrawOnBoardSchema>;
 export type BranchConnectionParams = z.infer<typeof BranchConnectionSchema>;
+export type UpdateConnectionParams = z.infer<typeof UpdateConnectionSchema>;
+export type InsertWaypointParams = z.infer<typeof InsertWaypointSchema>;
+export type RemoveWaypointParams = z.infer<typeof RemoveWaypointSchema>;
+export type MoveJunctionParams = z.infer<typeof MoveJunctionSchema>;
+export type AttachJunctionToPinParams = z.infer<typeof AttachJunctionToPinSchema>;
 
 declare module '@pcbk/contracts' {
   interface CommandMap {
     'connections.add': AddConnectionsParams;
     'connections.drawOnBoard': DrawOnBoardParams;
     'connections.branch': BranchConnectionParams;
+    'connections.update': UpdateConnectionParams;
+    'connections.insertWaypoint': InsertWaypointParams;
+    'connections.removeWaypoint': RemoveWaypointParams;
     'connections.remove': ConnectionIdsParams;
     'connections.removeBoardDrawing': ConnectionIdsParams;
+    'junctions.move': MoveJunctionParams;
+    'junctions.attachToPin': AttachJunctionToPinParams;
     'junctions.remove': ConnectionIdsParams;
   }
 }

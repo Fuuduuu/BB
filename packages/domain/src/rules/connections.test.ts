@@ -321,3 +321,54 @@ test('branch_on_trace_creates_junction_and_splits_in_one_step', () => {
   expect(engine.snapshot().doc).toEqual({ ...before.doc, rev: before.doc.rev + 2 });
   expect(engine.snapshot().history.canUndo).toBe(false);
 });
+
+test('attach_junction_to_pin_moves_labels', () => {
+  const { doc, part } = placedDoc();
+  const id = 'jun_end';
+  const contact = { c: part.id, p: '1' };
+  const end = junction(id);
+  const drawing = {
+    ...connection('con_keep', end, pin(part.id, '2')),
+    board: { layer: 'bottom', kind: 'trace', widthMm: 0.6, waypoints: [{ x: 120, y: 70 }] },
+  } satisfies Connection;
+  const undrawn = connection('con_air', pin(part.id, '3'), end);
+  const loop = connection('con_remove', pin(part.id), end);
+  const label = { id: 'lbl_move', anchor: end, name: 'VCC', source: 'user' } as const;
+  doc.junctions.push({ id, board: { at: { x: 120, y: 70 }, layer: 'bottom' } });
+  doc.connections.push(drawing, undrawn, loop);
+  doc.netLabels.push(label);
+
+  const wrongLayer = structuredClone(doc);
+  wrongLayer.connections[0]!.board!.layer = 'top';
+  const rejected = setup(wrongLayer);
+  const rejectedBefore = rejected.snapshot();
+  expect(rejected.execute('junctions.attachToPin', { id, pin: contact })).toEqual({
+    ok: false,
+    error: {
+      code: 'validation',
+      issues: [{ code: 'custom', path: [], message: 'layer_mismatch' }],
+    },
+  });
+  expect(rejected.snapshot()).toBe(rejectedBefore);
+
+  const engine = setup(doc);
+  const before = engine.snapshot();
+  expect(engine.execute('junctions.attachToPin', { id, pin: { ...contact, p: '99' } })).toEqual({
+    ok: false,
+    error: { code: 'not_found', id: `${contact.c}:99` },
+  });
+  expect(engine.execute('junctions.attachToPin', { id: 'jun_missing', pin: contact })).toEqual({
+    ok: false,
+    error: { code: 'not_found', id: 'jun_missing' },
+  });
+  expect(engine.execute('junctions.attachToPin', { id, pin: contact }).ok).toBe(true);
+  expect(engine.snapshot().doc.connections).toEqual([
+    { ...drawing, a: { pin: contact } },
+    { ...undrawn, b: { pin: contact } },
+  ]);
+  expect(engine.snapshot().doc.netLabels).toEqual([{ ...label, anchor: { pin: contact } }]);
+  expect(engine.snapshot().doc.junctions).toEqual([]);
+  expect(engine.undo().ok).toBe(true);
+  expect(engine.snapshot().doc).toEqual({ ...before.doc, rev: before.doc.rev + 2 });
+  expect(engine.snapshot().history.canUndo).toBe(false);
+});

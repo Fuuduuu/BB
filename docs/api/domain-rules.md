@@ -4,6 +4,11 @@
 
 Sisenemispunkt: `packages/domain/src/rules/index.ts`
 
+### `attachJunctionToPin`
+```ts
+export function attachJunctionToPin(doc: BoardDoc, id: string, pin: PinRef): RuleReport;
+```
+
 ### `branchConnection`
 
 Prepare all edits together so the preview and the command validate the same branch.
@@ -150,4 +155,11 @@ export class RuleTargetNotFound extends Error {
 ### `translateItems`
 ```ts
 export function translateItems(doc: BoardDoc, items: readonly ItemRef[], delta: Vec2): void;
+```
+
+### `validateJunctionAttachment`
+```ts
+export function validateJunctionAttachment(doc: DrawingPositions & {
+    readonly connections: readonly AttachmentConnection[];
+}, id: string, pin: PinRef): void;
 ```

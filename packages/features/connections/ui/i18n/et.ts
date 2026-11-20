@@ -4,6 +4,8 @@ export const connectionsEt = {
   junctionEnd: 'liitepunkt',
   junction: (count: number) => `Liitepunkt · ${count} ${count === 1 ? 'ühendus' : 'ühendust'}`,
   drawOnBoard: 'Joonista rada fotol',
+  insertWaypoint: 'Lisa käänupunkt',
+  removeWaypoint: 'Eemalda käänupunkt',
   removeBoardDrawing: 'Eemalda joonistus',
   deleteConnection: 'Kustuta ühendus',
   deleteJunction: (count: number) =>

@@ -137,6 +137,7 @@ Rajad: ülesanded 2, 5, 6 ja 11 on **rada B** (tuuma piir, andmereeglid ja invar
      - `insert_and_remove_waypoint`
      - `junction_move_keeps_connectivity`
      - `attach_junction_to_pin_moves_labels`
+     - `trace_start_on_junction_takes_its_layer` ([M2-1-7](../tasks/M2-1-7.md): M2-1-6 märkused)
 
 **Osa D · Võrgud**
 

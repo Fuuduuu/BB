@@ -14,13 +14,22 @@ const highlight = {
   vectorEffect: 'non-scaling-stroke',
 } as const;
 
-function TraceTarget({ target, zoom }: { target: EndpointHit | DrawingHit; zoom: number }) {
+function TraceTarget({
+  target,
+  accepted,
+  zoom,
+}: {
+  target: EndpointHit | DrawingHit;
+  accepted: boolean;
+  zoom: number;
+}) {
   if ('segment' in target) {
     const { a, b, kind } = target;
+    const stroke = accepted ? highlight.stroke : 'var(--danger)';
     return kind === 'wire' ? (
-      <path {...highlight} d={wirePath([a, b])} />
+      <path {...highlight} stroke={stroke} d={wirePath([a, b])} />
     ) : (
-      <line {...highlight} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
+      <line {...highlight} stroke={stroke} x1={a.x} y1={a.y} x2={b.x} y2={b.y} />
     );
   }
   const { outline } = target;
@@ -55,7 +64,7 @@ export function TraceOverlay() {
       ) : (
         <polyline {...style} points={points.map(({ x, y }) => `${x},${y}`).join(' ')} />
       )}
-      {target && <TraceTarget target={target} zoom={zoom} />}
+      {target && <TraceTarget target={target.hit} accepted={target.accepted} zoom={zoom} />}
       {start && end && length > 0 && (
         <SceneText
           x={(start.x + end.x) / 2}

@@ -24,10 +24,12 @@ function NetList({
   snapshot,
   nets,
   select,
+  firstPinReference,
 }: {
   snapshot: Snapshot;
   nets: readonly Net[];
   select(net: Net): void;
+  firstPinReference?(net: Net): string;
 }) {
   return (
     <ul className="pcbk-net-list">
@@ -35,7 +37,8 @@ function NetList({
         const role = snapshot.doc.roles.find(({ id }) => id === net.roleId);
         const { color, conflict } = netRoleColor(snapshot, net.key);
         const count = netsEt.memberCount(net.members.length);
-        const label = [net.name, count, conflict ? netsEt.conflict : role?.label]
+        const reference = firstPinReference?.(net);
+        const label = [net.name, count, reference, conflict ? netsEt.conflict : role?.label]
           .filter(Boolean)
           .join(' · ');
         return (
@@ -55,6 +58,7 @@ function NetList({
                 )}
               </span>
               <span className="pcbk-net-row__meta">{count}</span>
+              {reference && <span className="pcbk-net-row__meta">{reference}</span>}
               {role && color && (
                 <span className="pcbk-net-chip">
                   <Swatch color={color} />
@@ -128,6 +132,10 @@ function NetView({
 }) {
   const engine = useEngine();
   const pins = useMemo(() => pinMembers(snapshot.doc.components), [snapshot.doc.components]);
+  const componentRefs = useMemo(
+    () => new Map(snapshot.doc.components.map(({ id, ref }) => [id, ref])),
+    [snapshot.doc.components],
+  );
   const details = useMemo(
     () => netDetails(snapshot, net, pins, connectionPoints),
     [snapshot, net, pins, connectionPoints],
@@ -142,6 +150,19 @@ function NetView({
   const conflictRoles = net.conflictingRoles.map(
     (id) => snapshot.doc.roles.find((role) => role.id === id)?.label ?? id,
   );
+  const memberComponents = new Set(details.pins.map(({ c }) => c));
+  const shortedRefs = (snapshot.derived.nets?.shortedComponents ?? []).flatMap((id) => {
+    const ref = componentRefs.get(id);
+    return memberComponents.has(id) && ref !== undefined ? [ref] : [];
+  });
+
+  function firstPinReference(other: Net) {
+    for (const key of other.members) {
+      const pin = pins.get(key);
+      if (pin) return `${componentRefs.get(pin.c)}.${pin.p}`;
+    }
+    return netsEt.junction;
+  }
 
   function assign(change: Pick<AssignNetParams, 'name' | 'roleId'>) {
     if (!anchor) return false;
@@ -173,21 +194,27 @@ function NetView({
       <Button className="pcbk-net-back" variant="ghost" onClick={goBack}>
         {netsEt.back}
       </Button>
-      {net.roleConflict && (
+      {(net.roleConflict || net.beepContradiction || shortedRefs.length > 0) && (
         <div className="pcbk-net-warning">
-          <p role="alert">{netsEt.conflictWarning(conflictRoles.join(' + '))}</p>
-          <div className="pcbk-net-actions">
-            <Button
-              onClick={() =>
-                useSessionStore.getState().setSelection({
-                  items: details.connections.map(({ id }) => ({ kind: 'connection', id })),
-                })
-              }
-            >
-              {netsEt.showConnections}
-            </Button>
-            <Button onClick={() => setChoosingRole(true)}>{netsEt.chooseRole}</Button>
-          </div>
+          {net.roleConflict && (
+            <p role="alert">{netsEt.conflictWarning(conflictRoles.join(' + '))}</p>
+          )}
+          {net.beepContradiction && <p role="alert">{netsEt.beepContradiction}</p>}
+          {shortedRefs.length > 0 && <p role="alert">{netsEt.shorted(shortedRefs)}</p>}
+          {net.roleConflict && (
+            <div className="pcbk-net-actions">
+              <Button
+                onClick={() =>
+                  useSessionStore.getState().setSelection({
+                    items: details.connections.map(({ id }) => ({ kind: 'connection', id })),
+                  })
+                }
+              >
+                {netsEt.showConnections}
+              </Button>
+              <Button onClick={() => setChoosingRole(true)}>{netsEt.chooseRole}</Button>
+            </div>
+          )}
         </div>
       )}
       <Field
@@ -262,7 +289,12 @@ function NetView({
             setError(undefined);
           }}
         >
-          <NetList snapshot={snapshot} nets={otherNets} select={join} />
+          <NetList
+            snapshot={snapshot}
+            nets={otherNets}
+            select={join}
+            firstPinReference={firstPinReference}
+          />
           {error && (
             <p className="bb-field__error" role="alert">
               {error}
@@ -298,6 +330,12 @@ function NetsNavigator({
   const selectedKey = selected === undefined ? undefined : derived?.netOf[selected];
   const active = nets.find(({ key }) => key === selectedKey);
   const openRole = () => setAddingRole(true);
+  const seenNames = new Set<string>();
+  const duplicateNames = new Set<string>();
+  for (const { name } of nets) {
+    if (seenNames.has(name)) duplicateNames.add(name);
+    seenNames.add(name);
+  }
 
   async function exportNetlist() {
     if (!saveTextFile || !nets.length) return;
@@ -326,6 +364,9 @@ function NetsNavigator({
       ) : (
         <>
           <NetList snapshot={snapshot} nets={nets} select={(net) => setSelected(net.key)} />
+          {duplicateNames.size > 0 && (
+            <p className="pcbk-net-fact">{netsEt.duplicateNames([...duplicateNames])}</p>
+          )}
           <Button disabled={!saveTextFile || !nets.length} onClick={() => void exportNetlist()}>
             {netsEt.exportNetlist}
           </Button>

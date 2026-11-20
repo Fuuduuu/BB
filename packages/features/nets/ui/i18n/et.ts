@@ -4,6 +4,8 @@ export const netsEt = {
   exportNetlist: 'Ekspordi võrguloend (CSV)',
   exportFileName: (name: string) => `${name} võrguloend.csv`,
   exportFailed: 'Võrguloendi salvestamine ebaõnnestus',
+  duplicateNames: (names: readonly string[]) =>
+    `Mitmel võrgul on sama nimi (${names.join(', ')}). CSV-s neid võrke ei eristata.`,
   back: '← Võrgud',
   newRole: '+ Uus roll',
   newRoleTitle: 'Uus roll',
@@ -16,11 +18,15 @@ export const netsEt = {
   roleKinds: { ground: 'Maandus', power: 'Toide', signal: 'Signaal', unknown: 'Teadmata' },
   memberCount: (count: number) => `${count} ${count === 1 ? 'liige' : 'liiget'}`,
   junctionCount: (count: number) => `Liitepunkte ${count}`,
+  junction: 'liitepunkt',
   join: 'Ühenda võrguga…',
   showConnections: 'Näita ühendust',
   chooseRole: 'Vali õige roll',
   conflict: 'Rollikonflikt',
   conflictWarning: (roles: string) => `Võimalik lühis või vale ühendus: ${roles}`,
+  beepContradiction: 'Läbivusmõõtmine näitas katkestust jalgade vahel, mis on selles võrgus.',
+  shorted: (refs: readonly string[]) =>
+    `${refs.join(', ')}: mõlemad jalad on selles võrgus. Kontrolli, kas see on lühis.`,
   traceLength: (length: number) => `Rajad kokku ${length.toFixed(2).replace('.', ',')} mm`,
   measurements: 'Mõõtmised',
   measurementModes: {

@@ -148,6 +148,113 @@ test('trace_tool_escape_leaves_no_trace', () => {
   expect(host.drainJournal()).toEqual([]);
 });
 
+test('trace_click_targets_visible_pad_and_matching_trace', () => {
+  const nearPad = { x: 160, y: 103.5 };
+  const crossing = { x: 180, y: 200 };
+  const bottomStart = { x: 180, y: 270 };
+  const { engine, host, svg, clickPin } = mountMeasurements({
+    seed(doc) {
+      seedCrossing(doc);
+      seedRemovablePins(doc);
+      const pad = doc.components[0]!.board!.customPads['2']!;
+      pad.local = { x: 0, y: 0 };
+      pad.sizeMm = 0.2;
+      doc.junctions.push(
+        { id: 'jun_pad_left', board: { at: { x: 137, y: nearPad.y }, layer: 'top' } },
+        { id: 'jun_pad_right', board: { at: { x: 210, y: nearPad.y }, layer: 'top' } },
+        { id: 'jun_bottom_a', board: { at: { x: crossing.x, y: 170 }, layer: 'bottom' } },
+        { id: 'jun_bottom_b', board: { at: { x: crossing.x, y: 235 }, layer: 'bottom' } },
+        { id: 'jun_bottom_start', board: { at: bottomStart, layer: 'bottom' } },
+      );
+      doc.connections.push(
+        {
+          ...drawnTrace,
+          id: 'con_near_pad',
+          a: { junction: 'jun_pad_left' },
+          b: { junction: 'jun_pad_right' },
+          board: { ...drawnTrace.board, widthMm: 0.2, waypoints: [] },
+        },
+        {
+          ...drawnTrace,
+          id: 'con_bottom',
+          a: { junction: 'jun_bottom_a' },
+          b: { junction: 'jun_bottom_b' },
+          board: { ...drawnTrace.board, layer: 'bottom', waypoints: [] },
+        },
+        {
+          ...drawnTrace,
+          id: 'con_bottom_tail',
+          a: { junction: 'jun_bottom_b' },
+          b: { junction: 'jun_bottom_start' },
+          board: { ...drawnTrace.board, layer: 'bottom', waypoints: [] },
+        },
+      );
+    },
+  });
+
+  fireEvent.keyDown(svg, { key: 't' });
+  clickPin('4');
+  clickPin('2');
+  expect.soft(host.drainJournal().map(({ commandId }) => commandId)).toEqual(['connections.add']);
+  expect.soft(engine.snapshot().doc.connections.at(-1)?.b).toEqual(pin('2'));
+
+  clickPin('1');
+  click(svg, nearPad);
+  let { doc } = engine.snapshot();
+  let branch = doc.junctions.find(
+    ({ board }) => board?.at.y === nearPad.y && board.at.x === nearPad.x,
+  );
+  expect
+    .soft(host.drainJournal().map(({ commandId }) => commandId))
+    .toEqual(['connections.branch']);
+  expect
+    .soft(doc.connections.find(({ id }) => id === 'con_near_pad')?.b)
+    .toEqual({ junction: branch?.id });
+  expect
+    .soft(doc.connections.find(({ a }) => 'pin' in a && a.pin.p === '1')?.b)
+    .toEqual({ junction: branch?.id });
+
+  click(svg, bottomStart);
+  click(svg, crossing);
+  ({ doc } = engine.snapshot());
+  branch = doc.junctions.find(
+    ({ board }) => board?.at.y === crossing.y && board.at.x === crossing.x,
+  );
+  expect
+    .soft(host.drainJournal().map(({ commandId }) => commandId))
+    .toEqual(['connections.branch']);
+  expect.soft(branch?.board?.layer).toBe('bottom');
+  expect
+    .soft(doc.connections.find(({ id }) => id === 'con_bottom')?.b)
+    .toEqual({ junction: branch?.id });
+  expect(doc.connections.find(({ id }) => id === 'con_horizontal')).toEqual(drawnTrace);
+});
+
+test('keyboard_menu_starts_trace_from_menu_target', () => {
+  const { engine, svg, pinPoint, clickPin } = mountMeasurements();
+  const selectPins = () =>
+    act(() =>
+      useSessionStore.getState().setSelection({
+        items: ['1', '2'].map((id) => ({ kind: 'pin', id, componentId: 'cmp_u1' })),
+      }),
+    );
+  selectPins();
+  const { x, y } = pinPoint('2');
+
+  pointer(svg, 'pointermove', x, y);
+  fireEvent.keyDown(svg, { key: 'F10', shiftKey: true });
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Alusta rada siit' }));
+  clickPin('3');
+  expect.soft(engine.snapshot().doc.connections[0]).toMatchObject({ a: pin('1'), b: pin('3') });
+
+  fireEvent.keyDown(svg, { key: 'Escape' });
+  selectPins();
+  fireEvent.contextMenu(svg, { button: 2, clientX: x, clientY: y });
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Alusta rada siit' }));
+  clickPin('4');
+  expect(engine.snapshot().doc.connections[1]).toMatchObject({ a: pin('2'), b: pin('4') });
+});
+
 test('a_trace_snap_projects_the_visible_segment_and_undo_restores_the_target', () => {
   const { engine, host, svg, clickPin } = mountMeasurements({ seed: seedCrossing });
   const before = engine.snapshot().doc;

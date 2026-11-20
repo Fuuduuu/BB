@@ -1,7 +1,7 @@
 import type { Snapshot } from '@pcbk/contracts';
 import type { Connection, EndRef, Layer, Vec2 } from '@pcbk/domain';
 import { boardPads } from '@pcbk/domain/geometry';
-import type { HitItem } from '@pcbk/ui';
+import type { HitItem, HitMatch } from '@pcbk/ui';
 import { connectionPoints, projectDrawingSegment } from './connection-geometry';
 
 export type Drawing = NonNullable<Connection['board']>;
@@ -56,26 +56,33 @@ export function endpointHit(
   }
 }
 
-export function drawingHit(
-  doc: Snapshot['doc'],
-  hit: HitItem | undefined,
-  cursor: Vec2,
-): DrawingHit | undefined {
-  if (hit?.kind !== 'connection' || hit.shape.type !== 'segment' || hit.shape.widthUnit) return;
-  const { data } = hit;
-  if (typeof data !== 'object' || !data || !('segment' in data)) return;
-  const { segment } = data;
-  if (typeof segment !== 'number') return;
-  const connection = doc.connections.find(({ id }) => id === hit.id);
-  if (!connection?.board) return;
-  const points = connectionPoints(doc, connection);
-  const a = points?.[segment];
-  const b = points?.[segment + 1];
-  if (!a || !b) return;
-  const at = projectDrawingSegment(cursor, a, b, connection.board.kind);
-  // The hit width is built from the same zoom as the rendered stroke.
-  if (distance(at, cursor) > hit.shape.width / 2) return;
-  return { id: hit.id, segment, at, a, b, kind: connection.board.kind };
+export function drawingHits(doc: Snapshot['doc'], matches: HitMatch[], cursor: Vec2): DrawingHit[] {
+  const seen = new Set<string>();
+  const hits: { hit: DrawingHit; gap: number }[] = [];
+  for (const { item } of matches) {
+    const { id, shape, data } = item;
+    if (item.kind !== 'connection' || shape.type !== 'segment' || shape.widthUnit) continue;
+    if (typeof data !== 'object' || !data || !('segment' in data)) continue;
+    const { segment } = data;
+    if (typeof segment !== 'number') continue;
+    // Several hit shapes can represent the same curved wire segment.
+    const key = `${id}:${segment}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const connection = doc.connections.find((entry) => entry.id === id);
+    if (!connection?.board) continue;
+    const points = connectionPoints(doc, connection);
+    const a = points?.[segment];
+    const b = points?.[segment + 1];
+    if (!a || !b) continue;
+    const { kind } = connection.board;
+    const at = projectDrawingSegment(cursor, a, b, kind);
+    const gap = distance(at, cursor);
+    // Project onto the actual drawing so sampled wires use the rendered stroke.
+    if (gap <= shape.width / 2) hits.push({ hit: { id, segment, at, a, b, kind }, gap });
+  }
+  return hits.sort((a, b) => a.gap - b.gap).map(({ hit }) => hit);
 }
 
 export const activeLayer = (doc: Snapshot['doc']): Layer =>

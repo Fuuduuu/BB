@@ -1,7 +1,7 @@
 export { Canvas } from './Canvas';
 export type { CanvasProps } from './Canvas';
 export { createHitIndex } from './hit-index';
-export type { HitDrag, HitIndex, HitItem, HitShape } from './hit-index';
+export type { HitDrag, HitIndex, HitItem, HitMatch, HitShape } from './hit-index';
 export {
   LabelObstaclesContext,
   MONO_ADVANCE_EM,

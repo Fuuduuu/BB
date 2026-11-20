@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { EngineProvider } from '@pcbk/client';
 import type { BoardDoc, EndRef } from '@pcbk/domain';
 import { boardPads } from '@pcbk/domain/geometry';
 import { useSessionStore } from '@pcbk/ui';
-import { afterEach, beforeEach, expect, test } from 'vitest';
-import { mountMeasurements, pinRef } from '../../measurements/__tests__/workspace';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { FakeProjects } from '../../../client/src/__tests__/fakes';
+import { idGenerator, setup } from '../../__tests__/helpers';
+import { measurementDoc, mountMeasurements, pinRef } from '../../measurements/__tests__/workspace';
+import { NetsTab } from './NetsTab';
 
 const pin = (p: string): EndRef => ({ pin: { c: 'cmp_u1', p } });
 
@@ -244,4 +248,93 @@ test('net_view_pin_click_focuses_pin_including_point_parts', () => {
   fireEvent.click(join.getByRole('button', { name: /^N1(?:\s|$)/u }));
   expect(engine.snapshot().derived.nets?.list).toHaveLength(1);
   expect(engine.snapshot().doc.connections.at(-1)).toMatchObject({ basis: 'assumed' });
+});
+
+test('net_view_warns_beep_contradiction_and_shorted_component', () => {
+  const { engine } = mountMeasurements({
+    seed(doc) {
+      const resistor = doc.components[0]!;
+      resistor.ref = 'R1';
+      resistor.kind = 'resistor';
+      resistor.pins = resistor.pins.slice(0, 2);
+      resistor.board!.params = { pins: 2, pitch: 2.54 };
+      doc.connections.push({ id: 'con_short', a: pin('1'), b: pin('2'), basis: 'assumed' });
+      doc.measurements.push({
+        id: 'msr_continuity',
+        mode: 'continuity',
+        at: pinRef('1'),
+        ref: pinRef('2'),
+        atLabel: 'R1.1',
+        refLabel: 'R1.2',
+        beep: false,
+        power: 'off',
+        takenAt: '2026-11-20T09:00:00.000Z',
+        source: 'manual',
+      });
+    },
+  });
+  expect(engine.snapshot().derived.nets).toMatchObject({
+    list: [{ beepContradiction: true, roleConflict: false }],
+    shortedComponents: ['cmp_u1'],
+  });
+  const pane = openNets();
+  fireEvent.click(pane.getByRole('button', { name: 'N1 · 2 liiget' }));
+  expect(pane.queryAllByRole('alert').map((alert) => alert.textContent)).toEqual([
+    'Läbivusmõõtmine näitas katkestust jalgade vahel, mis on selles võrgus.',
+    'R1: mõlemad jalad on selles võrgus. Kontrolli, kas see on lühis.',
+  ]);
+});
+
+test('same_name_nets_distinguishable_in_join_and_export', () => {
+  const doc = measurementDoc();
+  seedTwoNets(doc);
+  doc.netLabels.push(
+    { id: 'lbl_gnd_a', anchor: pin('1'), name: 'GND', roleId: 'rol_gnd', source: 'user' },
+    { id: 'lbl_gnd_b', anchor: pin('3'), name: 'GND', roleId: 'rol_gnd', source: 'user' },
+  );
+  for (const [id, name] of [
+    ['source', 'Lähtevõrk'],
+    ['branch', 'Haruvõrk'],
+  ] as const) {
+    const a = { junction: `jun_${id}_a` };
+    const b = { junction: `jun_${id}_b` };
+    doc.junctions.push({ id: a.junction }, { id: b.junction });
+    doc.connections.push({ id: `con_${id}`, a, b, basis: 'assumed' });
+    doc.netLabels.push({ id: `lbl_${id}`, anchor: a, name, source: 'user' });
+  }
+  const { engine } = setup(doc);
+  const saveTextFile = vi.fn().mockResolvedValue('saved');
+  render(
+    <EngineProvider engine={engine} projects={new FakeProjects()}>
+      <NetsTab ids={idGenerator()} connectionPoints={() => undefined} saveTextFile={saveTextFile} />
+    </EngineProvider>,
+  );
+
+  expect(screen.getAllByRole('button', { name: 'GND · 2 liiget · GND' })).toHaveLength(2);
+  const exportButton = screen.getByRole<HTMLButtonElement>('button', {
+    name: 'Ekspordi võrguloend (CSV)',
+  });
+  expect
+    .soft(screen.queryByText('Mitmel võrgul on sama nimi (GND). CSV-s neid võrke ei eristata.'))
+    .not.toBeNull();
+  expect(exportButton.disabled).toBe(false);
+  fireEvent.click(exportButton);
+  expect(saveTextFile).toHaveBeenCalledExactlyOnceWith(
+    'Mõõtmise proov võrguloend.csv',
+    '\uFEFFVõrk;Roll;Tähis.jalg;Jala nimi\r\nGND;GND;U1.1;VIN\r\nGND;GND;U1.2;\r\nGND;GND;U1.3;\r\nGND;GND;U1.4;GND',
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Lähtevõrk · 2 liiget' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ühenda võrguga…' }));
+  const dialog = within(screen.getByRole('dialog', { name: 'Ühenda võrguga…' }));
+  const choices = dialog.getAllByRole('button', { name: /^GND(?:\s|$)/u });
+  expect
+    .soft(choices.map((button) => button.getAttribute('aria-label')))
+    .toEqual(['GND · 2 liiget · U1.1 · GND', 'GND · 2 liiget · U1.3 · GND']);
+  expect.soft(choices[0]?.textContent).toContain('U1.1');
+  expect.soft(choices[1]?.textContent).toContain('U1.3');
+  expect
+    .soft(dialog.queryByRole('button', { name: 'Haruvõrk · 2 liiget · liitepunkt' }))
+    .not.toBeNull();
+  expect.soft(dialog.queryByText('liitepunkt')).not.toBeNull();
 });

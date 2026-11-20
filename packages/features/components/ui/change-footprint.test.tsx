@@ -153,6 +153,35 @@ test('shrinking_package_confirms_and_lists_lost_pins', () => {
   ]);
 });
 
+test('footprint_change_lists_lost_connections_and_labels', () => {
+  const doc = fixture();
+  const lost = { pin: { c: 'cmp_ic', p: '14' } };
+  const retained = { pin: { c: 'cmp_ic', p: '1' } };
+  doc.connections.push({ id: 'con_lost', a: lost, b: retained, basis: 'assumed' });
+  doc.netLabels.push({ id: 'lbl_lost', anchor: lost, name: 'OUT', source: 'user' });
+  const { engine, host } = mount(doc);
+  const editor = edit();
+  fireEvent.click(editor.getByRole('button', { name: 'Vaheta korpus' }));
+
+  const dialog = within(screen.getByRole('dialog', { name: 'Korpuse vahetus' }));
+  expect(
+    dialog.getByText(
+      'Kaovad jalad 9–14: 1 ühendus, 1 võrgusilt. Ühenduste otsad jäävad liitepunktidena alles, võrgusildid eemaldatakse.',
+    ),
+  ).toBeTruthy();
+  expect(engine.snapshot().doc.components[0]!.pins).toHaveLength(14);
+  expect(host.drainJournal()).toEqual([]);
+
+  expect(dialog.getByRole('button', { name: 'Loobu' })).toBeTruthy();
+  fireEvent.click(dialog.getByRole('button', { name: 'Vaheta korpus' }));
+  expect(engine.snapshot().doc.components[0]!.pins).toHaveLength(8);
+  expect(engine.snapshot().doc.connections[0]!.a).toEqual({ junction: 'jun_cmp_ic_14' });
+  expect(engine.snapshot().doc.netLabels).toEqual([]);
+  expect(host.drainJournal().map(({ commandId }) => commandId)).toEqual([
+    'components.changeFootprint',
+  ]);
+});
+
 test('change_without_impact_runs_without_dialog', () => {
   const { engine, host } = mount(fixture(8));
   const editor = edit('14');

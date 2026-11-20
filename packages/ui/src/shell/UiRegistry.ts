@@ -32,7 +32,7 @@ export interface ContextMenuItemSpec {
   label(snapshot: Snapshot, selection: Selection): string;
   available?(snapshot: Snapshot, selection: Selection): boolean;
   shortcut?: { key: string; shift?: boolean; primary?: boolean };
-  run(api: ToolApi, selection: Selection, at: Vec2): boolean;
+  run(api: ToolApi, selection: Selection, at: Vec2, target?: SelectionItem): boolean;
 }
 
 export interface ContextSectionSpec {

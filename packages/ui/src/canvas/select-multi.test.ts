@@ -30,7 +30,7 @@ test('shift_click_toggles_component_and_pin', () => {
     execute,
     select: (next) => (selection = next),
     setPreview: (next) => (preview = next),
-    hitIndex: { query: () => undefined },
+    hitIndex: { query: () => undefined, queryAll: () => [] },
     snapshot: () => snapshot,
     sceneTransform: () => 'none',
   };

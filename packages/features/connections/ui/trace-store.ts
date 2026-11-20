@@ -9,7 +9,7 @@ export type TraceDraft = { start: EndRef; waypoints: Vec2[]; existingId?: string
 type TracePreview = {
   points: Vec2[];
   cursor?: Vec2;
-  target?: EndpointHit | DrawingHit;
+  target?: { hit: EndpointHit | DrawingHit; accepted: boolean };
   pxPerMm: number;
   zoom: number;
 };

@@ -2,7 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import type { MouseEvent, MutableRefObject, RefObject } from 'react';
 import type { Vec2 } from '@pcbk/domain';
 import { useSessionStore } from '../shell/session-store';
-import type { Selection } from '../shell/session-store';
+import type { Selection, SelectionItem } from '../shell/session-store';
 import type { ContextMenuItemSpec } from '../shell/UiRegistry';
 import { selectionForHit } from './SelectTool';
 import { pointerWorld } from './stage';
@@ -40,6 +40,7 @@ interface OpenMenu {
   screen: Vec2;
   items: ContextMenuItemSpec[];
   selection: Selection;
+  target?: SelectionItem;
 }
 
 function screenPoint(event: Pick<MouseEvent, 'clientX' | 'clientY'>): Vec2 {
@@ -114,7 +115,8 @@ export function useCanvasContextMenu({
     if (!contextMenu || isGesturing() || !scene.current || !viewport.current) return;
     const { selection: currentSelection, toolId: currentTool } = useSessionStore.getState();
     if (currentTool !== 'select') return;
-    const kind = currentSelection.items[0]?.kind ?? 'empty';
+    const target = currentSelection.items[0];
+    const kind = target?.kind ?? 'empty';
     const selection = menuSelection(kind, currentSelection);
     const items = availableItems(contextMenu(kind), api.snapshot(), selection);
     keyboardOpening.current = true;
@@ -129,6 +131,7 @@ export function useCanvasContextMenu({
       screen,
       items,
       selection,
+      target,
     });
   }, [api, contextMenu, fitInsets, isGesturing, scene, viewport]);
 
@@ -165,14 +168,14 @@ export function useCanvasContextMenu({
     const kind = target?.kind ?? 'empty';
     const selection = menuSelection(kind, currentSelection);
     const items = availableItems(contextMenu(kind), api.snapshot(), selection);
-    if (items.length > 0) setOpen({ at, screen, items, selection });
+    if (items.length > 0) setOpen({ at, screen, items, selection, target });
     else close();
   }
 
   function activate(item: ContextMenuItemSpec) {
     if (!open) return;
     close();
-    item.run(api, open.selection, open.at);
+    item.run(api, open.selection, open.at, open.target);
   }
 
   function trackPointer(event: Pick<MouseEvent, 'clientX' | 'clientY'>) {

@@ -132,7 +132,7 @@ test('connections_flow_end_to_end', async ({ page }) => {
     await ground.click();
     await networks.getByRole('button', { name: 'Ühenda võrguga…', exact: true }).click();
     const join = page.getByRole('dialog', { name: 'Ühenda võrguga…', exact: true });
-    await join.getByRole('button', { name: / · 3 liiget · 5V$/ }).click();
+    await join.getByRole('button', { name: / · 3 liiget · (?:U1\.[68]|U2\.6) · 5V$/ }).click();
     const warning = networks
       .getByRole('alert')
       .filter({ hasText: 'Võimalik lühis või vale ühendus' });

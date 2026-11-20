@@ -2,12 +2,12 @@ import type { IdGen, Snapshot } from '@pcbk/contracts';
 import type { EndRef, Vec2 } from '@pcbk/domain';
 import { branchConnection, endAcceptsDrawing, endKey, RuleRejected } from '@pcbk/domain/rules';
 import { useSessionStore, useViewStore } from '@pcbk/ui';
-import type { CanvasPointer, CanvasTool, ToolApi, ToolSpec } from '@pcbk/ui';
+import type { CanvasPointer, CanvasTool, HitIndex, HitMatch, ToolApi, ToolSpec } from '@pcbk/ui';
 import { createElement } from 'react';
 import { TRACE_WIDTH_MM, WIRE_WIDTH_MM } from '../contract';
 import { connectionEndpoint } from './connection-geometry';
 import { connectionsEt } from './i18n/et';
-import { distance, drawingHit, endpointHit, snappedWaypoint } from './trace-geometry';
+import { distance, drawingHits, endpointHit, snappedWaypoint } from './trace-geometry';
 import type { Drawing, DrawingHit, EndpointHit } from './trace-geometry';
 import { resetTraceTool, TRACE_TOOL_ID, useTraceStore } from './trace-store';
 import type { TraceDraft, TraceMode } from './trace-store';
@@ -16,9 +16,9 @@ import { TraceOverlay } from './TraceOverlay';
 export { resetTraceTool } from './trace-store';
 
 type Doc = Snapshot['doc'];
-type Target =
-  | { kind: 'end'; hit: EndpointHit; at: Vec2; accepted: boolean }
-  | { kind: 'branch'; hit: DrawingHit; at: Vec2; accepted: boolean };
+type EndTarget = { kind: 'end'; hit: EndpointHit; at: Vec2; accepted: boolean };
+type BranchTarget = { kind: 'branch'; hit: DrawingHit; at: Vec2; accepted: boolean };
+type Target = EndTarget | BranchTarget;
 
 const getTrace = useTraceStore.getState;
 const updateTrace = useTraceStore.setState;
@@ -111,34 +111,54 @@ function acceptsBranch(doc: Doc, hit: DrawingHit, draft: TraceDraft, mode: Trace
 
 function findTarget(
   doc: Doc,
-  event: CanvasPointer,
+  matches: HitMatch[],
+  world: Vec2,
   draft: TraceDraft,
   mode: TraceMode,
 ): Target | undefined {
-  const endpoint = endpointHit(doc, event.hit);
-  if (endpoint && endKey(endpoint.end) !== endKey(draft.start)) {
-    const existing = draft.existingId ? savedConnection(doc, draft.existingId) : undefined;
-    if (draft.existingId && (!existing || endKey(endpoint.end) !== endKey(existing.b))) return;
-    const at = connectionEndpoint(doc, endpoint.end);
-    if (at) {
-      return {
-        kind: 'end',
-        hit: endpoint,
-        at,
-        accepted: accepts(doc, draft.start, mode) && accepts(doc, endpoint.end, mode),
-      };
+  const existing = draft.existingId ? savedConnection(doc, draft.existingId) : undefined;
+  if (draft.existingId && !existing) return;
+  const startKey = endKey(draft.start);
+  const existingEndKey = existing && endKey(existing.b);
+  let firstEnd: EndTarget | undefined;
+  let exactEnd: EndTarget | undefined;
+  for (const { item, exact } of matches) {
+    const hit = endpointHit(doc, item);
+    if (!hit) continue;
+    const key = endKey(hit.end);
+    if (key === startKey || (existingEndKey !== undefined && key !== existingEndKey)) continue;
+    const at = connectionEndpoint(doc, hit.end);
+    if (!at) continue;
+    const end: EndTarget = {
+      kind: 'end',
+      hit,
+      at,
+      accepted: accepts(doc, draft.start, mode) && accepts(doc, hit.end, mode),
+    };
+    firstEnd ??= end;
+    if (exact) {
+      exactEnd = end;
+      break;
     }
   }
-  if (draft.existingId) return;
-  const trace = drawingHit(doc, event.hit, event.world);
-  if (trace) {
-    return {
+  if (existing || (exactEnd && exactEnd === firstEnd)) return firstEnd;
+
+  const drawings = drawingHits(doc, matches, world);
+  if (!drawings.length) return firstEnd;
+  if (exactEnd) return exactEnd;
+
+  let nearestDenied: BranchTarget | undefined;
+  for (const hit of drawings) {
+    const target: BranchTarget = {
       kind: 'branch',
-      hit: trace,
-      at: trace.at,
-      accepted: acceptsBranch(doc, trace, draft, mode),
+      hit,
+      at: hit.at,
+      accepted: acceptsBranch(doc, hit, draft, mode),
     };
+    if (target.accepted) return target;
+    nearestDenied ??= target;
   }
+  return nearestDenied;
 }
 
 function cursorPoint(event: CanvasPointer, from: Vec2, target: Target | undefined): Vec2 {
@@ -146,7 +166,7 @@ function cursorPoint(event: CanvasPointer, from: Vec2, target: Target | undefine
   return event.shift ? snappedWaypoint(from, event.world) : event.world;
 }
 
-function updateOverlay(doc: Doc, event?: CanvasPointer) {
+function updateOverlay(doc: Doc, hitIndex: HitIndex, event?: CanvasPointer) {
   const { draft, mode } = getTrace();
   const start = draft && connectionEndpoint(doc, draft.start);
   if (!draft || !start) {
@@ -154,7 +174,8 @@ function updateOverlay(doc: Doc, event?: CanvasPointer) {
     return;
   }
   const zoom = zoomNow();
-  const target = event && findTarget(doc, event, draft, mode);
+  const target =
+    event && findTarget(doc, hitIndex.queryAll(event.world, zoom), event.world, draft, mode);
   const points = [start, ...draft.waypoints];
   const cursor = event && cursorPoint(event, points.at(-1)!, target);
   updateTrace({
@@ -163,7 +184,7 @@ function updateOverlay(doc: Doc, event?: CanvasPointer) {
       cursor,
       pxPerMm: doc.scale.pxPerMm,
       zoom,
-      ...(target?.accepted ? { target: target.hit } : {}),
+      ...(target && (target.accepted || target.kind === 'branch') ? { target } : {}),
     },
   });
 }
@@ -218,8 +239,10 @@ function commitOpenEnd(api: ToolApi, ids: IdGen, draft: TraceDraft, board: Drawi
 function advanceTrace(api: ToolApi, event: CanvasPointer, ids: IdGen) {
   const { doc } = api.snapshot();
   const { draft, mode } = getTrace();
+  const zoom = zoomNow();
+  const matches = api.hitIndex.queryAll(event.world, zoom);
   if (!draft) {
-    const hit = endpointHit(doc, event.hit);
+    const hit = endpointHit(doc, matches[0]?.item);
     if (hit && connectionEndpoint(doc, hit.end)) {
       begin(doc, hit.end);
       if (!accepts(doc, hit.end, getTrace().mode)) {
@@ -234,8 +257,7 @@ function advanceTrace(api: ToolApi, event: CanvasPointer, ids: IdGen) {
     return;
   }
 
-  const zoom = zoomNow();
-  const target = findTarget(doc, event, draft, mode);
+  const target = findTarget(doc, matches, event.world, draft, mode);
   const last = draft.waypoints.at(-1);
   const repeatsLast = last !== undefined && distance(last, event.world) * zoom <= clickRadius;
   const board = drawing(mode, draft.waypoints);
@@ -253,7 +275,7 @@ function advanceTrace(api: ToolApi, event: CanvasPointer, ids: IdGen) {
     const point = cursorPoint(event, last ?? start, undefined);
     if (distance(point, last ?? start) === 0) return;
     updateTrace({ draft: { ...draft, waypoints: [...draft.waypoints, point] }, error: null });
-    updateOverlay(doc);
+    updateOverlay(doc, api.hitIndex);
   }
 }
 
@@ -271,7 +293,7 @@ function createTraceTool(ids: IdGen): CanvasTool {
     onPointerMove(event, api) {
       cursor = event;
       if (down && distance(down, event.screen) > clickRadius) dragged = true;
-      if (getTrace().draft) updateOverlay(api.snapshot().doc, event);
+      if (getTrace().draft) updateOverlay(api.snapshot().doc, api.hitIndex, event);
     },
     onPointerUp(event, api) {
       const click = down && !dragged && distance(down, event.screen) <= clickRadius;
@@ -285,7 +307,7 @@ function createTraceTool(ids: IdGen): CanvasTool {
       if (event.key.toLowerCase() === 'l') {
         if (!event.repeat) {
           updateTrace({ mode: nextMode(mode), error: null });
-          updateOverlay(api.snapshot().doc, cursor);
+          updateOverlay(api.snapshot().doc, api.hitIndex, cursor);
         }
         return true;
       }
@@ -294,7 +316,7 @@ function createTraceTool(ids: IdGen): CanvasTool {
         updateTrace({ draft: null, preview: null, error: null });
       } else {
         updateTrace({ draft: { ...draft, waypoints: draft.waypoints.slice(0, -1) }, error: null });
-        updateOverlay(api.snapshot().doc, cursor);
+        updateOverlay(api.snapshot().doc, api.hitIndex, cursor);
       }
       return true;
     },

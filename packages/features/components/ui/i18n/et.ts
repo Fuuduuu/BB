@@ -231,17 +231,37 @@ export const placementEt = {
     apply: 'Vaheta korpus',
     cancel: 'Loobu',
     pinCount: (count: number) => `${count} ${count === 1 ? 'jalg' : 'jalga'}`,
-    impact: (pins: string, counts: { measurements: number; names: number; nc: number }) => {
+    impact: (
+      pins: string,
+      counts: {
+        measurements: number;
+        names: number;
+        nc: number;
+        connections: number;
+        netLabels: number;
+      },
+    ) => {
       const details = [
         counts.measurements > 0
           ? `${counts.measurements} ${counts.measurements === 1 ? 'mõõtmine' : 'mõõtmist'}`
           : '',
         counts.names > 0 ? `${counts.names} ${counts.names === 1 ? 'nimi' : 'nime'}` : '',
         counts.nc > 0 ? `${counts.nc} ${counts.nc === 1 ? 'NC-märge' : 'NC-märget'}` : '',
+        counts.connections > 0
+          ? `${counts.connections} ${counts.connections === 1 ? 'ühendus' : 'ühendust'}`
+          : '',
+        counts.netLabels > 0
+          ? `${counts.netLabels} ${counts.netLabels === 1 ? 'võrgusilt' : 'võrgusilti'}`
+          : '',
       ]
         .filter(Boolean)
         .join(', ');
-      return `Kaovad jalad ${pins}: ${details}.${counts.measurements > 0 ? ' Mõõtmised jäävad ajaloolistena alles.' : ''}`;
+      const notes = [
+        counts.measurements > 0 && 'Mõõtmised jäävad ajaloolistena alles.',
+        counts.connections > 0 &&
+          'Ühenduste otsad jäävad liitepunktidena alles, võrgusildid eemaldatakse.',
+      ];
+      return [`Kaovad jalad ${pins}: ${details}.`, ...notes.filter(Boolean)].join(' ');
     },
   },
   section: {

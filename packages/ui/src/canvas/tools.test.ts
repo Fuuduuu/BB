@@ -59,7 +59,7 @@ function setup(
     execute,
     select: (next) => (selection = next),
     setPreview: (next) => (preview = next),
-    hitIndex: { query: () => undefined },
+    hitIndex: { query: () => undefined, queryAll: () => [] },
     snapshot: () => snapshot,
     sceneTransform: () => 'none',
   };

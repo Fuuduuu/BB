@@ -80,6 +80,7 @@ export type HitDrag = {
 ```ts
 export interface HitIndex {
     query(world: Vec2, zoom: number): HitItem | undefined;
+    queryAll(world: Vec2, zoom: number): HitMatch[];
 }
 ```
 
@@ -97,6 +98,15 @@ export interface HitItem {
     moves?: SelectionItem;
     drag?: HitDrag;
 }
+```
+
+### `HitMatch`
+```ts
+export type HitMatch = {
+    item: HitItem;
+    distance: number;
+    exact: boolean;
+};
 ```
 
 ### `HitShape`

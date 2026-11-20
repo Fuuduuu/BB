@@ -1,6 +1,6 @@
 import type { IdGen, Snapshot } from '@pcbk/contracts';
 import type { EndRef, Vec2 } from '@pcbk/domain';
-import { useSessionStore, useViewStore } from '@pcbk/ui';
+import { useViewStore } from '@pcbk/ui';
 import type { Selection, UiModule } from '@pcbk/ui';
 import { ConnectionProperties, endLabel } from './ConnectionProperties';
 import {
@@ -239,18 +239,8 @@ export function createConnectionsUi(
         appliesTo: ['pin'],
         order: 10,
         label: () => connectionsEt.startTrace,
-        run(api, selection, at) {
-          const hit = api.hitIndex.query(at, useViewStore.getState().boardView.zoom);
-          const clicked =
-            hit?.kind === 'pin'
-              ? useSessionStore
-                  .getState()
-                  .selection.items.find(
-                    ({ kind, id, componentId }) =>
-                      kind === hit.kind && id === hit.id && componentId === hit.componentId,
-                  )
-              : undefined;
-          const end = selectedPin(clicked ? { items: [clicked] } : selection);
+        run(api, selection, _at, target) {
+          const end = selectedPin(target?.kind === 'pin' ? { items: [target] } : selection);
           return !!end && startTraceFrom(api, end);
         },
       },

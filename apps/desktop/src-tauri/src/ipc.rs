@@ -153,6 +153,11 @@ pub fn project_save_view(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+pub fn project_replace_token(path: String) -> Result<Option<String>, StorageErrorDto> {
+    crate::storage::replace_token(project_file(&path)?)
+}
+
+#[tauri::command(rename_all = "snake_case")]
 #[allow(clippy::too_many_arguments)]
 pub fn project_copy(
     store: State<'_, ProjectStore>,
@@ -161,6 +166,7 @@ pub fn project_copy(
     project_id: String,
     copied_from_project_id: Option<String>,
     exclusive: bool,
+    replace_token: Option<String>,
     doc_json: String,
     rev: i64,
     view_json: Option<String>,
@@ -172,6 +178,7 @@ pub fn project_copy(
         project_id: &project_id,
         copied_from_project_id: copied_from_project_id.as_deref(),
         exclusive,
+        replace_token: replace_token.as_deref(),
         doc_json: &doc_json,
         rev,
         view_json: view_json.as_deref(),

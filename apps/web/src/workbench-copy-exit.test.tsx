@@ -167,7 +167,7 @@ test.each(['host', 'reload'] as const)(
 
       if (intent === 'reload') {
         // A second recovery copy would use the now-readable rescue as its source.
-        app.pickSavePath.mockResolvedValue('second-rescue.pcbk');
+        app.pickSavePath.mockResolvedValue({ path: 'second-rescue.pcbk', replaceToken: null });
         await act(async () => {
           fireEvent.click(screen.getByRole('button', { name: et.error.copyReload }));
         });

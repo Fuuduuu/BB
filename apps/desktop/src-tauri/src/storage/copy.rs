@@ -14,6 +14,7 @@ pub struct CopyRequest<'a> {
     pub project_id: &'a str,
     pub copied_from_project_id: Option<&'a str>,
     pub exclusive: bool,
+    pub replace_token: Option<&'a str>,
     pub doc_json: &'a str,
     pub rev: i64,
     pub view_json: Option<&'a str>,
@@ -147,11 +148,10 @@ fn prepare(
     Ok((pending, from_memory))
 }
 
-fn publish(pending: PendingFile, dest: &Path, exclusive: bool) -> StorageResult<()> {
-    if exclusive {
-        pending.publish_new(dest)
-    } else {
-        pending.publish(dest)
+fn publish(pending: PendingFile, dest: &Path, request: &CopyRequest<'_>) -> StorageResult<()> {
+    match (request.exclusive, request.replace_token) {
+        (false, Some(token)) => pending.publish_confirmed(dest, token),
+        _ => pending.publish_new(dest),
     }
 }
 
@@ -161,7 +161,7 @@ pub(super) fn write(
     request: &CopyRequest<'_>,
 ) -> StorageResult<bool> {
     let (pending, from_memory) = prepare(source, dest, request)?;
-    publish(pending, dest, request.exclusive)?;
+    publish(pending, dest, request)?;
     Ok(from_memory)
 }
 
@@ -188,6 +188,7 @@ mod tests {
             project_id: &source.project_id,
             copied_from_project_id: None,
             exclusive: true,
+            replace_token: None,
             doc_json: r#"{"format_version":1,"rev":1,"name":"Päästekoopia"}"#,
             rev: 1,
             view_json: None,
@@ -209,7 +210,7 @@ mod tests {
         store.close(&late.session).unwrap();
         let original_bytes = fs::read(&dest).unwrap();
 
-        let error = publish(pending, &dest, request.exclusive).unwrap_err();
+        let error = publish(pending, &dest, &request).unwrap_err();
         assert_eq!(error.reason, Reason::PathTaken);
         assert!(!temporary.exists());
         assert_eq!(fs::read(&dest).unwrap(), original_bytes);

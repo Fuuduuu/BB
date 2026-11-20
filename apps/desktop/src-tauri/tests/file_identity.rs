@@ -71,6 +71,7 @@ fn copy_and_restore_get_new_file_id() {
                 project_id,
                 copied_from_project_id: (project_id != PROJECT_ID).then_some(PROJECT_ID),
                 exclusive: false,
+                replace_token: None,
                 doc_json: &doc(0),
                 rev: 0,
                 view_json: None,

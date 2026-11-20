@@ -150,7 +150,9 @@ export async function mountFailedSwitch(
   const current = await seedProject(runtime, 'Praegune plaat');
   const target = await seedProject(runtime, 'Teine plaat');
   const { host } = fakeHost();
-  const pickSavePath = vi.fn().mockResolvedValue('rescue.pcbk');
+  const pickSavePath = vi
+    .fn<NonNullable<AppHost['pickSavePath']>>()
+    .mockResolvedValue({ path: 'rescue.pcbk', replaceToken: null });
   const app = mount(
     runtime,
     { ...host, kind: 'desktop', pickSavePath, ...recovery },

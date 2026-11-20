@@ -88,6 +88,7 @@ fn copy_falls_back_to_memory_when_source_missing() {
             project_id: "rescued",
             copied_from_project_id: Some("original"),
             exclusive: false,
+            replace_token: None,
             doc_json: doc,
             rev: 3,
             view_json: Some(view),

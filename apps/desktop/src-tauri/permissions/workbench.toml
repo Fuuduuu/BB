@@ -7,6 +7,7 @@ commands.allow = [
   "project_save",
   "project_save_view",
   "project_copy",
+  "project_replace_token",
   "project_backup_full",
   "project_backups",
   "project_restore",

@@ -100,6 +100,7 @@ pub(super) fn copy_request<'a>(
         project_id: &source.project_id,
         copied_from_project_id: None,
         exclusive: false,
+        replace_token: None,
         doc_json,
         rev: 1,
         view_json: None,

@@ -3,7 +3,7 @@ mod common;
 use common::{
     copy_request as request, doc, journal, meta, name, read_db, rev, summaries, Fixture, PROJECT_ID,
 };
-use pcbk_desktop::storage::{BackupKind, CopyRequest, Reason};
+use pcbk_desktop::storage::{replace_token, BackupKind, CopyRequest, Reason};
 use rusqlite::Connection;
 use std::{collections::BTreeSet, fs, path::Path};
 
@@ -227,6 +227,7 @@ fn copy_replaces_confirmed_destination_but_not_open_source() {
         );
     }
     f.store.close(&other.session).unwrap();
+    let token = replace_token(&dest).unwrap().unwrap();
     #[cfg(windows)]
     {
         use std::os::windows::fs::OpenOptionsExt;
@@ -240,7 +241,10 @@ fn copy_replaces_confirmed_destination_but_not_open_source() {
             .unwrap();
         assert_eq!(
             f.store
-                .copy(request(&source, &dest, &doc(1)))
+                .copy(CopyRequest {
+                    replace_token: Some(&token),
+                    ..request(&source, &dest, &doc(1))
+                })
                 .unwrap_err()
                 .reason,
             Reason::Locked
@@ -248,7 +252,13 @@ fn copy_replaces_confirmed_destination_but_not_open_source() {
         assert_eq!(fs::read(&dest).unwrap(), before);
         drop(lock);
     }
-    let copied = f.store.copy(request(&source, &dest, &doc(1))).unwrap();
+    let copied = f
+        .store
+        .copy(CopyRequest {
+            replace_token: Some(&token),
+            ..request(&source, &dest, &doc(1))
+        })
+        .unwrap();
     assert_eq!(copied.opened.project_id, PROJECT_ID);
     f.store.close(&copied.opened.session).unwrap();
     f.store.close(&source.session).unwrap();

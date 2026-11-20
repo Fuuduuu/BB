@@ -12,7 +12,7 @@ export interface AppHost {
     removeRecent(path: string): Promise<void>;
     listOpenable?(): Promise<RecentProject[]>;
     pickProjectFile?(): Promise<string | null>;
-    pickSavePath?(suggestedName: string): Promise<string | null>;
+    pickSavePath?(suggestedName: string): Promise<SaveTarget | null>;
     recoveryCopyPath?(projectPath: string): Promise<string>;
     onCloseRequested(handler: () => Promise<boolean>): Unsubscribe;
     onOpenPath(handler: (path: string) => void): Unsubscribe;
@@ -85,6 +85,7 @@ export type CopyReq = {
     dest: string;
     identity: 'same' | 'new';
     exclusive?: boolean;
+    replaceToken?: string;
 };
 ```
 
@@ -311,6 +312,14 @@ export type SaveStatus = {
 } | {
     state: 'error';
     reason: StorageReason;
+};
+```
+
+### `SaveTarget`
+```ts
+export type SaveTarget = {
+    path: string;
+    replaceToken: string | null;
 };
 ```
 

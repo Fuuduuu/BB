@@ -1,10 +1,12 @@
 use super::*;
-use std::{cell::Cell, rc::Rc};
+use std::{cell::Cell, process::Command, rc::Rc};
 
 #[path = "../../tests/support/hot_journal.rs"]
 mod hot_journal;
 
 const SIDE_SUFFIXES: [&str; 3] = ["-journal", "-wal", "-shm"];
+const REPLACE_CHILD_PATH: &str = "PCBK_KILLED_REPLACE_CHILD_PATH";
+const REPLACE_CHILD_EXIT: i32 = 73;
 type ReplaceHook = Box<dyn FnOnce(&Path) -> StorageResult<()>>;
 thread_local! {
     static BEFORE_REPLACE: std::cell::RefCell<Option<ReplaceHook>> = const {
@@ -95,7 +97,50 @@ fn create_replace_ignores_stale_journal_of_replaced_file() {
 }
 
 #[test]
-fn failed_replace_puts_sidecars_back() {
+fn killed_replace_reopens_last_committed_version() {
+    if let Some(path) = std::env::var_os(REPLACE_CHILD_PATH) {
+        let target = PathBuf::from(path);
+        let store = ProjectStore::new(
+            target.with_file_name("child-app-data"),
+            Arc::new(SystemClock),
+        );
+        BEFORE_REPLACE.with(|slot| {
+            slot.replace(Some(Box::new(|_| std::process::exit(REPLACE_CHILD_EXIT))));
+        });
+        store
+            .create(&target, "project-b", &document("Replacement B"))
+            .unwrap();
+        panic!("replacement child did not exit in the before_replace hook");
+    }
+
+    let dir = tempfile::tempdir().unwrap();
+    let store = ProjectStore::new(dir.path().join("app-data"), Arc::new(SystemClock));
+    let target = dir.path().join("interrupted.pcbk");
+    let old_id = create_closed(&store, &target, "project-a", "Original A");
+    hot_journal::leave_hot_journal(&target);
+
+    let (_, module) = module_path!().split_once("::").unwrap();
+    let child = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            &format!("{module}::killed_replace_reopens_last_committed_version"),
+            "--nocapture",
+        ])
+        .env(REPLACE_CHILD_PATH, &target)
+        .output()
+        .expect("start the interrupted replacement child");
+    assert_eq!(
+        child.status.code(),
+        Some(REPLACE_CHILD_EXIT),
+        "child did not exit in before_replace: {}{}",
+        String::from_utf8_lossy(&child.stdout),
+        String::from_utf8_lossy(&child.stderr)
+    );
+    assert_reopened(&store, &target, "project-a", &old_id, "Original A");
+}
+
+#[test]
+fn failed_replace_keeps_last_committed_version() {
     let dir = tempfile::tempdir().unwrap();
     let store = ProjectStore::new(dir.path().join("app-data"), Arc::new(SystemClock));
     let target = dir.path().join("restore-on-failure.pcbk");
@@ -103,25 +148,12 @@ fn failed_replace_puts_sidecars_back() {
     let old_id = create_closed(&store, &target, "project-a", "Original A");
     let other_id = create_closed(&store, &bystander, "project-c", "Independent C");
     hot_journal::leave_hot_journal(&target);
-    for suffix in ["-wal", "-shm"] {
-        fs::write(sidecar(&target, suffix), suffix.as_bytes()).unwrap();
-    }
-    let old_file = fs::read(&target).unwrap();
-    let sidecars = SIDE_SUFFIXES.map(|suffix| {
-        let path = sidecar(&target, suffix);
-        let contents = fs::read(&path).unwrap();
-        (path, contents)
-    });
-
-    let parked_at_replace = Rc::new(Cell::new(false));
+    let attempted_replace = Rc::new(Cell::new(false));
     BEFORE_REPLACE.with(|slot| {
-        let parked_at_replace = Rc::clone(&parked_at_replace);
+        let attempted_replace = Rc::clone(&attempted_replace);
         slot.replace(Some(Box::new(move |path| {
-            parked_at_replace.set(
-                SIDE_SUFFIXES
-                    .iter()
-                    .all(|suffix| !sidecar(path, suffix).exists()),
-            );
+            assert!(!sidecar(path, "-journal").exists());
+            attempted_replace.set(true);
             Err(StorageErrorDto::new(Reason::Locked))
         })));
     });
@@ -129,29 +161,88 @@ fn failed_replace_puts_sidecars_back() {
         .create(&target, "project-b", &document("Replacement B"))
         .unwrap_err();
     assert_eq!(error.reason, Reason::Locked);
-    assert!(
-        fs::read(&target).unwrap() == old_file,
-        "old project bytes changed"
-    );
-    for (path, expected) in sidecars {
-        assert!(
-            fs::read(&path).unwrap() == expected,
-            "{} changed",
-            path.display()
-        );
-    }
+    assert!(attempted_replace.get());
     assert_no_parked_files(dir.path());
     assert!(
-        parked_at_replace.get(),
-        "old sidecars were still visible when the replacement started"
+        !sidecar(&target, "-journal").exists(),
+        "SQLite must recover the hot journal before the failed replacement"
     );
-
-    // Only the rollback journal is a real SQLite file in this fixture.
-    for suffix in ["-wal", "-shm"] {
-        fs::remove_file(sidecar(&target, suffix)).unwrap();
-    }
     assert_reopened(&store, &target, "project-a", &old_id, "Original A");
     assert_reopened(&store, &bystander, "project-c", &other_id, "Independent C");
+}
+
+#[test]
+fn confirmed_replace_refuses_changed_destination() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = ProjectStore::new(dir.path().join("app-data"), Arc::new(SystemClock));
+    let target = dir.path().join("changed.pcbk");
+    let source_path = dir.path().join("source.pcbk");
+    create_closed(&store, &target, "project-a", "Original A");
+    let original_token = replace_token(&target).unwrap().unwrap();
+    let source = store
+        .create(&source_path, "project-b", &document("Copy source B"))
+        .unwrap();
+    let other = store
+        .create(
+            &target,
+            "project-c",
+            &serde_json::json!({
+                "format_version": 1,
+                "rev": 0,
+                "name": "Independent C",
+                "padding": "x".repeat(16384),
+            })
+            .to_string(),
+        )
+        .unwrap();
+    store.close(&other.session).unwrap();
+    let current_token = replace_token(&target).unwrap().unwrap();
+    assert_ne!(current_token, original_token);
+
+    let replacement = || CopyRequest {
+        session: &source.session,
+        dest: &target,
+        project_id: &source.project_id,
+        copied_from_project_id: None,
+        exclusive: false,
+        replace_token: None,
+        doc_json: &source.doc_json,
+        rev: 0,
+        view_json: None,
+        journal: &[],
+    };
+    let error = store
+        .copy(CopyRequest {
+            replace_token: Some(&original_token),
+            ..replacement()
+        })
+        .unwrap_err();
+    assert_eq!(error.reason, Reason::PathTaken);
+    assert_reopened(
+        &store,
+        &target,
+        "project-c",
+        &other.file_id,
+        "Independent C",
+    );
+
+    let copied = store
+        .copy(CopyRequest {
+            replace_token: Some(&current_token),
+            ..replacement()
+        })
+        .unwrap()
+        .opened;
+    store.close(&copied.session).unwrap();
+    store.close(&source.session).unwrap();
+    assert_reopened(
+        &store,
+        &target,
+        "project-b",
+        &copied.file_id,
+        "Copy source B",
+    );
+    assert_no_parked_files(dir.path());
 }
 
 #[test]
@@ -190,6 +281,7 @@ fn exclusive_publish_treats_sidecar_as_taken() {
             project_id: &source.project_id,
             copied_from_project_id: None,
             exclusive: true,
+            replace_token: None,
             doc_json: &source.doc_json,
             rev: 0,
             view_json: None,

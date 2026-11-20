@@ -101,6 +101,7 @@ fn main() {
             ipc::project_save,
             ipc::project_save_view,
             ipc::project_copy,
+            ipc::project_replace_token,
             ipc::project_backup_full,
             ipc::project_backups,
             ipc::project_restore,

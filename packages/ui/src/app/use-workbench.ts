@@ -239,9 +239,9 @@ export function useWorkbench(
     const restored = await run(async () => {
       if (!restoreSource) return false;
       try {
-        const dest = await host.pickSavePath?.(et.project.restoreName(restoreSource.name));
-        if (!dest) return true;
-        const result = await projects.restore({ backup, dest });
+        const target = await host.pickSavePath?.(et.project.restoreName(restoreSource.name));
+        if (!target?.path) return true;
+        const result = await projects.restore({ backup, dest: target.path });
         if (!result.ok) {
           destinationExists = result.error.code === 'storage' && result.error.reason === 'exists';
           return false;
@@ -281,16 +281,18 @@ export function useWorkbench(
       async function copyToDestination() {
         const attempted: string[] = [];
         for (let attempt = 0; attempt < (exclusive ? 3 : 1); attempt++) {
-          const dest = exclusive
-            ? await host.recoveryCopyPath?.(source.path)
+          const target = exclusive
+            ? { path: await host.recoveryCopyPath?.(source.path), replaceToken: null }
             : await host.pickSavePath?.(source.name);
-          if (!dest) return null;
+          if (!target?.path) return null;
+          const { path: dest, replaceToken } = target;
           if (attempted.some((path) => sameProjectPath(path, dest))) continue;
           attempted.push(dest);
           const result = await projects.copy({
             dest,
             identity: 'same',
             ...(exclusive && { exclusive }),
+            ...(replaceToken !== null && { replaceToken }),
           });
           if (result.ok || !exclusive || closeReason(result.error) !== 'exists') return result;
         }

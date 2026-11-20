@@ -80,3 +80,58 @@ test('close_dialog_shows_copy_error_inside_dialog', async () => {
     await app.dispose();
   }
 });
+
+test('picker_copy_sends_create_or_confirmed_replace', async () => {
+  for (const replace of [false, true]) {
+    const app = await mountFailedSwitch();
+    try {
+      const dest = replace ? app.target.path : 'new-copy.pcbk';
+      const replaceToken = app.repo.replaceToken(dest);
+      expect(replaceToken).toEqual(replace ? expect.any(String) : null);
+      app.pickSavePath.mockResolvedValueOnce({ path: dest, replaceToken });
+      const copying = vi.spyOn(app.projects, 'copy');
+
+      await act(async () => expect((await app.projects.flush()).ok).toBe(false));
+      const saveElsewhere = await screen.findByRole('button', { name: et.common.saveElsewhere });
+      await act(async () => fireEvent.click(saveElsewhere));
+
+      const expected = replace
+        ? { dest, identity: 'same', replaceToken }
+        : { dest, identity: 'same' };
+      expect(copying).toHaveBeenCalledExactlyOnceWith(expected);
+      expect(await copying.mock.results[0]!.value).toMatchObject({ ok: true });
+      expect(app.store.files.get(dest)?.projectId).toBe(app.current.projectId);
+    } finally {
+      await app.dispose();
+    }
+  }
+});
+
+test('picker_copy_reports_taken_path_without_replacing', async () => {
+  const app = await mountFailedSwitch();
+  const dest = 'late-copy.pcbk';
+  const lateFile = structuredClone(app.store.files.get(app.target.path)!);
+  app.pickSavePath.mockResolvedValueOnce({ path: dest, replaceToken: null });
+  const copy = app.projects.copy.bind(app.projects);
+  vi.spyOn(app.projects, 'copy').mockImplementationOnce((req) => {
+    app.store.files.set(dest, lateFile);
+    return copy(req);
+  });
+  const closing = vi.spyOn(app.projects, 'close');
+  try {
+    await act(async () => expect((await app.projects.flush()).ok).toBe(false));
+    const before = app.engine.snapshot();
+    const saveElsewhere = await screen.findByRole('button', { name: et.common.saveElsewhere });
+    await act(async () => fireEvent.click(saveElsewhere));
+
+    expect(app.store.files.get(dest)).toEqual(lateFile);
+    expect(screen.getByText(et.reason.exists)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: app.current.name })).toBeTruthy();
+    expect(app.engine.snapshot()).toBe(before);
+    expect(closing).not.toHaveBeenCalled();
+    expect(app.host.closeNow).not.toHaveBeenCalled();
+    expect(app.host.reload).not.toHaveBeenCalled();
+  } finally {
+    await app.dispose();
+  }
+});

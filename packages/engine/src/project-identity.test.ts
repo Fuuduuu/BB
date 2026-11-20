@@ -36,7 +36,7 @@ test('project_info_forwards_repository_file_id_outside_board_document', async ()
 
 test('exclusive copy returns exists and leaves the current document and destination intact', async () => {
   vi.useFakeTimers();
-  const { projects, engine, store, path } = await projectSetup();
+  const { projects, engine, memory, store, path } = await projectSetup();
   const source = store.files.get(path)!;
   const foreign = { ...source, projectId: 'project_foreign', fileId: 'file_foreign' };
   store.files.set('Occupied.pcbk', foreign);
@@ -47,7 +47,13 @@ test('exclusive copy returns exists and leaves the current document and destinat
     ).toEqual({ ok: false, error: { code: 'storage', reason: 'exists' } });
     expect(engine.snapshot().doc).toBe(before);
     expect(store.files.get('Occupied.pcbk')).toBe(foreign);
-    expect(await projects.copy({ dest: 'Occupied.pcbk', identity: 'same' })).toMatchObject({
+    expect(
+      await projects.copy({
+        dest: 'Occupied.pcbk',
+        identity: 'same',
+        replaceToken: memory.replaceToken('Occupied.pcbk')!,
+      }),
+    ).toMatchObject({
       ok: true,
       value: { path: 'Occupied.pcbk', projectId: source.projectId },
     });

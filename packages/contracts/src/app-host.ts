@@ -9,13 +9,15 @@ export interface RecentProject {
   missing?: boolean;
 }
 
+export type SaveTarget = { path: string; replaceToken: string | null };
+
 export interface AppHost {
   readonly kind: 'web' | 'desktop';
   recents(): Promise<RecentProject[]>;
   removeRecent(path: string): Promise<void>;
   listOpenable?(): Promise<RecentProject[]>;
   pickProjectFile?(): Promise<string | null>;
-  pickSavePath?(suggestedName: string): Promise<string | null>;
+  pickSavePath?(suggestedName: string): Promise<SaveTarget | null>;
   recoveryCopyPath?(projectPath: string): Promise<string>;
   onCloseRequested(handler: () => Promise<boolean>): Unsubscribe;
   onOpenPath(handler: (path: string) => void): Unsubscribe;

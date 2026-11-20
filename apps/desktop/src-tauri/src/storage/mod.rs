@@ -3,6 +3,7 @@ mod clock;
 mod copy;
 mod db;
 mod error;
+mod pending;
 pub(crate) mod photo_protocol;
 mod photo_validation;
 mod photos;
@@ -15,6 +16,8 @@ pub use backup::{BackupInfoDto, BackupKind};
 pub use clock::{Clock, SystemClock};
 pub use copy::{CopyRequest, CopyResultDto};
 pub use error::{Reason, StorageErrorDto, StorageResult};
+pub use pending::replace_token;
+use pending::PendingFile;
 pub use photo_protocol::PhotoResponse;
 pub use photos::PhotoRefDto;
 pub use recent::RecentDto;
@@ -58,91 +61,6 @@ pub struct ProjectStore {
     app_data: PathBuf,
     clock: Arc<dyn Clock + Send + Sync>,
     recent_lock: Mutex<()>,
-}
-
-struct PendingFile(Option<PathBuf>);
-
-impl PendingFile {
-    fn unique(destination: &Path) -> StorageResult<Self> {
-        let mut path = destination.as_os_str().to_owned();
-        path.push(format!(".{}.tmp", uuid::Uuid::new_v4()));
-        let path = PathBuf::from(path);
-        fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&path)?;
-        Ok(Self(Some(path)))
-    }
-
-    fn path(&self) -> &Path {
-        self.0.as_deref().expect("pending file is armed")
-    }
-
-    fn sync(&self) -> std::io::Result<()> {
-        fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(self.path())?
-            .sync_all()
-    }
-
-    fn publish(mut self, destination: &Path) -> StorageResult<()> {
-        self.sync()?;
-        sidecars::with_parked(destination, || replace_file(self.path(), destination))?;
-        // After rename, this operation no longer owns the temporary path.
-        self.0 = None;
-        Ok(())
-    }
-
-    fn publish_new(mut self, destination: &Path) -> StorageResult<()> {
-        self.sync()?;
-        if sidecars::any(destination)? {
-            return Err(StorageErrorDto::new(Reason::PathTaken));
-        }
-        match backup::install_new(&mut self, destination) {
-            Ok(()) => Ok(()),
-            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-                Err(StorageErrorDto::new(Reason::PathTaken))
-            }
-            Err(error) => Err(error.into()),
-        }
-    }
-}
-
-fn replace_file(source: &Path, destination: &Path) -> StorageResult<()> {
-    #[cfg(test)]
-    publication_tests::before_replace(destination)?;
-    let Err(error) = fs::rename(source, destination) else {
-        return Ok(());
-    };
-    #[cfg(windows)]
-    if error.kind() == std::io::ErrorKind::PermissionDenied {
-        use std::os::windows::fs::OpenOptionsExt;
-
-        // MoveFileEx may report access denied when the destination is open
-        // without delete sharing. A DELETE-access probe distinguishes the lock.
-        const DELETE_ACCESS: u32 = 0x0001_0000;
-        const SHARE_ALL: u32 = 0x7;
-        if let Err(probe) = fs::OpenOptions::new()
-            .access_mode(DELETE_ACCESS)
-            .share_mode(SHARE_ALL)
-            .open(destination)
-        {
-            let mapped = StorageErrorDto::from(probe);
-            if mapped.reason == Reason::Locked {
-                return Err(mapped);
-            }
-        }
-    }
-    Err(error.into())
-}
-
-impl Drop for PendingFile {
-    fn drop(&mut self) {
-        if let Some(path) = &self.0 {
-            let _ = fs::remove_file(path);
-        }
-    }
 }
 
 fn absolute(path: &Path) -> StorageResult<PathBuf> {
@@ -330,7 +248,11 @@ impl ProjectStore {
         let source = sessions
             .get(request.session)
             .ok_or_else(|| StorageErrorDto::new(Reason::Unknown))?;
-        let destination = Self::destination(request.dest, &sessions, request.exclusive)?;
+        let destination = if request.exclusive {
+            Self::destination(request.dest, &sessions, true)?
+        } else {
+            Self::available_path(request.dest, &sessions)?
+        };
         let from_memory = copy::write(source, &destination, &request)?;
         let opened = self.register_published(&mut sessions, &destination, request.exclusive)?;
         Ok(CopyResultDto {

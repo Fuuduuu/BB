@@ -4,7 +4,7 @@ mod hot_journal;
 
 use common::{copy_request as request, meta, read_db, Fixture};
 use hot_journal::{journal_path, leave_hot_journal};
-use pcbk_desktop::storage::{CopyRequest, Reason};
+use pcbk_desktop::storage::{replace_token, CopyRequest, Reason};
 use serde_json::{json, Value};
 use std::{fs, path::Path};
 
@@ -68,9 +68,13 @@ fn copy_replace_ignores_stale_journal_of_replaced_file() {
             &named_doc("Lähteplaat B", 0),
         )
         .unwrap();
+    let token = replace_token(&dest).unwrap().unwrap();
     let copied = f
         .store
-        .copy(request(&source, &dest, &named_doc("Kopeeritud plaat B", 1)))
+        .copy(CopyRequest {
+            replace_token: Some(&token),
+            ..request(&source, &dest, &named_doc("Kopeeritud plaat B", 1))
+        })
         .unwrap()
         .opened;
     for project in [&source, &copied] {

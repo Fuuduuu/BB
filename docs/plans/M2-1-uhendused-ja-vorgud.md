@@ -157,7 +157,7 @@ Rajad: ülesanded 2, 5, 6, 8 ja 11 on **rada B** (tuuma piir, andmereeglid ja in
    - Rajad, õhujooned ja ühendatud jalad joonistatakse rolli värviga. Tumedas teemas on GND `#9aa5a0`.
    - Rollikonflikt: punane äär ja hoiatus „Võimalik lühis või vale ühendus: GND + 5V“ nuppudega „Näita ühendust“ ja „Vali õige roll“.
    - Võrgu vaade: jalad (klõps viib jalale), rajade kogupikkus millimeetrites ja võrgu mõõtmised. „Ühenda võrguga…“ dialoog.
-   - Võrguloendi eksport (O4).
+   - Võrguloendi koostamine (O4). Faili salvestus on ülesandes 11, sest töölaual vajab see Rusti käsku ([M2-1-9](../tasks/M2-1-9.md) otsus 6).
    - Seotud: leid 16 (punktkomponendi esiletõst) ja M1.4 sisend „jala sildi ühtne kuju“ (`pin.name || pin.id`).
    - Testid:
      - `nets_tab_assigns_role_and_name`
@@ -184,6 +184,7 @@ Rajad: ülesanded 2, 5, 6, 8 ja 11 on **rada B** (tuuma piir, andmereeglid ja in
 11. **Jõudlus, E2E, suitsukatse ja väljalase** (rada B).
     - Sünteetiline plaat: 300 komponenti, 3000 jalga ja 1000 rada (generaator laieneb radadega). Tauri proov [03 § 7.3](../03-arhitektuur.md#73-kihid-ja-jõudlus) eelarve järgi: avamine, pan, suum ja lohistus. Lisaks mõõdetakse võrkude arvutuse ja invariantide aeg käsu järel. Kui invariandid ei mahu eelarvesse, lülitatakse sisse muutunud väljade järgi käivitamine (ADR-005 § 2).
     - E2E: rada kahe jala vahel, haru, kiirühendus, roll, konflikt, „Eemalda joonistus“, „Kustuta ühendus“ ja tagasivõtmine.
+    - Võrguloendi salvestus: nupp „Ekspordi võrguloend (CSV)“ vahekaardil „Võrgud“, `AppHost` meetod tekstifaili salvestamiseks (veebis allalaadimine, töölaual salvestusdialoog ja Rusti käsk ainult `.csv` laiendiga).
     - `v0.4.0` näidisfail avaneb.
     - Kasutaja suitsukatse oma plaadi fotoga (Codex kasutaja fotosid ei ava) ja väljalase `v0.5.0` (O5).
     - Hooldus samal puudutusel: `old_files.rs` (445 rida) jagamine, kui ühilduvustest seda muudab, ja ühine `__PCBK_APP_VERSION__` deklaratsioon.

@@ -49,7 +49,7 @@ test('navigator_tabs_fit_one_row_at_240_and_300px', async ({ page }) => {
     await expect(handle).toHaveAttribute('aria-valuenow', `${width}`);
     expect((await bounds(page.locator('.pcbk-navigator'))).width).toBe(width);
     const tabs = page.getByRole('tablist', { name: 'Navigaator', exact: true });
-    for (const title of ['Teek', 'Komponendid', 'Mõõtmised']) {
+    for (const title of ['Teek', 'Komponendid', 'Võrgud', 'Mõõtmised']) {
       await expect(tabs.getByRole('tab', { name: title, exact: true })).toBeVisible();
     }
     await expect(filters).toBeVisible();
@@ -71,7 +71,7 @@ test('navigator_tabs_fit_one_row_at_240_and_300px', async ({ page }) => {
         layout.buttons.map((button) => button.label),
         `${width}px: full labels`,
       )
-      .toEqual(['Teek', 'Komponendid', 'Mõõtmised']);
+      .toEqual(['Teek', 'Komponendid', 'Võrgud', 'Mõõtmised']);
     for (const button of layout.buttons) {
       expect
         .soft(button.scrollWidth, `${width}px: ${button.label}`)

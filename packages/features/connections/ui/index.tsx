@@ -7,9 +7,12 @@ import { TraceHint } from './TraceHint';
 import { AirLinesToggle } from './air-lines-view';
 import { connectionPoints, projectDrawingSegment } from './connection-geometry';
 import { connectionsEt } from './i18n/et';
-import { airLinesLayer, junctionsLayer, tracesLayer } from './layers';
+import { createAirLinesLayer, createTracesLayer, junctionsLayer } from './layers';
+import type { ConnectionRoleColor } from './layers';
 import { distance } from './trace-geometry';
 import { connectionEditingLayer, selectedConnectionId } from './connection-editing-layer';
+
+export { connectionPoints } from './connection-geometry';
 
 function endLabel({ doc }: Snapshot, end: EndRef): string | null {
   if ('junction' in end) return connectionsEt.junctionEnd;
@@ -42,11 +45,16 @@ function junctionConnectionCount({ doc }: Snapshot, ids: readonly string[]): num
   return doc.connections.filter(({ a, b }) => touches(a) || touches(b)).length;
 }
 
-export function createConnectionsUi(ids: IdGen): UiModule {
+export function createConnectionsUi(ids: IdGen, roleColor: ConnectionRoleColor): UiModule {
   return {
     id: 'connections',
     title: connectionsEt.title,
-    canvasLayers: [tracesLayer, airLinesLayer, junctionsLayer, connectionEditingLayer],
+    canvasLayers: [
+      createTracesLayer(roleColor),
+      createAirLinesLayer(roleColor),
+      junctionsLayer,
+      connectionEditingLayer,
+    ],
     tools: [createTraceToolSpec(ids)],
     topBar: [{ id: 'connections.airLines', render: () => <AirLinesToggle /> }],
     bottomBar: [{ id: 'connections.trace', render: () => <TraceHint /> }],

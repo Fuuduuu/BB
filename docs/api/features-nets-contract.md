@@ -45,6 +45,19 @@ export type JoinNetsParams = {
 export const JoinNetsSchema: ZodType<JoinNetsParams>;
 ```
 
+### `netlistCsv`
+```ts
+export function netlistCsv({ doc, derived }: Pick<Snapshot, 'doc' | 'derived'>): string;
+```
+
+### `netRoleColor`
+```ts
+export function netRoleColor({ derived: { nets }, doc }: Pick<Snapshot, 'doc' | 'derived'>, memberKey: string): {
+    color?: string;
+    conflict: boolean;
+};
+```
+
 ### `NetsDerivedSchema`
 ```ts
 export const NetsDerivedSchema: ZodType<{ list: { key: string; members: string[]; name: string; named: boolean; roleConflict: boolean; conflictingRoles: string[]; beepContradiction: boolean; roleId?: string | undefined; }[]; netOf: Record<string, string>; shortedComponents: string[]; }>;
@@ -60,6 +73,11 @@ export type RemoveRoleParams = {
 ### `RemoveRoleSchema`
 ```ts
 export const RemoveRoleSchema: ZodType<RemoveRoleParams>;
+```
+
+### `roleSwatchColor`
+```ts
+export function roleSwatchColor(role: Pick<NetRole, 'id' | 'color'>): string;
 ```
 
 ### `UpdateRoleParams`

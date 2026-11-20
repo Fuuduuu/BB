@@ -1,8 +1,14 @@
 import type { IdGen, Snapshot } from '@pcbk/contracts';
 import type { EndRef, Vec2 } from '@pcbk/domain';
-import { useViewStore } from '@pcbk/ui';
+import { useSessionStore, useViewStore } from '@pcbk/ui';
 import type { Selection, UiModule } from '@pcbk/ui';
-import { createTraceToolSpec, resetTraceTool, startExistingTrace } from './TraceTool';
+import { ConnectionProperties, endLabel } from './ConnectionProperties';
+import {
+  createTraceToolSpec,
+  resetTraceTool,
+  startExistingTrace,
+  startTraceFrom,
+} from './TraceTool';
 import { TraceHint } from './TraceHint';
 import { AirLinesToggle } from './air-lines-view';
 import { connectionPoints, projectDrawingSegment } from './connection-geometry';
@@ -11,15 +17,10 @@ import { createAirLinesLayer, createTracesLayer, junctionsLayer } from './layers
 import type { ConnectionRoleColor } from './layers';
 import { distance } from './trace-geometry';
 import { connectionEditingLayer, selectedConnectionId } from './connection-editing-layer';
+import { createTraceLabelsLayer } from './trace-labels-layer';
+import type { ConnectionNetName } from './trace-labels-layer';
 
 export { connectionPoints } from './connection-geometry';
-
-function endLabel({ doc }: Snapshot, end: EndRef): string | null {
-  if ('junction' in end) return connectionsEt.junctionEnd;
-  const component = doc.components.find(({ id }) => id === end.pin.c);
-  const pin = component?.pins.find(({ id }) => id === end.pin.p);
-  return component && pin ? `${component.ref}.${pin.name || pin.id}` : null;
-}
 
 function idsOfKind(selection: Selection, kind: string): string[] {
   return selection.items.filter((item) => item.kind === kind).map(({ id }) => id);
@@ -28,6 +29,11 @@ function idsOfKind(selection: Selection, kind: string): string[] {
 function selectedConnection({ doc }: Snapshot, selection: Selection) {
   const id = selectedConnectionId(selection);
   return id === undefined ? undefined : doc.connections.find((connection) => connection.id === id);
+}
+
+function selectedPin(selection: Selection): EndRef | undefined {
+  const item = selection.items.find(({ kind, componentId }) => kind === 'pin' && componentId);
+  return item?.componentId ? { pin: { c: item.componentId, p: item.id } } : undefined;
 }
 
 function nearestPoint(points: readonly Vec2[], at: Vec2) {
@@ -45,7 +51,10 @@ function junctionConnectionCount({ doc }: Snapshot, ids: readonly string[]): num
   return doc.connections.filter(({ a, b }) => touches(a) || touches(b)).length;
 }
 
-export function createConnectionsUi(ids: IdGen, roleColor: ConnectionRoleColor): UiModule {
+export function createConnectionsUi(
+  ids: IdGen,
+  { roleColor, netName }: { roleColor: ConnectionRoleColor; netName: ConnectionNetName },
+): UiModule {
   return {
     id: 'connections',
     title: connectionsEt.title,
@@ -54,11 +63,20 @@ export function createConnectionsUi(ids: IdGen, roleColor: ConnectionRoleColor):
       createAirLinesLayer(roleColor),
       junctionsLayer,
       connectionEditingLayer,
+      createTraceLabelsLayer(netName),
     ],
     tools: [createTraceToolSpec(ids)],
     topBar: [{ id: 'connections.airLines', render: () => <AirLinesToggle /> }],
     bottomBar: [{ id: 'connections.trace', render: () => <TraceHint /> }],
     onSessionReset: resetTraceTool,
+    contextSections: [
+      {
+        id: 'connections.properties',
+        appliesTo: ['connection'],
+        order: 0,
+        render: ({ selection }) => <ConnectionProperties selection={selection} netName={netName} />,
+      },
+    ],
     keys: [
       {
         id: 'connections.quickConnect',
@@ -199,6 +217,41 @@ export function createConnectionsUi(ids: IdGen, roleColor: ConnectionRoleColor):
         run(api, selection) {
           const ids = idsOfKind(selection, 'junction');
           return ids.length > 0 && api.execute('junctions.remove', { ids }).ok;
+        },
+      },
+      {
+        id: 'connections.resetLabelOffset',
+        appliesTo: ['connection'],
+        order: 1,
+        label: () => connectionsEt.resetLabelOffset,
+        available: (snapshot, selection) =>
+          selectedConnection(snapshot, selection)?.board?.labelOffset !== undefined,
+        run(api, selection) {
+          const connection = selectedConnection(api.snapshot(), selection);
+          return (
+            !!connection?.board?.labelOffset &&
+            api.execute('connections.setLabelOffset', { id: connection.id, offset: null }).ok
+          );
+        },
+      },
+      {
+        id: 'connections.startTrace',
+        appliesTo: ['pin'],
+        order: 10,
+        label: () => connectionsEt.startTrace,
+        run(api, selection, at) {
+          const hit = api.hitIndex.query(at, useViewStore.getState().boardView.zoom);
+          const clicked =
+            hit?.kind === 'pin'
+              ? useSessionStore
+                  .getState()
+                  .selection.items.find(
+                    ({ kind, id, componentId }) =>
+                      kind === hit.kind && id === hit.id && componentId === hit.componentId,
+                  )
+              : undefined;
+          const end = selectedPin(clicked ? { items: [clicked] } : selection);
+          return !!end && startTraceFrom(api, end);
         },
       },
     ],

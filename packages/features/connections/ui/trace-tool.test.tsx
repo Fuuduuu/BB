@@ -317,3 +317,34 @@ test('trace_start_on_junction_takes_its_layer', () => {
   click(svg, left);
   expect(screen.getByText('Juhe', { exact: true })).toBeTruthy();
 });
+
+test('context_menu_starts_trace_from_pin', () => {
+  const { engine, host, svg, pinPoint } = mountMeasurements({
+    seed(doc) {
+      seedRemovablePins(doc);
+      const board = doc.components[0]!.board!;
+      board.side = 'bottom';
+      board.customPads['2']!.through = false;
+    },
+  });
+  const start = pinPoint('2');
+  const before = engine.snapshot().doc;
+  act(() =>
+    useSessionStore.getState().setSelection({
+      items: ['1', '2'].map((id) => ({ kind: 'pin', id, componentId: 'cmp_u1' })),
+    }),
+  );
+  fireEvent.contextMenu(svg, { button: 2, clientX: start.x, clientY: start.y });
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Alusta rada siit' }));
+
+  expect(useSessionStore.getState().toolId).toBe('connections.trace');
+  expect(screen.getByText('Rada · alumine', { exact: true })).toBeTruthy();
+  const points = () => overlay(svg)?.querySelector('polyline')?.getAttribute('points');
+  const startPoint = `${start.x},${start.y}`;
+  expect(points()).toBe(startPoint);
+
+  click(svg, { x: 180, y: 160 });
+  expect(points()).toBe(`${startPoint} 180,160`);
+  expect(engine.snapshot().doc).toBe(before);
+  expect(host.drainJournal()).toEqual([]);
+});

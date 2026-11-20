@@ -11,5 +11,8 @@ export function connectionPoints(doc: Doc, { a, b, board }: Pick<Connection, 'a'
 
 ### `createConnectionsUi`
 ```ts
-export function createConnectionsUi(ids: IdGen, roleColor: ConnectionRoleColor): UiModule;
+export function createConnectionsUi(ids: IdGen, { roleColor, netName }: {
+    roleColor: ConnectionRoleColor;
+    netName: ConnectionNetName;
+}): UiModule;
 ```

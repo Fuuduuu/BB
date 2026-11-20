@@ -47,6 +47,10 @@ export const InsertWaypointSchema = z.strictObject({
   at: Vec2Schema,
 });
 export const RemoveWaypointSchema = z.strictObject({ id: z.string(), index: z.number() });
+export const SetLabelOffsetSchema = z.strictObject({
+  id: z.string(),
+  offset: Vec2Schema.nullable(),
+});
 export const MoveJunctionSchema = z.strictObject({ id: z.string(), at: Vec2Schema });
 export const AttachJunctionToPinSchema = z.strictObject({ id: z.string(), pin: PinRefSchema });
 
@@ -57,6 +61,7 @@ export type BranchConnectionParams = z.infer<typeof BranchConnectionSchema>;
 export type UpdateConnectionParams = z.infer<typeof UpdateConnectionSchema>;
 export type InsertWaypointParams = z.infer<typeof InsertWaypointSchema>;
 export type RemoveWaypointParams = z.infer<typeof RemoveWaypointSchema>;
+export type SetLabelOffsetParams = z.infer<typeof SetLabelOffsetSchema>;
 export type MoveJunctionParams = z.infer<typeof MoveJunctionSchema>;
 export type AttachJunctionToPinParams = z.infer<typeof AttachJunctionToPinSchema>;
 
@@ -68,6 +73,7 @@ declare module '@pcbk/contracts' {
     'connections.update': UpdateConnectionParams;
     'connections.insertWaypoint': InsertWaypointParams;
     'connections.removeWaypoint': RemoveWaypointParams;
+    'connections.setLabelOffset': SetLabelOffsetParams;
     'connections.remove': ConnectionIdsParams;
     'connections.removeBoardDrawing': ConnectionIdsParams;
     'junctions.move': MoveJunctionParams;

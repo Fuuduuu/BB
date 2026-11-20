@@ -14,6 +14,11 @@ export const connectionsEt = {
   traceTop: 'Rada · pealmine',
   traceBottom: 'Rada · alumine',
   traceWire: 'Juhe',
+  startTrace: 'Alusta rada siit',
+  resetLabelOffset: 'Lähtesta sildi asukoht',
+  basisVisual: 'Alus: nähtud',
+  basisAssumed: 'Alus: oletatud',
+  networkLabel: (name: string) => `Võrk: ${name}`,
   traceLayerMismatch: 'Ots ei sobi valitud kihiga',
   traceFailed: 'Raja salvestamine ebaõnnestus',
   traceLength: (length: number) =>

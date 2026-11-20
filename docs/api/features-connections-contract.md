@@ -114,6 +114,19 @@ export type RemoveWaypointParams = {
 export const RemoveWaypointSchema: ZodType<RemoveWaypointParams>;
 ```
 
+### `SetLabelOffsetParams`
+```ts
+export type SetLabelOffsetParams = {
+    id: string;
+    offset: { x: number; y: number; } | null;
+};
+```
+
+### `SetLabelOffsetSchema`
+```ts
+export const SetLabelOffsetSchema: ZodType<SetLabelOffsetParams>;
+```
+
 ### `TRACE_WIDTH_MM`
 ```ts
 export const TRACE_WIDTH_MM: 0.3;

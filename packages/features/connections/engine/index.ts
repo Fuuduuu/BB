@@ -22,6 +22,7 @@ import {
   InsertWaypointSchema,
   MoveJunctionSchema,
   RemoveWaypointSchema,
+  SetLabelOffsetSchema,
   UpdateConnectionSchema,
 } from '../contract';
 import type {
@@ -33,6 +34,7 @@ import type {
   InsertWaypointParams,
   MoveJunctionParams,
   RemoveWaypointParams,
+  SetLabelOffsetParams,
   UpdateConnectionParams,
 } from '../contract';
 
@@ -135,6 +137,17 @@ const removeWaypoint: CommandSpec<RemoveWaypointParams> = {
   },
 };
 
+const setLabelOffset: CommandSpec<SetLabelOffsetParams> = {
+  id: 'connections.setLabelOffset',
+  title: 'connections.setLabelOffset',
+  params: SetLabelOffsetSchema,
+  run(doc, { id, offset }) {
+    const board = boardDrawing(doc, id);
+    if (offset === null) delete board.labelOffset;
+    else board.labelOffset = offset;
+  },
+};
+
 const moveJunction: CommandSpec<MoveJunctionParams> = {
   id: 'junctions.move',
   title: 'junctions.move',
@@ -207,6 +220,7 @@ export const connectionsEngine: EngineModule = {
     update,
     insertWaypoint,
     removeWaypoint,
+    setLabelOffset,
     remove,
     removeDrawing,
     moveJunction,

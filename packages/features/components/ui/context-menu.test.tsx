@@ -72,6 +72,7 @@ test('context_menu_items_run_same_commands_as_keys', () => {
   const pin = app.pinPoint('3');
   open(svg, pin.x, pin.y);
   expect(entries().map((entry) => entry.textContent)).toEqual([
+    'Alusta rada siit',
     'MõõdaM',
     'Nimeta jalg',
     'Märgi NC-ks',

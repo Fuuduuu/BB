@@ -64,6 +64,14 @@ function begin(doc: Doc, start: EndRef, existingId?: string) {
   });
 }
 
+export function startTraceFrom(api: ToolApi, end: EndRef): boolean {
+  const { doc } = api.snapshot();
+  if (!connectionEndpoint(doc, end)) return false;
+  begin(doc, end);
+  useSessionStore.getState().setToolId(TRACE_TOOL_ID);
+  return true;
+}
+
 export function startExistingTrace(api: ToolApi, id: string): boolean {
   const { doc } = api.snapshot();
   const connection = savedConnection(doc, id);

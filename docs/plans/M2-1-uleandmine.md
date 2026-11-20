@@ -109,3 +109,29 @@ Enne lohistuse parandust kontrollis ehitaja sünteetilise projekti loomist vaike
 10. Vajuta „Ekspordi võrguloend (CSV)“ ja ava fail Excelis. Kontrolli täpitähti, veerge ja ridu.
 11. Ava oma `v0.4.0` ajal tehtud projekt ja kontrolli, et andmed on alles.
 12. Sule projekt ja ava see järgmisel päeval. Kirjuta arhitektile, mis oli segane või aeglane.
+
+## Väljalaske-eelne lühike suitsukatse
+
+Kontrollib Astra ülevaatuse parandusi [M2-1-12](../tasks/M2-1-12.md), [M2-1-13](../tasks/M2-1-13.md) ja [M2-1-14](../tasks/M2-1-14.md) commit'il `d12a39d`. Kasuta tihedate padjanditega plaati ja mõlemat kihti.
+
+Täisring `d12a39d` peal läbis (arhitekt 2026-11-20, `output/review-card/M2-1-11-UvEu6k/summary.json`):
+- `check`, `api`, `format`, katvus, E2E, `git diff --check` ja `cargo test` läbisid;
+- Vitest 1684/1684, E2E 43/43, Rust 107/109 (2 lapseprotsessi sisendpunkti jäid vahele);
+- katvus: read 99,87 %, harud 96,22 %.
+
+Katse-EXE on `%TEMP%/bb-m2-1-katse/pcbk-d12a39d-katse.exe`, SHA-256 `06b261112e3a9e6d082b96a4b39ef100ae844695b5aa4b6cde08a679ea9dc012`. See on tavaline silumisjärk (`pnpm tauri build --debug --no-bundle`) ilma ajutise kausta ümbersuunamiseta. Uued projektid lähevad tavalisse vaikekausta ja „Salvesta mujale…“ avab tavalise salvestusakna. Versioon on veel 0.4.0, see tõstetakse liitmisel.
+
+Staatus: **läbis 2026-11-20**. Kasutaja tegi kõik kuus sammu ja teatas, et kõik läbisid.
+
+1. **Siht tihedate padjandite vahel.** Joonista `T`-ga rada. Lõpeta see klõpsuga teise raja peal, padjandi kõrval. Tekib liitepunkt ja padjand jääb ühendamata. Klõps padjandil endal ühendab jala.
+2. **Kaks kihti.** Joonista ülemine ja alumine rada nii, et need ristuvad. Alusta uut alumist rada ja lõpeta ristumiskohas: alumine rada saab haru. Kui haru pole lubatud, on rada punane.
+3. **Poolevahetus ja kustutamine.**
+   - Vali rajaga ühendatud pinnajalaga komponent ja vajuta `F`. Raja ots jääb liitepunktina vanasse kohta ja `Ctrl+Z` taastab kõik.
+   - Kustuta läbiva jalaga komponent, millel on rajad mõlemal kihil. Vahekaardil „Võrgud“ on rajad endiselt samas võrgus.
+4. **Menüü ja korpuse vahetus.**
+   - Vali `Shift`+klõpsuga kaks jalga, jäta osuti teise kohale ja vajuta `Shift+F10`. „Alusta rada siit“ alustab esimesest valitud jalast.
+   - Vaheta ühendatud ja sildiga jala komponendi korpus väiksema vastu. Dialoog loetleb ühendused ja võrgusildid. Vajuta „Loobu“.
+5. **Võrkude hoiatused.**
+   - Anna kahele eraldi võrgule nimi GND. „Ühenda võrguga…“ näitab jalaviidet ja ekspordinupu juures on hoiatus sama nime kohta.
+   - Ühenda takisti mõlemad jalad samasse võrku. Võrgu vaates on lühise hoiatus.
+6. **Salvestamine.** „Salvesta mujale…“ olemasoleva projekti peale: Windows küsib asendamist. Pärast kinnitust avaneb koopia. Kirjuta arhitektile, mis oli segane või aeglane.

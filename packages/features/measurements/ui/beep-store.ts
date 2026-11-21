@@ -1,8 +1,10 @@
+import type { Snapshot } from '@pcbk/contracts';
 import type { MeasuredPin, Vec2 } from '@pcbk/domain';
 import { useSessionStore } from '@pcbk/ui';
 import { create } from 'zustand';
 import { z } from 'zod';
 import { BeepRecordSchema } from '../contract';
+import { resolveContact } from './contacts';
 
 export const beepGuardSchema = BeepRecordSchema.pick({
   measurementId: true,
@@ -43,6 +45,21 @@ export const useBeepStore = create<BeepState>(() => initial);
 
 export function resetBeepTool() {
   useBeepStore.setState(initial);
+}
+
+export function expireBeepState(snapshot: Snapshot) {
+  const { anchor, target, guard } = useBeepStore.getState();
+  if (anchor && !resolveContact(snapshot, anchor)) {
+    resetBeepTool();
+    return;
+  }
+  const targetExpired = target && !resolveContact(snapshot, target);
+  const guardExpired =
+    guard &&
+    (!resolveContact(snapshot, guard.anchor) ||
+      !resolveContact(snapshot, guard.pin) ||
+      !snapshot.doc.measurements.some(({ id }) => id === guard.measurementId));
+  if (targetExpired || guardExpired) useBeepStore.setState(closedBeepTarget);
 }
 
 export function startBeepPair(anchor: MeasuredPin, target: MeasuredPin, targetAt: Vec2) {

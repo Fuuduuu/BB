@@ -192,3 +192,26 @@ test('beep_guard_blocks_role_merge', () => {
   expect(engine.snapshot().doc.connections).toStrictEqual(doc.connections);
   expect(events).toStrictEqual([guarded(params, 'role_conflict', [], ['5V', 'GND'])]);
 });
+
+test('guard_question_names_missing_roles', () => {
+  for (const { otherRoleId, labels } of [
+    {
+      otherRoleId: 'rol_missing_a',
+      labels: ['rol_missing_a (puudub)', 'rol_missing_b (puudub)'],
+    },
+    { otherRoleId: 'rol_gnd', labels: ['GND', 'rol_missing_b (puudub)'] },
+  ]) {
+    const doc = board();
+    doc.netLabels.push(
+      { id: 'lbl_first', anchor: end(anchor), roleId: 'rol_missing_b', source: 'user' },
+      { id: 'lbl_second', anchor: end(pin), roleId: otherRoleId, source: 'user' },
+    );
+    const { engine, events } = load(doc);
+    const params = record(engine);
+    const { measurements, connections } = engine.snapshot().doc;
+
+    expect(measurements).toHaveLength(1);
+    expect(connections).toHaveLength(0);
+    expect.soft(events).toStrictEqual([guarded(params, 'role_conflict', [], labels)]);
+  }
+});

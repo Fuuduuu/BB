@@ -37,6 +37,7 @@ export const netsEt = {
     diode: 'Diood',
     continuity: 'Läbivus',
   },
+  beepResult: { yes: 'piiksub', no: 'ei piiksu' },
   overload: 'OL',
   unavailable: '—',
   invalidVoltage: 'Sisesta nimipinge voltides, nt 3,3.',

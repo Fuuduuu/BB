@@ -66,10 +66,8 @@ export function connectBeepPins(
 
   const mergedRoles = new Set([...anchorRoles, ...pinRoles]);
   if (anchorRoles.size > 0 && pinRoles.size > 0 && mergedRoles.size > 1) {
-    const roles = doc.roles
-      .filter(({ id }) => mergedRoles.has(id))
-      .map(({ label }) => label)
-      .sort();
+    const labelsById = new Map(doc.roles.map(({ id, label }) => [id, label]));
+    const roles = [...mergedRoles].map((id) => labelsById.get(id) ?? `${id} (puudub)`).sort();
     return { kind: 'guarded', reason: 'role_conflict', components: [], roles };
   }
 

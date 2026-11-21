@@ -4,12 +4,19 @@ import type { IdGen, Snapshot } from '@pcbk/contracts';
 import type { BoardPlacement, MeasuredPin, Vec2 } from '@pcbk/domain';
 import { footprintPinIds } from '@pcbk/domain/footprints';
 import { boardPads } from '@pcbk/domain/geometry';
+import { pinKey } from '@pcbk/domain/rules';
 import { Button, CanvasHudAnchor, SceneText, useSessionStore, useViewStore } from '@pcbk/ui';
 import type { CanvasTool, HitItem, ToolApi, ToolSpec } from '@pcbk/ui';
-import { beepGuardSchema, closedBeepTarget, resetBeepTool, useBeepStore } from './beep-store';
+import {
+  beepGuardSchema,
+  closedBeepTarget,
+  expireBeepState,
+  resetBeepTool,
+  useBeepStore,
+} from './beep-store';
 import type { ProbePad } from './beep-store';
 import { contactFromItem, resolveContact } from './contacts';
-import { beepEt as text, commandError, measureEt } from './i18n/et';
+import { beepEt as text, commandError } from './i18n/et';
 import './beep-tool.css';
 
 const toolId = 'measurements.beep';
@@ -144,16 +151,15 @@ function recordNoBeepKey(event: KeyboardEvent, api: ToolApi, ids: IdGen): boolea
 }
 
 function connectGuarded(api: ToolApi, ids: IdGen) {
+  const snapshot = api.snapshot();
+  expireBeepState(snapshot);
   const { guard } = getBeep();
   if (!guard) return;
-  const { anchor, pin, measurementId } = guard;
-  const snapshot = api.snapshot();
-  if (
-    !resolveContact(snapshot, anchor) ||
-    !resolveContact(snapshot, pin) ||
-    !snapshot.doc.measurements.some(({ id }) => id === measurementId)
-  ) {
-    updateBeep({ error: measureEt.errors.missing });
+  const { anchor, pin } = guard;
+  const netOf = snapshot.derived.nets?.netOf;
+  const anchorNet = netOf?.[pinKey(anchor)];
+  if (anchorNet !== undefined && anchorNet === netOf?.[pinKey(pin)]) {
+    clearTarget();
     return;
   }
   const result = api.execute('connections.add', {
@@ -200,6 +206,10 @@ function BeepHud({ api, ids }: { api: ToolApi; ids: IdGen }) {
   const { target, targetAt, targetPad, focusTarget, guard } = useBeepStore();
   const heading = useId();
   const panel = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    expireBeepState(engine.snapshot());
+    return engine.subscribe(expireBeepState);
+  }, [engine]);
   useLayoutEffect(
     () =>
       engine.events((event) => {

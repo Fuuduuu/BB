@@ -128,7 +128,9 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
   }
 
   function onValueKey(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.nativeEvent.isComposing || event.ctrlKey || event.metaKey) return;
+    if (event.defaultPrevented || event.nativeEvent.isComposing || event.ctrlKey || event.metaKey) {
+      return;
+    }
     if (event.altKey) {
       if (event.key === 'ArrowDown') step(1);
       else if (event.key === 'ArrowUp') step(-1);
@@ -173,6 +175,11 @@ export function MeasureBlock({ ids, suggestions }: { ids: IdGen; suggestions: Me
     <section
       className="pcbk-measure-block"
       aria-labelledby={`${id}-heading`}
+      onKeyDownCapture={(event) => {
+        if (event.key === 'Enter' && event.repeat && !event.nativeEvent.isComposing) {
+          event.preventDefault();
+        }
+      }}
       onKeyDown={onBlockKey}
     >
       <h2 id={`${id}-heading`}>{text.title}</h2>

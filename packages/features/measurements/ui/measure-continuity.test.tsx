@@ -53,6 +53,39 @@ test('measure_block_saves_continuity_with_beep_buttons', () => {
   expect(voltage().value).toBe('4,98');
 });
 
+test('measure_block_no_beep_ignores_enter_repeat', () => {
+  const { clickPin, engine } = mountMeasurements();
+  clickPin('4');
+  fireEvent.keyDown(voltage(), { key: '4', altKey: true });
+  chooseReference(clickPin, '3');
+
+  const noBeep = measureBlock().getByRole<HTMLButtonElement>('button', { name: 'Ei piiksu' });
+  noBeep.focus();
+  expect(document.activeElement).toBe(noBeep);
+  function pressEnter(repeat: boolean) {
+    // jsdom does not perform the default button activation on Enter.
+    if (fireEvent.keyDown(noBeep, { key: 'Enter', repeat })) fireEvent.click(noBeep);
+  }
+
+  pressEnter(false);
+  for (let repeat = 0; repeat < 3; repeat++) pressEnter(true);
+  fireEvent.keyUp(noBeep, { key: 'Enter' });
+  const held = engine.snapshot().doc;
+  expect.soft(held.measurements).toHaveLength(1);
+  expect.soft(held.measurements[0]).toMatchObject({
+    mode: 'continuity',
+    beep: false,
+    at: pinRef('4'),
+    ref: pinRef('3'),
+  });
+  expect.soft(held.connections).toHaveLength(0);
+
+  pressEnter(false);
+  fireEvent.keyUp(noBeep, { key: 'Enter' });
+  expect.soft(engine.snapshot().doc.measurements).toHaveLength(2);
+  expect(engine.snapshot().doc.connections).toHaveLength(0);
+});
+
 test('probe_pair_drafts_never_collide', () => {
   const { clickPin } = mountMeasurements({
     seed(doc) {

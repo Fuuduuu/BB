@@ -1,11 +1,13 @@
 import { useId, useLayoutEffect, useRef } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
 import type { IdGen, Snapshot } from '@pcbk/contracts';
-import type { MeasuredPin, Vec2 } from '@pcbk/domain';
+import type { BoardPlacement, MeasuredPin, Vec2 } from '@pcbk/domain';
+import { footprintPinIds } from '@pcbk/domain/footprints';
 import { boardPads } from '@pcbk/domain/geometry';
 import { Button, CanvasHudAnchor, SceneText, useSessionStore, useViewStore } from '@pcbk/ui';
-import type { CanvasTool, ToolApi, ToolSpec } from '@pcbk/ui';
+import type { CanvasTool, HitItem, ToolApi, ToolSpec } from '@pcbk/ui';
 import { beepGuardSchema, closedBeepTarget, resetBeepTool, useBeepStore } from './beep-store';
+import type { ProbePad } from './beep-store';
 import { contactFromItem, resolveContact } from './contacts';
 import { beepEt as text, commandError, measureEt } from './i18n/et';
 import './beep-tool.css';
@@ -16,11 +18,35 @@ const updateBeep = useBeepStore.setState;
 const clearTarget = () => updateBeep(closedBeepTarget);
 const moved = (from: Vec2, to: Vec2) => Math.hypot(to.x - from.x, to.y - from.y) >= 3;
 
-function probePad(snapshot: Snapshot, contact: MeasuredPin | null) {
+function pinPadIds(board: BoardPlacement, pinId: string) {
+  // boardPads emits footprint pads in this order, then any custom pad.
+  return (footprintPinIds(board.footprint, board.params) ?? []).filter(
+    (id) => (board.padMap?.[id] ?? id) === pinId,
+  );
+}
+
+function clickedPad(snapshot: Snapshot, contact: MeasuredPin, { shape }: HitItem): ProbePad | null {
+  const board = resolveContact(snapshot, contact)?.component.board;
+  if (!board || (shape.type !== 'point' && shape.type !== 'rect')) return null;
+  const index = boardPads(board, [contact.p], snapshot.doc.scale.pxPerMm).findIndex((pad) => {
+    if (pad.at.x !== shape.at.x || pad.at.y !== shape.at.y) return false;
+    const circular = pad.shape === 'circle' && pad.halfPx.x === pad.halfPx.y;
+    return shape.type === 'point'
+      ? circular && pad.halfPx.x === shape.r
+      : !circular && pad.halfPx.x === shape.half.x && pad.halfPx.y === shape.half.y;
+  });
+  return index < 0 ? null : (pinPadIds(board, contact.p)[index] ?? index);
+}
+
+function probePad(snapshot: Snapshot, contact: MeasuredPin | null, location: ProbePad | null) {
   const found = contact && resolveContact(snapshot, contact);
-  if (!found || !found.component.board) return;
+  const board = found && found.component.board;
+  if (!found || !board) return;
   const { component, pin } = found;
-  const pad = boardPads(found.component.board, [pin.id], snapshot.doc.scale.pxPerMm)[0];
+  const pads = boardPads(board, [pin.id], snapshot.doc.scale.pxPerMm);
+  const index =
+    typeof location === 'string' ? pinPadIds(board, pin.id).indexOf(location) : location;
+  const pad = pads[index ?? 0] ?? pads[0];
   if (!pad) return;
   const radius = pad.shape === 'rect' ? Math.hypot(pad.halfPx.x, pad.halfPx.y) : pad.radiusPx;
   return { at: pad.at, radius, ref: `${component.ref}.${pin.id}` };
@@ -28,10 +54,10 @@ function probePad(snapshot: Snapshot, contact: MeasuredPin | null) {
 
 function BeepOverlay() {
   const snapshot = useSnapshot((current) => current);
-  const { anchor, target, guard } = useBeepStore();
+  const { anchor, anchorPad, target, targetPad, guard } = useBeepStore();
   const zoom = useViewStore((state) => state.boardView.zoom);
-  const black = probePad(snapshot, anchor);
-  const red = probePad(snapshot, guard?.pin ?? target);
+  const black = probePad(snapshot, anchor, anchorPad);
+  const red = probePad(snapshot, guard?.pin ?? target, targetPad);
   if (!black) return null;
   return (
     <g pointerEvents="none">
@@ -90,6 +116,14 @@ function record(api: ToolApi, ids: IdGen, beep: boolean, connect: boolean) {
     return;
   }
   updateBeep({ target: null });
+}
+
+function isBeepKeyOrigin(origin: EventTarget | null): boolean {
+  return (
+    origin === document.body ||
+    (origin instanceof SVGSVGElement && origin.querySelector('[data-scene]') !== null) ||
+    (origin instanceof Element && origin.closest('[data-beep-hud]') !== null)
+  );
 }
 
 function recordNoBeepKey(event: KeyboardEvent, api: ToolApi, ids: IdGen): boolean {
@@ -163,7 +197,7 @@ function Action({
 function BeepHud({ api, ids }: { api: ToolApi; ids: IdGen }) {
   const engine = useEngine();
   const snapshot = useSnapshot((current) => current);
-  const { target, targetAt, guard } = useBeepStore();
+  const { target, targetAt, targetPad, focusTarget, guard } = useBeepStore();
   const heading = useId();
   const panel = useRef<HTMLDivElement>(null);
   useLayoutEffect(
@@ -185,17 +219,15 @@ function BeepHud({ api, ids }: { api: ToolApi; ids: IdGen }) {
     [engine],
   );
   useLayoutEffect(() => {
-    if (guard) panel.current?.querySelector('button')?.focus({ preventScroll: true });
-  }, [guard]);
+    if (guard || focusTarget)
+      panel.current?.querySelector('button')?.focus({ preventScroll: true });
+    if (focusTarget) updateBeep({ focusTarget: false });
+  }, [focusTarget, guard]);
   useLayoutEffect(() => {
     if (!target || guard) return;
     function onKeyDown(event: KeyboardEvent) {
       if (event.defaultPrevented || event.isComposing) return;
-      const origin = event.target;
-      const viewport = panel.current?.closest('[data-canvas-hud]')?.parentElement;
-      const onCanvas = origin instanceof SVGSVGElement && origin.parentElement === viewport;
-      const inHud = origin instanceof HTMLButtonElement && panel.current?.contains(origin);
-      if ((onCanvas || inHud) && recordNoBeepKey(event, api, ids)) event.preventDefault();
+      if (isBeepKeyOrigin(event.target) && recordNoBeepKey(event, api, ids)) event.preventDefault();
     }
     // Only this HUD's N takes precedence over the shell's Navigator shortcut.
     window.addEventListener('keydown', onKeyDown, true);
@@ -204,7 +236,7 @@ function BeepHud({ api, ids }: { api: ToolApi; ids: IdGen }) {
 
   const contact = guard?.pin ?? target;
   if (!contact) return null;
-  const at = probePad(snapshot, contact)?.at ?? targetAt;
+  const at = probePad(snapshot, contact, targetPad)?.at ?? targetAt;
   if (!at) return null;
   return (
     <CanvasHudAnchor at={at}>
@@ -253,13 +285,22 @@ function BeepHud({ api, ids }: { api: ToolApi; ids: IdGen }) {
 }
 
 function createBeepTool(ids: IdGen): CanvasTool {
-  let gesture: { contact: MeasuredPin; screen: Vec2; shift: boolean; dragged: boolean } | undefined;
+  let gesture:
+    | { contact: MeasuredPin; pad: ProbePad | null; screen: Vec2; shift: boolean; dragged: boolean }
+    | undefined;
   return {
     id: toolId,
     cursor: 'crosshair',
-    onPointerDown({ hit, screen, shift }, api) {
-      const contact = contactFromItem(api.snapshot(), hit);
-      gesture = contact ? { contact, screen, shift, dragged: false } : undefined;
+    onPointerDown({ world, screen, shift }, api) {
+      const zoom = useViewStore.getState().boardView.zoom;
+      const pins = api.hitIndex.queryAll(world, zoom).filter(({ item }) => item.kind === 'pin');
+      const hit = (pins.find(({ exact }) => exact) ?? pins[0])?.item;
+      const snapshot = api.snapshot();
+      const contact = contactFromItem(snapshot, hit);
+      gesture =
+        hit && contact
+          ? { contact, pad: clickedPad(snapshot, contact, hit), screen, shift, dragged: false }
+          : undefined;
     },
     onPointerMove({ screen }) {
       if (gesture) gesture.dragged ||= moved(gesture.screen, screen);
@@ -268,12 +309,13 @@ function createBeepTool(ids: IdGen): CanvasTool {
       const finished = gesture;
       gesture = undefined;
       if (!finished || finished.dragged || moved(finished.screen, screen)) return;
-      const { contact, shift } = finished;
+      const { contact, pad, shift } = finished;
       if (!resolveContact(api.snapshot(), contact)) return;
       const { anchor } = getBeep();
-      if (!anchor || shift) updateBeep({ ...closedBeepTarget, anchor: contact });
-      else if (anchor.uid !== contact.uid) {
-        updateBeep({ ...closedBeepTarget, target: contact, targetAt: world });
+      if (!anchor || shift) {
+        updateBeep({ ...closedBeepTarget, anchor: contact, anchorPad: pad });
+      } else if (anchor.uid !== contact.uid) {
+        updateBeep({ ...closedBeepTarget, target: contact, targetAt: world, targetPad: pad });
       }
     },
     onKey(event, api) {
@@ -288,7 +330,7 @@ function createBeepTool(ids: IdGen): CanvasTool {
         resetBeepTool();
         return false;
       }
-      if (!target && !guard) return false;
+      if ((!target && !guard) || !isBeepKeyOrigin(event.target)) return false;
       if (event.key === 'Enter') {
         if (event.repeat) return true;
         // Let Enter activate the particular HUD button reached by Tab.

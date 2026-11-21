@@ -14,10 +14,15 @@ export const beepGuardSchema = BeepRecordSchema.pick({
   roles: z.array(z.string()),
 });
 
+export type ProbePad = string | number;
+
 interface BeepState {
   anchor: MeasuredPin | null;
+  anchorPad: ProbePad | null;
   target: MeasuredPin | null;
   targetAt: Vec2 | null;
+  targetPad: ProbePad | null;
+  focusTarget: boolean;
   guard: z.infer<typeof beepGuardSchema> | null;
   lastMeasurementId: string | null;
   error: string | null;
@@ -26,12 +31,14 @@ interface BeepState {
 export const closedBeepTarget = {
   target: null,
   targetAt: null,
+  targetPad: null,
+  focusTarget: false,
   guard: null,
   lastMeasurementId: null,
   error: null,
 };
 
-const initial: BeepState = { anchor: null, ...closedBeepTarget };
+const initial: BeepState = { anchor: null, anchorPad: null, ...closedBeepTarget };
 export const useBeepStore = create<BeepState>(() => initial);
 
 export function resetBeepTool() {
@@ -39,6 +46,13 @@ export function resetBeepTool() {
 }
 
 export function startBeepPair(anchor: MeasuredPin, target: MeasuredPin, targetAt: Vec2) {
-  useBeepStore.setState({ ...closedBeepTarget, anchor, target, targetAt });
+  useBeepStore.setState({
+    ...closedBeepTarget,
+    anchor,
+    anchorPad: null,
+    target,
+    targetAt,
+    focusTarget: true,
+  });
   useSessionStore.getState().setToolId('measurements.beep');
 }

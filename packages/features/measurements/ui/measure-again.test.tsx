@@ -47,7 +47,7 @@ test('measure_again_button_opens_beep_with_both_probes', () => {
   expect(action.closest('[data-canvas-hud]')).toBeTruthy();
   expect(action.textContent).toContain('Enter');
 
-  fireEvent.keyDown(start, { key: 'Enter' });
+  if (fireEvent.keyDown(action, { key: 'Enter' })) fireEvent.click(action);
   const { doc, derived } = engine.snapshot();
   expect(doc.measurements).toMatchObject([
     { at: pinRef('3'), ref: pinRef('4'), beep: true, source: 'beep_mode' },
@@ -108,4 +108,30 @@ test('measure_again_label_after_stale_or_lost_contact', () => {
     selectConnection(id);
     expect(screen.queryByRole('button', { name: /^Mõõda (?:uuesti|piiksuga)$/u })).toBeNull();
   }
+});
+
+test('measure_again_focuses_beep_buttons', () => {
+  const { engine } = mountMeasurements({
+    seed(doc) {
+      doc.connections.push({ id: 'con_probe', a: pinEnd('4'), b: pinEnd('3'), basis: 'visual' });
+    },
+  });
+  selectConnection('con_probe');
+  const start = screen.getByRole('button', { name: 'Mõõda piiksuga' });
+  expect(document.querySelector('#pcbk-navigator')).not.toBeNull();
+  start.focus();
+  fireEvent.click(start);
+
+  const action = screen.getByRole('button', { name: 'Piiksub ja ühenda' });
+  expect.soft(document.activeElement).toBe(action);
+  fireEvent.keyDown(document.activeElement!, { key: 'n' });
+  const { doc } = engine.snapshot();
+  expect.soft(doc.measurements).toHaveLength(1);
+  expect.soft(doc.measurements[0]).toMatchObject({
+    at: pinRef('3'),
+    ref: pinRef('4'),
+    beep: false,
+  });
+  expect.soft(doc.connections).toHaveLength(1);
+  expect(document.querySelector('#pcbk-navigator')).not.toBeNull();
 });

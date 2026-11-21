@@ -9,6 +9,14 @@ Sisenemispunkt: `packages/ui/src/canvas/index.ts`
 export function Canvas({ layers, tools, keys, contextMenu, moveRefs, itemsInFrame, deleteIds, sceneTransform, view, onViewChange, snapshot, execute, surface, fitInsets, }: CanvasProps): import("react").JSX.Element;
 ```
 
+### `CanvasHudAnchor`
+```ts
+export function CanvasHudAnchor({ at: { x, y }, children }: {
+    at: Vec2;
+    children: ReactNode;
+}): import("react").JSX.Element;
+```
+
 ### `CanvasPointer`
 ```ts
 export interface CanvasPointer {
@@ -59,6 +67,7 @@ export interface CanvasTool {
     onPointerUp(event: CanvasPointer, api: ToolApi): void;
     onKey?(event: KeyboardEvent, api: ToolApi): boolean;
     overlay?(api: ToolApi): JSX.Element | null;
+    hud?(api: ToolApi): JSX.Element | null;
     onCancel?(api: ToolApi): void;
 }
 ```

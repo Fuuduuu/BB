@@ -6,6 +6,7 @@ import { et } from '../shell/i18n/et';
 import { useSessionStore } from '../shell/session-store';
 import type { Preview } from '../shell/session-store';
 import type { ContextMenuItemSpec, KeySpec, UiRegistry } from '../shell/UiRegistry';
+import { CanvasHud } from './CanvasHud';
 import { ContextMenu } from './ContextMenu';
 import { createHitIndex } from './hit-index';
 import { LabelObstaclesContext } from './label-obstacles';
@@ -378,6 +379,9 @@ export function Canvas({
           </g>
         </g>
       </svg>
+      {active.hud && (
+        <CanvasHud value={{ viewport, scene, fitInsets }}>{active.hud(api)}</CanvasHud>
+      )}
       {menu.open && (
         <ContextMenu
           menuRef={menu.menuRef}

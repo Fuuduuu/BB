@@ -3,6 +3,8 @@ import { useEngine } from '@pcbk/client';
 import type { IdGen } from '@pcbk/contracts';
 import { useSessionStore, useViewStore } from '@pcbk/ui';
 import type { KeySpec, UiModule } from '@pcbk/ui';
+import { BeepHint, createBeepToolSpec } from './BeepTool';
+import { resetBeepTool } from './beep-store';
 import { contactFromSelection } from './contacts';
 import { measureEt } from './i18n/et';
 import { READING_LABELS_LAYER } from './layers/ReadingLabels';
@@ -69,7 +71,8 @@ export function createMeasurementsUi(ids: IdGen): UiModule {
         render: ({ selection }) => <PinMeasurements selection={selection} />,
       },
     ],
-    tools: [pickRefToolSpec()],
+    tools: [pickRefToolSpec(), createBeepToolSpec(ids)],
+    bottomBar: [{ id: 'measurements.beep', render: () => <BeepHint /> }],
     keys: [
       {
         id: 'measurements.focus',
@@ -88,6 +91,9 @@ export function createMeasurementsUi(ids: IdGen): UiModule {
       },
     ],
     canvasLayers: [READING_LABELS_LAYER],
-    onSessionReset: () => useMeasureStore.getState().reset(),
+    onSessionReset() {
+      useMeasureStore.getState().reset();
+      resetBeepTool();
+    },
   };
 }

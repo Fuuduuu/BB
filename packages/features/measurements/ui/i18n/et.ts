@@ -56,6 +56,22 @@ export const measureEt = {
   },
 } as const;
 
+export const beepEt = {
+  tool: 'Piiks',
+  anchorLabel: (ref: string) => `Must sond · ${ref}`,
+  hintStart: 'Klõpsa jalal, kus on must sond',
+  hintNext: 'Klõpsa jalal, mida punane sond puudutab · Shift+klõps: uus must sond · Esc lõpetab',
+  connect: 'Piiksub ja ühenda',
+  measureOnly: 'Ainult mõõtmine',
+  noBeep: 'Ei piiksu',
+  throughComponent: (refs: readonly string[]) =>
+    `Piiksub läbi komponendi ${refs.join(', ')}. Ühendan ikkagi?`,
+  roleMerge: (roles: readonly string[]) =>
+    `Ühendamine liidaks võrgud ${roles.join(' ja ')}. Ühendan ikkagi?`,
+  connectAnyway: 'Ühenda ikkagi',
+  keepApart: 'Jäta ühendamata',
+} as const;
+
 export function commandError(error: EngineError): string {
   switch (error.code) {
     case 'internal':

@@ -230,6 +230,7 @@ export class RuleRejected extends Error {
 ```ts
 export interface RuleReport {
     removedLabels: NetLabel[];
+    removedConnections?: number;
 }
 ```
 

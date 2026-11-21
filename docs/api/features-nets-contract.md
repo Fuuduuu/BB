@@ -75,6 +75,11 @@ export type RemoveRoleParams = {
 export const RemoveRoleSchema: ZodType<RemoveRoleParams>;
 ```
 
+### `roleLabel`
+```ts
+export function roleLabel(roles: Roles, id: string): string;
+```
+
 ### `roleSwatchColor`
 ```ts
 export function roleSwatchColor(role: Pick<NetRole, 'id' | 'color'>): string;

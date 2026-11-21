@@ -12,10 +12,11 @@ import type { NetMembership } from './nets';
 
 export interface RuleReport {
   removedLabels: NetLabel[];
+  removedConnections?: number;
 }
 
 export function isEmptyReport(report: RuleReport): boolean {
-  return report.removedLabels.length === 0;
+  return report.removedLabels.length === 0 && (report.removedConnections ?? 0) === 0;
 }
 
 type PinRemoval = { component: Component; pinIds: ReadonlySet<string> };
@@ -232,9 +233,12 @@ export function removeConnectionItems(
   before?: NetMembership,
 ): RuleReport {
   const selected = { connectionIds, junctionIds };
-  const connections = doc.connections.filter(
-    (connection) => !connectionIsRemoved(connection, selected),
-  );
+  let removedConnections = 0;
+  const connections = doc.connections.filter((connection) => {
+    if (!connectionIsRemoved(connection, selected)) return true;
+    if (!connectionIds.has(connection.id)) removedConnections++;
+    return false;
+  });
   const lostConnections = connections.length !== doc.connections.length;
   if (!lostConnections && !doc.junctions.some(({ id }) => junctionIds.has(id))) {
     return { removedLabels: [] };
@@ -252,7 +256,11 @@ export function removeConnectionItems(
   const previous = hasAffectedLabels ? (before ?? resolveNets(doc)) : undefined;
   if (lostConnections) doc.connections = connections;
   if (removed.size) doc.junctions = junctions;
-  return previous ? repairJunctionLabels(doc, removed, previous) : { removedLabels: [] };
+  const report: RuleReport = previous
+    ? repairJunctionLabels(doc, removed, previous)
+    : { removedLabels: [] };
+  if (removedConnections > 0) report.removedConnections = removedConnections;
+  return report;
 }
 
 export function removeConnections(doc: BoardDoc, ids: readonly string[]): RuleReport {

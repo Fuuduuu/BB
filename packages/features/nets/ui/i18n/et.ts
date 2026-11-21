@@ -45,4 +45,8 @@ export const netsEt = {
   removedLabel: (name?: string) =>
     `${name ? `Võrgusilt ${name} eemaldati` : 'Võrgusilt eemaldati'} · Ctrl+Z toob tagasi`,
   removedLabels: (count: number) => `${count} võrgusilti eemaldati · Ctrl+Z toob tagasi`,
+  removedConnections: (count: number) =>
+    count === 1
+      ? '1 ühendus eemaldati koos liitepunktiga · Ctrl+Z toob tagasi'
+      : `${count} ühendust eemaldati koos liitepunktidega · Ctrl+Z toob tagasi`,
 } as const;

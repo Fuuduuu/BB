@@ -70,7 +70,7 @@ Kehtivad M2.1 piirangud:
 
 Lisaks: nimega testid on kaardi loendi järgi, lisateste ei tehta. Rada B on ainult kaitstud töö jaoks (andmereeglid, moodulitevaheline käsk, vastuvõtt).
 
-Rajad: ülesanded 2, 3 ja 8 on **rada B**, ülejäänud on **rada A**.
+Rajad: ülesanded 2, 3, 10 ja 11 on **rada B**, ülejäänud on **rada A**.
 
 ## Ülesanded
 
@@ -129,28 +129,47 @@ Rajad: ülesanded 2, 3 ja 8 on **rada B**, ülejäänud on **rada A**.
      - Lubatud on eri kihtide ristumine ja juhe, sest juhe on plaadist kõrgemal. Lõpp-klõps teise raja peal teeb endiselt haru.
      - Vanu faile ei muudeta ja uut invarianti ei lisata.
 
-**Osa E · Vastuvõtt**
+**Osa E · Ülevaatuse parandused** (Astra [sõltumatu ülevaatus](../review/2026-11-21-m2-2-ulevaatus-5f4ffae.md) `5f4ffae`, 2 P1, 8 P2, 2 P3; kasutaja kinnitas 2026-11-21)
 
-8. **Jõudlus, E2E, kasutuskatse ja väljalase** (rada B, O6).
-   - E2E läbib piiksuvoo:
-     - `Enter` ühendab ja üks `Ctrl+Z` eemaldab mõõtmise koos ühendusega;
-     - `Shift+Enter` ei ühenda;
-     - `Esc` ei salvesta midagi;
-     - 10 Ω takisti otste piiks küsib kinnitust;
-     - haru säilitab ✓;
-     - mõõtmise kustutamine võtab ✓ ära ja tavaline läbivus taastab selle.
-   - Lohistuse kiirus ei lange alla `v0.5.0` taseme (40,68 fps). Ühenduse taseme arvutus on mõõdetud.
-   - `v0.4.0` ja `v0.5.0` failid avanevad.
-   - Kasutaja teeb suitsukatse ja kasutuskatse „50 jalga alla 2 minuti“. Seejärel tulevad liitmine ja `v0.6.0`.
+8. **Piiksu sihtimine ja klahvid** (rada A, leiud 01, 02, 04, 10 ja 11).
+   - Piiksu `Enter` ja kaitseküsimuse kinnitus töötavad ainult lõuendi või Piiksu nupurühma fookusest. Teise nupu fookusest ei salvesta `Enter` midagi.
+   - Piiks valib jala nagu raja tööriist: nähtava padjandi täpne tabamus enne laiendatud tabamisala.
+   - „Mõõda piiksuga“ ja „Mõõda uuesti“ viivad fookuse Piiksu nupurühma, nii et `N` salvestab „Ei piiksu“.
+   - Mõõda-ploki „Ei piiksu“ ei salvesta all hoitud `Enter`-iga mitut näitu.
+   - Sond ja nupud kuvatakse klõpsatud füüsilise padjandi juures.
+9. **Piiksu olek ja näidud** (rada A, leiud 03, 05, 06 ja 07).
+   - „Ühenda ikkagi“ kontrollib värsket seisu. Kui otsad on vahepeal ühendatud, ühendust ei lisata ja küsimus sulgub.
+   - Ankur, punane sond ja kaitseküsimus aeguvad, kui nende jalg või mõõtmine kaob (näiteks Undo). Järgmine jala klõps valib siis uue musta sondi.
+   - Kaitseküsimus näitab puuduva rolli tunnust kujul „rol_missing (puudub)“ nagu CSV ja võrgu vaade.
+   - Võrgu detailid näitavad läbivuse tulemust („piiksub“ või „ei piiksu“) ja võrdse ajatempliga näitude järjekorda nagu mõõtmiste loend.
+10. **Ühenduse taseme täpsus ja jõudlus** (rada B, leiud 08, 09 ja 12).
+    - Viimase tõendi valik võrdleb ajatempleid sisendi täpsusega (mikrosekundid). Võrdse aja korral jääb senine järjestus.
+    - Teeotsingut taaskasutatakse, säilitades võrdsete teede valiku. Sama ankru ja 500 liitepunktiga ahelas ning tähtvõrgus jääb `connectionLevels` mediaan Node'is ≤ 3 ms.
+    - ✓ joonistatakse pärast radade jooni, nii et teise kihi rada seda ei varja.
+
+**Osa F · Vastuvõtt**
+
+11. **Jõudlus, E2E, kasutuskatse ja väljalase** (rada B, O6).
+    - Astra soovitusel kontrollib vastuvõtt kõrvalnupu klaviatuuriaktiveerimise järel mõõtmiste ja ühenduste arvu ning tiheda paigutuse katses salvestatud paari mõlemat UID-d. Sama ankruga jõudluskatse korratakse Tauris enne kasutuskatset.
+    - E2E läbib piiksuvoo:
+      - `Enter` ühendab ja üks `Ctrl+Z` eemaldab mõõtmise koos ühendusega;
+      - `Shift+Enter` ei ühenda;
+      - `Esc` ei salvesta midagi;
+      - 10 Ω takisti otste piiks küsib kinnitust;
+      - haru säilitab ✓;
+      - mõõtmise kustutamine võtab ✓ ära ja tavaline läbivus taastab selle.
+    - Lohistuse kiirus ei lange alla `v0.5.0` taseme (40,68 fps). Ühenduse taseme arvutus on mõõdetud.
+    - `v0.4.0` ja `v0.5.0` failid avanevad.
+    - Kasutaja teeb suitsukatse ja kasutuskatse „50 jalga alla 2 minuti“. Seejärel tulevad liitmine ja `v0.6.0`.
 
 ## M2.2 vastuvõtt: tingimus → tõend
 
 | Tingimus ([07](../07-teekaart.md#m22--piiksumisrežiim-ja-ühenduse-tase)) | Tõend |
 |---|---|
-| „Piiksub ja ühenda“ on üks samm. „Ainult mõõtmine“ ei ühenda. `Esc` ei salvesta. 10 Ω takisti piiks ei liida ilma kinnituseta. | Ül. 3, 4, 8 |
-| Mõõdetud A–B haru jätab A–J ja J–B mõõdetuks | Ül. 2, 8 |
-| Mõõtmise kustutamine või aegumine võtab ✓ ära. Tavaline läbivus samade jalgade vahel taastab selle. | Ül. 1, 2, 8 |
-| 50 jala kaardistamine piiksumisrežiimis alla 2 minuti (kasutuskatse) | Ül. 8 |
+| „Piiksub ja ühenda“ on üks samm. „Ainult mõõtmine“ ei ühenda. `Esc` ei salvesta. 10 Ω takisti piiks ei liida ilma kinnituseta. | Ül. 3, 4, 8, 11 |
+| Mõõdetud A–B haru jätab A–J ja J–B mõõdetuks | Ül. 2, 11 |
+| Mõõtmise kustutamine või aegumine võtab ✓ ära. Tavaline läbivus samade jalgade vahel taastab selle. | Ül. 1, 2, 10, 11 |
+| 50 jala kaardistamine piiksumisrežiimis alla 2 minuti (kasutuskatse) | Ül. 10, 11 |
 
 ## Mis jääb järgmistesse plaanidesse
 

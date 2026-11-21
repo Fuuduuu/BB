@@ -51,6 +51,66 @@ function openList() {
   return within(screen.getByRole('tabpanel', { name }));
 }
 
+test('continuity_rows_show_beep_result', () => {
+  const { clickPin } = mountMeasurements({
+    seed: (doc) =>
+      doc.measurements.push(
+        measurement({
+          id: 'msr_beep',
+          mode: 'continuity',
+          value: undefined,
+          beep: true,
+          ref: pinRef('2'),
+          refLabel: 'U1.2',
+        }),
+        measurement({
+          id: 'msr_silent',
+          mode: 'continuity',
+          value: undefined,
+          beep: false,
+          ref: pinRef('3'),
+          refLabel: 'U1.3',
+        }),
+      ),
+  });
+  clickPin('1');
+
+  const rows = openList().getAllByRole('listitem');
+  for (const [ref, value] of [
+    ['U1.2', 'piiksub'],
+    ['U1.3', 'ei piiksu'],
+  ] as const) {
+    const row = within(rows.find((item) => within(item).queryByText(`→ ${ref}`))!);
+    expect(row.getByText('Läbivus')).toBeTruthy();
+    expect.soft(row.queryByText(value), `loendis peab olema „${value}“`).not.toBeNull();
+  }
+
+  const history = within(screen.getByRole('region', { name: 'Mõõtmised (2)' }));
+  expect(history.getAllByRole('listitem').map((row) => row.textContent)).toEqual(
+    expect.arrayContaining([
+      'Läbivus · piiksub · U1.1 → U1.2',
+      'Läbivus · ei piiksu · U1.1 → U1.3',
+    ]),
+  );
+});
+
+test('equal_time_readings_share_order', () => {
+  const { clickPin, svg } = mountMeasurements({
+    seed: (doc) =>
+      doc.measurements.push(
+        measurement({ id: 'msr_older', value: 3 }),
+        measurement({ id: 'msr_newer', value: 8 }),
+      ),
+  });
+  clickPin('1');
+
+  const history = within(screen.getByRole('region', { name: 'Mõõtmised (2)' }));
+  expect(history.getAllByRole('listitem')[0]?.textContent).toBe('8 V · U1.1');
+  expect(svg.querySelector('[data-layer="measurements.readings"] text')?.textContent).toBe('8 V');
+  const firstRow = openList().getAllByRole('listitem')[0]!;
+  expect(firstRow.querySelector('strong')?.textContent).toBe('8 V');
+});
+
 test('history_delete_is_icon_with_named_tooltip', () => {
   mountMeasurements({
     seed: (doc) =>
@@ -199,7 +259,7 @@ test('list_displays_and_removes_legacy_modes', () => {
   const continuity = within(rows.find((row) => within(row).queryByText('Läbivus'))!);
   expect(resistance.getByText('—')).toBeTruthy();
   expect(diode.getByText('OL')).toBeTruthy();
-  expect(continuity.getByText('—')).toBeTruthy();
+  expect(continuity.getByText('piiksub')).toBeTruthy();
   expect(list.getByText('0 V')).toBeTruthy();
   fireEvent.click(diode.getByRole('button', { name: 'Kustuta mõõtmine OL U1.1' }));
   expect(engine.snapshot().doc.measurements.map(({ id }) => id)).toEqual([

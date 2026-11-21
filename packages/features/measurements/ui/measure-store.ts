@@ -2,12 +2,14 @@ import { create } from 'zustand';
 import type { MeasuredPin, Measurement } from '@pcbk/domain';
 
 export type Power = Measurement['power'];
-type PairKey = `${string}|${string}`;
+export type MeasureMode = 'voltage' | 'continuity';
+type PairKey = string;
 type Draft = { text: string; power: Power };
 
 interface MeasureState {
   measureAt: MeasuredPin | null;
   blackProbe: MeasuredPin | null;
+  mode: MeasureMode;
   drafts: Record<PairKey, Draft>;
   lastPower: Power;
   focusTick: number;
@@ -17,16 +19,18 @@ interface MeasureState {
 interface MeasureStore extends MeasureState {
   setMeasureAt(pin: MeasuredPin): void;
   setBlackProbe(pin: MeasuredPin | null): void;
+  setMode(mode: MeasureMode): void;
   setDraft(pair: PairKey, draft: Draft): void;
-  clearDraft(pair: PairKey, savedPower?: Power): void;
+  clearDraft(pair: PairKey): void;
   requestFocus(): void;
-  setLastSaved(id: string): void;
+  setLastSaved(id: string, power: Power): void;
   reset(): void;
 }
 
 const initial: MeasureState = {
   measureAt: null,
   blackProbe: null,
+  mode: 'voltage',
   drafts: {},
   lastPower: 'unknown',
   focusTick: 0,
@@ -34,7 +38,7 @@ const initial: MeasureState = {
 };
 
 export function pairKey(at: MeasuredPin, ref: MeasuredPin | null): PairKey {
-  return `${at.uid}|${ref?.uid ?? '-'}`;
+  return JSON.stringify([at.uid, ref?.uid ?? null]);
 }
 
 export const useMeasureStore = create<MeasureStore>((set) => ({
@@ -42,14 +46,15 @@ export const useMeasureStore = create<MeasureStore>((set) => ({
   setMeasureAt: (pin) =>
     set((state) => (state.measureAt?.uid === pin.uid ? state : { measureAt: pin })),
   setBlackProbe: (blackProbe) => set({ blackProbe }),
+  setMode: (mode) => set({ mode }),
   setDraft: (pair, draft) => set(({ drafts }) => ({ drafts: { ...drafts, [pair]: draft } })),
-  clearDraft: (pair, savedPower) =>
-    set(({ drafts, lastPower }) => {
+  clearDraft: (pair) =>
+    set(({ drafts }) => {
       const next = { ...drafts };
       delete next[pair];
-      return { drafts: next, lastPower: savedPower ?? lastPower };
+      return { drafts: next };
     }),
   requestFocus: () => set(({ focusTick }) => ({ focusTick: focusTick + 1 })),
-  setLastSaved: (lastSavedId) => set({ lastSavedId }),
+  setLastSaved: (lastSavedId, lastPower) => set({ lastSavedId, lastPower }),
   reset: () => set(initial),
 }));

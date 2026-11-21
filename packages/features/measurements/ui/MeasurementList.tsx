@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
-import type { Measurement } from '@pcbk/domain';
-import { formatReading } from '@pcbk/domain/measure/reading';
 import { Button, TrashIcon } from '@pcbk/ui';
 import { resolveContact } from './contacts';
 import { commandError, measureEt, measurementListText } from './i18n/et';
+import { displayValue } from './measurement-display';
 import './measurement-list.css';
 
 const localTime = new Intl.DateTimeFormat('et', {
@@ -13,18 +12,12 @@ const localTime = new Intl.DateTimeFormat('et', {
   hourCycle: 'h23',
 });
 
-function displayValue({ mode, overload, value }: Measurement): string {
-  if (overload) return measurementListText.overload;
-  if (mode === 'voltage' && value !== undefined) return formatReading({ value }, mode);
-  return measurementListText.unavailable;
-}
-
 export function MeasurementList() {
   const engine = useEngine();
   const snapshot = useSnapshot((current) => current);
   const { measurements } = snapshot.doc;
   const sorted = useMemo(
-    () => [...measurements].sort((a, b) => Date.parse(b.takenAt) - Date.parse(a.takenAt)),
+    () => [...measurements].reverse().sort((a, b) => Date.parse(b.takenAt) - Date.parse(a.takenAt)),
     [measurements],
   );
   const [error, setError] = useState<string>();

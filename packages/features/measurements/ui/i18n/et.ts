@@ -9,6 +9,7 @@ export const measurementListText = {
   overload: 'OL',
   unavailable: '—',
   modes: { resistance: 'Takistus', diode: 'Diood', continuity: 'Läbivus' },
+  beepResult: { yes: 'piiksub', no: 'ei piiksu' },
 } as const;
 
 export const measureEt = {
@@ -31,6 +32,13 @@ export const measureEt = {
   clearRef: 'Tühjenda',
   power: 'Toide',
   powerLabels: { unknown: 'Teadmata', on: 'Sees', off: 'Väljas' },
+  mode: 'Režiim',
+  modes: { voltage: 'Pinge', continuity: 'Läbivus' },
+  modeKeys: 'Alt+1 pinge · Alt+4 läbivus',
+  beeps: 'Piiksub',
+  noBeep: 'Ei piiksu',
+  beepKeys: 'Enter piiksub · Alt+N ei piiksu',
+  needRef: 'Vali vastaspunkt',
   voltage: 'Pinge',
   hint: 'nt 4,98',
   save: 'Salvesta',

@@ -1,6 +1,6 @@
 import type { Vec2 } from '@pcbk/domain';
+import { drawingSegmentPoints } from '@pcbk/domain/geometry';
 import { SceneText } from '@pcbk/ui';
-import { drawingSegmentPoints } from './connection-geometry';
 
 export function drawingMidpoint(points: readonly Vec2[], wire: boolean, zoom: number): Vec2 {
   const first = points[0]!;

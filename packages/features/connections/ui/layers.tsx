@@ -1,18 +1,15 @@
 import type { Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
+import { drawingSegmentPoints, wirePath } from '@pcbk/domain/geometry';
 import { endKey } from '@pcbk/domain/rules';
 import type { LayerSpec, Preview } from '@pcbk/ui';
 import { memo, useMemo } from 'react';
 import { airLineHitsEnabled, useAirLinesVisible } from './air-lines-view';
-import {
-  connectionPoints,
-  drawingSegmentPoints,
-  drawingWidth,
-  wirePath,
-} from './connection-geometry';
+import { connectionPoints, drawingWidth } from './connection-geometry';
 import {
   CONNECTION_PREVIEW_OWNERS,
   connectionMotion,
+  JUNCTION_DRAG_OWNER,
   previewConnectionPoints,
   previewEnd,
   previewJunction,
@@ -119,7 +116,7 @@ function AirLines({ snapshot, preview, roleColor, zoom }: RoleLayerProps & { zoo
     [visible, snapshot, roleColor, zoom],
   );
   if (lines.length === 0) return null;
-  const motion = connectionMotion(preview);
+  const motion = connectionMotion(preview, snapshot.doc);
   return (
     <g data-layer="connections.airLines" pointerEvents="none" aria-hidden="true">
       {lines.map(({ connection, props, shape }) => {
@@ -226,7 +223,7 @@ function TraceDrawings({ snapshot, preview, roleColor, zoom }: RoleLayerProps & 
     });
   }, [snapshot, roleColor, zoom]);
   if (items.length === 0) return null;
-  const motion = connectionMotion(preview);
+  const motion = connectionMotion(preview, snapshot.doc);
   return (
     <g data-layer="connections.traces" pointerEvents="none" aria-hidden="true">
       {items.map(({ connection, props, shape }) => {
@@ -315,7 +312,7 @@ const JunctionDot = memo(function JunctionDot({
 export const junctionsLayer: LayerSpec = {
   id: 'connections.junctions',
   z: 45,
-  previewOwners: CONNECTION_PREVIEW_OWNERS,
+  previewOwners: [JUNCTION_DRAG_OWNER],
   render({ snapshot: { doc }, preview, zoom }) {
     const incidents = junctionIncidents(doc);
     const motion = connectionMotion(preview);

@@ -43,6 +43,7 @@ test('crossing_traces_do_not_connect', () => {
 
   fireEvent.keyDown(svg, { key: 't' });
   clickPin('1');
+  fireEvent.keyDown(svg, { key: 'l' });
   click(svg, { x: 160, y: 170 });
   click(svg, { x: 160, y: 230 });
   clickPin('2');
@@ -56,7 +57,7 @@ test('crossing_traces_do_not_connect', () => {
       b: pin('2'),
       basis: 'visual',
       board: {
-        layer: 'top',
+        layer: 'bottom',
         kind: 'trace',
         widthMm: 0.3,
         waypoints: [
@@ -151,7 +152,7 @@ test('trace_tool_escape_leaves_no_trace', () => {
 test('trace_click_targets_visible_pad_and_matching_trace', () => {
   const nearPad = { x: 160, y: 103.5 };
   const crossing = { x: 180, y: 200 };
-  const bottomStart = { x: 180, y: 270 };
+  const bottomStart = { x: 220, y: 270 };
   const { engine, host, svg, clickPin } = mountMeasurements({
     seed(doc) {
       seedCrossing(doc);
@@ -251,6 +252,8 @@ test('keyboard_menu_starts_trace_from_menu_target', () => {
   selectPins();
   fireEvent.contextMenu(svg, { button: 2, clientX: x, clientY: y });
   fireEvent.click(screen.getByRole('menuitem', { name: 'Alusta rada siit' }));
+  fireEvent.keyDown(svg, { key: 'l' });
+  fireEvent.keyDown(svg, { key: 'l' });
   clickPin('4');
   expect(engine.snapshot().doc.connections[1]).toMatchObject({ a: pin('2'), b: pin('4') });
 });

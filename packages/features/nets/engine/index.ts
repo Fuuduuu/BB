@@ -118,6 +118,7 @@ const removeRole: CommandSpec<RemoveRoleParams> = {
 
 export const netsEngine: EngineModule = {
   id: 'nets',
+  dependsOn: ['components'],
   owns: ['netLabels', 'roles'],
   commands: [assign, join, addRole, updateRole, removeRole],
   derive: netsDerivations,

@@ -1,5 +1,6 @@
 import type { IdGen, Snapshot } from '@pcbk/contracts';
 import type { EndRef, Vec2 } from '@pcbk/domain';
+import { projectDrawingSegment } from '@pcbk/domain/geometry';
 import { useViewStore } from '@pcbk/ui';
 import type { Selection, UiModule } from '@pcbk/ui';
 import { ConnectionProperties, endLabel } from './ConnectionProperties';
@@ -11,7 +12,7 @@ import {
 } from './TraceTool';
 import { TraceHint } from './TraceHint';
 import { AirLinesToggle } from './air-lines-view';
-import { connectionPoints, projectDrawingSegment } from './connection-geometry';
+import { connectionPoints } from './connection-geometry';
 import { connectionsEt } from './i18n/et';
 import { createAirLinesLayer, createTracesLayer, junctionsLayer } from './layers';
 import type { ConnectionRoleColor } from './layers';

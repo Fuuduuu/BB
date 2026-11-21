@@ -50,14 +50,14 @@ function isInsidePad(at: Vec2, pad: BoardPad, zoom: number) {
 }
 
 export function junctionAttachment(doc: Doc, id: string, at: Vec2, zoom: number) {
-  const hit = orderedPads(doc).find(({ pad }) => isInsidePad(at, pad, zoom));
-  if (!hit) return;
-  try {
-    validateJunctionAttachment(doc, id, hit.pin);
-    return hit;
-  } catch (error) {
-    if (error instanceof RuleRejected || error instanceof RuleTargetNotFound) return;
-    throw error;
+  for (const hit of orderedPads(doc)) {
+    if (!isInsidePad(at, hit.pad, zoom)) continue;
+    try {
+      validateJunctionAttachment(doc, id, hit.pin);
+      return hit;
+    } catch (error) {
+      if (!(error instanceof RuleRejected || error instanceof RuleTargetNotFound)) throw error;
+    }
   }
 }
 

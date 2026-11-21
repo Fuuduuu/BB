@@ -1,24 +1,51 @@
 import type { Snapshot } from '@pcbk/contracts';
-import type { Vec2 } from '@pcbk/domain';
+import type { BoardPlacement, Vec2 } from '@pcbk/domain';
 import { boardPads } from '@pcbk/domain/geometry';
 import { pinKey } from '@pcbk/domain/rules';
 import { useSessionStore } from '@pcbk/ui';
 import type { LayerSpec, TranslatePreviewData } from '@pcbk/ui';
 import { Fragment, memo, useMemo } from 'react';
+import { previewBoardScale, readScaleDrag, SCALE_DRAG_OWNER } from '../../components/contract';
 import { netRoleColor } from '../contract';
 
-type RolePad = {
-  key: string;
+type RoleStyle = {
   memberKey: string;
-  at: Vec2;
-  halfPx: Vec2;
-  rectangular: boolean;
   color?: string;
   conflict: boolean;
 };
-type ComponentRolePads = { id: string; pads: RolePad[] };
+type RolePad = RoleStyle & {
+  key: string;
+  at: Vec2;
+  halfPx: Vec2;
+  rectangular: boolean;
+};
+type ComponentRolePads = {
+  id: string;
+  board: BoardPlacement;
+  styles: ReadonlyMap<string, RoleStyle>;
+  pads: RolePad[];
+};
 type RolePadsCache = { nets: Snapshot['derived']['nets']; groups: ComponentRolePads[] };
 const rolePadsCache = new WeakMap<Snapshot['doc'], RolePadsCache>();
+
+function buildRolePads(
+  board: BoardPlacement,
+  styles: ReadonlyMap<string, RoleStyle>,
+  pxPerMm: number,
+): RolePad[] {
+  return boardPads(board, [...styles.keys()], pxPerMm).map(
+    ({ pinId, at, halfPx, shape }, index) => {
+      const style = styles.get(pinId)!;
+      return {
+        key: `${style.memberKey}:${index}`,
+        at,
+        halfPx,
+        rectangular: shape === 'rect',
+        ...style,
+      };
+    },
+  );
+}
 
 function rolePads(snapshot: Snapshot): ComponentRolePads[] {
   const {
@@ -29,29 +56,17 @@ function rolePads(snapshot: Snapshot): ComponentRolePads[] {
   const cached = rolePadsCache.get(doc);
   if (cached?.nets === nets) return cached.groups;
   const groups: ComponentRolePads[] = [];
-  let index = 0;
   for (const { id, pins, board } of doc.components) {
     if (!board) continue;
-    const styles = new Map<string, { memberKey: string; color?: string; conflict: boolean }>();
+    const styles = new Map<string, RoleStyle>();
     for (const { id: pinId } of pins) {
       const memberKey = pinKey({ c: id, p: pinId });
       const style = netRoleColor(snapshot, memberKey);
       if (style.color || style.conflict) styles.set(pinId, { memberKey, ...style });
     }
     if (styles.size === 0) continue;
-    const pads = boardPads(board, [...styles.keys()], doc.scale.pxPerMm).map(
-      ({ pinId, at, halfPx, shape }) => {
-        const style = styles.get(pinId)!;
-        return {
-          key: `${style.memberKey}:${index++}`,
-          at,
-          halfPx,
-          rectangular: shape === 'rect',
-          ...style,
-        };
-      },
-    );
-    if (pads.length > 0) groups.push({ id, pads });
+    const pads = buildRolePads(board, styles, doc.scale.pxPerMm);
+    if (pads.length > 0) groups.push({ id, board, styles, pads });
   }
   rolePadsCache.set(doc, { nets, groups });
   return groups;
@@ -129,18 +144,21 @@ function PinRoleRings({ snapshot, preview, zoom }: Parameters<LayerSpec['render'
   }, [selection]);
   const groups = rolePads(snapshot);
   if (!groups.length) return null;
+  const { pxPerMm } = snapshot.doc.scale;
+  const drag = preview?.owner === SCALE_DRAG_OWNER ? readScaleDrag(preview.data) : null;
   const motion = preview?.owner === 'select' ? (preview.data as TranslatePreviewData) : undefined;
   const movingComponents = new Set(
     motion?.items.filter(({ kind }) => kind === 'component').map(({ id }) => id),
   );
   return (
     <g data-layer="nets.pinRoles" pointerEvents="none" aria-hidden="true">
-      {groups.map(({ id, pads }) => {
+      {groups.map(({ id, board, styles, pads }) => {
         const delta = movingComponents.has(id) ? motion : undefined;
+        const placement = previewBoardScale(board, id, drag, pxPerMm);
         return (
           <ComponentRoleRings
             key={id}
-            pads={pads}
+            pads={placement === board ? pads : buildRolePads(placement, styles, pxPerMm)}
             selected={selectedByComponent.get(id)}
             dx={delta?.dx ?? 0}
             dy={delta?.dy ?? 0}
@@ -155,6 +173,6 @@ function PinRoleRings({ snapshot, preview, zoom }: Parameters<LayerSpec['render'
 export const pinRolesLayer: LayerSpec = {
   id: 'nets.pinRoles',
   z: 52,
-  previewOwners: ['select'],
+  previewOwners: ['select', SCALE_DRAG_OWNER],
   render: (props) => <PinRoleRings {...props} />,
 };

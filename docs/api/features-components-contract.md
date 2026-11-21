@@ -217,6 +217,21 @@ export type PlaceOnBoardParams = {
 export const PlaceOnBoardSchema: ZodType<PlaceOnBoardParams>;
 ```
 
+### `previewBoardScale`
+```ts
+export function previewBoardScale(board: BoardPlacement, id: string, drag: ReturnType<typeof readScaleDrag>, pxPerMm: number): BoardPlacement;
+```
+
+### `readScaleDrag`
+```ts
+export function readScaleDrag(data: unknown): {
+    componentId: string;
+    handle: "w" | "s" | "e" | "n" | "ne" | "se" | "sw" | "nw";
+    dx: number;
+    dy: number;
+} | null;
+```
+
 ### `RenamePinParams`
 ```ts
 export type RenamePinParams = {
@@ -242,6 +257,11 @@ export type RotateParams = {
 ### `RotateSchema`
 ```ts
 export const RotateSchema: ZodType<RotateParams>;
+```
+
+### `SCALE_DRAG_OWNER`
+```ts
+export const SCALE_DRAG_OWNER: "components.scale";
 ```
 
 ### `selectComponent`

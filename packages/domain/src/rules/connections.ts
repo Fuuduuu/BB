@@ -1,11 +1,11 @@
-import { boardPads } from '../geometry/board';
+import { boardPads, projectDrawingSegment } from '../geometry/board';
 import type { BoardDoc } from '../model/board';
 import type { Component } from '../model/component';
 import type { Connection, Junction } from '../model/connection';
 import type { NetLabel } from '../model/net';
 import type { EndRef, Layer, PinRef, Vec2 } from '../model/primitives';
 import { RuleRejected, RuleTargetNotFound } from './errors';
-import { endAcceptsDrawing } from './layers';
+import { drawingEndpoint, endAcceptsDrawing } from './layers';
 import type { DrawingPositions } from './layers';
 import { endKey, endRefsByKey, pinKey, resolveNets } from './nets';
 import type { NetMembership } from './nets';
@@ -318,7 +318,7 @@ export function attachJunctionToPin(doc: BoardDoc, id: string, pin: PinRef): Rul
   return { removedLabels: [] };
 }
 
-type BranchTarget = Pick<Connection, 'id' | 'b' | 'basis'> & {
+type BranchTarget = Pick<Connection, 'id' | 'a' | 'b' | 'basis'> & {
   readonly board?:
     (Omit<Drawing, 'waypoints'> & { readonly waypoints: readonly Vec2[] }) | undefined;
 };
@@ -364,6 +364,15 @@ export function branchConnection(
     !endAcceptsDrawing(doc, trace.a, newDrawing.kind, newDrawing.layer)
   ) {
     throw new RuleRejected('layer_mismatch');
+  }
+
+  const a = segment === 0 ? drawingEndpoint(doc, target.a) : board.waypoints[segment - 1];
+  const b =
+    segment === board.waypoints.length ? drawingEndpoint(doc, target.b) : board.waypoints[segment];
+  const projected = a && b ? projectDrawingSegment(at, a, b, board.kind) : undefined;
+  const distance = projected ? Math.hypot(at.x - projected.x, at.y - projected.y) : Infinity;
+  if (!Number.isFinite(distance) || distance > (board.widthMm * doc.scale.pxPerMm) / 2 + 0.5) {
+    throw new RuleRejected('branch_point_off_trace');
   }
 
   return {

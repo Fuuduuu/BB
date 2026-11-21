@@ -7,6 +7,7 @@ import { createElement } from 'react';
 import { TRACE_WIDTH_MM, WIRE_WIDTH_MM } from '../contract';
 import { connectionEndpoint } from './connection-geometry';
 import { connectionsEt } from './i18n/et';
+import { tracePathCrossing } from './trace-crossing';
 import { distance, drawingHits, endpointHit, snappedWaypoint } from './trace-geometry';
 import type { Drawing, DrawingHit, EndpointHit } from './trace-geometry';
 import { resetTraceTool, TRACE_TOOL_ID, useTraceStore } from './trace-store';
@@ -166,8 +167,28 @@ function cursorPoint(event: CanvasPointer, from: Vec2, target: Target | undefine
   return event.shift ? snappedWaypoint(from, event.world) : event.world;
 }
 
+function proposedEnd(
+  doc: Doc,
+  draft: TraceDraft,
+  target: Target | undefined,
+  repeatsLast: boolean,
+  cursor: Vec2,
+): Vec2 {
+  if (draft.existingId && (target || repeatsLast)) {
+    const existing = savedConnection(doc, draft.existingId);
+    const end = existing && connectionEndpoint(doc, existing.b);
+    if (end) return end;
+  }
+  return !target && repeatsLast ? draft.waypoints.at(-1)! : cursor;
+}
+
+function repeatsWaypoint(draft: TraceDraft, event: CanvasPointer, zoom: number): boolean {
+  const last = draft.waypoints.at(-1);
+  return last !== undefined && distance(last, event.world) * zoom <= clickRadius;
+}
+
 function updateOverlay(doc: Doc, hitIndex: HitIndex, event?: CanvasPointer) {
-  const { draft, mode } = getTrace();
+  const { draft, mode, error } = getTrace();
   const start = draft && connectionEndpoint(doc, draft.start);
   if (!draft || !start) {
     updateTrace({ preview: null });
@@ -178,12 +199,18 @@ function updateOverlay(doc: Doc, hitIndex: HitIndex, event?: CanvasPointer) {
     event && findTarget(doc, hitIndex.queryAll(event.world, zoom), event.world, draft, mode);
   const points = [start, ...draft.waypoints];
   const cursor = event && cursorPoint(event, points.at(-1)!, target);
+  const to =
+    cursor && event && proposedEnd(doc, draft, target, repeatsWaypoint(draft, event, zoom), cursor);
+  const crossing = tracePathCrossing(doc, draft, start, to, mode);
+  const crossingHint = connectionsEt.sameLayerCrossing;
   updateTrace({
+    error: crossing ? crossingHint : error === crossingHint ? null : error,
     preview: {
       points,
       cursor,
       pxPerMm: doc.scale.pxPerMm,
       zoom,
+      crossing,
       ...(target && (target.accepted || target.kind === 'branch') ? { target } : {}),
     },
   });
@@ -259,7 +286,15 @@ function advanceTrace(api: ToolApi, event: CanvasPointer, ids: IdGen) {
 
   const target = findTarget(doc, matches, event.world, draft, mode);
   const last = draft.waypoints.at(-1);
-  const repeatsLast = last !== undefined && distance(last, event.world) * zoom <= clickRadius;
+  const repeatsLast = repeatsWaypoint(draft, event, zoom);
+  const from = last ?? start;
+  const cursor = cursorPoint(event, from, target);
+  if (
+    tracePathCrossing(doc, draft, start, proposedEnd(doc, draft, target, repeatsLast, cursor), mode)
+  ) {
+    updateOverlay(doc, api.hitIndex, event);
+    return;
+  }
   const board = drawing(mode, draft.waypoints);
   if (draft.existingId && (target || repeatsLast)) {
     finish(api.execute('connections.drawOnBoard', { id: draft.existingId, board }));
@@ -270,11 +305,10 @@ function advanceTrace(api: ToolApi, event: CanvasPointer, ids: IdGen) {
   } else if (target) {
     commitOpenEnd(api, ids, draft, board, event.world);
   } else if (repeatsLast) {
-    commitOpenEnd(api, ids, draft, { ...board, waypoints: draft.waypoints.slice(0, -1) }, last);
+    commitOpenEnd(api, ids, draft, { ...board, waypoints: draft.waypoints.slice(0, -1) }, last!);
   } else {
-    const point = cursorPoint(event, last ?? start, undefined);
-    if (distance(point, last ?? start) === 0) return;
-    updateTrace({ draft: { ...draft, waypoints: [...draft.waypoints, point] }, error: null });
+    if (distance(cursor, from) === 0) return;
+    updateTrace({ draft: { ...draft, waypoints: [...draft.waypoints, cursor] }, error: null });
     updateOverlay(doc, api.hitIndex);
   }
 }

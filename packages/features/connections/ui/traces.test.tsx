@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import type { Measurement } from '@pcbk/domain';
+import { projectDrawingSegment, wirePath } from '@pcbk/domain/geometry';
 import { useSessionStore } from '@pcbk/ui';
 import { expect, test } from 'vitest';
 import { mountMeasurements, pinRef } from '../../measurements/__tests__/workspace';
-import { projectDrawingSegment, wirePath } from './connection-geometry';
 
 const end = (junction: string) => ({ junction });
 const pinEnd = (p: string) => ({ pin: { c: 'cmp_u1', p } });

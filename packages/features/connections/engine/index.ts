@@ -212,6 +212,7 @@ const removeJunction: CommandSpec<ConnectionIdsParams> = {
 
 export const connectionsEngine: EngineModule = {
   id: 'connections',
+  dependsOn: ['components'],
   owns: ['connections', 'junctions'],
   commands: [
     add,

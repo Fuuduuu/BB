@@ -5,6 +5,7 @@ import type { Vec2 } from '../model/primitives';
 
 export { boardSurface, sceneTransformOf } from './surface';
 export type { SceneSource, SurfaceSource } from './surface';
+export { drawingSegmentPoints, projectDrawingSegment, wirePath } from './drawing';
 
 export function padToBoard(
   p: Pick<BoardPlacement, 'center' | 'rotationDeg' | 'side' | 'scaleX' | 'scaleY'>,

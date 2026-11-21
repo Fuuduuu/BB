@@ -190,7 +190,8 @@ Tööriist **Rada** (`T`). Klõpsa jalal → klõpsa käänupunktid mööda foto
 - **Lahtine ots:** tühjal kohal lõpetamine jätab raja lõppu lahtise otsa (liitepunkti), mitte varjatud ühenduse lähima rajaga.
 - **Klahvid:** `Shift` = 45° nurgad, `Backspace` = samm tagasi, `Esc` = katkesta, `L` = kiht (pealmine/alumine/juhe). Kihi vahetamine ei ühenda pealmist ja alumist rada; neid ühendab ainult läbiv jalg või via.
 - Lõpetamata lõigu kohal on pikkus millimeetrites.
-- Rada ei jookse linnulennult: see on joonistatud mööda tegelikku teed.
+- Rada ei jookse linnulennult: see on joonistatud mööda tegelikku teed. Äpp ei joonista rada kunagi ise.
+- Sama kihi rajad ei ristu ega jookse üksteise peal, sest päris plaadil oleks see lühis. Tööriist ei luba sellist lõiku ja pakub kihi vahetust (`L`) või haru. Eri kihtide rajad ja juhe võivad ristuda.
 - Kui rada algab ja lõpeb jalal, loob üks käsk nii ühenduse kui ka selle joonistuse; skeem näitab ühendust kohe. Kui ühendus on juba olemas (nt piiksust), lisatakse sellele ainult joonistus.
 
 **Olemasoleva ühenduse joonistamine:** vali õhujoon ja vajuta „Joonista rada fotol“.

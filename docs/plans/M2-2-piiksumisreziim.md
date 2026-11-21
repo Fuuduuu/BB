@@ -119,10 +119,15 @@ Rajad: ülesanded 2, 3 ja 8 on **rada B**, ülejäänud on **rada A**.
    - 14: kui võrgu silt viitab puuduvale rollile, näitab CSV rolli veerus kõiki võrgu rolle kujul „GND + rol_missing (puudub)“. See on sama mis võrgu vaate konfliktihoiatus. Nelja veeru vorming jääb.
    - 15: kui Delete eemaldab mitu liitepunkti või liitepunkti koos komponendiga, näitab teade eemaldatud ühenduste arvu ja tagasivõtmise vihjet.
    - 19: valitud rolli kiibi uus vajutus eemaldab rolli (`nets.assign` `roleId: null`).
-7. **Lõuendi täpsus** (rada A, leiud 17, 18 ja 20).
+7. **Lõuendi täpsus** (rada A, leiud 17, 18 ja 20 ning kasutaja reegel 2026-11-21).
    - 17: suuruse muutmise eelvaates liiguvad rollirõngas ja raja otsad samas kaadris.
    - 18: liitepunkti kinnitamisel jalale eelistatakse liitepunkti kihil olevat padjandit, kui eri külgede padjandid kattuvad.
    - 20: `connections.branch` lükkab tagasi punkti, mis pole raja joonistatud laiuse sees.
+   - **Sama kihi rajad ei ristu ega kattu** (kasutaja 2026-11-21).
+     - Raja tööriist ei luba lõiku, mis ristub sama kihi teise rajaga või jookseb selle peal.
+     - Ristumiskoht on punane ja vihje on „Sama kihi rajad ei saa ristuda. Vaheta kiht (L) või lõpeta raja peal (haru).“
+     - Lubatud on eri kihtide ristumine ja juhe, sest juhe on plaadist kõrgemal. Lõpp-klõps teise raja peal teeb endiselt haru.
+     - Vanu faile ei muudeta ja uut invarianti ei lisata.
 
 **Osa E · Vastuvõtt**
 

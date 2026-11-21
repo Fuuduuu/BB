@@ -9,6 +9,20 @@ Sisenemispunkt: `packages/domain/src/rules/index.ts`
 export function attachJunctionToPin(doc: BoardDoc, id: string, pin: PinRef): RuleReport;
 ```
 
+### `BeepOutcome`
+```ts
+export type BeepOutcome = {
+    kind: 'connected';
+} | {
+    kind: 'same_net';
+} | {
+    kind: 'guarded';
+    reason: 'same_component' | 'shorts_component' | 'role_conflict';
+    components: string[];
+    roles: string[];
+};
+```
+
 ### `branchConnection`
 
 Prepare all edits together so the preview and the command validate the same branch.
@@ -17,6 +31,15 @@ Prepare all edits together so the preview and the command validate the same bran
 export function branchConnection(doc: DrawingPositions & {
     readonly connections: readonly BranchTarget[];
 }, input: BranchInput): BranchPlan;
+```
+
+### `connectBeepPins`
+```ts
+export function connectBeepPins(doc: BoardDoc, { anchor, pin, connectionId }: {
+    anchor: PinRef;
+    pin: PinRef;
+    connectionId: string;
+}): BeepOutcome;
 ```
 
 ### `ConnectionLevel`

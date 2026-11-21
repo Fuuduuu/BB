@@ -1,4 +1,4 @@
-import { IdSchema, MeasurementSchema } from '@pcbk/domain';
+import { IdSchema, MeasuredPinSchema, MeasurementSchema, TimestampSchema } from '@pcbk/domain';
 import type { PinReading } from '@pcbk/domain';
 import { z } from 'zod';
 
@@ -22,14 +22,25 @@ export const AddMeasurementSchema = z.discriminatedUnion('mode', [
   }),
 ]);
 export const RemoveMeasurementSchema = z.strictObject({ id: IdSchema });
+export const BeepRecordSchema = z.strictObject({
+  measurementId: IdSchema,
+  connectionId: IdSchema,
+  anchor: MeasuredPinSchema,
+  pin: MeasuredPinSchema,
+  beep: z.boolean(),
+  connect: z.boolean(),
+  takenAt: TimestampSchema,
+});
 
 export type AddMeasurementParams = z.infer<typeof AddMeasurementSchema>;
 export type RemoveMeasurementParams = z.infer<typeof RemoveMeasurementSchema>;
+export type BeepRecordParams = z.infer<typeof BeepRecordSchema>;
 
 declare module '@pcbk/contracts' {
   interface CommandMap {
     'measurements.add': AddMeasurementParams;
     'measurements.remove': RemoveMeasurementParams;
+    'beep.record': BeepRecordParams;
   }
 
   interface Derived {

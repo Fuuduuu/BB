@@ -1,3 +1,5 @@
+export { connectBeepPins } from './beep';
+export type { BeepOutcome } from './beep';
 export {
   attachJunctionToPin,
   branchConnection,

@@ -32,6 +32,10 @@ const shortableKinds = new Set<Component['kind']>([
   'crystal',
 ]);
 
+export function isShortableKind(kind: Component['kind']): boolean {
+  return shortableKinds.has(kind);
+}
+
 function labelsByAnchor(netLabels: readonly NetLabel[]): Map<string, NetLabel[]> {
   const byAnchor = new Map<string, NetLabel[]>();
   for (const label of netLabels) {
@@ -61,15 +65,15 @@ function contradictionNets(doc: BoardDoc, netOf: ReadonlyMap<string, string>): S
   return contradictions;
 }
 
-function shortedComponents(
+export function shortedComponents(
   components: readonly Component[],
-  netOf: ReadonlyMap<string, string>,
+  findNet: (key: string) => string | undefined,
 ): string[] {
   const shorted: string[] = [];
   for (const { id, kind, pins } of components) {
-    if (pins.length !== 2 || !shortableKinds.has(kind)) continue;
-    const first = netOf.get(pinKey({ c: id, p: pins[0]!.id }));
-    const second = netOf.get(pinKey({ c: id, p: pins[1]!.id }));
+    if (pins.length !== 2 || !isShortableKind(kind)) continue;
+    const first = findNet(pinKey({ c: id, p: pins[0]!.id }));
+    const second = findNet(pinKey({ c: id, p: pins[1]!.id }));
     if (first !== undefined && first === second) shorted.push(id);
   }
   return shorted.sort();
@@ -106,6 +110,6 @@ export function describeNets(doc: BoardDoc): NetsDerived {
   return {
     list,
     netOf: Object.fromEntries(visibleMembership),
-    shortedComponents: shortedComponents(doc.components, membership.netOf),
+    shortedComponents: shortedComponents(doc.components, (key) => membership.netOf.get(key)),
   };
 }

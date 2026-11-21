@@ -14,6 +14,24 @@ export type AddMeasurementParams = { id: string; power: "unknown" | "on" | "off"
 export const AddMeasurementSchema: ZodType<AddMeasurementParams>;
 ```
 
+### `BeepRecordParams`
+```ts
+export type BeepRecordParams = {
+    measurementId: string;
+    connectionId: string;
+    anchor: { c: string; p: string; uid: string; };
+    pin: { c: string; p: string; uid: string; };
+    beep: boolean;
+    connect: boolean;
+    takenAt: string;
+};
+```
+
+### `BeepRecordSchema`
+```ts
+export const BeepRecordSchema: ZodType<BeepRecordParams>;
+```
+
 ### `RemoveMeasurementParams`
 ```ts
 export type RemoveMeasurementParams = {

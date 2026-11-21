@@ -1,4 +1,5 @@
 import { EndRefSchema, IdSchema, LayerSchema, PinRefSchema, Vec2Schema } from '@pcbk/domain';
+import type { ConnectionLevel } from '@pcbk/domain/rules';
 import { z } from 'zod';
 
 export const TRACE_WIDTH_MM = 0.3;
@@ -54,6 +55,14 @@ export const SetLabelOffsetSchema = z.strictObject({
 export const MoveJunctionSchema = z.strictObject({ id: z.string(), at: Vec2Schema });
 export const AttachJunctionToPinSchema = z.strictObject({ id: z.string(), pin: PinRefSchema });
 
+export const ConnectionLevelsSchema = z.record(
+  IdSchema,
+  z.strictObject({
+    level: z.enum(['measured', 'visual', 'assumed']),
+    noContinuity: z.literal(true).optional(),
+  }),
+) satisfies z.ZodType<Record<string, ConnectionLevel>>;
+
 export type AddConnectionsParams = z.infer<typeof AddConnectionsSchema>;
 export type ConnectionIdsParams = z.infer<typeof ConnectionIdsSchema>;
 export type DrawOnBoardParams = z.infer<typeof DrawOnBoardSchema>;
@@ -79,5 +88,9 @@ declare module '@pcbk/contracts' {
     'junctions.move': MoveJunctionParams;
     'junctions.attachToPin': AttachJunctionToPinParams;
     'junctions.remove': ConnectionIdsParams;
+  }
+
+  interface Derived {
+    connectionLevels?: Record<string, ConnectionLevel>;
   }
 }

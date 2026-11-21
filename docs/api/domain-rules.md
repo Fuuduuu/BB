@@ -19,6 +19,19 @@ export function branchConnection(doc: DrawingPositions & {
 }, input: BranchInput): BranchPlan;
 ```
 
+### `ConnectionLevel`
+```ts
+export type ConnectionLevel = {
+    level: 'measured' | 'visual' | 'assumed';
+    noContinuity?: true;
+};
+```
+
+### `connectionLevels`
+```ts
+export function connectionLevels(doc: BoardDoc): Record<string, ConnectionLevel>;
+```
+
 ### `createNetConnectivity`
 ```ts
 export function createNetConnectivity(doc: BoardDoc, endpoints?: ReadonlyMap<string, {

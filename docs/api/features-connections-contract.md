@@ -61,6 +61,11 @@ export type ConnectionIdsParams = {
 export const ConnectionIdsSchema: ZodType<ConnectionIdsParams>;
 ```
 
+### `ConnectionLevelsSchema`
+```ts
+export const ConnectionLevelsSchema: ZodType<{ [x: string]: { level: "assumed" | "visual" | "measured"; noContinuity?: true | undefined; }; }>;
+```
+
 ### `DrawOnBoardParams`
 ```ts
 export type DrawOnBoardParams = {

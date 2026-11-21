@@ -3,11 +3,56 @@ import { act, fireEvent } from '@testing-library/react';
 import { newBoardDoc } from '@pcbk/domain';
 import type { BoardDoc, Connection, EndRef } from '@pcbk/domain';
 import * as rules from '@pcbk/domain/rules';
+import { createEngine } from '@pcbk/engine';
 import { expect, test, vi } from 'vitest';
 import { setup } from '../__tests__/helpers';
-import { mountMeasurements, pointer } from '../measurements/__tests__/workspace';
+import { engineFeatures, RESERVED_FIELDS } from '../engine';
+import {
+  measurementDoc,
+  mountMeasurements,
+  pinRef,
+  pointer,
+} from '../measurements/__tests__/workspace';
 
 const { resolveNets } = rules;
+
+test('connection_levels_derive_in_snapshot', () => {
+  const doc = measurementDoc();
+  const pin = (p: string): EndRef => ({ pin: { c: pinRef(p).c, p } });
+  doc.connections.push(
+    { id: 'con_probed', a: pin('1'), b: pin('2'), basis: 'assumed' },
+    { id: 'con_other', a: pin('3'), b: pin('4'), basis: 'visual' },
+  );
+  const takenAt = '2026-11-10T10:00:00.000Z';
+  const { engine, host } = createEngine({
+    modules: engineFeatures,
+    reserved: RESERVED_FIELDS,
+    clock: { now: () => takenAt },
+  });
+  host.load('levels-test', doc, false);
+  const initial = engine.snapshot();
+  const unmeasured = { con_probed: { level: 'assumed' }, con_other: { level: 'visual' } };
+  const measured = { ...unmeasured, con_probed: { level: 'measured' } };
+
+  expect(
+    engine.execute('measurements.add', {
+      id: 'msr_beep',
+      mode: 'continuity',
+      at: pinRef('1'),
+      ref: pinRef('2'),
+      beep: true,
+      power: 'off',
+      takenAt,
+    }).ok,
+  ).toBe(true);
+  expect(engine.snapshot().derived).toHaveProperty('connectionLevels', measured);
+  expect(initial.derived).toHaveProperty('connectionLevels', unmeasured);
+
+  expect(engine.execute('measurements.remove', { id: 'msr_beep' }).ok).toBe(true);
+  expect(engine.snapshot().derived).toHaveProperty('connectionLevels', unmeasured);
+  expect(engine.undo().ok).toBe(true);
+  expect(engine.snapshot().derived).toHaveProperty('connectionLevels', measured);
+});
 
 test('remove_board_drawing_keeps_connection_as_air_line', () => {
   const connection: Connection = {

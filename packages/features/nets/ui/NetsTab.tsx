@@ -267,6 +267,11 @@ function NetView({
       </ul>
       <p className="pcbk-net-fact">{netsEt.junctionCount(details.junctions)}</p>
       <p className="pcbk-net-fact">{netsEt.traceLength(details.lengthMm)}</p>
+      {details.measuredConnections !== undefined && (
+        <p className="pcbk-net-fact">
+          {netsEt.measuredConnections(details.measuredConnections, details.connections.length)}
+        </p>
+      )}
       {details.measurements.length > 0 && (
         <section className="pcbk-net-measurements">
           <h3>{netsEt.measurements}</h3>

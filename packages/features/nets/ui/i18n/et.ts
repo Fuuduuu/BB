@@ -28,6 +28,8 @@ export const netsEt = {
   shorted: (refs: readonly string[]) =>
     `${refs.join(', ')}: mõlemad jalad on selles võrgus. Kontrolli, kas see on lühis.`,
   traceLength: (length: number) => `Rajad kokku ${length.toFixed(2).replace('.', ',')} mm`,
+  measuredConnections: (measured: number, total: number) =>
+    `Mõõdetud ühendusi ${measured}/${total}`,
   measurements: 'Mõõtmised',
   measurementModes: {
     voltage: 'Pinge',

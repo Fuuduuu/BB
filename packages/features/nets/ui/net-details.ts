@@ -68,8 +68,11 @@ export function netDetails(
     return pin ? [{ key, ...pin }] : [];
   });
   const connections = doc.connections.filter(({ a }) => members.has(endKey(a)));
+  const { connectionLevels } = snapshot.derived;
+  let measuredConnections = 0;
   let length = 0;
   for (const connection of connections) {
+    if (connectionLevels?.[connection.id]?.level === 'measured') measuredConnections++;
     if (!connection.board) continue;
     const points = connectionPoints(doc, connection);
     if (!points) continue;
@@ -90,6 +93,7 @@ export function netDetails(
     pins,
     junctions: net.members.length - pins.length,
     connections,
+    measuredConnections: connectionLevels === undefined ? undefined : measuredConnections,
     lengthMm: length / doc.scale.pxPerMm,
     measurements,
   };

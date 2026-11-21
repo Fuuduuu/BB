@@ -8,6 +8,7 @@ import { resetBeepTool } from './beep-store';
 import { contactFromSelection } from './contacts';
 import { measureEt } from './i18n/et';
 import { READING_LABELS_LAYER } from './layers/ReadingLabels';
+import { MeasureAgain } from './MeasureAgain';
 import { MeasureBlock } from './MeasureBlock';
 import { MeasurementList } from './MeasurementList';
 import { useMeasureStore } from './measure-store';
@@ -69,6 +70,12 @@ export function createMeasurementsUi(ids: IdGen): UiModule {
         appliesTo: ['pin'],
         order: 10,
         render: ({ selection }) => <PinMeasurements selection={selection} />,
+      },
+      {
+        id: 'measurements.measureAgain',
+        appliesTo: ['connection'],
+        order: 10,
+        render: ({ selection }) => <MeasureAgain selection={selection} />,
       },
     ],
     tools: [pickRefToolSpec(), createBeepToolSpec(ids)],

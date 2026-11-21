@@ -1,4 +1,5 @@
 import type { MeasuredPin, Vec2 } from '@pcbk/domain';
+import { useSessionStore } from '@pcbk/ui';
 import { create } from 'zustand';
 import { z } from 'zod';
 import { BeepRecordSchema } from '../contract';
@@ -35,4 +36,9 @@ export const useBeepStore = create<BeepState>(() => initial);
 
 export function resetBeepTool() {
   useBeepStore.setState(initial);
+}
+
+export function startBeepPair(anchor: MeasuredPin, target: MeasuredPin, targetAt: Vec2) {
+  useBeepStore.setState({ ...closedBeepTarget, anchor, target, targetAt });
+  useSessionStore.getState().setToolId('measurements.beep');
 }

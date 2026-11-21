@@ -18,6 +18,8 @@ export const connectionsEt = {
   resetLabelOffset: 'Lähtesta sildi asukoht',
   basisVisual: 'Alus: nähtud',
   basisAssumed: 'Alus: oletatud',
+  measured: 'Mõõdetud ✓',
+  noContinuity: 'Läbivustest ütles, et ühendust pole',
   networkLabel: (name: string) => `Võrk: ${name}`,
   traceLayerMismatch: 'Ots ei sobi valitud kihiga',
   traceFailed: 'Raja salvestamine ebaõnnestus',

@@ -70,6 +70,8 @@ export const beepEt = {
     `Ühendamine liidaks võrgud ${roles.join(' ja ')}. Ühendan ikkagi?`,
   connectAnyway: 'Ühenda ikkagi',
   keepApart: 'Jäta ühendamata',
+  measureAgain: 'Mõõda uuesti',
+  measureWithBeep: 'Mõõda piiksuga',
 } as const;
 
 export function commandError(error: EngineError): string {

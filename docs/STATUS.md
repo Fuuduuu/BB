@@ -1,6 +1,6 @@
 # BB: jooksev seis ja üleandmine
 
-Uuendatud: **2026-11-21**. See fail on lühike hetkeseis, kuni 80 rida. Ajalugu on Git-is, kaartidel ja verstapostide üleandmistes ([docs/README](README.md)). Kontrolli väiteid Git-i vastu.
+Uuendatud: **2026-11-24**. See fail on lühike hetkeseis, kuni 80 rida. Ajalugu on Git-is, kaartidel ja verstapostide üleandmistes ([docs/README](README.md)). Kontrolli väiteid Git-i vastu.
 
 ## Rollid
 
@@ -19,15 +19,12 @@ Claude on arhitekt ja Codex on ehitaja; tööriistu ehitab ka Astra põhikaustas
 
 Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani vastuvõtutabelis.
 
-## Järgmine: M2.2 piiksumisrežiim ja ühenduse tase
+## Järgmine: korpuste graafika ja mõõtkava kontroll
 
-- M2.1 on avaldatud versioonina `v0.5.0`: haru on liidetud `92f001c`, versioon `0bc063b`, silt `v0.5.0`.
-  - Kaardid [M2-1-H](tasks/M2-1-H.md), [M2-1-1](tasks/M2-1-1.md)–[M2-1-14](tasks/M2-1-14.md), jõudlus, ühilduvus ja mõlemad suitsukatsed on [M2.1 üleandmises](plans/M2-1-uleandmine.md).
-  - Astra [sõltumatu ülevaatuse](review/2026-11-20-m2-1-ulevaatus-8a2304d.md) P1-leiud parandati kaartidega M2-1-12–M2-1-14.
-- [M2.2 teostusplaan](plans/M2-2-piiksumisreziim.md) on kinnitatud (2026-11-20, kasutaja kinnitas soovitused O1–O6). Esimene kaart on [M2-2-1](tasks/M2-2-1.md), läbivus Mõõda-plokis (A): **vastu võetud** `2c39900`, rada A täisring läbis. [M2-2-2](tasks/M2-2-2.md) ühenduse tase (B): **vastu võetud** `e30b5cd`, rada B täisring läbis; lohistuskäsu varu Tauris 0,2 ms. [M2-2-3](tasks/M2-2-3.md) `beep.record` ja kaitsed (B): **vastu võetud** `3ed369f`, rada B täisring läbis. [M2-2-4](tasks/M2-2-4.md) tööriist Piiks (A): **vastu võetud** `951e77b`, rada A täisring läbis. [M2-2-5](tasks/M2-2-5.md) taseme kuvamine ja „Mõõda uuesti“ (A): **vastu võetud** `4c4e971`, rada A täisring läbis. [M2-2-6](tasks/M2-2-6.md) võrgud ja kustutamine (A): **vastu võetud** `5f4ffae`, rada A täisring läbis. [M2-2-7](tasks/M2-2-7.md) lõuendi täpsus ja radade ristumine (A): **vastu võetud** `1ee7218`, rada A täisring läbis. [M2-2-8](tasks/M2-2-8.md) Piiksu sihtimine ja klahvid (A): **vastu võetud** `da58ddc`, rada A täisring läbis (Astra P1 01 ja 02 parandatud). [M2-2-9](tasks/M2-2-9.md) Piiksu olek ja näidud (A): **vastu võetud** `e140f7f`, rada A täisring läbis. [M2-2-10](tasks/M2-2-10.md) taseme täpsus ja jõudlus (B): **vastu võetud** `3656947`, rada B täisring läbis. Astra leiud 01–12 on parandatud. [M2-2-11](tasks/M2-2-11.md) vastuvõtt (B): **vastu võetud** `ec3e35c`, rada B täisring läbis (2/2 kaarditesti, 1729/1729 ühiktesti, 44/44 E2E, Rust 108). Kasutaja aktsepteeris viis jõudluspiiri `v0.6.0` jaoks. [M2.2 üleandmine](plans/M2-2-uleandmine.md). Järgmine: kasutaja suitsu- ja kasutuskatse, siis liitmine ja `v0.6.0`. Astra [sõltumatu ülevaatus](review/2026-11-21-m2-2-ulevaatus-5f4ffae.md) (`5f4ffae`) leidis 2 P1, 8 P2 ja 2 P3 viga. Triaaž: plaani ülesanded 8–10 (Piiksu sihtimine ja klahvid, Piiksu olek ja näidud, taseme täpsus ja jõudlus) kinnitas kasutaja 2026-11-21, vastuvõtt on ül. 11. M2-2-10 kaarditestid 3/3, E2E 43/43 ja ühiktestid 1729/1729. Tasemearvutuse mediaanid Node'is 2,03, 1,67 ja 1,55 ms. Tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m2-2/BB`, haru `codex/m2-2`. Plaan seob need lahtised leiud:
-  - Astra 2026-11-20 leiud 14–20;
-  - [koodiülevaatuse 2026-11-19](review/2026-11-19-koodiulevaatus-00a424e.md) leiud 15 ja 18 (sondipaari mustand, võrdse ajatempliga näidud);
-  - salvestuse leiud 04–06 ning lühinimega tee normaliseerimine (`absolute()`, M2-1-12 CI järelparandus) järgmisele salvestuse kaardile, hiljemalt M4.3.
+- M2.2 on liidetud `main`-i `3b5a65c` (2026-11-24), versioon 0.6.0 `b7ecf03`; silt `v0.6.0` ootab kasutaja luba. Kaardid [M2-2-1](tasks/M2-2-1.md)–[M2-2-11](tasks/M2-2-11.md), jõudlus (viis piiri aktsepteeris kasutaja), ühilduvus ja kasutaja katse on [M2.2 üleandmises](plans/M2-2-uleandmine.md). Astra [M2.2 ülevaatuse](review/2026-11-21-m2-2-ulevaatus-5f4ffae.md) leiud 01–12 on parandatud.
+- Kasutaja katse 2026-11-24 oma plaadi fotoga: suurused polnud reaalsed (kalibreerimine 30 mm üle kogu foto laiuse, dialoog ei näita foto suurust millimeetrites) ja korpuste graafika on kehv ning segane (iga korpus on ristkülik, polaarsust, triipu ega sälku pole). Kasutaja otsus: avalda `v0.6.0`, siis graafika. Järgmine samm on selle töö plaan, enne M2.3 skeemi.
+- M2.3 plaani läheb jõudlus: `connectionLevels`-i ja `nets`-i tuletise sisend kitseneb jalgade topoloogiale ([M2.2 plaani järgmised tööd](plans/M2-2-piiksumisreziim.md#mis-jääb-järgmistesse-plaanidesse)).
+- Lahtine: salvestuse leiud 04–06 ning lühinimega tee normaliseerimine (`absolute()`, M2-1-12 CI järelparandus) järgmisele salvestuse kaardile, hiljemalt M4.3.
 - Astra tööriistad: leid 25 (kaardikontroll ei tohi nõutud testi vaikselt välja jätta), seejärel 26–30.
 - 02 § 16 ja § 6.2 kasutavad pööramiseks `R`/`Shift+R`-i (O2). 03 § 7.3 kirjeldab M1-4-10 sildi külje valikut.
 

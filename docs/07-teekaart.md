@@ -162,15 +162,17 @@ M2 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse jär
 - [x] **Jõudlus:** sünteetiline plaat 300 komponendi, 3000 jala ja 1000 rajaga püsib [03 § 7.3](03-arhitektuur.md#73-kihid-ja-jõudlus) eelarves; võrkude arvutus käsu järel on mõõdetud ja kirja pandud. Lohistus jäi 40,68 fps-ni (eelarve 45), kasutaja aktsepteeris selle `v0.5.0` jaoks ([M2.1 üleandmine](plans/M2-1-uleandmine.md)).
 
 ### M2.2 · Piiksumisrežiim ja ühenduse tase
+**Olek: valmis ja liidetud** `3b5a65c` (2026-11-24), väljalase `v0.6.0`. Tõendid, jõudlus (viis piiri aktsepteeris kasutaja) ja kasutaja katse tulemus on [M2.2 üleandmises](plans/M2-2-uleandmine.md). Kasutaja tagasiside põhjal tulevad järgmisena korpuste graafika ja mõõtkava kontroll.
+
 **Sisu:** piiksumisrežiim moodulis `measurements` (`beep.record`) ja ühenduse tase (`connectionLevels`).
 - „Piiksub ja ühenda“ (`Enter`), „Ainult mõõtmine“ (`Shift+Enter`), „Ei piiksu“ (`N`); `Esc` katkestab;
 - ühenduse tase arvutatakse mõõtmistest.
 
 **Valmis kui:**
-- [ ] Piiksumisrežiimi „Piiksub ja ühenda“ on üks samm: `Ctrl+Z` eemaldab nii mõõtmise kui ka ühenduse. „Ainult mõõtmine“ ei muuda ühendusi. `Esc` ei salvesta midagi. Piiks 10 Ω takisti otste vahel ei liida võrke ilma kinnituseta; kui otsad satuvad siiski samasse võrku, tuleb hoiatus.
-- [ ] Mõõdetud A–B ühenduse jagamine haruks jätab A–J ja J–B mõõdetuks.
-- [ ] Mõõtmise kustutamine või remondist tulenev aegumine võtab ühenduselt ✓-märgi ära; uus tavaline läbivusmõõtmine samade jalgade vahel taastab selle ([04 › Ühenduse tase](04-andmemudel.md#ühenduse-tase-connectionlevels)).
-- [ ] 50 jala kaardistamine piiksumisrežiimis võtab alla 2 minuti **kasutuskatses**.
+- [x] Piiksumisrežiimi „Piiksub ja ühenda“ on üks samm: `Ctrl+Z` eemaldab nii mõõtmise kui ka ühenduse. „Ainult mõõtmine“ ei muuda ühendusi. `Esc` ei salvesta midagi. Piiks 10 Ω takisti otste vahel ei liida võrke ilma kinnituseta; kui otsad satuvad siiski samasse võrku, tuleb hoiatus. _(E2E `beep_flow_end_to_end`.)_
+- [x] Mõõdetud A–B ühenduse jagamine haruks jätab A–J ja J–B mõõdetuks. _(Sama E2E.)_
+- [x] Mõõtmise kustutamine või remondist tulenev aegumine võtab ühenduselt ✓-märgi ära; uus tavaline läbivusmõõtmine samade jalgade vahel taastab selle ([04 › Ühenduse tase](04-andmemudel.md#ühenduse-tase-connectionlevels)). _(Kustutamine ja taastamine: sama E2E; remondist aegumine: `levels.test.ts`.)_
+- [ ] 50 jala kaardistamine piiksumisrežiimis võtab alla 2 minuti **kasutuskatses**. _(Kasutuskatset ei tehtud; kasutaja otsustas avaldada `v0.6.0` ilma selleta, 2026-11-24.)_
 
 ### M2.3 · Skeemi sümbolid ja paigutus
 **Sisu:** moodul `schematic`, esimene pool.

@@ -2,6 +2,8 @@
 
 Kaart [M2-2-11](../tasks/M2-2-11.md), haru `codex/m2-2`, alus `3656947`. Tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m2-2/BB`. Ehitaja kasutas sünteetilisi fotosid ja projekte.
 
+**Väljalase:** haru liideti `main`-i `3b5a65c` (2026-11-24), versioon 0.6.0 `b7ecf03`. Silt `v0.6.0` pannakse kasutaja eraldi loal.
+
 ## Vastuvõtt
 
 | Tingimus | Tõend |
@@ -10,7 +12,7 @@ Kaart [M2-2-11](../tasks/M2-2-11.md), haru `codex/m2-2`, alus `3656947`. Tööpu
 | Ühenduse taseme säilimine ja taastamine | Sama E2E kontrollib mõõdetud õhujoone joonistamist, haru mõlemat ✓-märki ning mõõtmise kustutamist ja taastamist Mõõda-plokist. |
 | Suure plaadi jõudlus | Kolmes kehtivas Tauri jooksus jäi viis eelarvet täitmata. Kasutaja aktsepteeris mõõdetud piirid väljalaske `v0.6.0` jaoks 2026-11-24. |
 | v0.4.0 ja v0.5.0 ühilduvus | `v0_5_0_file_opens_and_keeps_data` ja `every_release_pcbk_opens_without_modifying_source` läbisid. Kahel taasavamisel säilisid faili ID, dokument ja algse foto baidid. |
-| Kasutaja suitsu- ja kasutuskatse | Ootab kasutaja katset. Kasutuskatse eesmärk on 50 jalga alla kahe minuti. |
+| Kasutaja suitsu- ja kasutuskatse | 2026-11-24: kasutaja proovis katse-EXE-d oma plaadi fotoga ja andis tagasisidet suuruste ja korpuste graafika kohta ([tulemus](#kasutaja-suitsukatse-ja-kasutuskatse)). Piiksu samme 2–9 ja 50 jala kasutuskatset kasutaja ei raporteerinud. Kasutaja otsustas avaldada `v0.6.0` ja teha graafika järgmisena. |
 
 ## Automaatsed tõendid
 
@@ -54,11 +56,17 @@ Näidis loodi `v0.5.0` sildi (`0bc063b`) töölaualiideses eraldatud katseprofii
 ## Teadaolevad piirid
 
 - Panoraam, lohistus ja kolme käsu aeg jäid tabelis märgitud eelarvest välja. Kasutaja aktsepteeris mõõdetud piirid `v0.6.0` jaoks. `connectionLevels`-i ja `nets`-i tuletise sisendis on terve `components`, mistõttu arvutatakse mõlemad ka komponendi liigutuse järel uuesti. Sisendi kitsendamine on M2.3 plaanis. [Järgmised tööd](M2-2-piiksumisreziim.md#mis-jääb-järgmistesse-plaanidesse).
-- Väljalaske otsus järgneb kasutaja katsetele. Katse-EXE versiooniväärtus on 0.5.0.
+- Kasutaja otsustas avaldada 2026-11-24. Katse-EXE versiooniväärtus oli 0.5.0, väljalase saab väärtuse 0.6.0.
 
 ## Kasutaja suitsukatse ja kasutuskatse
 
-Staatus **ootab kasutaja katset**. Katse-EXE on `%TEMP%/bb-m2-2-katse/pcbk-m2-2-11-katse.exe`, SHA-256 `b76aab0f2033a940d0156e6ec41bff4dd79cab5e6bc0b1bb06dbafbbbc9565a4`.
+**Tulemus 2026-11-24.** Kasutaja lõi katse-EXE-s oma plaadi fotoga uue projekti, kalibreeris selle ja paigutas 28 komponenti. Tagasiside: suurused pole reaalsed, korpuste graafika on kehv ja segane. Arhitekti triaaž:
+
+- **Suurus:** kalibreerimisjoon kattis kogu foto laiuse (2716 px) ja selle pikkuseks sisestati 30 mm. Elektrolüütide läbimõõdu järgi on plaat umbes 150–160 mm lai, seega joonistati kõik umbes 5 korda liiga suurena. Joonistus järgib mõõtkava õigesti. Kalibreerimisdialoog näitab ainult punktide vahet pikslites, mitte foto suurust millimeetrites, ja seepärast jäi viga märkamata.
+- **Graafika:** iga korpus joonistatakse ristkülikuna (`body` sisaldab ainult laiust, kõrgust ja 1. jala punkti). Ümar elektrolüüt tuleb ruuduna, polaarsust, dioodi triipu ega mikroskeemi sälku pole. Kasutaja valis elektrolüütidele „Kondensaator THT“ (ketas), mitte „Elektrolüüt THT“.
+- Mõlemad on varasemad puudused (M1.2 kalibreerimine, M1.3 korpuste teek), mitte M2.2 vead. Kasutaja otsustas avaldada `v0.6.0` ja teha korpuste graafika ning mõõtkava kontrolli järgmisena.
+
+Katse-EXE on `%TEMP%/bb-m2-2-katse/pcbk-m2-2-11-katse.exe`, SHA-256 `b76aab0f2033a940d0156e6ec41bff4dd79cab5e6bc0b1bb06dbafbbbc9565a4`.
 
 Uue projekti ja „Salvesta mujale…“ vaikekaust on `%TEMP%/bb-m2-2-katse/`. Katsejärgu eraldi rakendusetunnus hoiab selle hiljutiste projektide loendi eraldi. Salvestusdialoogist tagastatakse tee ja `replaceToken` koos. Ehituslogi on tööpuus `output/playwright/m2-2-11/smoke-build-final.log`.
 

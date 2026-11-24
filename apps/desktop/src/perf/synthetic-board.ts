@@ -13,6 +13,7 @@ import type { AssignNetParams } from '@pcbk/features/nets/contract';
 export type SyntheticBoard = {
   components: AddComponentParams[];
   measurements: AddMeasurementParams[];
+  continuity: ContinuityMeasurement[];
   connections: AddConnectionsParams;
   netLabels: AssignNetParams[];
   sampleConnection: AddConnectionsParams;
@@ -21,6 +22,7 @@ export type SyntheticBoard = {
 
 type TracePin = { pin: PinRef; at: Vec2 };
 type Trace = AddConnectionsParams['items'][number];
+type ContinuityMeasurement = Extract<AddMeasurementParams, { mode: 'continuity' }>;
 const scale = newBoardDoc('').scale.pxPerMm;
 
 export function generateSyntheticBoard(opts: {
@@ -79,12 +81,45 @@ export function generateSyntheticBoard(opts: {
       });
     }
   }
+  const traces = syntheticTraces(components, opts.ids, random);
   return {
     components,
     measurements,
-    ...syntheticTraces(components, opts.ids, random),
+    ...traces,
+    continuity: syntheticContinuity(components, traces.connections.items, opts.ids, opts.at),
     surface: { width: 4000, height: 3000 },
   };
+}
+
+function syntheticContinuity(
+  components: AddComponentParams[],
+  traces: Trace[],
+  ids: IdGen,
+  takenAt: string,
+): ContinuityMeasurement[] {
+  const pins = new Map(
+    components.map(({ id, pins }) => [id, new Map(pins.map(({ id, uid }) => [id, uid]))]),
+  );
+  function contact(end: Trace['a']) {
+    if (!('pin' in end)) throw new Error('Synthetic traces must connect pins');
+    const uid = pins.get(end.pin.c)?.get(end.pin.p);
+    if (!uid) throw new Error('Synthetic trace endpoint has no pin UID');
+    return { ...end.pin, uid };
+  }
+
+  const count = 500;
+  return Array.from({ length: count }, (_, index) => {
+    const { a, b } = traces[Math.floor((index * traces.length) / count)]!;
+    return {
+      id: ids.newId('msr'),
+      mode: 'continuity',
+      at: contact(a),
+      ref: contact(b),
+      takenAt,
+      power: 'off',
+      beep: index % 10 !== 0,
+    };
+  });
 }
 
 function tracePins(components: AddComponentParams[], layer: Layer): TracePin[] {

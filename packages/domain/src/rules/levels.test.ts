@@ -157,3 +157,37 @@ test('shortest_junction_path_tie_breaks_by_connection_id', () => {
     con_z_exit: { level: 'measured' },
   });
 });
+
+test('latest_evidence_uses_full_timestamp_precision', () => {
+  const doc = board();
+  doc.connections.push(link('con_ab', pin('a'), pin('b')));
+  const warning = { con_ab: { level: 'visual', noContinuity: true } };
+
+  const newerNegative = {
+    ...continuity('msr_open', 'a', 'b', false),
+    takenAt: '2026-11-21T12:00:00.123900Z',
+  };
+  doc.measurements.push(newerNegative);
+  expect.soft(connectionLevels(doc)).toEqual(warning);
+
+  doc.measurements.push({
+    ...continuity('msr_earlier_closed', 'b', 'a', true),
+    takenAt: '2026-11-21T12:00:00.123100Z',
+  });
+  expect.soft(connectionLevels(doc)).toEqual(warning);
+
+  doc.measurements.push({
+    ...continuity('msr_equal_closed', 'a', 'b', true),
+    takenAt: '2026-11-21T12:00:00.1239000Z',
+  });
+  expect(connectionLevels(doc)).toEqual({ con_ab: { level: 'measured' } });
+
+  doc.measurements = [
+    { ...continuity('msr_boundary_closed', 'a', 'b', true), takenAt: '2026-11-21T12:00:00.1Z' },
+    {
+      ...continuity('msr_boundary_open', 'a', 'b', false),
+      takenAt: '2026-11-21T12:00:00.099999999999999999999Z',
+    },
+  ];
+  expect(connectionLevels(doc)).toEqual({ con_ab: { level: 'measured' } });
+});

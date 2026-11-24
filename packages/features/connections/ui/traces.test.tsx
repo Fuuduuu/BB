@@ -210,3 +210,53 @@ test('connection_context_shows_measured_and_warning', () => {
   expect(context().queryByText('Mõõdetud ✓')).toBeNull();
   expect(context().queryByRole('alert')?.textContent).toBe('Läbivustest ütles, et ühendust pole');
 });
+
+test('level_marks_draw_above_crossing_traces', () => {
+  const { engine, svg } = mountMeasurements({
+    seed(doc) {
+      doc.components[0]!.board!.params.pitch = 2;
+      doc.junctions.push(
+        { id: 'jun_above', board: { at: { x: 140, y: 80 }, layer: 'top' } },
+        { id: 'jun_below', board: { at: { x: 140, y: 120 }, layer: 'top' } },
+      );
+      doc.connections.push(
+        {
+          id: 'con_bottom',
+          a: pinEnd('1'),
+          b: pinEnd('2'),
+          basis: 'visual',
+          board: { kind: 'trace', layer: 'bottom', waypoints: [], widthMm: 0.3 },
+        },
+        {
+          id: 'con_crossing',
+          a: end('jun_above'),
+          b: end('jun_below'),
+          basis: 'visual',
+          board: { kind: 'trace', layer: 'top', waypoints: [], widthMm: 0.3 },
+        },
+      );
+      doc.measurements.push(continuity('msr_bottom', '1', '2', true));
+    },
+  });
+  expect(engine.snapshot().derived.connectionLevels).toMatchObject({
+    con_bottom: { level: 'measured' },
+    con_crossing: { level: 'visual' },
+  });
+  const layer = svg.querySelector('[data-layer="connections.traces"]')!;
+  const bottom = layer.querySelector('polyline[stroke="var(--bottom)"]');
+  const top = layer.querySelector('polyline[stroke="var(--top)"]');
+  const mark = layer.querySelector('text');
+  expect(bottom?.getAttribute('points')).toBe('130,100 150,100');
+  expect(top?.getAttribute('points')).toBe('140,80 140,120');
+  expect(top?.getAttribute('opacity')).toBe('1');
+  expect(mark?.textContent).toBe('✓');
+  expect(mark?.getAttribute('x')).toBe('140');
+  expect(mark?.getAttribute('y')).toBe('100');
+  expect(bottom?.getAttribute('opacity')).toBe('0.3');
+  expect(mark?.getAttribute('opacity')).toBe(bottom?.getAttribute('opacity'));
+  expect(Array.from(layer.querySelectorAll('polyline, text'), ({ tagName }) => tagName)).toEqual([
+    'polyline',
+    'polyline',
+    'text',
+  ]);
+});

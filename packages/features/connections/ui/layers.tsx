@@ -3,6 +3,7 @@ import type { Vec2 } from '@pcbk/domain';
 import { drawingSegmentPoints, wirePath } from '@pcbk/domain/geometry';
 import { endKey } from '@pcbk/domain/rules';
 import type { LayerSpec, Preview } from '@pcbk/ui';
+import type { ReactElement } from 'react';
 import { memo, useMemo } from 'react';
 import { airLineHitsEnabled, useAirLinesVisible } from './air-lines-view';
 import { connectionPoints, drawingWidth } from './connection-geometry';
@@ -151,36 +152,44 @@ export function createAirLinesLayer(roleColor: ConnectionRoleColor): LayerSpec {
   };
 }
 
-type TraceShapeProps = Pick<Trace, 'board' | 'points'> &
-  RoleStyle & {
-    side: ReturnType<typeof activeLayer>;
-    pxPerMm: number;
-    zoom: number;
-    measured: boolean;
-  };
+type TraceMarkProps = Pick<Trace, 'points'> & {
+  wire: boolean;
+  stroke: string;
+  opacity: number;
+  zoom: number;
+};
+
+const TraceMark = memo(function TraceMark({ points, wire, stroke, opacity, zoom }: TraceMarkProps) {
+  return (
+    <LevelMark
+      at={drawingMidpoint(points, wire, zoom)}
+      color={stroke}
+      zoom={zoom}
+      opacity={opacity}
+    />
+  );
+});
 
 const TraceShape = memo(function TraceShape({
-  board,
   points,
-  color,
-  conflict,
-  side,
+  wire,
+  stroke,
+  opacity,
   pxPerMm,
+  widthMm,
   zoom,
-  measured,
-}: TraceShapeProps) {
-  const wire = board.kind === 'wire';
+  conflict,
+}: TraceMarkProps & { pxPerMm: number; widthMm: number; conflict: boolean }) {
   const Shape = wire ? 'path' : 'polyline';
   const geometry = wire
     ? { d: wirePath(points) }
     : { points: points.map(({ x, y }) => `${x},${y}`).join(' ') };
-  const stroke = color ?? (wire ? 'var(--wire)' : `var(--${board.layer})`);
   const style = {
     fill: 'none',
-    strokeWidth: drawingWidth(board.widthMm, pxPerMm, zoom),
+    strokeWidth: drawingWidth(widthMm, pxPerMm, zoom),
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
-    opacity: wire || side === board.layer ? 1 : 0.3,
+    opacity,
   };
   return (
     <>
@@ -193,14 +202,6 @@ const TraceShape = memo(function TraceShape({
         />
       )}
       <Shape {...geometry} {...style} stroke={stroke} />
-      {measured && (
-        <LevelMark
-          at={drawingMidpoint(points, wire, zoom)}
-          color={stroke}
-          zoom={zoom}
-          opacity={style.opacity}
-        />
-      )}
     </>
   );
 });
@@ -210,30 +211,41 @@ function TraceDrawings({ snapshot, preview, roleColor, zoom }: RoleLayerProps & 
     const { doc } = snapshot;
     const side = activeLayer(doc);
     return connectionGeometry(doc).traces.map(({ connection, board, points }) => {
-      const props = {
-        board,
+      const wire = board.kind === 'wire';
+      const { color, conflict } = roleColor(snapshot, endKey(connection.a));
+      const markProps = {
         points,
-        side,
-        pxPerMm: doc.scale.pxPerMm,
+        wire,
+        stroke: color ?? (wire ? 'var(--wire)' : `var(--${board.layer})`),
+        opacity: wire || side === board.layer ? 1 : 0.3,
         zoom,
-        measured: snapshot.derived.connectionLevels?.[connection.id]?.level === 'measured',
-        ...roleColor(snapshot, endKey(connection.a)),
       };
-      return { connection, props, shape: <TraceShape key={connection.id} {...props} /> };
+      const props = { ...markProps, conflict, widthMm: board.widthMm, pxPerMm: doc.scale.pxPerMm };
+      const measured = snapshot.derived.connectionLevels?.[connection.id]?.level === 'measured';
+      return {
+        connection,
+        props,
+        markProps,
+        shape: <TraceShape key={connection.id} {...props} />,
+        mark: measured ? <TraceMark key={connection.id} {...markProps} /> : null,
+      };
     });
   }, [snapshot, roleColor, zoom]);
   if (items.length === 0) return null;
   const motion = connectionMotion(preview, snapshot.doc);
+  const shapes: ReactElement[] = [];
+  const marks: ReactElement[] = [];
+  for (const { connection, props, markProps, shape, mark } of items) {
+    const points = previewConnectionPoints(props.points, connection, motion);
+    const moved = points !== props.points;
+    shapes.push(moved ? <TraceShape key={connection.id} {...props} points={points} /> : shape);
+    if (mark)
+      marks.push(moved ? <TraceMark key={connection.id} {...markProps} points={points} /> : mark);
+  }
   return (
     <g data-layer="connections.traces" pointerEvents="none" aria-hidden="true">
-      {items.map(({ connection, props, shape }) => {
-        const points = previewConnectionPoints(props.points, connection, motion);
-        return points === props.points ? (
-          shape
-        ) : (
-          <TraceShape key={connection.id} {...props} points={points} />
-        );
-      })}
+      {shapes}
+      <g>{marks}</g>
     </g>
   );
 }

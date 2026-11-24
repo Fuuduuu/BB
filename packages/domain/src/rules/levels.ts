@@ -1,5 +1,6 @@
 import type { BoardDoc } from '../model/board';
 import type { MeasuredPin } from '../model/primitives';
+import { compareTimestamps } from './compare-timestamps';
 import { endKey, pinKey } from './nets';
 
 export type ConnectionLevel = {
@@ -7,10 +8,8 @@ export type ConnectionLevel = {
   noContinuity?: true;
 };
 
-type Evidence = { start: string; end: string; beep: boolean; time: number };
+type Evidence = { start: string; end: string; beep: boolean; takenAt: string };
 type Neighbor = { id: string; to: string; junction: boolean };
-type Previous = { id: string; from: string };
-
 function latestEvidence(doc: BoardDoc): Map<string, Evidence> {
   const pinUids = new Map(
     doc.components.map(({ id, pins }) => [id, new Map(pins.map((pin) => [pin.id, pin.uid]))]),
@@ -26,10 +25,10 @@ function latestEvidence(doc: BoardDoc): Map<string, Evidence> {
     const [start, end] = pair.sort();
     if (start === end) continue;
     const key = JSON.stringify(pair);
-    const time = Date.parse(takenAt);
     const prior = evidence.get(key);
-    if (!Number.isFinite(time) || (prior && time < prior.time)) continue;
-    evidence.set(key, { start, end, beep, time });
+    if (!Number.isFinite(Date.parse(takenAt))) continue;
+    if (prior && compareTimestamps(takenAt, prior.takenAt) < 0) continue;
+    evidence.set(key, { start, end, beep, takenAt });
   }
   return evidence;
 }
@@ -56,24 +55,112 @@ function adjacency(doc: BoardDoc): Map<string, Neighbor[]> {
   return neighbors;
 }
 
-function shortestPath(neighbors: Map<string, Neighbor[]>, start: string, end: string): string[] {
-  const queue = [start];
-  const previous = new Map<string, Previous>();
-  for (let index = 0; index < queue.length; index++) {
+type Visit = {
+  distance: number;
+  via?: { id: string; from: string };
+  marks: number;
+};
+
+function searchPaths(
+  neighbors: Map<string, Neighbor[]>,
+  root: string,
+  pending: Set<string>,
+): Map<string, Visit> {
+  const queue = [root];
+  const visits = new Map<string, Visit>([[root, { distance: 0, marks: 0 }]]);
+  for (let index = 0; index < queue.length && pending.size > 0; index++) {
     const from = queue[index]!;
+    const distance = visits.get(from)!.distance + 1;
     for (const { id, to, junction } of neighbors.get(from) ?? []) {
-      if (to === end) {
-        const path = [id];
-        for (let step = previous.get(from); step; step = previous.get(step.from))
-          path.push(step.id);
-        return path;
+      if ((!junction && !pending.has(to)) || visits.has(to)) continue;
+      visits.set(to, { via: { id, from }, distance, marks: 0 });
+      if (junction) {
+        queue.push(to);
+      } else {
+        pending.delete(to);
+        if (pending.size === 0) break;
       }
-      if (!junction || previous.has(to)) continue;
-      previous.set(to, { id, from });
-      queue.push(to);
     }
   }
-  return [];
+  return visits;
+}
+
+function groupSearches(evidence: Map<string, Evidence>) {
+  const startCounts = new Map<string, number>();
+  const endCounts = new Map<string, number>();
+  for (const { start, end } of evidence.values()) {
+    startCounts.set(start, (startCounts.get(start) ?? 0) + 1);
+    endCounts.set(end, (endCounts.get(end) ?? 0) + 1);
+  }
+
+  const byStart = new Map<string, Evidence[]>();
+  const byEnd = new Map<string, Evidence[]>();
+  for (const item of evidence.values()) {
+    const forward = startCounts.get(item.start)! >= endCounts.get(item.end)!;
+    const groups = forward ? byStart : byEnd;
+    const root = forward ? item.start : item.end;
+    const group = groups.get(root);
+    if (group) group.push(item);
+    else groups.set(root, [item]);
+  }
+  return { byStart, byEnd };
+}
+
+const measured = 1;
+const noContinuity = 2;
+type Mark = typeof measured | typeof noContinuity;
+
+function markLevel(level: ConnectionLevel, mark: Mark) {
+  if (mark === measured) level.level = 'measured';
+  else level.noContinuity = true;
+}
+
+function markFromStartTrees(
+  levels: Record<string, ConnectionLevel>,
+  neighbors: Map<string, Neighbor[]>,
+  groups: Map<string, Evidence[]>,
+) {
+  for (const [start, group] of groups) {
+    const visits = searchPaths(neighbors, start, new Set(group.map(({ end }) => end)));
+    for (const { end, beep } of group) {
+      const mark = beep ? measured : noContinuity;
+      // A visited node has the same path back to this root for the whole group.
+      for (let visit = visits.get(end); visit?.via; visit = visits.get(visit.via.from)) {
+        if (visit.marks & mark) break;
+        visit.marks |= mark;
+        markLevel(levels[visit.via.id]!, mark);
+      }
+    }
+  }
+}
+
+function markFromEndDistances(
+  levels: Record<string, ConnectionLevel>,
+  neighbors: Map<string, Neighbor[]>,
+  groups: Map<string, Evidence[]>,
+) {
+  for (const [end, group] of groups) {
+    const visits = searchPaths(neighbors, end, new Set(group.map(({ start }) => start)));
+    for (const { start, beep } of group) {
+      const mark = beep ? measured : noContinuity;
+      let from = start;
+      for (let visit = visits.get(from); visit?.distance; visit = visits.get(from)) {
+        if (visit.marks & mark) break;
+        const nextDistance = visit.distance - 1;
+        // Distances come from B, but ties are still decided by edge IDs from A.
+        const edge = neighbors
+          .get(from)
+          ?.find(
+            ({ to, junction }) =>
+              (junction || to === end) && visits.get(to)?.distance === nextDistance,
+          );
+        if (!edge) break;
+        visit.marks |= mark;
+        markLevel(levels[edge.id]!, mark);
+        from = edge.to;
+      }
+    }
+  }
 }
 
 export function connectionLevels(doc: BoardDoc): Record<string, ConnectionLevel> {
@@ -87,12 +174,8 @@ export function connectionLevels(doc: BoardDoc): Record<string, ConnectionLevel>
   if (!evidence.size) return levels;
 
   const neighbors = adjacency(doc);
-  for (const { start, end, beep } of evidence.values()) {
-    for (const id of shortestPath(neighbors, start, end)) {
-      const level = levels[id]!;
-      if (beep) level.level = 'measured';
-      else level.noContinuity = true;
-    }
-  }
+  const { byStart, byEnd } = groupSearches(evidence);
+  markFromStartTrees(levels, neighbors, byStart);
+  markFromEndDistances(levels, neighbors, byEnd);
   return levels;
 }

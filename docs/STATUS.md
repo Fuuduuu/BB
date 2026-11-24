@@ -10,6 +10,7 @@ Claude on arhitekt ja Codex on ehitaja; tööriistu ehitab ka Astra põhikaustas
 
 | Versioon | Verstapost | Kuupäev | Märkus |
 |---|---|---|---|
+| `v0.6.0` | M2.2 piiksumisrežiim ja ühenduse tase | 2026-11-24 | liidetud `3b5a65c`, silt `v0.6.0`; viis jõudluspiiri aktsepteeris kasutaja; kasutaja katse oma fotoga andis tagasiside suuruste ja korpuste graafika kohta, piiksu samme ja kasutuskatset ei raporteeritud |
 | `v0.5.0` | M2.1 ühendused ja võrgud plaadil | 2026-11-20 | liidetud `92f001c`, silt `v0.5.0`; Astra sõltumatu ülevaatuse parandused M2-1-12–14; kasutaja suitsukatsed 12/12 ja 6/6 oma plaadi fotoga |
 | `v0.4.0` | M1.4 suurus, joondus, oma jalad ja jõudlus | 2026-11-19 | liidetud `7e37c59`, silt `v0.4.0`; kasutaja suitsukatse 12/12 oma tiheda plaadi fotoga |
 | `v0.3.0` | M1.3 tööpind, valik, korpuste teek | 2026-11-17 | liidetud `6fa7a85`, silt `a995825`; kasutaja oma fotoga kontroll jäi vahele, ehitaja sünteetiline suitsukatse 10/12 |
@@ -21,7 +22,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 
 ## Järgmine: korpuste graafika ja mõõtkava kontroll
 
-- M2.2 on liidetud `main`-i `3b5a65c` (2026-11-24), versioon 0.6.0 `b7ecf03`; silt `v0.6.0` ootab kasutaja luba. Kaardid [M2-2-1](tasks/M2-2-1.md)–[M2-2-11](tasks/M2-2-11.md), jõudlus (viis piiri aktsepteeris kasutaja), ühilduvus ja kasutaja katse on [M2.2 üleandmises](plans/M2-2-uleandmine.md). Astra [M2.2 ülevaatuse](review/2026-11-21-m2-2-ulevaatus-5f4ffae.md) leiud 01–12 on parandatud.
+- M2.2 on liidetud `main`-i `3b5a65c` (2026-11-24), versioon 0.6.0 `b7ecf03`, silt `v0.6.0`. Kaardid [M2-2-1](tasks/M2-2-1.md)–[M2-2-11](tasks/M2-2-11.md), jõudlus (viis piiri aktsepteeris kasutaja), ühilduvus ja kasutaja katse on [M2.2 üleandmises](plans/M2-2-uleandmine.md). Astra [M2.2 ülevaatuse](review/2026-11-21-m2-2-ulevaatus-5f4ffae.md) leiud 01–12 on parandatud.
 - Kasutaja katse 2026-11-24 oma plaadi fotoga: suurused polnud reaalsed (kalibreerimine 30 mm üle kogu foto laiuse, dialoog ei näita foto suurust millimeetrites) ja korpuste graafika on kehv ning segane (iga korpus on ristkülik, polaarsust, triipu ega sälku pole). Kasutaja otsus: avalda `v0.6.0`, siis graafika. Järgmine samm on selle töö plaan, enne M2.3 skeemi.
 - M2.3 plaani läheb jõudlus: `connectionLevels`-i ja `nets`-i tuletise sisend kitseneb jalgade topoloogiale ([M2.2 plaani järgmised tööd](plans/M2-2-piiksumisreziim.md#mis-jääb-järgmistesse-plaanidesse)).
 - Lahtine: salvestuse leiud 04–06 ning lühinimega tee normaliseerimine (`absolute()`, M2-1-12 CI järelparandus) järgmisele salvestuse kaardile, hiljemalt M4.3.

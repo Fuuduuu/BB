@@ -162,7 +162,7 @@ M2 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse jär
 - [x] **Jõudlus:** sünteetiline plaat 300 komponendi, 3000 jala ja 1000 rajaga püsib [03 § 7.3](03-arhitektuur.md#73-kihid-ja-jõudlus) eelarves; võrkude arvutus käsu järel on mõõdetud ja kirja pandud. Lohistus jäi 40,68 fps-ni (eelarve 45), kasutaja aktsepteeris selle `v0.5.0` jaoks ([M2.1 üleandmine](plans/M2-1-uleandmine.md)).
 
 ### M2.2 · Piiksumisrežiim ja ühenduse tase
-**Olek: valmis ja liidetud** `3b5a65c` (2026-11-24), väljalase `v0.6.0`. Tõendid, jõudlus (viis piiri aktsepteeris kasutaja) ja kasutaja katse tulemus on [M2.2 üleandmises](plans/M2-2-uleandmine.md). Kasutaja tagasiside põhjal tulevad järgmisena korpuste graafika ja mõõtkava kontroll.
+**Olek: valmis ja avaldatud** versioonina `v0.6.0` (2026-11-24), liidetud `3b5a65c`. Tõendid, jõudlus (viis piiri aktsepteeris kasutaja) ja kasutaja katse tulemus on [M2.2 üleandmises](plans/M2-2-uleandmine.md). Kasutaja tagasiside põhjal tulevad järgmisena korpuste graafika ja mõõtkava kontroll.
 
 **Sisu:** piiksumisrežiim moodulis `measurements` (`beep.record`) ja ühenduse tase (`connectionLevels`).
 - „Piiksub ja ühenda“ (`Enter`), „Ainult mõõtmine“ (`Shift+Enter`), „Ei piiksu“ (`N`); `Esc` katkestab;

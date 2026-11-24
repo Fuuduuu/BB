@@ -2,7 +2,7 @@
 
 Kaart [M2-2-11](../tasks/M2-2-11.md), haru `codex/m2-2`, alus `3656947`. Tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m2-2/BB`. Ehitaja kasutas sünteetilisi fotosid ja projekte.
 
-**Väljalase:** haru liideti `main`-i `3b5a65c` (2026-11-24), versioon 0.6.0 `b7ecf03`. Silt `v0.6.0` pannakse kasutaja eraldi loal.
+**Väljalase:** haru liideti `main`-i `3b5a65c` (2026-11-24), versioon 0.6.0 `b7ecf03`, silt `v0.6.0`.
 
 ## Vastuvõtt
 

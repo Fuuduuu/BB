@@ -1,3 +1,5 @@
+export { connectBeepPins } from './beep';
+export type { BeepOutcome } from './beep';
 export {
   attachJunctionToPin,
   branchConnection,
@@ -13,6 +15,8 @@ export * from './invariants';
 export * from './items';
 export { endAcceptsDrawing } from './layers';
 export type { DrawingKind } from './layers';
+export { connectionLevels } from './levels';
+export type { ConnectionLevel } from './levels';
 export * from './nets';
 export { describeNets } from './net-info';
 export type { NetInfo, NetsDerived } from './net-info';

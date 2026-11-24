@@ -10,7 +10,7 @@ import {
   LABEL_DRAG_OWNER,
 } from './hits';
 import { SCALE_HANDLES_LAYER } from './ScaleHandlesLayer';
-import { SCALE_DRAG_OWNER } from './scale-handles';
+import { SCALE_DRAG_OWNER } from '../../contract';
 
 export const COMPONENTS_LAYERS: LayerSpec[] = [
   {

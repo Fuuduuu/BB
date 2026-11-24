@@ -1,5 +1,6 @@
 export { Canvas } from './Canvas';
 export type { CanvasProps } from './Canvas';
+export { CanvasHudAnchor } from './CanvasHud';
 export { createHitIndex } from './hit-index';
 export type { HitDrag, HitIndex, HitItem, HitMatch, HitShape } from './hit-index';
 export {

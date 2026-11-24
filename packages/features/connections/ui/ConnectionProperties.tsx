@@ -35,6 +35,7 @@ export function ConnectionProperties({
       nets.list.find(({ key }) => key === nets.netOf[memberKey])?.name)
     : undefined;
   const { board, basis } = connection;
+  const level = snapshot.derived.connectionLevels?.[connection.id];
   const drawing = board
     ? {
         title:
@@ -53,6 +54,20 @@ export function ConnectionProperties({
       <p>{basis === 'visual' ? connectionsEt.basisVisual : connectionsEt.basisAssumed}</p>
       {name !== undefined && <p>{connectionsEt.networkLabel(name)}</p>}
       {drawing && <p>{`${drawing.title} · ${drawing.width}`}</p>}
+      {level?.level === 'measured' && <p>{connectionsEt.measured}</p>}
+      {level?.noContinuity && (
+        <p
+          role="alert"
+          style={{
+            color: 'var(--danger)',
+            border: '1px solid var(--danger)',
+            borderRadius: 7,
+            padding: 8,
+          }}
+        >
+          {connectionsEt.noContinuity}
+        </p>
+      )}
     </section>
   );
 }

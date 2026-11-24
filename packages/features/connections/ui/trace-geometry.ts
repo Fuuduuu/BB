@@ -1,8 +1,8 @@
 import type { Snapshot } from '@pcbk/contracts';
 import type { Connection, EndRef, Layer, Vec2 } from '@pcbk/domain';
-import { boardPads } from '@pcbk/domain/geometry';
+import { boardPads, projectDrawingSegment } from '@pcbk/domain/geometry';
 import type { HitItem, HitMatch } from '@pcbk/ui';
-import { connectionPoints, projectDrawingSegment } from './connection-geometry';
+import { connectionPoints } from './connection-geometry';
 
 export type Drawing = NonNullable<Connection['board']>;
 

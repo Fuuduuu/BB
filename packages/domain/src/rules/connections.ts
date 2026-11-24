@@ -1,21 +1,22 @@
-import { boardPads } from '../geometry/board';
+import { boardPads, projectDrawingSegment } from '../geometry/board';
 import type { BoardDoc } from '../model/board';
 import type { Component } from '../model/component';
 import type { Connection, Junction } from '../model/connection';
 import type { NetLabel } from '../model/net';
 import type { EndRef, Layer, PinRef, Vec2 } from '../model/primitives';
 import { RuleRejected, RuleTargetNotFound } from './errors';
-import { endAcceptsDrawing } from './layers';
+import { drawingEndpoint, endAcceptsDrawing } from './layers';
 import type { DrawingPositions } from './layers';
 import { endKey, endRefsByKey, pinKey, resolveNets } from './nets';
 import type { NetMembership } from './nets';
 
 export interface RuleReport {
   removedLabels: NetLabel[];
+  removedConnections?: number;
 }
 
 export function isEmptyReport(report: RuleReport): boolean {
-  return report.removedLabels.length === 0;
+  return report.removedLabels.length === 0 && (report.removedConnections ?? 0) === 0;
 }
 
 type PinRemoval = { component: Component; pinIds: ReadonlySet<string> };
@@ -232,9 +233,12 @@ export function removeConnectionItems(
   before?: NetMembership,
 ): RuleReport {
   const selected = { connectionIds, junctionIds };
-  const connections = doc.connections.filter(
-    (connection) => !connectionIsRemoved(connection, selected),
-  );
+  let removedConnections = 0;
+  const connections = doc.connections.filter((connection) => {
+    if (!connectionIsRemoved(connection, selected)) return true;
+    if (!connectionIds.has(connection.id)) removedConnections++;
+    return false;
+  });
   const lostConnections = connections.length !== doc.connections.length;
   if (!lostConnections && !doc.junctions.some(({ id }) => junctionIds.has(id))) {
     return { removedLabels: [] };
@@ -252,7 +256,11 @@ export function removeConnectionItems(
   const previous = hasAffectedLabels ? (before ?? resolveNets(doc)) : undefined;
   if (lostConnections) doc.connections = connections;
   if (removed.size) doc.junctions = junctions;
-  return previous ? repairJunctionLabels(doc, removed, previous) : { removedLabels: [] };
+  const report: RuleReport = previous
+    ? repairJunctionLabels(doc, removed, previous)
+    : { removedLabels: [] };
+  if (removedConnections > 0) report.removedConnections = removedConnections;
+  return report;
 }
 
 export function removeConnections(doc: BoardDoc, ids: readonly string[]): RuleReport {
@@ -310,7 +318,7 @@ export function attachJunctionToPin(doc: BoardDoc, id: string, pin: PinRef): Rul
   return { removedLabels: [] };
 }
 
-type BranchTarget = Pick<Connection, 'id' | 'b' | 'basis'> & {
+type BranchTarget = Pick<Connection, 'id' | 'a' | 'b' | 'basis'> & {
   readonly board?:
     (Omit<Drawing, 'waypoints'> & { readonly waypoints: readonly Vec2[] }) | undefined;
 };
@@ -356,6 +364,15 @@ export function branchConnection(
     !endAcceptsDrawing(doc, trace.a, newDrawing.kind, newDrawing.layer)
   ) {
     throw new RuleRejected('layer_mismatch');
+  }
+
+  const a = segment === 0 ? drawingEndpoint(doc, target.a) : board.waypoints[segment - 1];
+  const b =
+    segment === board.waypoints.length ? drawingEndpoint(doc, target.b) : board.waypoints[segment];
+  const projected = a && b ? projectDrawingSegment(at, a, b, board.kind) : undefined;
+  const distance = projected ? Math.hypot(at.x - projected.x, at.y - projected.y) : Infinity;
+  if (!Number.isFinite(distance) || distance > (board.widthMm * doc.scale.pxPerMm) / 2 + 0.5) {
+    throw new RuleRejected('branch_point_off_trace');
   }
 
   return {

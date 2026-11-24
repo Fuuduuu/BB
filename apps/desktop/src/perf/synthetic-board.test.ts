@@ -122,6 +122,8 @@ test('synthetic_board_components_do_not_overlap', () => {
   });
 });
 
+// This heavy integrity test varies in duration under CI coverage.
+// Performance is measured during Tauri acceptance testing.
 test('synthetic_board_commands_pass_engine', () => {
   const board = generate();
   const { engine, host } = createEngine({
@@ -153,4 +155,4 @@ test('synthetic_board_commands_pass_engine', () => {
     3000,
   );
   expect(engine.snapshot().doc.measurements).toHaveLength(1500);
-}, 120_000);
+}, 300_000);

@@ -9,6 +9,7 @@ export const measurementListText = {
   overload: 'OL',
   unavailable: '—',
   modes: { resistance: 'Takistus', diode: 'Diood', continuity: 'Läbivus' },
+  beepResult: { yes: 'piiksub', no: 'ei piiksu' },
 } as const;
 
 export const measureEt = {
@@ -31,6 +32,13 @@ export const measureEt = {
   clearRef: 'Tühjenda',
   power: 'Toide',
   powerLabels: { unknown: 'Teadmata', on: 'Sees', off: 'Väljas' },
+  mode: 'Režiim',
+  modes: { voltage: 'Pinge', continuity: 'Läbivus' },
+  modeKeys: 'Alt+1 pinge · Alt+4 läbivus',
+  beeps: 'Piiksub',
+  noBeep: 'Ei piiksu',
+  beepKeys: 'Enter piiksub · Alt+N ei piiksu',
+  needRef: 'Vali vastaspunkt',
   voltage: 'Pinge',
   hint: 'nt 4,98',
   save: 'Salvesta',
@@ -46,6 +54,24 @@ export const measureEt = {
     sameProbe: 'Vali vastaspunktiks teine jalg.',
     failed: 'Mõõtmist ei saanud muuta. Proovi uuesti.',
   },
+} as const;
+
+export const beepEt = {
+  tool: 'Piiks',
+  anchorLabel: (ref: string) => `Must sond · ${ref}`,
+  hintStart: 'Klõpsa jalal, kus on must sond',
+  hintNext: 'Klõpsa jalal, mida punane sond puudutab · Shift+klõps: uus must sond · Esc lõpetab',
+  connect: 'Piiksub ja ühenda',
+  measureOnly: 'Ainult mõõtmine',
+  noBeep: 'Ei piiksu',
+  throughComponent: (refs: readonly string[]) =>
+    `Piiksub läbi komponendi ${refs.join(', ')}. Ühendan ikkagi?`,
+  roleMerge: (roles: readonly string[]) =>
+    `Ühendamine liidaks võrgud ${roles.join(' ja ')}. Ühendan ikkagi?`,
+  connectAnyway: 'Ühenda ikkagi',
+  keepApart: 'Jäta ühendamata',
+  measureAgain: 'Mõõda uuesti',
+  measureWithBeep: 'Mõõda piiksuga',
 } as const;
 
 export function commandError(error: EngineError): string {

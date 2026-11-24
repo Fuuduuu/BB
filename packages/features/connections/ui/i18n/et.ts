@@ -18,8 +18,11 @@ export const connectionsEt = {
   resetLabelOffset: 'Lähtesta sildi asukoht',
   basisVisual: 'Alus: nähtud',
   basisAssumed: 'Alus: oletatud',
+  measured: 'Mõõdetud ✓',
+  noContinuity: 'Läbivustest ütles, et ühendust pole',
   networkLabel: (name: string) => `Võrk: ${name}`,
   traceLayerMismatch: 'Ots ei sobi valitud kihiga',
+  sameLayerCrossing: 'Sama kihi rajad ei saa ristuda. Vaheta kiht (L) või lõpeta raja peal (haru).',
   traceFailed: 'Raja salvestamine ebaõnnestus',
   traceLength: (length: number) =>
     `${length.toLocaleString('et', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false })} mm`,

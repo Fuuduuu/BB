@@ -167,7 +167,7 @@ test('pin_measurements_keep_legacy_modes_named_without_assigning_voltage_units',
     readings(3)
       .getAllByRole('listitem')
       .map((row) => row.textContent),
-  ).toEqual(['Läbivus · — · U1.1', 'Diood · OL · U1.1', 'Takistus · — · U1.1']);
+  ).toEqual(['Läbivus · piiksub · U1.1', 'Diood · OL · U1.1', 'Takistus · — · U1.1']);
 });
 
 test('pin_measurements_equal_times_keep_latest_added_inside_five_row_limit', () => {

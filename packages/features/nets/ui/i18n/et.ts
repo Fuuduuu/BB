@@ -28,6 +28,8 @@ export const netsEt = {
   shorted: (refs: readonly string[]) =>
     `${refs.join(', ')}: mõlemad jalad on selles võrgus. Kontrolli, kas see on lühis.`,
   traceLength: (length: number) => `Rajad kokku ${length.toFixed(2).replace('.', ',')} mm`,
+  measuredConnections: (measured: number, total: number) =>
+    `Mõõdetud ühendusi ${measured}/${total}`,
   measurements: 'Mõõtmised',
   measurementModes: {
     voltage: 'Pinge',
@@ -35,6 +37,7 @@ export const netsEt = {
     diode: 'Diood',
     continuity: 'Läbivus',
   },
+  beepResult: { yes: 'piiksub', no: 'ei piiksu' },
   overload: 'OL',
   unavailable: '—',
   invalidVoltage: 'Sisesta nimipinge voltides, nt 3,3.',
@@ -43,4 +46,8 @@ export const netsEt = {
   removedLabel: (name?: string) =>
     `${name ? `Võrgusilt ${name} eemaldati` : 'Võrgusilt eemaldati'} · Ctrl+Z toob tagasi`,
   removedLabels: (count: number) => `${count} võrgusilti eemaldati · Ctrl+Z toob tagasi`,
+  removedConnections: (count: number) =>
+    count === 1
+      ? '1 ühendus eemaldati koos liitepunktiga · Ctrl+Z toob tagasi'
+      : `${count} ühendust eemaldati koos liitepunktidega · Ctrl+Z toob tagasi`,
 } as const;

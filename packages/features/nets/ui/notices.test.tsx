@@ -64,3 +64,56 @@ test('label_removal_shows_notice_with_undo_hint', () => {
     unmount();
   }
 });
+
+test('delete_notice_counts_removed_connections', () => {
+  const { engine, svg } = mountMeasurements({
+    seed(doc) {
+      doc.junctions.push(
+        ...['jun_a', 'jun_b', 'jun_c', 'jun_d', 'jun_single'].map((id) => ({ id })),
+      );
+      doc.connections.push(
+        { id: 'con_ab', a: { junction: 'jun_a' }, b: { junction: 'jun_b' }, basis: 'assumed' },
+        { id: 'con_ac', a: { junction: 'jun_a' }, b: { junction: 'jun_c' }, basis: 'assumed' },
+        { id: 'con_bd', a: { junction: 'jun_b' }, b: { junction: 'jun_d' }, basis: 'assumed' },
+        {
+          id: 'con_single',
+          a: { junction: 'jun_single' },
+          b: { pin: { c: 'cmp_u1', p: '1' } },
+          basis: 'assumed',
+        },
+      );
+      doc.netLabels.push({
+        id: 'lbl_vbus',
+        anchor: { junction: 'jun_a' },
+        name: 'VBUS',
+        source: 'user',
+      });
+    },
+  });
+  const bottomBar = within(screen.getByLabelText('Plaadi olek'));
+
+  function deleteJunctions(...ids: string[]) {
+    act(() =>
+      useSessionStore
+        .getState()
+        .setSelection({ items: ids.map((id) => ({ kind: 'junction', id })) }),
+    );
+    fireEvent.keyDown(svg, { key: 'Delete' });
+  }
+
+  deleteJunctions('jun_a', 'jun_b');
+  expect(engine.snapshot().doc.connections.map(({ id }) => id)).toEqual(['con_single']);
+  const labelNotice = bottomBar.getByText('Võrgusilt VBUS eemaldati · Ctrl+Z toob tagasi');
+  const connectionsNotice = bottomBar.getByText(
+    '3 ühendust eemaldati koos liitepunktidega · Ctrl+Z toob tagasi',
+  );
+  expect(connectionsNotice.closest('[role="status"]')).not.toBe(
+    labelNotice.closest('[role="status"]'),
+  );
+
+  deleteJunctions('jun_single');
+  expect(engine.snapshot().doc.connections).toEqual([]);
+  expect(
+    bottomBar.getByText('1 ühendus eemaldati koos liitepunktiga · Ctrl+Z toob tagasi'),
+  ).toBeTruthy();
+});

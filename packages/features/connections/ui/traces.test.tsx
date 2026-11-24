@@ -1,10 +1,28 @@
 // @vitest-environment jsdom
-import { fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
+import type { Measurement } from '@pcbk/domain';
+import { projectDrawingSegment, wirePath } from '@pcbk/domain/geometry';
+import { useSessionStore } from '@pcbk/ui';
 import { expect, test } from 'vitest';
-import { mountMeasurements } from '../../measurements/__tests__/workspace';
-import { projectDrawingSegment, wirePath } from './connection-geometry';
+import { mountMeasurements, pinRef } from '../../measurements/__tests__/workspace';
 
 const end = (junction: string) => ({ junction });
+const pinEnd = (p: string) => ({ pin: { c: 'cmp_u1', p } });
+
+function continuity(id: string, at: string, ref: string, beep: boolean): Measurement {
+  return {
+    id,
+    mode: 'continuity',
+    at: pinRef(at),
+    ref: pinRef(ref),
+    atLabel: `U1.${at}`,
+    refLabel: `U1.${ref}`,
+    beep,
+    source: 'manual',
+    power: 'unknown',
+    takenAt: '2026-11-10T10:00:00.000Z',
+  };
+}
 
 test('traces_render_by_layer_and_menu_offers_drawing_actions', () => {
   const { engine, host, registry, svg } = mountMeasurements({
@@ -98,4 +116,147 @@ test('traces_render_by_layer_and_menu_offers_drawing_actions', () => {
   expect(
     registry.selectionLabel(engine.snapshot(), { items: [{ kind: 'junction', id: 'jun_open' }] }),
   ).toBe('Liitepunkt · 1 ühendus');
+});
+
+test('measured_trace_and_air_line_show_check_mark', () => {
+  const { svg } = mountMeasurements({
+    seed(doc) {
+      doc.components[0]!.board!.params.pitch = 2;
+      doc.connections.push(
+        {
+          id: 'con_measured_trace',
+          a: pinEnd('1'),
+          b: pinEnd('2'),
+          basis: 'visual',
+          board: {
+            kind: 'trace',
+            layer: 'top',
+            waypoints: [
+              { x: 130, y: 130 },
+              { x: 150, y: 130 },
+            ],
+            widthMm: 1,
+          },
+        },
+        {
+          id: 'con_other_trace',
+          a: pinEnd('3'),
+          b: pinEnd('4'),
+          basis: 'visual',
+          board: { kind: 'trace', layer: 'top', waypoints: [], widthMm: 1 },
+        },
+        {
+          id: 'con_measured_air',
+          a: pinEnd('2'),
+          b: pinEnd('4'),
+          basis: 'assumed',
+        },
+        { id: 'con_other_air', a: pinEnd('2'), b: pinEnd('3'), basis: 'assumed' },
+        {
+          id: 'con_measured_wire',
+          a: pinEnd('1'),
+          b: pinEnd('4'),
+          basis: 'visual',
+          board: { kind: 'wire', layer: 'top', waypoints: [], widthMm: 1 },
+        },
+      );
+      doc.measurements.push(
+        continuity('msr_trace', '1', '2', true),
+        continuity('msr_air', '2', '4', true),
+        continuity('msr_wire', '1', '4', true),
+      );
+    },
+  });
+  const markPositions = (layer: string) =>
+    Array.from(svg.querySelectorAll(`[data-layer="connections.${layer}"] text`), (mark) => [
+      mark.textContent,
+      Number(mark.getAttribute('x')),
+      Number(mark.getAttribute('y')),
+    ]);
+  expect.soft(markPositions('traces')).toEqual([
+    ['✓', 140, 130],
+    ['✓', 160, 109],
+  ]);
+  expect.soft(markPositions('airLines')).toEqual([['✓', 170, 100]]);
+  expect(
+    Array.from(svg.querySelectorAll('[data-layer="connections.airLines"] line'), (line) =>
+      line.getAttribute('stroke-dasharray'),
+    ),
+  ).toEqual(['2 3', '6 4']);
+});
+
+test('connection_context_shows_measured_and_warning', () => {
+  mountMeasurements({
+    seed(doc) {
+      doc.connections.push(
+        { id: 'con_measured', a: pinEnd('1'), b: pinEnd('2'), basis: 'assumed' },
+        { id: 'con_no_continuity', a: pinEnd('3'), b: pinEnd('4'), basis: 'assumed' },
+      );
+      doc.measurements.push(
+        continuity('msr_measured', '1', '2', true),
+        continuity('msr_no_continuity', '3', '4', false),
+      );
+    },
+  });
+  const selectConnection = (id: string) =>
+    act(() => useSessionStore.getState().setSelection({ items: [{ kind: 'connection', id }] }));
+  const context = () => within(screen.getByRole('complementary', { name: 'Omadused' }));
+
+  selectConnection('con_measured');
+  expect.soft(context().queryByText('Mõõdetud ✓')).not.toBeNull();
+  expect(context().queryByRole('alert')).toBeNull();
+
+  selectConnection('con_no_continuity');
+  expect(context().queryByText('Mõõdetud ✓')).toBeNull();
+  expect(context().queryByRole('alert')?.textContent).toBe('Läbivustest ütles, et ühendust pole');
+});
+
+test('level_marks_draw_above_crossing_traces', () => {
+  const { engine, svg } = mountMeasurements({
+    seed(doc) {
+      doc.components[0]!.board!.params.pitch = 2;
+      doc.junctions.push(
+        { id: 'jun_above', board: { at: { x: 140, y: 80 }, layer: 'top' } },
+        { id: 'jun_below', board: { at: { x: 140, y: 120 }, layer: 'top' } },
+      );
+      doc.connections.push(
+        {
+          id: 'con_bottom',
+          a: pinEnd('1'),
+          b: pinEnd('2'),
+          basis: 'visual',
+          board: { kind: 'trace', layer: 'bottom', waypoints: [], widthMm: 0.3 },
+        },
+        {
+          id: 'con_crossing',
+          a: end('jun_above'),
+          b: end('jun_below'),
+          basis: 'visual',
+          board: { kind: 'trace', layer: 'top', waypoints: [], widthMm: 0.3 },
+        },
+      );
+      doc.measurements.push(continuity('msr_bottom', '1', '2', true));
+    },
+  });
+  expect(engine.snapshot().derived.connectionLevels).toMatchObject({
+    con_bottom: { level: 'measured' },
+    con_crossing: { level: 'visual' },
+  });
+  const layer = svg.querySelector('[data-layer="connections.traces"]')!;
+  const bottom = layer.querySelector('polyline[stroke="var(--bottom)"]');
+  const top = layer.querySelector('polyline[stroke="var(--top)"]');
+  const mark = layer.querySelector('text');
+  expect(bottom?.getAttribute('points')).toBe('130,100 150,100');
+  expect(top?.getAttribute('points')).toBe('140,80 140,120');
+  expect(top?.getAttribute('opacity')).toBe('1');
+  expect(mark?.textContent).toBe('✓');
+  expect(mark?.getAttribute('x')).toBe('140');
+  expect(mark?.getAttribute('y')).toBe('100');
+  expect(bottom?.getAttribute('opacity')).toBe('0.3');
+  expect(mark?.getAttribute('opacity')).toBe(bottom?.getAttribute('opacity'));
+  expect(Array.from(layer.querySelectorAll('polyline, text'), ({ tagName }) => tagName)).toEqual([
+    'polyline',
+    'polyline',
+    'text',
+  ]);
 });

@@ -1,23 +1,22 @@
 import type { Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
+import { drawingSegmentPoints, wirePath } from '@pcbk/domain/geometry';
 import { endKey } from '@pcbk/domain/rules';
 import type { LayerSpec, Preview } from '@pcbk/ui';
+import type { ReactElement } from 'react';
 import { memo, useMemo } from 'react';
 import { airLineHitsEnabled, useAirLinesVisible } from './air-lines-view';
-import {
-  connectionPoints,
-  drawingSegmentPoints,
-  drawingWidth,
-  wirePath,
-} from './connection-geometry';
+import { connectionPoints, drawingWidth } from './connection-geometry';
 import {
   CONNECTION_PREVIEW_OWNERS,
   connectionMotion,
+  JUNCTION_DRAG_OWNER,
   previewConnectionPoints,
   previewEnd,
   previewJunction,
 } from './connection-preview';
 import { junctionDrag } from './junction-attachment';
+import { drawingMidpoint, LevelMark } from './level-mark';
 import { activeLayer } from './trace-geometry';
 
 type Doc = Snapshot['doc'];
@@ -25,6 +24,11 @@ type Connection = Doc['connections'][number];
 type Drawing = NonNullable<Connection['board']>;
 type AirLine = { connection: Connection; a: Vec2; b: Vec2 };
 type Trace = { connection: Connection; board: Drawing; points: Vec2[] };
+type Geometry = Pick<Doc, 'components' | 'junctions'> & {
+  pxPerMm: number;
+  airLines: AirLine[];
+  traces: Trace[];
+};
 type Incident = { count: number; drawnWidth: number };
 export type ConnectionRoleColor = (
   snapshot: Pick<Snapshot, 'doc' | 'derived'>,
@@ -37,21 +41,31 @@ type RoleLayerProps = {
   roleColor: ConnectionRoleColor;
 };
 
-const airLineCache = new WeakMap<Doc, AirLine[]>();
-const traceCache = new WeakMap<Doc, Trace[]>();
+const geometryCache = new WeakMap<Doc['connections'], Geometry>();
 const incidentCache = new WeakMap<Doc, Map<string, Incident>>();
 
-function airLines(doc: Doc): AirLine[] {
-  const cached = airLineCache.get(doc);
-  if (cached) return cached;
-  const lines: AirLine[] = [];
-  for (const connection of doc.connections) {
-    if (connection.board) continue;
-    const points = connectionPoints(doc, connection);
-    if (points) lines.push({ connection, a: points[0]!, b: points[1]! });
+function connectionGeometry(doc: Doc): Geometry {
+  const { components, connections, junctions } = doc;
+  const { pxPerMm } = doc.scale;
+  const cached = geometryCache.get(connections);
+  // A measurement changes the snapshot without changing these geometry inputs.
+  if (
+    cached?.components === components &&
+    cached.junctions === junctions &&
+    cached.pxPerMm === pxPerMm
+  ) {
+    return cached;
   }
-  airLineCache.set(doc, lines);
-  return lines;
+  const geometry: Geometry = { components, junctions, pxPerMm, airLines: [], traces: [] };
+  for (const connection of connections) {
+    const points = connectionPoints(doc, connection);
+    if (!points) continue;
+    const { board } = connection;
+    if (board) geometry.traces.push({ connection, board, points });
+    else geometry.airLines.push({ connection, a: points[0]!, b: points[1]! });
+  }
+  geometryCache.set(connections, geometry);
+  return geometry;
 }
 
 const AirLineShape = memo(function AirLineShape({
@@ -59,37 +73,51 @@ const AirLineShape = memo(function AirLineShape({
   b,
   color,
   conflict,
-}: Pick<AirLine, 'a' | 'b'> & RoleStyle) {
+  measured,
+  zoom,
+}: Pick<AirLine, 'a' | 'b'> & RoleStyle & { measured: boolean; zoom: number }) {
+  const stroke = color ?? 'var(--wire)';
   const coordinates = {
     x1: a.x,
     y1: a.y,
     x2: b.x,
     y2: b.y,
-    strokeDasharray: '6 4',
+    strokeDasharray: measured ? '2 3' : '6 4',
     vectorEffect: 'non-scaling-stroke',
   };
   return (
     <>
       {conflict && <line {...coordinates} stroke="var(--danger)" strokeWidth={3.5} />}
-      <line {...coordinates} stroke={color ?? 'var(--wire)'} strokeWidth={1.5} />
+      <line {...coordinates} stroke={stroke} strokeWidth={1.5} />
+      {measured && (
+        <LevelMark at={{ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }} color={stroke} zoom={zoom} />
+      )}
     </>
   );
 });
 
-function AirLines({ snapshot, preview, roleColor }: RoleLayerProps) {
+function AirLines({ snapshot, preview, roleColor, zoom }: RoleLayerProps & { zoom: number }) {
   const visible = useAirLinesVisible();
   const lines = useMemo(
     () =>
       visible
-        ? airLines(snapshot.doc).map(({ connection, a, b }) => {
-            const props = { a, b, ...roleColor(snapshot, endKey(connection.a)) };
+        ? connectionGeometry(snapshot.doc).airLines.map(({ connection, a, b }) => {
+            const measured =
+              snapshot.derived.connectionLevels?.[connection.id]?.level === 'measured';
+            const props = {
+              a,
+              b,
+              measured,
+              zoom: measured ? zoom : 1,
+              ...roleColor(snapshot, endKey(connection.a)),
+            };
             return { connection, props, shape: <AirLineShape key={connection.id} {...props} /> };
           })
         : [],
-    [visible, snapshot, roleColor],
+    [visible, snapshot, roleColor, zoom],
   );
   if (lines.length === 0) return null;
-  const motion = connectionMotion(preview);
+  const motion = connectionMotion(preview, snapshot.doc);
   return (
     <g data-layer="connections.airLines" pointerEvents="none" aria-hidden="true">
       {lines.map(({ connection, props, shape }) => {
@@ -110,11 +138,11 @@ export function createAirLinesLayer(roleColor: ConnectionRoleColor): LayerSpec {
     id: 'connections.airLines',
     z: 40,
     previewOwners: CONNECTION_PREVIEW_OWNERS,
-    render: ({ snapshot, preview }) => (
-      <AirLines snapshot={snapshot} preview={preview} roleColor={roleColor} />
+    render: ({ snapshot, preview, zoom }) => (
+      <AirLines snapshot={snapshot} preview={preview} roleColor={roleColor} zoom={zoom} />
     ),
     hits: ({ doc }) =>
-      airLines(doc).map(({ connection, a, b }) => ({
+      connectionGeometry(doc).airLines.map(({ connection, a, b }) => ({
         id: connection.id,
         kind: 'connection',
         shape: { type: 'segment', a, b, width: 6, widthUnit: 'screen' },
@@ -124,43 +152,44 @@ export function createAirLinesLayer(roleColor: ConnectionRoleColor): LayerSpec {
   };
 }
 
-function traces(doc: Doc): Trace[] {
-  const cached = traceCache.get(doc);
-  if (cached) return cached;
-  const items: Trace[] = [];
-  for (const connection of doc.connections) {
-    if (!connection.board) continue;
-    const points = connectionPoints(doc, connection);
-    if (points) items.push({ connection, board: connection.board, points });
-  }
-  traceCache.set(doc, items);
-  return items;
-}
+type TraceMarkProps = Pick<Trace, 'points'> & {
+  wire: boolean;
+  stroke: string;
+  opacity: number;
+  zoom: number;
+};
 
-type TraceShapeProps = Pick<Trace, 'board' | 'points'> &
-  RoleStyle & { side: ReturnType<typeof activeLayer>; pxPerMm: number; zoom: number };
+const TraceMark = memo(function TraceMark({ points, wire, stroke, opacity, zoom }: TraceMarkProps) {
+  return (
+    <LevelMark
+      at={drawingMidpoint(points, wire, zoom)}
+      color={stroke}
+      zoom={zoom}
+      opacity={opacity}
+    />
+  );
+});
 
 const TraceShape = memo(function TraceShape({
-  board,
   points,
-  color,
-  conflict,
-  side,
+  wire,
+  stroke,
+  opacity,
   pxPerMm,
+  widthMm,
   zoom,
-}: TraceShapeProps) {
-  const wire = board.kind === 'wire';
+  conflict,
+}: TraceMarkProps & { pxPerMm: number; widthMm: number; conflict: boolean }) {
   const Shape = wire ? 'path' : 'polyline';
   const geometry = wire
     ? { d: wirePath(points) }
     : { points: points.map(({ x, y }) => `${x},${y}`).join(' ') };
-  const fallback = wire ? 'var(--wire)' : `var(--${board.layer})`;
   const style = {
     fill: 'none',
-    strokeWidth: drawingWidth(board.widthMm, pxPerMm, zoom),
+    strokeWidth: drawingWidth(widthMm, pxPerMm, zoom),
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
-    opacity: wire || side === board.layer ? 1 : 0.3,
+    opacity,
   };
   return (
     <>
@@ -172,7 +201,7 @@ const TraceShape = memo(function TraceShape({
           strokeWidth={style.strokeWidth + 2 / zoom}
         />
       )}
-      <Shape {...geometry} {...style} stroke={color ?? fallback} />
+      <Shape {...geometry} {...style} stroke={stroke} />
     </>
   );
 });
@@ -181,30 +210,42 @@ function TraceDrawings({ snapshot, preview, roleColor, zoom }: RoleLayerProps & 
   const items = useMemo(() => {
     const { doc } = snapshot;
     const side = activeLayer(doc);
-    return traces(doc).map(({ connection, board, points }) => {
-      const props = {
-        board,
+    return connectionGeometry(doc).traces.map(({ connection, board, points }) => {
+      const wire = board.kind === 'wire';
+      const { color, conflict } = roleColor(snapshot, endKey(connection.a));
+      const markProps = {
         points,
-        side,
-        pxPerMm: doc.scale.pxPerMm,
+        wire,
+        stroke: color ?? (wire ? 'var(--wire)' : `var(--${board.layer})`),
+        opacity: wire || side === board.layer ? 1 : 0.3,
         zoom,
-        ...roleColor(snapshot, endKey(connection.a)),
       };
-      return { connection, props, shape: <TraceShape key={connection.id} {...props} /> };
+      const props = { ...markProps, conflict, widthMm: board.widthMm, pxPerMm: doc.scale.pxPerMm };
+      const measured = snapshot.derived.connectionLevels?.[connection.id]?.level === 'measured';
+      return {
+        connection,
+        props,
+        markProps,
+        shape: <TraceShape key={connection.id} {...props} />,
+        mark: measured ? <TraceMark key={connection.id} {...markProps} /> : null,
+      };
     });
   }, [snapshot, roleColor, zoom]);
   if (items.length === 0) return null;
-  const motion = connectionMotion(preview);
+  const motion = connectionMotion(preview, snapshot.doc);
+  const shapes: ReactElement[] = [];
+  const marks: ReactElement[] = [];
+  for (const { connection, props, markProps, shape, mark } of items) {
+    const points = previewConnectionPoints(props.points, connection, motion);
+    const moved = points !== props.points;
+    shapes.push(moved ? <TraceShape key={connection.id} {...props} points={points} /> : shape);
+    if (mark)
+      marks.push(moved ? <TraceMark key={connection.id} {...markProps} points={points} /> : mark);
+  }
   return (
     <g data-layer="connections.traces" pointerEvents="none" aria-hidden="true">
-      {items.map(({ connection, props, shape }) => {
-        const points = previewConnectionPoints(props.points, connection, motion);
-        return points === props.points ? (
-          shape
-        ) : (
-          <TraceShape key={connection.id} {...props} points={points} />
-        );
-      })}
+      {shapes}
+      <g>{marks}</g>
     </g>
   );
 }
@@ -218,7 +259,7 @@ export function createTracesLayer(roleColor: ConnectionRoleColor): LayerSpec {
       <TraceDrawings snapshot={snapshot} preview={preview} roleColor={roleColor} zoom={zoom} />
     ),
     hits: ({ doc }, zoom) =>
-      traces(doc).flatMap(({ connection, board, points }) => {
+      connectionGeometry(doc).traces.flatMap(({ connection, board, points }) => {
         const width = drawingWidth(board.widthMm, doc.scale.pxPerMm, zoom);
         return points.slice(1).flatMap((b, segment) => {
           const line = drawingSegmentPoints(points[segment]!, b, board.kind, zoom);
@@ -283,7 +324,7 @@ const JunctionDot = memo(function JunctionDot({
 export const junctionsLayer: LayerSpec = {
   id: 'connections.junctions',
   z: 45,
-  previewOwners: CONNECTION_PREVIEW_OWNERS,
+  previewOwners: [JUNCTION_DRAG_OWNER],
   render({ snapshot: { doc }, preview, zoom }) {
     const incidents = junctionIncidents(doc);
     const motion = connectionMotion(preview);

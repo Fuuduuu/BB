@@ -49,6 +49,7 @@ export function deleteItems(doc: BoardDoc, ids: readonly string[]): RuleReport {
   if (topologyChanges) {
     const report = removeConnectionItems(doc, connectionIds, junctionIds, before);
     removedLabels.push(...report.removedLabels);
+    return { ...report, removedLabels };
   }
   return { removedLabels };
 }

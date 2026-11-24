@@ -1,8 +1,10 @@
 import type { BoardPlacement, Vec2 } from '@pcbk/domain';
 import { footprintGeometry } from '@pcbk/domain/footprints';
 import { padToBoard } from '@pcbk/domain/geometry';
-import { COMPONENT_SCALE_MAX, COMPONENT_SCALE_MIN } from '../../contract';
+import { BoardPlacementSchema } from '@pcbk/domain/model';
 
+export const COMPONENT_SCALE_MIN = BoardPlacementSchema.shape.scaleX.minValue ?? 0.2;
+export const COMPONENT_SCALE_MAX = BoardPlacementSchema.shape.scaleX.maxValue ?? 5;
 export const SCALE_DRAG_OWNER = 'components.scale';
 const handles = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'] as const;
 type ScaleHandle = (typeof handles)[number];

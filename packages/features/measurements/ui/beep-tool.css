@@ -1,0 +1,29 @@
+.pcbk-beep-hud {
+  display: grid;
+  gap: 4px;
+  max-width: 17rem;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  cursor: default;
+}
+
+.pcbk-beep-hud > p {
+  margin: 4px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.pcbk-beep-hud > button {
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+
+.pcbk-beep-hud kbd {
+  font: 0.85em var(--f-mono);
+  white-space: nowrap;
+}

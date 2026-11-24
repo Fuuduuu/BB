@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useEngine, useSnapshot } from '@pcbk/client';
 import type { AppHost, IdGen, Snapshot } from '@pcbk/contracts';
 import { Button, Dialog, Field, useSessionStore } from '@pcbk/ui';
-import { netlistCsv, netRoleColor, roleSwatchColor } from '../contract';
+import { netlistCsv, netRoleColor, roleLabel, roleSwatchColor } from '../contract';
 import type { AssignNetParams } from '../contract';
 import { netsEt } from './i18n/et';
 import { netAnchor, netCommandError, netDetails, pinMembers } from './net-details';
@@ -147,9 +147,7 @@ function NetView({
   const [error, setError] = useState<string>();
   const name = net.named ? net.name : '';
   const otherNets = nets.filter(({ key }) => key !== net.key);
-  const conflictRoles = net.conflictingRoles.map(
-    (id) => snapshot.doc.roles.find((role) => role.id === id)?.label ?? id,
-  );
+  const conflictRoles = net.conflictingRoles.map((id) => roleLabel(snapshot.doc.roles, id));
   const memberComponents = new Set(details.pins.map(({ c }) => c));
   const shortedRefs = (snapshot.derived.nets?.shortedComponents ?? []).flatMap((id) => {
     const ref = componentRefs.get(id);
@@ -239,7 +237,7 @@ function NetView({
           roles={snapshot.doc.roles}
           selectedRole={net.roleId}
           select={(roleId) => {
-            if (assign({ roleId })) setChoosingRole(false);
+            if (assign({ roleId: roleId === net.roleId ? null : roleId })) setChoosingRole(false);
           }}
           addRole={addRole}
         />
@@ -267,6 +265,11 @@ function NetView({
       </ul>
       <p className="pcbk-net-fact">{netsEt.junctionCount(details.junctions)}</p>
       <p className="pcbk-net-fact">{netsEt.traceLength(details.lengthMm)}</p>
+      {details.measuredConnections !== undefined && (
+        <p className="pcbk-net-fact">
+          {netsEt.measuredConnections(details.measuredConnections, details.connections.length)}
+        </p>
+      )}
       {details.measurements.length > 0 && (
         <section className="pcbk-net-measurements">
           <h3>{netsEt.measurements}</h3>

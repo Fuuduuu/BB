@@ -43,16 +43,22 @@ function currentMember(
   return members.has(key) && pins.get(key)?.uid === contact.uid;
 }
 
-function measuredValue({ mode, overload, value }: Measurement) {
+function measuredValue({ mode, overload, value, beep }: Measurement) {
   if (overload) return netsEt.overload;
   if (mode === 'voltage' && value !== undefined) return formatReading({ value }, mode);
+  if (mode === 'continuity' && beep !== undefined) {
+    return beep ? netsEt.beepResult.yes : netsEt.beepResult.no;
+  }
   return netsEt.unavailable;
 }
 
 function measurementRow(measurement: Measurement) {
   const { atLabel, id, mode, refLabel } = measurement;
   const pair = `${atLabel}${refLabel ? ` → ${refLabel}` : ''}`;
-  return { id, text: `${measuredValue(measurement)} ${netsEt.measurementModes[mode]} · ${pair}` };
+  const value = measuredValue(measurement);
+  const modeName = netsEt.measurementModes[mode];
+  const reading = mode === 'continuity' ? `${modeName} · ${value}` : `${value} ${modeName}`;
+  return { id, text: `${reading} · ${pair}` };
 }
 
 export function netDetails(
@@ -68,8 +74,11 @@ export function netDetails(
     return pin ? [{ key, ...pin }] : [];
   });
   const connections = doc.connections.filter(({ a }) => members.has(endKey(a)));
+  const { connectionLevels } = snapshot.derived;
+  let measuredConnections = 0;
   let length = 0;
   for (const connection of connections) {
+    if (connectionLevels?.[connection.id]?.level === 'measured') measuredConnections++;
     if (!connection.board) continue;
     const points = connectionPoints(doc, connection);
     if (!points) continue;
@@ -84,12 +93,14 @@ export function netDetails(
       ({ at, ref }) =>
         currentMember(at, members, pinsByKey) || currentMember(ref, members, pinsByKey),
     )
+    .reverse()
     .sort((a, b) => Date.parse(b.takenAt) - Date.parse(a.takenAt))
     .map(measurementRow);
   return {
     pins,
     junctions: net.members.length - pins.length,
     connections,
+    measuredConnections: connectionLevels === undefined ? undefined : measuredConnections,
     lengthMm: length / doc.scale.pxPerMm,
     measurements,
   };

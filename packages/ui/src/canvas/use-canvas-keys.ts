@@ -48,6 +48,10 @@ export function useCanvasKeys({
         return;
       }
       if (matchesShellKey(event, SHELL_KEYS.cancel)) {
+        if (active.onKey?.(event, api)) {
+          event.preventDefault();
+          return;
+        }
         space.current = false;
         // Switching tools cancels the outgoing tool in the layout cleanup.
         if (getSession().toolId === 'select') cancel(active);

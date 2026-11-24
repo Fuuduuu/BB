@@ -9,7 +9,7 @@ import { ComponentShape } from './ComponentShape';
 import type { ComponentLayerKind } from './ComponentShape';
 import { componentLabelPlacements, LABEL_DRAG_OWNER } from './label-placement';
 import { PadOutline } from './PinMarker';
-import { previewBoardScale, readScaleDrag, SCALE_DRAG_OWNER } from './scale-handles';
+import { previewBoardScale, readScaleDrag, SCALE_DRAG_OWNER } from '../../contract';
 
 type ComponentsLayerProps = Parameters<LayerSpec['render']>[0] & { kind: ComponentLayerKind };
 type LabelPreview = { id: string; dx: number; dy: number };

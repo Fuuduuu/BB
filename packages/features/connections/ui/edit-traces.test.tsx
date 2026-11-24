@@ -178,6 +178,49 @@ test('junction_drop_uses_the_rotated_pad_shape_then_pin_order_for_overlaps', () 
   expect(engine.snapshot().doc.connections[0]?.b).toEqual(pinEnd('1'));
 });
 
+test('junction_attaches_to_pad_on_its_layer', () => {
+  const { engine, host, svg, pinPoint } = mountMeasurements({
+    seed(doc) {
+      const top = doc.components[0]!;
+      top.board = {
+        ...top.board!,
+        footprint: 'area',
+        params: { w: 12, h: 4 },
+        customPads: { '1': { local: { x: 0, y: 0 }, sizeMm: 2, shape: 'rect', through: false } },
+      };
+      doc.components.push({
+        ...top,
+        id: 'cmp_z_bottom',
+        ref: 'U2',
+        pins: [{ id: '1', uid: 'pin_bottom', nc: false }],
+        board: { ...top.board, side: 'bottom' },
+      });
+      doc.junctions.push(
+        { id: 'jun_edit', board: { at: joint, layer: 'bottom' } },
+        { id: 'jun_fixed', board: { at: { x: 340, y: 210 }, layer: 'bottom' } },
+      );
+      doc.connections.push({
+        id: 'con_bottom',
+        a: { junction: 'jun_fixed' },
+        b: jointEnd,
+        basis: 'visual',
+        board: { kind: 'trace', layer: 'bottom', widthMm: 0.3, waypoints: [] },
+      });
+    },
+  });
+
+  const overlap = pinPoint('1');
+  beginDrag(svg, joint, overlap);
+  expect.soft(svg.querySelector('[data-junction-attachment-target]')).toBeTruthy();
+  signal(svg, 'pointerup', overlap);
+
+  expect
+    .soft(engine.snapshot().doc.connections[0]?.b)
+    .toEqual({ pin: { c: 'cmp_z_bottom', p: '1' } });
+  expect.soft(engine.snapshot().doc.junctions.map(({ id }) => id)).toEqual(['jun_fixed']);
+  expect(host.drainJournal().map(({ commandId }) => commandId)).toEqual(['junctions.attachToPin']);
+});
+
 test('insert_and_remove_waypoint', () => {
   const original = [
     { x: 160, y: 200 },

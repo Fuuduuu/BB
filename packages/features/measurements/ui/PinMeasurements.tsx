@@ -1,17 +1,10 @@
 import { useId } from 'react';
 import { useSnapshot } from '@pcbk/client';
-import type { Measurement } from '@pcbk/domain';
-import { formatReading } from '@pcbk/domain/measure/reading';
 import type { Selection } from '@pcbk/ui';
 import { contactFromSelection } from './contacts';
 import { measureEt as text, measurementListText } from './i18n/et';
+import { displayValue } from './measurement-display';
 import './measurement-list.css';
-
-function displayValue({ mode, overload, value }: Measurement): string {
-  if (overload) return measurementListText.overload;
-  if (mode === 'voltage' && value !== undefined) return formatReading({ value }, mode);
-  return measurementListText.unavailable;
-}
 
 export function PinMeasurements({ selection }: { selection: Selection }) {
   const snapshot = useSnapshot((current) => current);

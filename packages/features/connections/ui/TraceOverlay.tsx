@@ -1,5 +1,5 @@
 import { SceneText } from '@pcbk/ui';
-import { wirePath } from './connection-geometry';
+import { wirePath } from '@pcbk/domain/geometry';
 import { connectionsEt } from './i18n/et';
 import { PadHighlight } from './pad-highlight';
 import { distance } from './trace-geometry';
@@ -43,7 +43,7 @@ export function TraceOverlay() {
   const preview = useTraceStore((state) => state.preview);
   const mode = useTraceStore((state) => state.mode);
   if (!preview) return null;
-  const { points: confirmed, cursor: end, target, pxPerMm, zoom } = preview;
+  const { points: confirmed, cursor: end, target, crossing, pxPerMm, zoom } = preview;
   const start = confirmed.at(-1);
   const points = end ? [...confirmed, end] : confirmed;
   const length = start && end ? distance(start, end) / pxPerMm : 0;
@@ -65,6 +65,18 @@ export function TraceOverlay() {
         <polyline {...style} points={points.map(({ x, y }) => `${x},${y}`).join(' ')} />
       )}
       {target && <TraceTarget target={target.hit} accepted={target.accepted} zoom={zoom} />}
+      {crossing && (
+        <circle
+          data-trace-crossing=""
+          cx={crossing.x}
+          cy={crossing.y}
+          r={5 / zoom}
+          fill="none"
+          stroke="var(--danger)"
+          strokeWidth={2}
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
       {start && end && length > 0 && (
         <SceneText
           x={(start.x + end.x) / 2}

@@ -1,14 +1,12 @@
 import type { Snapshot } from '@pcbk/contracts';
 import { useSessionStore } from '@pcbk/ui';
 import type { HitItem, LayerSpec, Selection, TranslatePreviewData } from '@pcbk/ui';
+import { previewBoardScale, readScaleDrag, SCALE_DRAG_OWNER } from '../../contract';
 import {
-  previewBoardScale,
-  readScaleDrag,
-  SCALE_DRAG_OWNER,
   SCALE_HANDLE_SIZE,
   scaleFromHandle,
   scaleHandlePositions,
-} from './scale-handles';
+} from '../../contract/scale-preview';
 
 function selectedComponentId(selection: Selection): string | undefined {
   const [item] = selection.items;

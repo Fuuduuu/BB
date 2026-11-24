@@ -72,6 +72,10 @@ function rolesById(roles: Roles) {
   return lookup;
 }
 
+export function roleLabel(roles: Roles, id: string): string {
+  return rolesById(roles).get(id)?.label ?? `${id} (puudub)`;
+}
+
 export function roleSwatchColor(role: Pick<NetRole, 'id' | 'color'>): string {
   return role.id === 'rol_gnd' ? 'var(--role-gnd)' : role.color;
 }
@@ -101,12 +105,13 @@ export function netlistCsv({ doc, derived }: Pick<Snapshot, 'doc' | 'derived'>):
       pins.set(pinKey({ c: id, p: pin.id }), { ref: `${ref}.${pin.id}`, name: pin.name ?? '' });
     }
   }
-  const roles = rolesById(doc.roles);
   const nets = [...derived.nets.list].sort((a, b) => a.name.localeCompare(b.name, 'et'));
   for (const net of nets) {
     const role = net.roleConflict
-      ? net.conflictingRoles.flatMap((id) => roles.get(id)?.label ?? []).join(' + ')
-      : ((net.roleId && roles.get(net.roleId)?.label) ?? '');
+      ? net.conflictingRoles.map((id) => roleLabel(doc.roles, id)).join(' + ')
+      : net.roleId
+        ? roleLabel(doc.roles, net.roleId)
+        : '';
     for (const member of [...net.members].sort()) {
       const pin = pins.get(member);
       if (pin) rows.push([net.name, role, pin.ref, pin.name].map(csvField).join(';'));

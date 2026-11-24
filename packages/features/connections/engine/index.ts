@@ -37,6 +37,7 @@ import type {
   SetLabelOffsetParams,
   UpdateConnectionParams,
 } from '../contract';
+import { connectionLevelsDerive } from './derive';
 
 function verifyDrawing(doc: BoardDoc, a: EndRef, b: EndRef, board: DrawOnBoardParams['board']) {
   const { kind, layer } = board;
@@ -211,6 +212,7 @@ const removeJunction: CommandSpec<ConnectionIdsParams> = {
 
 export const connectionsEngine: EngineModule = {
   id: 'connections',
+  dependsOn: ['components'],
   owns: ['connections', 'junctions'],
   commands: [
     add,
@@ -226,4 +228,5 @@ export const connectionsEngine: EngineModule = {
     attachJunction,
     removeJunction,
   ],
+  derive: [connectionLevelsDerive],
 };

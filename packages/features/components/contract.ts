@@ -15,6 +15,13 @@ import { z } from 'zod';
 import type { LibraryEntry } from './contract/library';
 
 export * from './contract/library';
+export {
+  COMPONENT_SCALE_MAX,
+  COMPONENT_SCALE_MIN,
+  previewBoardScale,
+  readScaleDrag,
+  SCALE_DRAG_OWNER,
+} from './contract/scale-preview';
 
 const footprintParams = z.unknown().transform((input, context) => {
   const parsed = BoardPlacementSchema.shape.params.safeParse(input);
@@ -89,8 +96,6 @@ export const AlignSchema = SetScaleSchema.extend({
   center: Vec2Schema,
   rotationDeg: z.number(),
 });
-export const COMPONENT_SCALE_MIN = SetScaleSchema.shape.scaleX.minValue ?? 0.2;
-export const COMPONENT_SCALE_MAX = SetScaleSchema.shape.scaleX.maxValue ?? 5;
 export const SetLabelOffsetSchema = ComponentTargetSchema.extend({ offset: Vec2Schema.nullable() });
 
 export type BoardInput = z.infer<typeof BoardInputSchema>;

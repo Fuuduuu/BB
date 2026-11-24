@@ -4,6 +4,7 @@ import type { EngineModule } from '@pcbk/engine';
 import { expect, test } from 'vitest';
 import { z } from 'zod';
 import { engineFeatures, RESERVED_FIELDS } from '../engine';
+import { AddMeasurementSchema } from './contract';
 
 const takenAt = '2026-11-10T10:00:00.000Z';
 const withoutReference = {
@@ -138,6 +139,35 @@ test('voltage_without_reference_is_allowed', () => {
   expect(engine.snapshot().doc.measurements).toStrictEqual([
     { ...withoutReference, value: 0, atLabel: 'U1.8', source: 'manual' },
   ]);
+});
+
+test('continuity_add_requires_ref_and_beep', () => {
+  const { engine } = withContacts();
+  const base = {
+    id: 'msr_continuity',
+    mode: 'continuity',
+    at: measurement.at,
+    power: 'off',
+    takenAt,
+    note: 'Sondipaar',
+  } as const;
+  const continuity = { ...base, ref: measurement.ref, beep: true };
+
+  const saved = engine.execute('measurements.add', continuity);
+  expect(saved.ok, JSON.stringify(saved)).toBe(true);
+  expect(engine.snapshot().doc.measurements).toStrictEqual([
+    { ...continuity, atLabel: 'U1.8', refLabel: 'J1.1', source: 'manual' },
+  ]);
+  expect(AddMeasurementSchema.safeParse({ ...base, beep: true }).success).toBe(false);
+  expect(AddMeasurementSchema.safeParse({ ...base, ref: measurement.ref }).success).toBe(false);
+  expect(AddMeasurementSchema.safeParse({ ...continuity, value: 0 }).success).toBe(false);
+
+  expect(engine.execute('measurements.add', withoutReference).ok).toBe(true);
+  expect(engine.snapshot().doc.measurements.at(-1)).toStrictEqual({
+    ...withoutReference,
+    atLabel: 'U1.8',
+    source: 'manual',
+  });
 });
 
 test('labels_survive_component_rename_and_delete', () => {

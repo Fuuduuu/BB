@@ -174,6 +174,7 @@ Rajad: ülesanded 2, 3, 10 ja 11 on **rada B**, ülejäänud on **rada A**.
 ## Mis jääb järgmistesse plaanidesse
 
 - **M2.3–M2.4:** skeemivaade, skeemi juhtmed ja sildid; Astra leid 16 (juhtme kaar haru järel, O5).
+- **M2.3 jõudlus:** `connectionLevels`-i ja `nets`-i tuletise sisend on terve `components`, seega arvutatakse need uuesti ka komponendi liigutuse järel. M2-2-11 mõõtis suurel plaadil käsu valideerimise ja tuletiste ajaks 17–20 ms (eelarve 16 ms). Kasutaja aktsepteeris selle `v0.6.0` jaoks 2026-11-24. Kitsenda sisend jalgade topoloogiale, nii et liigutus tuletisi uuesti ei arvuta.
 - **M3:** takistuse ja dioodi režiimid, hindamise täisreeglid ning remondi kasutajaliides ja aegumine. `connectionLevels` arvestab `staleByRepairId`-d juba M2.2-s.
 - **Salvestus, hiljemalt M4.3:** koodiülevaatuse 2026-11-19 leiud 04–06 ja lühinimega tee normaliseerimine (`absolute()`).
 - **Astra tööriistad:** leid 25, seejärel 26–30.

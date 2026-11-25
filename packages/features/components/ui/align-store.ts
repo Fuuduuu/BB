@@ -4,11 +4,19 @@ import type { SelectedAlignPin } from './align';
 
 type FirstPin = { id: string; pinA: SelectedAlignPin };
 type FirstTarget = FirstPin & { targetA: Vec2 };
+type SecondPin = FirstTarget & { pinB: SelectedAlignPin };
+export type AlignScaleStage = SecondPin & {
+  step: 5;
+  targetB: Vec2;
+  ratio: number;
+  uncalibrated: boolean;
+};
 export type AlignStage =
   | { step: 1 }
   | (FirstPin & { step: 2 })
   | (FirstTarget & { step: 3 })
-  | (FirstTarget & { step: 4; pinB: SelectedAlignPin });
+  | (SecondPin & { step: 4 })
+  | AlignScaleStage;
 
 interface AlignStore {
   stage: AlignStage;

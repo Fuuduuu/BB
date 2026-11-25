@@ -264,6 +264,22 @@ export const RotateSchema: ZodType<RotateParams>;
 export const SCALE_DRAG_OWNER: "components.scale";
 ```
 
+### `ScaleFromPinsParams`
+```ts
+export type ScaleFromPinsParams = {
+    id: string;
+    pinA: { id: string; padIndex: number; };
+    pinB: { id: string; padIndex: number; };
+    targetA: { x: number; y: number; };
+    targetB: { x: number; y: number; };
+};
+```
+
+### `ScaleFromPinsSchema`
+```ts
+export const ScaleFromPinsSchema: ZodType<ScaleFromPinsParams>;
+```
+
 ### `selectComponent`
 ```ts
 export const selectComponent: (snapshot: Pick<Snapshot, "doc">, id: string) => {

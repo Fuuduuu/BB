@@ -26,9 +26,11 @@ function mount(
   placement: Partial<BoardPlacement> = {},
   zoom = 1,
   sceneTransform: SceneTransform = 'none',
+  calibrated = true,
 ) {
   const doc = newBoardDoc('Plaadi proov');
   doc.scale.pxPerMm = 10;
+  doc.scale.calibrated = calibrated;
   doc.components.push({
     id,
     ref: 'R1',
@@ -122,7 +124,7 @@ test('align_is_one_undo_step', () => {
   beginAlignment(svg);
   click(svg, 110, 80);
   expect(svg.querySelectorAll('[data-align-target]')).toHaveLength(2);
-  pointer(svg, 'pointermove', 180, 150);
+  pointer(svg, 'pointermove', 180, 140);
   expect(getByRole('status').textContent).toContain('jala 2 kohta fotol');
   expect(svg.querySelectorAll('[data-align-pin]')).toHaveLength(2);
   expect(svg.querySelectorAll('[data-align-target]')).toHaveLength(2);
@@ -132,7 +134,7 @@ test('align_is_one_undo_step', () => {
   expect(engine.snapshot()).toBe(before);
   expect(execute).not.toHaveBeenCalled();
 
-  click(svg, 180, 150);
+  click(svg, 180, 140);
   expect(execute).toHaveBeenCalledTimes(1);
   expect(execute.mock.lastCall?.[0]).toBe('components.align');
   expect(getByRole('status').textContent).toContain('vali jalg 1');
@@ -142,7 +144,7 @@ test('align_is_one_undo_step', () => {
   expect(a!.at.x).toBeCloseTo(180);
   expect(a!.at.y).toBeCloseTo(120);
   expect(b!.at.x).toBeCloseTo(180);
-  expect(b!.at.y).toBeCloseTo(150);
+  expect(b!.at.y).toBeCloseTo(140);
 
   const unbind = bindHistoryKeys(window, { undo: () => engine.undo(), redo: () => engine.redo() });
   try {
@@ -184,17 +186,129 @@ test('align_uses_the_physical_pad_clicked_on_a_multi_pad_pin', () => {
   expect(other?.at).toEqual({ x: 170, y: 140 });
 });
 
-test('align_rejects_scale_outside_limits', () => {
-  const { svg, engine, execute, getByRole } = mount();
+const scaleQuestion = 'Kas kasutada seda korpust mõõtkava aluseks?';
+
+test('align_question_after_applied_alignment', () => {
+  const { svg, engine, execute, getByRole, queryByRole } = mount();
+  const before = engine.snapshot().doc;
+  beginAlignment(svg);
+  click(svg, 110, 80);
+  click(svg, 180, 130);
+  expect(execute.mock.calls.map(([command]) => command)).toEqual(['components.align']);
+  const aligned = engine.snapshot().doc;
+  expect(aligned.scale.pxPerMm).toBe(10);
+  expect(aligned.components[0]!.board).toMatchObject({ scaleX: 0.5, scaleY: 0.5 });
+
+  const dialog = getByRole('dialog', { name: scaleQuestion });
+  expect(dialog.textContent).toContain(
+    'Korpus on fotol 2,0 korda väiksem kui praeguse mõõtkava järgi.',
+  );
+  expect(dialog.textContent).toContain('Uus mõõtkava: 5,00 px/mm');
+  const useButton = getByRole('button', { name: 'Kasuta mõõtkavaks' });
+  expect(document.activeElement).toBe(useButton);
+  fireEvent.click(useButton);
+
+  expect(execute.mock.calls.map(([command]) => command)).toEqual([
+    'components.align',
+    'components.scaleFromPins',
+  ]);
+  const scaled = engine.snapshot().doc;
+  expect(scaled.scale).toMatchObject({ pxPerMm: 5, calibrated: true });
+  const board = scaled.components[0]!.board!;
+  expect(board).toMatchObject({ scaleX: 1, scaleY: 1 });
+  const [a, b] = boardPads(board, ['1', '2'], 5);
+  expect(a!.at.x).toBeCloseTo(180);
+  expect(a!.at.y).toBeCloseTo(120);
+  expect(b!.at.x).toBeCloseTo(180);
+  expect(b!.at.y).toBeCloseTo(130);
+  expect(queryByRole('dialog', { name: scaleQuestion })).toBeNull();
+  expect(getByRole('status').textContent).toContain('vali jalg 1');
+
+  const unbind = bindHistoryKeys(window, { undo: () => engine.undo(), redo: () => engine.redo() });
+  try {
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(engine.snapshot().doc).toEqual({ ...aligned, rev: before.rev + 3 });
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(engine.snapshot().doc).toEqual({ ...before, rev: before.rev + 4 });
+  } finally {
+    unbind();
+  }
+});
+
+test('align_question_replaces_out_of_range_error', () => {
+  const { svg, engine, execute, getByRole, queryByRole } = mount();
   const before = engine.snapshot();
   beginAlignment(svg);
   click(svg, 110, 80);
   click(svg, 330, 120);
-  expect(getByRole('status').textContent).toContain('mõõtkava lubatud vahemikust');
+
+  const dialog = getByRole('dialog', { name: scaleQuestion });
+  expect(dialog.textContent).toContain(
+    'Korpus on fotol 7,5 korda suurem kui praeguse mõõtkava järgi.',
+  );
+  expect(dialog.textContent).toContain('Uus mõõtkava: 75,00 px/mm');
+  expect(queryByRole('status')?.textContent ?? '').not.toContain('mõõtkava lubatud vahemikust');
   expect(engine.snapshot()).toBe(before);
   expect(execute).not.toHaveBeenCalled();
-  click(svg, 180, 150);
-  expect(execute.mock.lastCall?.[0]).toBe('components.align');
+  fireEvent.keyDown(window, { key: 'Escape' });
+  expect(queryByRole('dialog', { name: scaleQuestion })).toBeNull();
+  expect(useSessionStore.getState().toolId).not.toBe('components.align');
+  expect(engine.snapshot()).toBe(before);
+  expect(execute).not.toHaveBeenCalled();
+
+  beginAlignment(svg);
+  click(svg, 110, 80);
+  click(svg, 330, 120);
+  getByRole('dialog', { name: scaleQuestion });
+  fireEvent.keyDown(window, { key: 'Enter' });
+  expect(execute.mock.calls.map(([command]) => command)).toEqual(['components.scaleFromPins']);
+  const scaled = engine.snapshot().doc;
+  expect(scaled.scale.pxPerMm).toBe(75);
+  const [a, b] = boardPads(scaled.components[0]!.board!, ['1', '2'], 75);
+  expect(a!.at).toEqual({ x: 180, y: 120 });
+  expect(b!.at).toEqual({ x: 330, y: 120 });
+
+  const unbind = bindHistoryKeys(window, { undo: () => engine.undo(), redo: () => engine.redo() });
+  try {
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(engine.snapshot().doc).toEqual({ ...before.doc, rev: before.doc.rev + 2 });
+  } finally {
+    unbind();
+  }
+});
+
+test('align_question_on_uncalibrated_photo', () => {
+  const uncalibrated = mount({}, 1, 'none', false);
+  beginAlignment(uncalibrated.svg);
+  click(uncalibrated.svg, 110, 80);
+  click(uncalibrated.svg, 180, 140);
+  expect(uncalibrated.execute.mock.calls.map(([command]) => command)).toEqual(['components.align']);
+
+  const dialog = uncalibrated.getByRole('dialog', { name: scaleQuestion });
+  expect(dialog.textContent).toContain('Foto on kalibreerimata.');
+  expect(dialog.textContent).toContain('Uus mõõtkava: 10,00 px/mm');
+  expect(dialog.textContent).not.toContain('korda');
+  fireEvent.click(uncalibrated.getByRole('button', { name: 'Jäta nii' }));
+  expect(uncalibrated.execute).toHaveBeenCalledTimes(1);
+  expect(uncalibrated.queryByRole('dialog', { name: scaleQuestion })).toBeNull();
+  expect(uncalibrated.getByRole('status').textContent).toContain('vali jalg 1');
+  const doc = uncalibrated.engine.snapshot().doc;
+  expect(doc.scale).toMatchObject({ pxPerMm: 10, calibrated: false });
+  const board = doc.components[0]!.board!;
+  expect(board).toMatchObject({ scaleX: 1, scaleY: 1 });
+  const [a, b] = boardPads(board, ['1', '2'], 10);
+  expect(a!.at.x).toBeCloseTo(180);
+  expect(a!.at.y).toBeCloseTo(120);
+  expect(b!.at.x).toBeCloseTo(180);
+  expect(b!.at.y).toBeCloseTo(140);
+
+  uncalibrated.unmount();
+  const calibrated = mount();
+  beginAlignment(calibrated.svg);
+  click(calibrated.svg, 110, 80);
+  click(calibrated.svg, 180, 142);
+  expect(calibrated.execute.mock.calls.map(([command]) => command)).toEqual(['components.align']);
+  expect(calibrated.queryByRole('dialog', { name: scaleQuestion })).toBeNull();
 });
 
 test('align_uses_a_five_screen_pixel_target_limit', () => {

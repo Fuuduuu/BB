@@ -1,4 +1,4 @@
-import { componentEt, ownPinEt } from './i18n/et';
+import { alignEt, componentEt, ownPinEt } from './i18n/et';
 import type { EngineError } from '@pcbk/contracts';
 
 export function commandError(error: EngineError): string {
@@ -19,6 +19,10 @@ export function commandError(error: EngineError): string {
             return ownPinEt.footprintPinsMismatch;
           case 'duplicate_pin':
             return ownPinEt.duplicatePin;
+          case 'pins_coincide':
+            return alignEt.errors.pins_coincide;
+          case 'scale_from_pins_out_of_range':
+            return alignEt.scaleOutOfRange;
         }
       }
       return componentEt.invalid;

@@ -187,9 +187,22 @@ export interface NetsDerived {
 }
 ```
 
+### `PhysicalPin`
+```ts
+export type PhysicalPin = {
+    id: string;
+    padIndex: number;
+};
+```
+
 ### `pinKey`
 ```ts
 export const pinKey: (ref: PinRef) => string;
+```
+
+### `pinSpacingMm`
+```ts
+export function pinSpacingMm(board: BoardPlacement, pinA: PhysicalPin, pinB: PhysicalPin): number | undefined;
 ```
 
 ### `removeBoardDrawing`
@@ -241,6 +254,17 @@ export class RuleTargetNotFound extends Error {
     name: string;
     constructor(id: string);
 }
+```
+
+### `scaleFromPins`
+```ts
+export function scaleFromPins(doc: BoardDoc, { componentId, pinA, pinB, targetA, targetB, }: {
+    componentId: string;
+    pinA: PhysicalPin;
+    pinB: PhysicalPin;
+    targetA: Vec2;
+    targetB: Vec2;
+}): void;
 ```
 
 ### `translateItems`

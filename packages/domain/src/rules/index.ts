@@ -20,3 +20,5 @@ export type { ConnectionLevel } from './levels';
 export * from './nets';
 export { describeNets } from './net-info';
 export type { NetInfo, NetsDerived } from './net-info';
+export { pinSpacingMm, scaleFromPins } from './scale-from-pins';
+export type { PhysicalPin } from './scale-from-pins';

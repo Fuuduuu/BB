@@ -20,10 +20,10 @@ Claude on arhitekt ja Codex on ehitaja; tööriistu ehitab ka Astra põhikaustas
 
 Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani vastuvõtutabelis.
 
-## Järgmine: korpuste graafika ja mõõtkava kontroll
+## Järgmine: M2.2b korpuste kuju ja mõõtkava
 
 - M2.2 on liidetud `main`-i `3b5a65c` (2026-11-24), versioon 0.6.0 `b7ecf03`, silt `v0.6.0`. Kaardid [M2-2-1](tasks/M2-2-1.md)–[M2-2-11](tasks/M2-2-11.md), jõudlus (viis piiri aktsepteeris kasutaja), ühilduvus ja kasutaja katse on [M2.2 üleandmises](plans/M2-2-uleandmine.md). Astra [M2.2 ülevaatuse](review/2026-11-21-m2-2-ulevaatus-5f4ffae.md) leiud 01–12 on parandatud.
-- Kasutaja katse 2026-11-24 oma plaadi fotoga: suurused polnud reaalsed (kalibreerimine 30 mm üle kogu foto laiuse, dialoog ei näita foto suurust millimeetrites) ja korpuste graafika on kehv ning segane (iga korpus on ristkülik, polaarsust, triipu ega sälku pole). Kasutaja otsus: avalda `v0.6.0`, siis graafika. Järgmine samm on selle töö plaan, enne M2.3 skeemi.
+- Kasutaja katse 2026-11-24 oma plaadi fotoga: suurused polnud reaalsed (kalibreerimine 30 mm üle kogu foto laiuse, dialoog ei näita foto suurust millimeetrites) ja korpuste graafika on kehv ning segane (iga korpus on ristkülik, polaarsust, triipu ega sälku pole). Kasutaja otsus: avalda `v0.6.0`, siis graafika. [M2.2b plaan](plans/M2-2b-korpused-ja-mootkava.md) on kinnitatud (2026-11-25, O1–O5): kalibreerimisaken, mõõtkava korpusest, korpuste kuju ja polaarsus, väljalase `v0.7.0`. Esimene kaart on [M2-2b-1](tasks/M2-2b-1.md), haru `codex/m2-2b`.
 - M2.3 plaani läheb jõudlus: `connectionLevels`-i ja `nets`-i tuletise sisend kitseneb jalgade topoloogiale ([M2.2 plaani järgmised tööd](plans/M2-2-piiksumisreziim.md#mis-jääb-järgmistesse-plaanidesse)).
 - Lahtine: salvestuse leiud 04–06 ning lühinimega tee normaliseerimine (`absolute()`, M2-1-12 CI järelparandus) järgmisele salvestuse kaardile, hiljemalt M4.3.
 - Astra tööriistad: leid 25 (kaardikontroll ei tohi nõutud testi vaikselt välja jätta), seejärel 26–30.

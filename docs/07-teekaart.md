@@ -174,6 +174,17 @@ M2 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse jär
 - [x] Mõõtmise kustutamine või remondist tulenev aegumine võtab ühenduselt ✓-märgi ära; uus tavaline läbivusmõõtmine samade jalgade vahel taastab selle ([04 › Ühenduse tase](04-andmemudel.md#ühenduse-tase-connectionlevels)). _(Kustutamine ja taastamine: sama E2E; remondist aegumine: `levels.test.ts`.)_
 - [ ] 50 jala kaardistamine piiksumisrežiimis võtab alla 2 minuti **kasutuskatses**. _(Kasutuskatset ei tehtud; kasutaja otsustas avaldada `v0.6.0` ilma selleta, 2026-11-24.)_
 
+### M2.2b · Korpuste kuju ja mõõtkava
+**Olek:** plaan kinnitatud 2026-11-25 ([M2.2b plaan](plans/M2-2b-korpused-ja-mootkava.md)), väljalase `v0.7.0`. Vahevoor tuleb kasutaja `v0.6.0` katsest: suurused polnud reaalsed ja korpuste graafika oli segane.
+
+**Sisu:** kalibreerimisaken [02 § 5](02-kasutaja-teekond.md#5-mõõtkava) järgi koos foto suurusega millimeetrites; mõõtkava teadaoleva korpuse joondusest; korpuste kuju (ümar, ovaalne, lameda küljega) ja polaarsuse märgid lõuendil ning teegi eelvaates.
+
+**Valmis kui:**
+- [ ] Kalibreerimisaken näitab enne kinnitamist px/mm-i, µm/px-i ja foto suurust millimeetrites.
+- [ ] Vale mõõtkava avastab kahe jalaga joondus ja korpus parandab selle ühe tagasivõetava sammuna.
+- [ ] Elektrolüüt on ümar, dioodil on triip, mikroskeemil sälk ja polaarsel osal „+“; teegi eelvaade näitab sama kuju.
+- [ ] Kasutaja tunneb oma plaadi fotol komponendid ära ja suurused vastavad fotole.
+
 ### M2.3 · Skeemi sümbolid ja paigutus
 **Sisu:** moodul `schematic`, esimene pool.
 - **algab lõuendi taaskasutuse prooviga:** sama lõuend teise koordinaadistikuga (skeemi ruudustik) ilma lõuendi koodi kopeerimata;

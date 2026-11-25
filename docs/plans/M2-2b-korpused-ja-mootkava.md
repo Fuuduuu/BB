@@ -93,6 +93,12 @@ Nimega testid on kaardi loendi järgi, lisateste ei tehta. Rajad: ülesanded 2 j
 4. **Polaarsus ja suund** (rada A, O4).
    - `body.marks`: `plus` (jala `+` juures), `band` (katoodi triip `K` poolel või tantaali triip `+` poolel), `notch` (sälk 1. jala otsas), `tab` (TO-220 metallplaat).
    - Korpused: `radial`, `el_smd`, `chip_tant` → `plus` ja triip; `axial` (`band: 'jah'`), `chip_diode`, `chip_led`, `led_tht` → `band` `K` poolel; `dip`, `soic`, `sop`, `qfp`, `qfn` → `notch` (1. jala punkt jääb); `to220` → `tab`.
+   - Kaardil [M2-2b-4](../tasks/M2-2b-4.md) täpsustatud:
+     - märgid on `FootprintDef.bodyMarks`-is samal põhjusel nagu kuju;
+     - elektrolüüdi triip on `−` poolel nagu purgil;
+     - `chip_tant` saab ainult triibu `+` poolel, sest `+` ei mahu jalgade kõrvale;
+     - `led_tht` märki ei saa, sest lame külg on juba `K` märk;
+     - QFP ja QFN saavad sälgu asemel lõigatud 1. jala nurga.
    - Märgid pöörlevad ja peegelduvad koos korpusega; alumise poole korpusel on märgid sama punktiiriga nagu kontuur.
 
 **Osa C · Vastuvõtt**

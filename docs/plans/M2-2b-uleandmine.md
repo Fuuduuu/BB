@@ -2,7 +2,7 @@
 
 Kaart [M2-2b-5](../tasks/M2-2b-5.md), haru `codex/m2-2b`, alus `ff45a26`, vastu võetud `2eb1a1c`. Tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m2-2b/BB`. Ehitaja kasutas sünteetilisi fotosid ja projekte.
 
-Väljalaske siht on `v0.7.0`. Kasutaja suitsu- ja kasutuskatse on ootel.
+Väljalaske siht on `v0.7.0`. Kasutaja vastas pärast suitsukatset „korras“ (2026-11-25). Enne liitmist teeb Astra sõltumatu auditi ja arhitektuuri ülevaatuse tipul `2eb1a1c`.
 
 ## Vastuvõtt
 
@@ -12,8 +12,8 @@ Väljalaske siht on `v0.7.0`. Kasutaja suitsu- ja kasutuskatse on ootel.
 | Joondus tuvastab vale mõõtkava ja korpuse järgi parandamine on üks tagasivõetav samm | Sama E2E kontrollib küsimust ja parandust 10 px/mm-ni. DIP-i jalad püsivad sihtpunktides. Teise komponendi keskpunkt püsib ja laius väheneb. Kaks `Ctrl+Z`-i taastavad esmalt mõõtkava, seejärel DIP-i algse paigutuse. |
 | Korpuste kontuurid ning polaarsuse ja suuna märgid on loetavad | Kaartide M2-2b-3 ja M2-2b-4 domeeni- ning UI-testid. Sünteetiline 14 korpusega plaat mõlemas teemas. |
 | Suur plaat püsib jõudluspiirides | Kolme kehtiva Tauri jooksu mediaanid täitsid kõik neli kaardil seatud piiri. |
-| Kasutaja tunneb oma plaadi komponendid ära ja suurused vastavad fotole | Katse-EXE ja juhis on valmis. Kasutaja tagasiside on ootel. |
-| 50 jala kaardistamine piiksuga alla 2 minuti | Kasutaja ajamõõt on ootel. |
+| Kasutaja tunneb oma plaadi komponendid ära ja suurused vastavad fotole | Kasutaja vastas katse-EXE-ga tehtud suitsukatse järel „korras“ (2026-11-25). Samme eraldi ei raporteeritud. |
+| 50 jala kaardistamine piiksuga alla 2 minuti | Kasutaja vastus „korras“ (2026-11-25). Aega ei raporteeritud. |
 
 ## Automaatsed tõendid
 

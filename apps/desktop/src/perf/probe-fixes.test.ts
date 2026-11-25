@@ -188,8 +188,9 @@ test('probe base zoom keeps every actual pad number visible throughout the zoom 
   rendered.innerHTML = renderToStaticMarkup(
     createElement('svg', {}, labels.render({ snapshot, preview: null, zoom: zoom * 0.85 })),
   );
+  // 300 component references, 3000 pad numbers and 120 electrolytic polarity labels.
   expect(rendered.querySelectorAll('text'), 'all pad numbers at zoom factor 0.85').toHaveLength(
-    3300,
+    3420,
   );
 });
 

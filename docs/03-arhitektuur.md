@@ -190,7 +190,7 @@ Kest joonistab nähtavad `contextPinned` sektsioonid kontekstipaneeli ülaossa `
 - Mootor kontrollib käsu paiku **enne** muudatuse avaldamist (paiga tee esimene osa). Lubamatu käsk lükatakse tagasi veaga `ownership` **ka väljalaskes**: dokument, ajalugu ja salvestusjärjekord jäävad muutmata, viga läheb logisse.
 - Kui peaaegu igal käsul tekib pikk erandite loend, vaadatakse moodulite vastutused uuesti üle.
 
-**Moodulitevahelised reeglid ([ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md)).** Reegel, mis puudutab mitut objektitüüpi (kustutamine, nihutamine), on puhas funktsioon alamtees `@pcbk/domain/rules`. Mootori üldkäsud `items.delete` ja `items.translate` ning mooduli käsud kutsuvad sama funktsiooni; objektitüübi koodi mootori tuumas ei ole. Kest küsib valitud objekti olemasolu ja liigutatavust registrist (`UiModule.selectionKinds`). Teostus tuleb M2.1 esimeste ülesannetena; seni on komponentide reeglid mootori failides `items.ts`, `invariants.ts` ja `derivation.ts`.
+**Moodulitevahelised reeglid ([ADR-005](adr/ADR-005-tuuma-ja-moodulite-piir.md)).** Reegel, mis puudutab mitut objektitüüpi (kustutamine, nihutamine), on puhas funktsioon alamtees `@pcbk/domain/rules`. Mootori üldkäsud `items.delete` ja `items.translate` ning mooduli käsud kutsuvad sama funktsiooni; objektitüübi koodi mootori tuumas ei ole. Kest küsib valitud objekti olemasolu ja liigutatavust registrist (`UiModule.selectionKinds`). Teostatud M2.1-s: mootori `items.ts`, `invariants.ts` ja `engine.ts` kutsuvad reegleid alamteest `@pcbk/domain/rules`.
 
 Uue mooduli mall ja moodulite kirjeldused on failis [05-moodulid.md](05-moodulid.md).
 

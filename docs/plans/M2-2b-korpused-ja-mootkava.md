@@ -108,6 +108,24 @@ Nimega testid on kaardi loendi järgi, lisateste ei tehta. Rajad: ülesanded 2 j
    - Tauri jõudlus suurel plaadil (300 komponenti, kõik märgid nähtavad): panoraam ja lohistus ei lange alla `v0.6.0` mõõdetud piiride (56,84 fps ja 40,22 fps).
    - Katse-EXE ja kasutaja suitsukatse O5 järgi.
 
+**Osa D · Auditi parandused** ([Astra M2.2b audit ja triaaž](../review/2026-11-25-m2-2b-ulevaatus-2eb1a1c.md#arhitekti-triaaž-2026-11-26), liitmise eeltingimus, kasutaja kinnitas 2026-11-26)
+
+6. **Ühine jalavalik ja klahvifookus** (rada B, leiud 01, 03, 05).
+   - Joonda ja Piiks valivad jala ühe `@pcbk/ui` funktsiooniga. Nähtava padjandi täpne tabamus läheb enne laiendatud tabamisala. Täpsete tabamuste seas otsustavad prioriteet ja kaugus.
+   - Ovaalse padjandi tabamiskuju vastab joonistusele (ümarad otsad).
+   - Tööriista `Enter` töötab ainult lõuendi või tööriista enda HUD-i fookusest. Teisel nupul vajutatud `Enter` aktiveerib selle nupu. Piiksu senine kontroll läheb üle ühisele abifunktsioonile.
+   - Regressioonikatsed kordavad Astra juhtumeid. Kõrvalnupu `Enter` ei muuda mõõtkava. Tihedal plaadil salvestub klõpsatud jala UID nii joonduses kui ka piiksus. Ovaali tühi nurk naaberpadjandi sees salvestab naaberjala.
+
+7. **Mõõtkavapakkumise kehtivus, loetavus ja näidisfailid** (rada B, leiud 02, 04, 06, 07).
+   - Küsimus kehtib ainult sama aluse kohta. Kui komponent kaob või selle korpus, parameetrid või jalgade kaart muutub, küsimus sulgub. Käsk saab kuvatud jalgade vahe ja lükkab muutunud aluse tagasi, nii et salvestub ainult kuvatud mõõtkava.
+   - Mõõtkava pakutakse ainult siis, kui mõlemad jalad on korpuse teegi padjandid. Käsitsi lisatud jalg joondab nagu praegu, aga küsimust ei tule ja käsk lükkab sellise paari tagasi.
+   - Kui joondus õnnestus, aga pakkumine jääb väljapoole 0,1–1000 px/mm, kuvatakse senine tekst „Selle korpuse järgi jääks mõõtkava …“. Joondus ja selle `Ctrl+Z` jäävad alles.
+   - Plussil ja triibul on kontuuri moodi kontrastne alusjoon. Märk on loetav mõlemas teemas nii heleda kui ka tumeda foto peal.
+   - Näidisfailid 03 § 9 järgi:
+     - `v0.6.0` tehakse sildi `v0.6.0` koodiga ja selles on piiksud, ühendus ja võrgu roll;
+     - `v0.7.0` tehakse selle haru koodiga ja selles on korpuse järgi kalibreeritud mõõtkava ning ümarad ja märgiga korpused.
+   - Raja B täisring.
+
 ## M2.2b vastuvõtt: tingimus → tõend
 
 | Tingimus | Tõend |
@@ -118,9 +136,15 @@ Nimega testid on kaardi loendi järgi, lisateste ei tehta. Rajad: ülesanded 2 j
 | Jõudlus ei lange alla `v0.6.0` piiride | ülesanne 5, Tauri mõõtmine |
 | Kasutaja tunneb oma plaadi komponendid ära ja suurused vastavad fotole | kasutaja suitsukatse oma fotoga |
 | 50 jala kaardistamine piiksuga alla 2 minuti (M2.2-st) | kasutuskatse |
+| Auditi P1 leiud 01–05 ja leiud 06–07 on parandatud ning nende kordusjuhtumid on testides | ülesanded 6–7, raja B täisring |
 
 ## Mis jääb järgmistesse plaanidesse
 
 - Ülejäänud korpuste kuju (konnektorid, nupp, trimmer, USB, toitepesa) sama mudeliga, kui kasutaja seda vajab.
 - Mitme komponendi tegurite ühtlustamine pärast mõõtkava muutust (praegu jääb joondusega muudetud tegur alles).
 - M2.3 jõudlus: `connectionLevels`-i ja `nets`-i tuletise sisendi kitsendamine ([M2.2 plaan](M2-2-piiksumisreziim.md#mis-jääb-järgmistesse-plaanidesse)).
+- M2.3 enne skeemituletisi ([Astra M2.2b audit](../review/2026-11-25-m2-2b-ulevaatus-2eb1a1c.md#arhitekti-triaaž-2026-11-26)):
+  - leid 08: Tauri vastuvõtuproov reposse koos andmete arvu kontrolli ja hargnenud võrguga;
+  - leiud 09, 11, 12 ja 14: mooduliliideste lüngad;
+  - leid 10: tuletiste sõltuvusleping.
+- Järgmine salvestuse kaart: auditi leid 13 (taastamise vaikevalik) koos salvestuse leidudega 04–06.

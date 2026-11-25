@@ -57,7 +57,7 @@ Igal `BoardDoc` väljal on üks omanik-moodul (`owns`). Teise mooduli käsk tohi
 | Väli | Omanik | Teised kirjutajad (`alsoWrites`) ja põhjus |
 |---|---|---|
 | `name`, `device`, `problem`, `status`, `mappedAt`, `mappedSnapshot`, `importChecks` | project | — |
-| `photos`, `activePhotoId`, `scale` | photo | — |
+| `photos`, `activePhotoId`, `scale` | photo | components (`components.scaleFromPins` kirjutab `scale`-i, kui kasutaja valib joondusel „Kasuta mõõtkavaks“: mõõtkava tuleb korpuse teegi jalgade vahest, M2.2b) |
 | `components` | components | schematic (`schematic.*` muudab komponendi skeemipaigutust); üldkäsud `items.translate`, `items.delete` |
 | `connections`, `junctions` | connections | components (`components.removePin`, korpuse vahetus ja kustutamine muudavad otsad liitepunktideks); measurements (`beep.record` loob ühenduse); schematic (`schematic.drawWire`, `schematic.removeWire`, `schematic.moveJunction`); nets (`nets.join` loob ühenduse); project (`importChecks.resolve` kinnitab liite); üldkäsud `items.*` |
 | `netLabels`, `roles` | nets | components (`components.removePin` ja korpuse vahetus kustutavad kaduva jala sildid); connections (liitepunkti eemaldamisel tõstetakse või kustutatakse sellele ankurdatud sildid, [04 › Võrkude arvutus](04-andmemudel.md#võrkude-arvutus-resolvenets)); schematic (võrgusildi paigutus skeemil; juhtme eemaldamine võib liitepunkti eemaldada); project (`importChecks.resolve`); üldkäsk `items.delete` |

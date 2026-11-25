@@ -28,11 +28,21 @@ import { soicFootprint } from './soic';
 import { sot23Footprint } from './sot23';
 import { to220Footprint } from './to220';
 import { isParameterObject } from './types';
-import type { BodyShapeSpec, FootprintDef, FootprintGeom, FootprintParams } from './types';
+import type {
+  BodyMarkSpec,
+  BodyShapeSpec,
+  FootprintDef,
+  FootprintGeom,
+  FootprintParams,
+} from './types';
 
+export { bodyLocalMarks } from './body-marks';
+export type { BodyMark } from './body-marks';
 export { bodyLocalOutline } from './body-outline';
 export type {
   BodyFlat,
+  BodyMarkKind,
+  BodyMarkSpec,
   BodyShape,
   BodyShapeSpec,
   FootprintDef,
@@ -89,4 +99,8 @@ export function footprintPinIds(key: string, params: FootprintParams): string[] 
 
 export function footprintBodyShape(key: string): BodyShapeSpec {
   return FOOTPRINTS.find((entry) => entry.key === key)?.bodyShape ?? { shape: 'rect' };
+}
+
+export function footprintBodyMarks(key: string): readonly BodyMarkSpec[] {
+  return FOOTPRINTS.find((entry) => entry.key === key)?.bodyMarks ?? [];
 }

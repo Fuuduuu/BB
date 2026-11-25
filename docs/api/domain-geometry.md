@@ -30,6 +30,11 @@ export function boardSurface(doc: SurfaceSource): {
 export function boardToPad(p: Pick<BoardPlacement, 'center' | 'rotationDeg' | 'side' | 'scaleX' | 'scaleY'>, point: Vec2, pxPerMm: number): Vec2;
 ```
 
+### `bodyMarks`
+```ts
+export function bodyMarks(placement: BoardPlacement, pxPerMm: number): BodyMark[];
+```
+
 ### `bodyOutline`
 ```ts
 export function bodyOutline(placement: BoardPlacement, pxPerMm: number): Vec2[];

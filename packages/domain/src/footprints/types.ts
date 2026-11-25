@@ -27,12 +27,24 @@ export interface BodyShapeSpec {
   flat?: BodyFlat;
 }
 
+export type BodyMarkKind = 'plus' | 'band' | 'notch' | 'tab';
+export type BodyMarkSpec =
+  | { kind: 'plus'; pin: string }
+  | { kind: 'band'; pin: string }
+  | { kind: 'notch'; at: 'edge' | 'corner' }
+  | { kind: 'tab' };
+
 export interface FootprintDef {
   key: string;
   name: string;
   defaults: FootprintParams;
   bodyShape?: BodyShapeSpec;
+  bodyMarks?: readonly BodyMarkSpec[];
   gen(p: FootprintParams): FootprintGeom | undefined;
+}
+
+export function withBodyMarks(def: FootprintDef, marks: readonly BodyMarkSpec[]): FootprintDef {
+  return { ...def, bodyMarks: marks };
 }
 
 export function isParameterObject(params: FootprintParams): boolean {

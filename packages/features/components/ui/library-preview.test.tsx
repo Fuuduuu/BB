@@ -133,3 +133,23 @@ test('library_preview_draws_footprint_shape', () => {
   expect(screen.queryByRole('button', { name: 'Kondensaator THT' })).toBeNull();
   expect(screen.queryByRole('button', { name: 'Kondensaator SMD' })).toBeNull();
 });
+
+test('library_preview_draws_marks', () => {
+  const { container } = render(<Library />);
+  for (const [name, marks] of [
+    ['Elektrolüüt THT', ['plus', 'band']],
+    ['Diood THT', ['band']],
+    ['SOIC', ['notch']],
+    ['TO-220', ['tab']],
+    ['Takisti SMD', []],
+  ] as const) {
+    fireEvent.click(screen.getByRole('button', { name }));
+    const preview = screen.getByRole('img');
+    const drawnMarks = Array.from(preview.querySelectorAll('[data-mark]'), (mark) =>
+      mark.getAttribute('data-mark'),
+    );
+    expect(drawnMarks).toEqual(marks);
+    if (name === 'SOIC') expect(preview.querySelector('[data-pin1]')).not.toBeNull();
+  }
+  expect(container.querySelectorAll('svg[data-silhouette] [data-mark]')).toHaveLength(0);
+});

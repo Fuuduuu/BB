@@ -1,11 +1,14 @@
 import {
+  bodyLocalMarks,
   bodyLocalOutline,
+  footprintBodyMarks,
   footprintBodyShape,
   footprintGeometry,
   type FootprintGeom,
 } from '@pcbk/domain/footprints';
 import { COMPONENT_LIBRARY } from '../contract';
 import { placementEt } from './i18n/et';
+import { markPath } from './mark-path';
 
 function previewViewBox({ pads, body }: FootprintGeom): string {
   const bounds = pads.map(({ x, y, w, h }) => ({
@@ -106,6 +109,9 @@ export function FootprintPreview({
   geometry: FootprintGeom | undefined;
 }) {
   const { body, pads } = geometry ?? { body: { w: 0, h: 0 }, pads: [] };
+  const marks = geometry
+    ? bodyLocalMarks(geometry, footprintBodyShape(footprint), footprintBodyMarks(footprint))
+    : [];
   return (
     <div className="pcbk-library__preview">
       {geometry ? (
@@ -118,6 +124,19 @@ export function FootprintPreview({
           aria-label={placementEt.library.preview(name, pads.length)}
         >
           {previewBody(footprint, body)}
+          {marks.map((mark, index) => (
+            <path
+              key={`${mark.kind}:${index}`}
+              data-mark={mark.kind}
+              d={markPath(mark)}
+              fill={mark.filled ? 'var(--body)' : 'none'}
+              fillOpacity={mark.filled ? 0.35 : undefined}
+              stroke="var(--body)"
+              strokeWidth={mark.filled ? 1 : 1.4}
+              strokeLinecap={mark.filled ? undefined : 'round'}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
           {pads.map((pad) => previewPad(pad))}
           {body.w > 0 && body.h > 0 && body.pin1 && (
             <circle

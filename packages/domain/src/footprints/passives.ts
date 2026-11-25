@@ -1,5 +1,11 @@
 import { body, numberChoice, pad } from './helpers';
-import { defineFootprint, readNumber } from './types';
+import { defineFootprint, readNumber, withBodyMarks } from './types';
+import type { BodyMarkSpec } from './types';
+
+const electrolyticMarks = [
+  { kind: 'plus', pin: '+' },
+  { kind: 'band', pin: '−' },
+] as const satisfies readonly BodyMarkSpec[];
 
 type ChipSize = readonly [offset: number, padW: number, padH: number, bodyW: number, bodyH: number];
 const tantalum: Readonly<Record<string, ChipSize>> = {
@@ -31,59 +37,68 @@ function chipFamily(
     };
   });
 }
-export const chipTantFootprint = chipFamily('chip_tant', 'Tantaal SMD', tantalum, 'B', ['+', '−']);
-export const chipDiodeFootprint = chipFamily('chip_diode', 'Diood SMD', diodes, 'SOD-123', [
-  'K',
-  'A',
-]);
-
-export const elSmdFootprint = defineFootprint(
-  'el_smd',
-  'Elektrolüüt SMD',
-  { D: 6.3 },
-  (params) => {
-    const D = numberChoice(params.D, [4, 5, 6.3, 8, 10]);
-    if (D === undefined) return undefined;
-    const pc = D * 0.42,
-      pw = Math.max(1.4, D * 0.45),
-      ph = Math.max(1, D * 0.26);
-    return {
-      pads: [pad(1, -pc, 0, pw, ph, 'rect', 0, '+'), pad(2, pc, 0, pw, ph, 'rect', 0, '−')],
-      body: body(D + 0.3, D + 0.3),
-    };
-  },
-  { shape: 'circle' },
+export const chipTantFootprint = withBodyMarks(
+  chipFamily('chip_tant', 'Tantaal SMD', tantalum, 'B', ['+', '−']),
+  [{ kind: 'band', pin: '+' }],
+);
+export const chipDiodeFootprint = withBodyMarks(
+  chipFamily('chip_diode', 'Diood SMD', diodes, 'SOD-123', ['K', 'A']),
+  [{ kind: 'band', pin: 'K' }],
 );
 
-export const axialFootprint = defineFootprint(
-  'axial',
-  'Aksiaalne',
-  { pitch: 10.16, bl: 6.3, bd: 2.5, band: 'ei' },
-  (params) => {
-    const pitch = readNumber(params.pitch),
-      bl = readNumber(params.bl),
-      bd = readNumber(params.bd);
-    if (
-      pitch === undefined ||
-      pitch <= 0 ||
-      bl === undefined ||
-      bl <= 0 ||
-      bd === undefined ||
-      bd <= 0 ||
-      (params.band !== 'jah' && params.band !== 'ei')
-    )
-      return undefined;
-    const diode = params.band === 'jah',
-      pd = diode ? 2 : 1.6,
-      drill = diode ? 1 : 0.8;
-    return {
-      pads: [
-        pad(1, -pitch / 2, 0, pd, pd, diode ? 'rect' : 'circle', drill, diode ? 'K' : undefined),
-        pad(2, pitch / 2, 0, pd, pd, 'circle', drill, diode ? 'A' : undefined),
-      ],
-      body: body(bl, bd),
-    };
-  },
+export const elSmdFootprint = withBodyMarks(
+  defineFootprint(
+    'el_smd',
+    'Elektrolüüt SMD',
+    { D: 6.3 },
+    (params) => {
+      const D = numberChoice(params.D, [4, 5, 6.3, 8, 10]);
+      if (D === undefined) return undefined;
+      const pc = D * 0.42,
+        pw = Math.max(1.4, D * 0.45),
+        ph = Math.max(1, D * 0.26);
+      return {
+        pads: [pad(1, -pc, 0, pw, ph, 'rect', 0, '+'), pad(2, pc, 0, pw, ph, 'rect', 0, '−')],
+        body: body(D + 0.3, D + 0.3),
+      };
+    },
+    { shape: 'circle' },
+  ),
+  electrolyticMarks,
+);
+
+export const axialFootprint = withBodyMarks(
+  defineFootprint(
+    'axial',
+    'Aksiaalne',
+    { pitch: 10.16, bl: 6.3, bd: 2.5, band: 'ei' },
+    (params) => {
+      const pitch = readNumber(params.pitch),
+        bl = readNumber(params.bl),
+        bd = readNumber(params.bd);
+      if (
+        pitch === undefined ||
+        pitch <= 0 ||
+        bl === undefined ||
+        bl <= 0 ||
+        bd === undefined ||
+        bd <= 0 ||
+        (params.band !== 'jah' && params.band !== 'ei')
+      )
+        return undefined;
+      const diode = params.band === 'jah',
+        pd = diode ? 2 : 1.6,
+        drill = diode ? 1 : 0.8;
+      return {
+        pads: [
+          pad(1, -pitch / 2, 0, pd, pd, diode ? 'rect' : 'circle', drill, diode ? 'K' : undefined),
+          pad(2, pitch / 2, 0, pd, pd, 'circle', drill, diode ? 'A' : undefined),
+        ],
+        body: body(bl, bd),
+      };
+    },
+  ),
+  [{ kind: 'band', pin: 'K' }],
 );
 
 export const discFootprint = defineFootprint(
@@ -104,25 +119,28 @@ export const discFootprint = defineFootprint(
   { shape: 'oval' },
 );
 
-export const radialFootprint = defineFootprint(
-  'radial',
-  'Elektrolüüt THT',
-  { D: 6.3, pitch: 2.5 },
-  (params) => {
-    const D = numberChoice(params.D, [5, 6.3, 8, 10, 13]),
-      pitch = numberChoice(params.pitch, [2, 2.5, 3.5, 5]);
-    if (D === undefined || pitch === undefined) return undefined;
-    const pd = Math.min(1.8, pitch * 0.72),
-      drill = pd * 0.5;
-    return {
-      pads: [
-        pad(1, -pitch / 2, 0, pd, pd, 'rect', drill, '+'),
-        pad(2, pitch / 2, 0, pd, pd, 'circle', drill, '−'),
-      ],
-      body: body(D, D),
-    };
-  },
-  { shape: 'circle' },
+export const radialFootprint = withBodyMarks(
+  defineFootprint(
+    'radial',
+    'Elektrolüüt THT',
+    { D: 6.3, pitch: 2.5 },
+    (params) => {
+      const D = numberChoice(params.D, [5, 6.3, 8, 10, 13]),
+        pitch = numberChoice(params.pitch, [2, 2.5, 3.5, 5]);
+      if (D === undefined || pitch === undefined) return undefined;
+      const pd = Math.min(1.8, pitch * 0.72),
+        drill = pd * 0.5;
+      return {
+        pads: [
+          pad(1, -pitch / 2, 0, pd, pd, 'rect', drill, '+'),
+          pad(2, pitch / 2, 0, pd, pd, 'circle', drill, '−'),
+        ],
+        body: body(D, D),
+      };
+    },
+    { shape: 'circle' },
+  ),
+  electrolyticMarks,
 );
 
 export const ledThtFootprint = defineFootprint(

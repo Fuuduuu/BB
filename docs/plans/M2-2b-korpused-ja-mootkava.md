@@ -86,7 +86,7 @@ Nimega testid on kaardi loendi järgi, lisateste ei tehta. Rajad: ülesanded 2 j
 **Osa B · Korpuste kuju**
 
 3. **Kuju mudel, joonistus ja teegi eelvaade** (rada A, O3, O4).
-   - `FootprintGeom.body` saab valikulise välja `shape: 'rect' | 'circle' | 'oval' | 'd'`; puudumisel `rect`. Uus domeenifunktsioon annab plaadi koordinaatides kuju (hulknurk või ring), mida kasutavad lõuend, tabamus ja `FootprintPreview`.
+   - Kuju `'rect' | 'circle' | 'oval' | 'd'` on korpuse definitsioonis (`FootprintDef.bodyShape`); puudumisel `rect`. `FootprintGeom` ei muutu, sest kaitsetest `existing_footprints_geometry_unchanged` võrdleb geomeetria JSON-i ([M2-2b-3](../tasks/M2-2b-3.md)). Uus domeenifunktsioon annab kontuuri hulknurgana, mida kasutavad lõuend, tabamus ja `FootprintPreview`.
    - Korpused: `radial`, `el_smd` → `circle`; `led_tht` (lame külg `K` pool), `to92` → `d`; `disc`, `xtal` → `oval`. Ülejäänud jäävad `rect`.
    - Teegi nimed O3 järgi.
 

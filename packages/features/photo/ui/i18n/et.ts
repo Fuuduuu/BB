@@ -19,7 +19,11 @@ export const photoEt = {
   transformFailed: 'Foto teisendamine ebaõnnestus.',
   calibration: {
     tool: 'Kalibreeri',
-    title: 'Kalibreeri mõõtkava',
+    title: 'Kui pikk see lõik on?',
+    quick: 'Kiirvalik',
+    quickLabel: (mm: string) => `${mm} mm`,
+    preview: (pxPerMm: string, um: string) => `= ${pxPerMm} px/mm · 1 px = ${um} µm`,
+    photoSize: (w: string, h: string) => `Foto: ${w} × ${h} mm`,
     shortcut: 'Kalibreeri mõõtkava (K)',
     distance: (px: number) => `Punktide vahe: ${px.toFixed(1).replace('.', ',')} px`,
     mm: 'Vahe millimeetrites',

@@ -119,6 +119,24 @@ test('scale_chip_shows_uncalibrated_or_px_per_mm', async () => {
   );
 });
 
+test('scale_chip_title_shows_photo_size', async () => {
+  const { engine } = await fixture();
+  const chip = screen.getByRole('button', { name: 'Kalibreeri mõõtkava (K)' });
+  expect(chip.hasAttribute('title')).toBe(false);
+
+  act(() => {
+    expect(
+      engine.execute('photo.setScale', {
+        a: { x: 0, y: 0 },
+        b: { x: 100, y: 0 },
+        mm: 10,
+      }).ok,
+    ).toBe(true);
+  });
+
+  expect(chip.getAttribute('title')).toBe('Foto: 30 × 20 mm');
+});
+
 test('uncalibrated_shortcut_starts_calibration', async () => {
   const { engine } = await fixture();
   const before = engine.snapshot();

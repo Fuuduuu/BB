@@ -37,17 +37,23 @@ export const chipDiodeFootprint = chipFamily('chip_diode', 'Diood SMD', diodes, 
   'A',
 ]);
 
-export const elSmdFootprint = defineFootprint('el_smd', 'Elektrolüüt SMD', { D: 6.3 }, (params) => {
-  const D = numberChoice(params.D, [4, 5, 6.3, 8, 10]);
-  if (D === undefined) return undefined;
-  const pc = D * 0.42,
-    pw = Math.max(1.4, D * 0.45),
-    ph = Math.max(1, D * 0.26);
-  return {
-    pads: [pad(1, -pc, 0, pw, ph, 'rect', 0, '+'), pad(2, pc, 0, pw, ph, 'rect', 0, '−')],
-    body: body(D + 0.3, D + 0.3),
-  };
-});
+export const elSmdFootprint = defineFootprint(
+  'el_smd',
+  'Elektrolüüt SMD',
+  { D: 6.3 },
+  (params) => {
+    const D = numberChoice(params.D, [4, 5, 6.3, 8, 10]);
+    if (D === undefined) return undefined;
+    const pc = D * 0.42,
+      pw = Math.max(1.4, D * 0.45),
+      ph = Math.max(1, D * 0.26);
+    return {
+      pads: [pad(1, -pc, 0, pw, ph, 'rect', 0, '+'), pad(2, pc, 0, pw, ph, 'rect', 0, '−')],
+      body: body(D + 0.3, D + 0.3),
+    };
+  },
+  { shape: 'circle' },
+);
 
 export const axialFootprint = defineFootprint(
   'axial',
@@ -82,7 +88,7 @@ export const axialFootprint = defineFootprint(
 
 export const discFootprint = defineFootprint(
   'disc',
-  'Kondensaator THT',
+  'Keraamiline kondensaator THT',
   { pitch: 5.08 },
   (params) => {
     const pitch = numberChoice(params.pitch, [2.54, 5.08]);
@@ -95,6 +101,7 @@ export const discFootprint = defineFootprint(
       body: body(pitch + 2.2, 2.6),
     };
   },
+  { shape: 'oval' },
 );
 
 export const radialFootprint = defineFootprint(
@@ -115,17 +122,24 @@ export const radialFootprint = defineFootprint(
       body: body(D, D),
     };
   },
+  { shape: 'circle' },
 );
 
-export const ledThtFootprint = defineFootprint('led_tht', 'LED THT', { D: 5 }, (params) => {
-  const D = numberChoice(params.D, [3, 5]);
-  if (D === undefined) return undefined;
-  const r = D / 2 + 0.4;
-  return {
-    pads: [
-      pad(1, -1.27, 0, 1.8, 1.8, 'rect', 0.9, 'K'),
-      pad(2, 1.27, 0, 1.8, 1.8, 'circle', 0.9, 'A'),
-    ],
-    body: body(r * 1.86, r * 2),
-  };
-});
+export const ledThtFootprint = defineFootprint(
+  'led_tht',
+  'LED THT',
+  { D: 5 },
+  (params) => {
+    const D = numberChoice(params.D, [3, 5]);
+    if (D === undefined) return undefined;
+    const r = D / 2 + 0.4;
+    return {
+      pads: [
+        pad(1, -1.27, 0, 1.8, 1.8, 'rect', 0.9, 'K'),
+        pad(2, 1.27, 0, 1.8, 1.8, 'circle', 0.9, 'A'),
+      ],
+      body: body(r * 1.86, r * 2),
+    };
+  },
+  { shape: 'd', flat: '-x' },
+);

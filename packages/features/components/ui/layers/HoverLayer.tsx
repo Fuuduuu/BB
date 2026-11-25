@@ -36,6 +36,38 @@ function padOutline(
   ].map((corner) => padToBoard(board, corner, pxPerMm));
 }
 
+function expandOutline(outline: Vec2[], center: Vec2, gap: number): Vec2[] {
+  if (outline.length > 4) {
+    return outline.map((point) => {
+      const dx = point.x - center.x;
+      const dy = point.y - center.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance === 0) return point;
+      return { x: point.x + (gap * dx) / distance, y: point.y + (gap * dy) / distance };
+    });
+  }
+
+  const [a, b, c, d] = outline;
+  if (!a || !b || !c || !d) return [];
+  // Expand the rectangle along its own axes, including when it is rotated or mirrored.
+  const x = { x: b.x - a.x, y: b.y - a.y };
+  const y = { x: d.x - a.x, y: d.y - a.y };
+  const width = Math.hypot(x.x, x.y);
+  const height = Math.hypot(y.x, y.y);
+  if (width === 0 || height === 0) return [];
+  const corners = [
+    { point: a, sx: -1, sy: -1 },
+    { point: b, sx: 1, sy: -1 },
+    { point: c, sx: 1, sy: 1 },
+    { point: d, sx: -1, sy: 1 },
+  ];
+  return corners.map(({ point, sx, sy }) => {
+    const dx = gap * ((sx * x.x) / width + (sy * y.x) / height);
+    const dy = gap * ((sx * x.y) / width + (sy * y.y) / height);
+    return { x: point.x + dx, y: point.y + dy };
+  });
+}
+
 function HoverLayer({ snapshot, zoom }: Parameters<LayerSpec['render']>[0]) {
   const componentId = useHoverStore((state) => state.componentId);
   if (componentId === null) return null;
@@ -44,40 +76,21 @@ function HoverLayer({ snapshot, zoom }: Parameters<LayerSpec['render']>[0]) {
   const { board, pins } = component;
   const { pxPerMm } = snapshot.doc.scale;
   const body = bodyOutline(board, pxPerMm);
-  const [a, b, c, d] =
-    body.length > 0
-      ? body
-      : padOutline(
-          board,
-          pins.map(({ id }) => id),
-          pxPerMm,
-          zoom,
-        );
-  if (!a || !b || !c || !d) return null;
-
-  // Expand the rectangle along its own axes, including when it is rotated or mirrored.
-  const x = { x: b.x - a.x, y: b.y - a.y };
-  const y = { x: d.x - a.x, y: d.y - a.y };
-  const width = Math.hypot(x.x, x.y);
-  const height = Math.hypot(y.x, y.y);
-  if (width === 0 || height === 0) return null;
-  const gap = 3 / zoom;
-  const corners = [
-    { point: a, sx: -1, sy: -1 },
-    { point: b, sx: 1, sy: -1 },
-    { point: c, sx: 1, sy: 1 },
-    { point: d, sx: -1, sy: 1 },
-  ];
-  const points = corners.map(({ point, sx, sy }) => {
-    const dx = gap * ((sx * x.x) / width + (sy * y.x) / height);
-    const dy = gap * ((sx * x.y) / width + (sy * y.y) / height);
-    return `${point.x + dx},${point.y + dy}`;
-  });
+  const outline = body.length
+    ? body
+    : padOutline(
+        board,
+        pins.map(({ id }) => id),
+        pxPerMm,
+        zoom,
+      );
+  const points = expandOutline(outline, board.center, 3 / zoom);
+  if (!points.length) return null;
 
   return (
     <g data-layer="components.hover" pointerEvents="none" aria-hidden="true">
       <polygon
-        points={points.join(' ')}
+        points={points.map(({ x, y }) => `${x},${y}`).join(' ')}
         fill="none"
         stroke="var(--accent)"
         strokeWidth={2}

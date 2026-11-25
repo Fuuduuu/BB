@@ -1,4 +1,9 @@
-import { footprintGeometry, type FootprintGeom } from '@pcbk/domain/footprints';
+import {
+  bodyLocalOutline,
+  footprintBodyShape,
+  footprintGeometry,
+  type FootprintGeom,
+} from '@pcbk/domain/footprints';
 import { COMPONENT_LIBRARY } from '../contract';
 import { placementEt } from './i18n/et';
 
@@ -46,7 +51,25 @@ function previewPad(pad: FootprintGeom['pads'][number], filled = false) {
   );
 }
 
-function silhouette(geometry: FootprintGeom) {
+function previewBody(footprint: string, body: FootprintGeom['body'], miniature = false) {
+  if (body.w <= 0 || body.h <= 0) return null;
+  const spec = footprintBodyShape(footprint);
+  const style = {
+    fill: miniature ? 'none' : 'var(--body-fill)',
+    stroke: 'var(--body)',
+    strokeWidth: miniature ? 1 : 1.4,
+    vectorEffect: 'non-scaling-stroke',
+  };
+  if (spec.shape === 'rect') {
+    return <rect x={-body.w / 2} y={-body.h / 2} width={body.w} height={body.h} {...style} />;
+  }
+  const points = bodyLocalOutline(body, spec)
+    .map(({ x, y }) => `${x},${y}`)
+    .join(' ');
+  return <polygon data-body-shape={spec.shape} points={points} {...style} />;
+}
+
+function silhouette(footprint: string, geometry: FootprintGeom) {
   const { body, pads } = geometry;
   return (
     <svg
@@ -56,18 +79,7 @@ function silhouette(geometry: FootprintGeom) {
       aria-hidden="true"
       data-silhouette=""
     >
-      {body.w > 0 && body.h > 0 && (
-        <rect
-          x={-body.w / 2}
-          y={-body.h / 2}
-          width={body.w}
-          height={body.h}
-          fill="none"
-          stroke="var(--body)"
-          strokeWidth={1}
-          vectorEffect="non-scaling-stroke"
-        />
-      )}
+      {previewBody(footprint, body, true)}
       {pads.map((pad) => previewPad(pad, true))}
     </svg>
   );
@@ -76,7 +88,7 @@ function silhouette(geometry: FootprintGeom) {
 const silhouettes = new Map(
   COMPONENT_LIBRARY.map(({ id, footprint, params }) => {
     const geometry = footprintGeometry(footprint, params);
-    return [id, geometry ? silhouette(geometry) : null] as const;
+    return [id, geometry ? silhouette(footprint, geometry) : null] as const;
   }),
 );
 
@@ -86,9 +98,11 @@ export function FootprintSilhouette({ entryId }: { entryId: string }) {
 
 export function FootprintPreview({
   name,
+  footprint,
   geometry,
 }: {
   name: string;
+  footprint: string;
   geometry: FootprintGeom | undefined;
 }) {
   const { body, pads } = geometry ?? { body: { w: 0, h: 0 }, pads: [] };
@@ -103,18 +117,7 @@ export function FootprintPreview({
           role="img"
           aria-label={placementEt.library.preview(name, pads.length)}
         >
-          {body.w > 0 && body.h > 0 && (
-            <rect
-              x={-body.w / 2}
-              y={-body.h / 2}
-              width={body.w}
-              height={body.h}
-              fill="var(--body-fill)"
-              stroke="var(--body)"
-              strokeWidth={1.4}
-              vectorEffect="non-scaling-stroke"
-            />
-          )}
+          {previewBody(footprint, body)}
           {pads.map((pad) => previewPad(pad))}
           {body.w > 0 && body.h > 0 && body.pin1 && (
             <circle

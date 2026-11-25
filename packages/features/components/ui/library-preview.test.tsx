@@ -109,3 +109,27 @@ test('library_preview_point_has_one_real_pad_and_no_body', () => {
   expect(svg.getAttribute('viewBox')).toBe('-1.25 -1.25 2.5 2.5');
   expect(svg.querySelector('[data-pin1]')).toBeNull();
 });
+
+test('library_preview_draws_footprint_shape', () => {
+  open('Elektrolüüt THT');
+  const radialPreview = screen.getByRole('img');
+  expect(radialPreview.querySelector('polygon[data-body-shape="circle"]')).not.toBeNull();
+  expect(radialPreview.querySelector('rect:not([data-pad])')).toBeNull();
+  const radialRow = screen.getByRole('button', { name: 'Elektrolüüt THT' });
+  expect(
+    radialRow.querySelector('[data-silhouette] polygon[data-body-shape="circle"]'),
+  ).not.toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Keraamiline kondensaator THT' }));
+  expect(screen.getByRole('img').querySelector('polygon[data-body-shape="oval"]')).not.toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: 'LED THT' }));
+  expect(screen.getByRole('img').querySelector('polygon[data-body-shape="d"]')).not.toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Takisti SMD' }));
+  expect(screen.getByRole('img').querySelector('rect:not([data-pad])')).not.toBeNull();
+
+  expect(screen.getByRole('button', { name: 'Keraamiline kondensaator SMD' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Kondensaator THT' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Kondensaator SMD' })).toBeNull();
+});

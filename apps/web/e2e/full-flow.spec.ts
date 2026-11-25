@@ -206,7 +206,7 @@ test('full_flow_steps_1_to_5', async ({ page }) => {
   await test.step('Ülejäänud korpused ja U1 andmed', async () => {
     const [c1, c2] = await placeFromLibrary(
       page,
-      'Kondensaator SMD',
+      'Keraamiline kondensaator SMD',
       [placements.c1, placements.c2],
       (panel) => panel.getByLabel('Korpus', { exact: true }).selectOption('0805'),
     );

@@ -4,12 +4,44 @@
 
 Sisenemispunkt: `packages/domain/src/footprints/index.ts`
 
+### `BodyFlat`
+```ts
+export type BodyFlat = '-x' | '+x' | '-y' | '+y';
+```
+
+### `bodyLocalOutline`
+
+Jagatud kontuur millimeetrites.
+
+```ts
+export function bodyLocalOutline({ w, h }: FootprintGeom['body'], spec: BodyShapeSpec): Vec2[];
+```
+
+### `BodyShape`
+```ts
+export type BodyShape = 'rect' | 'circle' | 'oval' | 'd';
+```
+
+### `BodyShapeSpec`
+```ts
+export interface BodyShapeSpec {
+    shape: BodyShape;
+    flat?: BodyFlat;
+}
+```
+
+### `footprintBodyShape`
+```ts
+export function footprintBodyShape(key: string): BodyShapeSpec;
+```
+
 ### `FootprintDef`
 ```ts
 export interface FootprintDef {
     key: string;
     name: string;
     defaults: FootprintParams;
+    bodyShape?: BodyShapeSpec;
     gen(p: FootprintParams): FootprintGeom | undefined;
 }
 ```

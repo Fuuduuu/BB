@@ -14,11 +14,17 @@ export const dpakFootprint = defineFootprint('dpak', 'DPAK', {}, () => ({
   pads: [pad(1, -2.28, 4.1, 1.1, 1.8), pad(2, 0, -1.6, 5.8, 6.2), pad(3, 2.28, 4.1, 1.1, 1.8)],
   body: body(6.6, 6.1),
 }));
-export const to92Footprint = defineFootprint('to92', 'TO-92', {}, () => ({
-  pads: [
-    pad(1, -1.27, 0, 1.05, 1.5, 'rect', 0.6),
-    pad(2, 0, 0, 1.05, 1.5, 'oval', 0.6),
-    pad(3, 1.27, 0, 1.05, 1.5, 'oval', 0.6),
-  ],
-  body: body(4.8, 4),
-}));
+export const to92Footprint = defineFootprint(
+  'to92',
+  'TO-92',
+  {},
+  () => ({
+    pads: [
+      pad(1, -1.27, 0, 1.05, 1.5, 'rect', 0.6),
+      pad(2, 0, 0, 1.05, 1.5, 'oval', 0.6),
+      pad(3, 1.27, 0, 1.05, 1.5, 'oval', 0.6),
+    ],
+    body: body(4.8, 4),
+  }),
+  { shape: 'd', flat: '+y' },
+);

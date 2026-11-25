@@ -72,6 +72,7 @@ function LibraryParameters({
       <FootprintParameters entry={entry} params={params} onChange={setParam} />
       <FootprintPreview
         name={libraryName(entry.id)}
+        footprint={entry.footprint}
         geometry={placementParams && footprintGeometry(entry.footprint, placementParams)}
       />
       {anchor && ids ? (

@@ -116,8 +116,20 @@
   font-size: 12px;
   font-weight: 600;
 }
+.pcbk-library__group {
+  container: library-group / inline-size;
+}
 .pcbk-library__group + .pcbk-library__group {
   border-top: 1px solid var(--line);
+}
+@container library-group (max-width: 250px) {
+  .pcbk-library__group > .pcbk-components__list {
+    padding-inline: 0;
+  }
+  .pcbk-library__row {
+    gap: 4px;
+    padding-inline: 3px;
+  }
 }
 .pcbk-library__silhouette-slot {
   display: flex;

@@ -1,5 +1,6 @@
 export { connectBeepPins } from './beep';
 export type { BeepOutcome } from './beep';
+export { componentTopology } from './component-topology';
 export {
   attachJunctionToPin,
   branchConnection,

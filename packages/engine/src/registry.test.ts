@@ -83,8 +83,9 @@ test.each([
 ])('registry rejects dependency cycles %#', (...modules) => {
   expect(() => buildRegistry([owner(), ...modules])).toThrow(RegistryError);
 });
-test('dependent derivations see the dependency result regardless of registration order', () => {
-  const { engine, host } = createEngine({
+test('derivations run in module dependency order', () => {
+  const calls: string[] = [];
+  const { host } = createEngine({
     clock,
     modules: [
       {
@@ -93,10 +94,13 @@ test('dependent derivations see the dependency result regardless of registration
         derive: [
           {
             key: 'unplacedSchematic',
-            inputs: [],
+            inputs: ['components'],
             schema: z.array(z.string()),
             initial: [],
-            run: (_doc, derived) => [...derived.unplacedBoard],
+            run(doc) {
+              calls.push('unplacedSchematic');
+              return doc.components.map(({ id }) => id);
+            },
           },
         ],
       },
@@ -105,15 +109,18 @@ test('dependent derivations see the dependency result regardless of registration
         derive: [
           {
             key: 'unplacedBoard',
-            inputs: [],
+            inputs: ['components'],
             schema: z.array(z.string()),
             initial: [],
-            run: () => ['cmp_dependency'],
+            run(doc) {
+              calls.push('unplacedBoard');
+              return doc.components.map(({ id }) => id);
+            },
           },
         ],
       },
     ],
   });
   host.load('registry', newBoardDoc('Plaat'), false);
-  expect(engine.snapshot().derived.unplacedSchematic).toEqual(['cmp_dependency']);
+  expect(calls).toEqual(['unplacedBoard', 'unplacedSchematic']);
 });

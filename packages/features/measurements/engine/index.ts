@@ -4,7 +4,7 @@ import { pinReadingsDerive } from './derive';
 
 export const measurementsEngine: EngineModule = {
   id: 'measurements',
-  dependsOn: ['components'],
+  dependsOn: ['components', 'connections'],
   owns: ['measurements'],
   commands,
   derive: [pinReadingsDerive],

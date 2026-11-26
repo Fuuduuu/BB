@@ -63,9 +63,17 @@ export function buildRegistry(modules: EngineModule[], reserved: DocKey[] = []) 
     }
     for (const spec of module.derive ?? []) {
       if (deriveKeys.has(spec.key)) throw new RegistryError(`Duplicate derivation: ${spec.key}`);
-      for (const field of spec.inputs) checkField(field);
+      const inputs = spec.inputs.map((input) => {
+        if (typeof input === 'string') {
+          checkField(input);
+          return input;
+        }
+        const { key, select } = input;
+        checkField(key);
+        return { key, select };
+      });
       deriveKeys.add(spec.key);
-      derive.push({ ...spec, inputs: [...spec.inputs] });
+      derive.push({ ...spec, inputs });
     }
   }
   return { commands, derive, reserved: new Set(reserved) };

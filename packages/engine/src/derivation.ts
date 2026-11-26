@@ -1,8 +1,25 @@
 import { newBoardDoc } from '@pcbk/domain';
 import type { BoardDoc } from '@pcbk/domain';
-import type { Snapshot } from '@pcbk/contracts';
+import type { DeepReadonly, Snapshot } from '@pcbk/contracts';
 import { sealTree } from './immutability';
-import type { DeriveSpec } from './types';
+import type { DeriveInput, DeriveSpec } from './types';
+
+function inputUnchanged(
+  input: DeriveInput,
+  previous: DeepReadonly<BoardDoc>,
+  doc: DeepReadonly<BoardDoc>,
+): boolean {
+  if (typeof input === 'string') return previous[input] === doc[input];
+  if (previous[input.key] === doc[input.key]) return true;
+
+  const before = input.select(previous);
+  const after = input.select(doc);
+  if (before.length !== after.length) return false;
+  for (let index = 0; index < before.length; index++) {
+    if (before[index] !== after[index]) return false;
+  }
+  return true;
+}
 
 export function createSnapshotBuilder(specs: readonly DeriveSpec[], history: Snapshot['history']) {
   const emptyDoc = newBoardDoc('');
@@ -28,9 +45,9 @@ export function createSnapshotBuilder(specs: readonly DeriveSpec[], history: Sna
     let derived = { ...empty.derived };
     for (const spec of specs) {
       const value =
-        sameSession && spec.inputs.every((field) => sameSession.doc[field] === doc[field])
+        sameSession && spec.inputs.every((input) => inputUnchanged(input, sameSession.doc, doc))
           ? sameSession.derived[spec.key]
-          : spec.schema.parse(spec.run(doc, sealTree(derived)));
+          : spec.schema.parse(spec.run(doc));
       derived = { ...derived, [spec.key]: value };
     }
     return sealTree({ sessionId, rev: doc.rev, doc, derived, history });

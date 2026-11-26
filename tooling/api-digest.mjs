@@ -3,6 +3,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  statSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -96,10 +97,20 @@ function entrypoints(root) {
     ['ui', 'ui/index.tsx'],
   ]);
   for (const name of directories(join(packages, 'features'))) {
+    const feature = join(packages, 'features', name);
+    const subdirectories = directories(feature);
     for (const [part, file] of parts) {
+      const path = join(feature, file);
+      if (
+        part !== 'contract' &&
+        subdirectories.includes(part) &&
+        !statSync(path, { throwIfNoEntry: false })?.isFile()
+      ) {
+        throw new Error(`Puudub avalik sisenemine: packages/features/${name}/${part}`);
+      }
       entries.push({
         name: `features-${name}-${part}`,
-        path: join(packages, 'features', name, file),
+        path,
       });
     }
   }

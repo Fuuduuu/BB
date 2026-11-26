@@ -7,6 +7,7 @@ export type {
   Clock,
   CommandCtx,
   CommandSpec,
+  DeriveInput,
   DeriveSpec,
   EngineHost,
   EngineModule,

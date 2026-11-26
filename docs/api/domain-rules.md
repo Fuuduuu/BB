@@ -33,6 +33,11 @@ export function branchConnection(doc: DrawingPositions & {
 }, input: BranchInput): BranchPlan;
 ```
 
+### `componentTopology`
+```ts
+export function componentTopology(components: readonly Component[]): readonly unknown[];
+```
+
 ### `connectBeepPins`
 ```ts
 export function connectBeepPins(doc: BoardDoc, { anchor, pin, connectionId }: {

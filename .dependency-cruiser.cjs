@@ -51,6 +51,15 @@ module.exports = {
       '^packages/features/[^/]+/ui/',
       `^packages/(?:engine|adapters)/|^packages/features/[^/]+/engine/|^apps/|${tauri}`,
     ),
+    {
+      name: 'feature-root-no-engine',
+      severity: 'error',
+      from: { path: '^packages/features/[^/]+/(?!engine/|ui/)', pathNot: tests },
+      to: {
+        path: '^packages/(?:engine|adapters)/|^packages/features/[^/]+/engine/',
+        dependencyTypesNot: ['type-only'],
+      },
+    },
     forbid(
       'feature-engine-no-ui',
       '^packages/features/[^/]+/engine/',

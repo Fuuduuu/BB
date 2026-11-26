@@ -63,6 +63,38 @@ test('feature_import_requires_declared_dependency', async () => {
   ).toEqual([]);
 });
 
+test('feature_ui_cannot_reach_engine_through_module_root', async () => {
+  const { output } = await cruise(['packages/features'], {
+    ...configuration.options,
+    baseDir: fixture,
+    tsConfig: { fileName: join(fixture, 'tsconfig.json') },
+    ruleSet: configuration,
+    validate: true,
+  });
+  if (typeof output === 'string') throw new Error('Expected a dependency-cruiser graph');
+
+  const probe = output.modules.find(
+    ({ source }) => source === 'packages/features/demo/ui/probe.ts',
+  );
+  expect(probe?.dependencies).toContainEqual(
+    expect.objectContaining({ resolved: 'packages/features/demo/glue.ts' }),
+  );
+  expect(output.summary.violations).toContainEqual(
+    expect.objectContaining({
+      from: 'packages/features/demo/ui/control.ts',
+      to: 'packages/engine/src/index.ts',
+      rule: expect.objectContaining({ name: 'feature-ui-not-engine' }),
+    }),
+  );
+  expect(output.summary.violations).toContainEqual(
+    expect.objectContaining({
+      from: 'packages/features/demo/glue.ts',
+      to: 'packages/engine/src/index.ts',
+      rule: expect.objectContaining({ name: 'feature-root-no-engine' }),
+    }),
+  );
+});
+
 test('production feature imports match the registered dependsOn declarations', async () => {
   const imports = await featureImports(workspace, 'tsconfig.base.json');
   expect(imports).toContainEqual(

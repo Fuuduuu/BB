@@ -50,6 +50,60 @@ test('derive_reuses_value_when_inputs_unchanged', () => {
   expect(run).toHaveBeenCalledTimes(4);
 });
 
+test('derive_select_reuses_unchanged_projection', () => {
+  const doc = newBoardDoc('Plaat');
+  doc.components.push(component());
+  const run = vi.fn((value: DeepReadonly<BoardDoc>) =>
+    value.components.flatMap(({ pins }) => pins.map(({ id }) => id)),
+  );
+  const editComponent = mutationModule(
+    (draft) => {
+      const first = draft.components[0]!;
+      if (first.ref === 'R1') {
+        first.ref = 'R2';
+      } else {
+        first.pins.push({ id: '3', uid: 'pin_cmp_a_3', nc: false });
+      }
+    },
+    ['components'],
+  );
+  const { engine } = setup({
+    doc,
+    modules: [
+      {
+        ...demo,
+        derive: [
+          {
+            key: 'unplacedBoard',
+            inputs: [
+              { key: 'components', select: (value) => value.components.map(({ pins }) => pins) },
+            ],
+            schema: z.array(z.string()),
+            initial: [],
+            run,
+          },
+        ],
+      },
+      editComponent,
+    ],
+  });
+  const before = engine.snapshot().derived.unplacedBoard;
+  expect(before).toEqual(['1', '2']);
+  expect(run).toHaveBeenCalledTimes(1);
+  expect(engine.execute('test.mutate', {}).ok).toBe(true);
+  expect(engine.snapshot().doc.components[0]!.ref).toBe('R2');
+  expect(engine.snapshot().derived.unplacedBoard).toBe(before);
+  expect(run).toHaveBeenCalledTimes(1);
+
+  expect(engine.execute('test.mutate', {}).ok).toBe(true);
+  expect(engine.snapshot().derived.unplacedBoard).toEqual(['1', '2', '3']);
+  expect(engine.undo().ok).toBe(true);
+  expect(engine.snapshot().derived.unplacedBoard).toEqual(['1', '2']);
+  expect(engine.redo().ok).toBe(true);
+  expect(engine.snapshot().derived.unplacedBoard).toEqual(['1', '2', '3']);
+  expect(run.mock.calls.map((args) => args.length)).toEqual([1, 1, 1, 1]);
+});
+
 test('derivation initial values are used without running specs and reuse ends on load', () => {
   const run = vi.fn(() => ['computed']);
   const { engine, host } = createEngine({

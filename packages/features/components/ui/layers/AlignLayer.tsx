@@ -80,7 +80,8 @@ function AlignLayer({ snapshot, zoom }: Parameters<LayerSpec['render']>[0]) {
   if (!board) return null;
   const { pxPerMm } = snapshot.doc.scale;
   const pinA = alignPinPosition(board, stage.pinA, pxPerMm);
-  const pinB = stage.step === 4 ? alignPinPosition(board, stage.pinB, pxPerMm) : undefined;
+  const pinB =
+    stage.step === 4 || stage.step === 5 ? alignPinPosition(board, stage.pinB, pxPerMm) : undefined;
   if (!pinA) return null;
   return (
     <g data-layer="components.align" pointerEvents="none" aria-hidden="true">
@@ -90,7 +91,14 @@ function AlignLayer({ snapshot, zoom }: Parameters<LayerSpec['render']>[0]) {
         number={1}
         zoom={zoom}
       />
-      {pinB && <AlignGuide pin={pinB} target={cursor} number={2} zoom={zoom} />}
+      {pinB && (
+        <AlignGuide
+          pin={pinB}
+          target={stage.step === 5 ? stage.targetB : cursor}
+          number={2}
+          zoom={zoom}
+        />
+      )}
     </g>
   );
 }

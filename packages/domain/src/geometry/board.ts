@@ -1,5 +1,11 @@
-import { footprintGeometry } from '../footprints';
-import type { PadGeom } from '../footprints';
+import {
+  bodyLocalMarks,
+  bodyLocalOutline,
+  footprintBodyMarks,
+  footprintBodyShape,
+  footprintGeometry,
+} from '../footprints';
+import type { BodyMark, PadGeom } from '../footprints';
 import type { BoardPlacement } from '../model/component';
 import type { Vec2 } from '../model/primitives';
 
@@ -94,14 +100,21 @@ export function boardPads(
 
 export function bodyOutline(placement: BoardPlacement, pxPerMm: number): Vec2[] {
   const geometry = footprintGeometry(placement.footprint, placement.params);
-  if (!geometry || geometry.body.w <= 0 || geometry.body.h <= 0) return [];
+  if (!geometry) return [];
+  return bodyLocalOutline(geometry.body, footprintBodyShape(placement.footprint)).map((point) =>
+    padToBoard(placement, point, pxPerMm),
+  );
+}
 
-  const halfW = geometry.body.w / 2;
-  const halfH = geometry.body.h / 2;
-  return [
-    { x: -halfW, y: -halfH },
-    { x: halfW, y: -halfH },
-    { x: halfW, y: halfH },
-    { x: -halfW, y: halfH },
-  ].map((corner) => padToBoard(placement, corner, pxPerMm));
+export function bodyMarks(placement: BoardPlacement, pxPerMm: number): BodyMark[] {
+  const specs = footprintBodyMarks(placement.footprint);
+  if (specs.length === 0) return [];
+  const geometry = footprintGeometry(placement.footprint, placement.params);
+  if (!geometry) return [];
+  return bodyLocalMarks(geometry, footprintBodyShape(placement.footprint), specs).map(
+    ({ lines, ...mark }) => ({
+      ...mark,
+      lines: lines.map((line) => line.map((point) => padToBoard(placement, point, pxPerMm))),
+    }),
+  );
 }

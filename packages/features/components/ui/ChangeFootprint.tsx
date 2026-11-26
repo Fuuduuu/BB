@@ -131,7 +131,11 @@ export function ChangeFootprint({ id, ids, onClose }: { id: string; ids: IdGen; 
         params={params}
         onChange={(key, value) => setParams((previous) => ({ ...previous, [key]: value }))}
       />
-      <FootprintPreview name={libraryName(entry.id)} geometry={geometry} />
+      <FootprintPreview
+        name={libraryName(entry.id)}
+        footprint={entry.footprint}
+        geometry={geometry}
+      />
       {error && (
         <p className="bb-field__error" role="alert">
           {error}

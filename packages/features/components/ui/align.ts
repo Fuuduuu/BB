@@ -22,6 +22,10 @@ type AlignResult =
       reason: 'same_pin' | 'pins_coincide' | 'targets_coincide' | 'scale_out_of_range';
     };
 
+export function scaleBasisKey(board: BoardPlacement): string {
+  return JSON.stringify([board.footprint, board.params, board.padMap ?? null]);
+}
+
 function pinId(pin: AlignPin): string {
   return typeof pin === 'string' ? pin : pin.id;
 }

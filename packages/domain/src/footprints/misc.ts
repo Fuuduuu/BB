@@ -1,10 +1,16 @@
 import { body, pad } from './helpers';
 import { defineFootprint } from './types';
 
-export const xtalFootprint = defineFootprint('xtal', 'Kvarts HC-49', {}, () => ({
-  pads: [pad(1, -2.44, 0, 1.5, 1.5, 'circle', 0.8), pad(2, 2.44, 0, 1.5, 1.5, 'circle', 0.8)],
-  body: body(11, 4.65),
-}));
+export const xtalFootprint = defineFootprint(
+  'xtal',
+  'Kvarts HC-49',
+  {},
+  () => ({
+    pads: [pad(1, -2.44, 0, 1.5, 1.5, 'circle', 0.8), pad(2, 2.44, 0, 1.5, 1.5, 'circle', 0.8)],
+    body: body(11, 4.65),
+  }),
+  { shape: 'oval' },
+);
 export const xtalSmdFootprint = defineFootprint('xtal_smd', 'Kvarts SMD', {}, () => ({
   pads: [
     pad(1, -1.1, 0.85, 1.4, 1.15),

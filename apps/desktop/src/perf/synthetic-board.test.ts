@@ -35,7 +35,7 @@ test('synthetic_board_has_300_components_3000_pins_1500_measurements', () => {
     true,
   );
   expect(new Set(board.components.map((component) => component.board?.footprint))).toEqual(
-    new Set(['chip', 'sot23', 'soic', 'header1']),
+    new Set(['chip', 'radial', 'sot23', 'soic', 'header1']),
   );
   expect(new Set(board.components.map((component) => component.board?.rotationDeg))).toEqual(
     new Set([0, 90, 180, 270]),

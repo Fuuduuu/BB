@@ -338,3 +338,53 @@ test('derived_unplaced_board_updates', () => {
   expect(engine.undo().ok).toBe(true);
   expect(engine.snapshot().derived.unplacedBoard).toEqual([]);
 });
+
+test('scale_from_pins_command_is_one_undo_step', () => {
+  const { engine } = setup();
+  const id = 'cmp_a';
+  const otherId = 'cmp_b';
+  const board = { footprint: 'chip', params: { size: '0805' }, center: { x: 100, y: 80 } };
+  const otherCenter = { x: 300, y: 300 };
+  expect(engine.execute('components.add', { ...add(id), board }).ok).toBe(true);
+  expect(
+    engine.execute('components.add', {
+      ...add(otherId),
+      board: { ...board, center: otherCenter },
+    }).ok,
+  ).toBe(true);
+  expect(engine.execute('components.setScale', { id, scaleX: 0.3, scaleY: 0.4 }).ok).toBe(true);
+  expect(engine.execute('components.setScale', { id: otherId, scaleX: 1.5, scaleY: 1 }).ok).toBe(
+    true,
+  );
+  const before = engine.snapshot().doc;
+  expect(before.scale.pxPerMm).toBe(10);
+  const params = {
+    id,
+    pinA: { id: '1', padIndex: 0 },
+    pinB: { id: '2', padIndex: 0 },
+    targetA: { x: 200, y: 200 },
+    targetB: { x: 200, y: 240 },
+    mm: 2,
+  };
+
+  expect(engine.execute('components.scaleFromPins', params)).toEqual({
+    ok: true,
+    value: { rev: before.rev + 1 },
+  });
+  const after = engine.snapshot().doc;
+  expect(after.scale.pxPerMm).toBe(20);
+  expect(after.components[0]?.board).toMatchObject({ scaleX: 1, scaleY: 1 });
+  expect(after.components[1]?.board).toMatchObject({ center: otherCenter, scaleX: 1.5, scaleY: 1 });
+
+  expect(engine.undo().ok).toBe(true);
+  const undone = engine.snapshot().doc;
+  expect(undone).toEqual({ ...before, rev: before.rev + 2 });
+
+  expect(
+    engine.execute('components.scaleFromPins', { ...params, pinB: params.pinA }),
+  ).toMatchObject({
+    ok: false,
+    error: { code: 'validation', issues: [{ message: 'pins_coincide' }] },
+  });
+  expect(engine.snapshot().doc).toBe(undone);
+});

@@ -20,11 +20,31 @@ export interface FootprintParams {
   [key: string]: string | number;
 }
 
+export type BodyShape = 'rect' | 'circle' | 'oval' | 'd';
+export type BodyFlat = '-x' | '+x' | '-y' | '+y';
+export interface BodyShapeSpec {
+  shape: BodyShape;
+  flat?: BodyFlat;
+}
+
+export type BodyMarkKind = 'plus' | 'band' | 'notch' | 'tab';
+export type BodyMarkSpec =
+  | { kind: 'plus'; pin: string }
+  | { kind: 'band'; pin: string }
+  | { kind: 'notch'; at: 'edge' | 'corner' }
+  | { kind: 'tab' };
+
 export interface FootprintDef {
   key: string;
   name: string;
   defaults: FootprintParams;
+  bodyShape?: BodyShapeSpec;
+  bodyMarks?: readonly BodyMarkSpec[];
   gen(p: FootprintParams): FootprintGeom | undefined;
+}
+
+export function withBodyMarks(def: FootprintDef, marks: readonly BodyMarkSpec[]): FootprintDef {
+  return { ...def, bodyMarks: marks };
 }
 
 export function isParameterObject(params: FootprintParams): boolean {
@@ -36,12 +56,14 @@ export function defineFootprint(
   name: string,
   defaults: FootprintParams,
   generate: FootprintDef['gen'],
+  bodyShape?: BodyShapeSpec,
 ): FootprintDef {
   const expectedKeys = Object.keys(defaults);
   return {
     key,
     name,
     defaults,
+    ...(bodyShape && { bodyShape }),
     gen(params) {
       if (!isParameterObject(params)) return undefined;
       const keys = Object.keys(params);

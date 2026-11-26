@@ -70,7 +70,7 @@ function submit(value: string) {
 test.each([' 2,54 ', ' 2.54 '])('calibration_accepts_decimal_comma (%s)', async (value) => {
   const { engine, execute } = await fixture();
   const before = engine.snapshot();
-  expect(screen.getByRole('dialog', { name: 'Kalibreeri mõõtkava' })).toBeTruthy();
+  expect(screen.getByRole('dialog', { name: 'Kui pikk see lõik on?' })).toBeTruthy();
   expect(screen.getByText('Punktide vahe: 25,4 px')).toBeTruthy();
   expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Vahe millimeetrites' }));
   submit(value);

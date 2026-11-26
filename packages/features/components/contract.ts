@@ -96,6 +96,17 @@ export const AlignSchema = SetScaleSchema.extend({
   center: Vec2Schema,
   rotationDeg: z.number(),
 });
+const PhysicalPinSchema = z.strictObject({
+  id: IdSchema,
+  padIndex: z.number().int().nonnegative(),
+});
+export const ScaleFromPinsSchema = ComponentTargetSchema.extend({
+  pinA: PhysicalPinSchema,
+  pinB: PhysicalPinSchema,
+  targetA: Vec2Schema,
+  targetB: Vec2Schema,
+  mm: z.number().positive(),
+});
 export const SetLabelOffsetSchema = ComponentTargetSchema.extend({ offset: Vec2Schema.nullable() });
 
 export type BoardInput = z.infer<typeof BoardInputSchema>;
@@ -114,6 +125,7 @@ export type RotateParams = z.infer<typeof RotateSchema>;
 export type DuplicateParams = z.infer<typeof DuplicateSchema>;
 export type SetScaleParams = z.infer<typeof SetScaleSchema>;
 export type AlignParams = z.infer<typeof AlignSchema>;
+export type ScaleFromPinsParams = z.infer<typeof ScaleFromPinsSchema>;
 export type SetLabelOffsetParams = z.infer<typeof SetLabelOffsetSchema>;
 
 declare module '@pcbk/contracts' {
@@ -138,6 +150,7 @@ declare module '@pcbk/contracts' {
     'components.duplicate': DuplicateParams;
     'components.setScale': SetScaleParams;
     'components.align': AlignParams;
+    'components.scaleFromPins': ScaleFromPinsParams;
     'components.setLabelOffset': SetLabelOffsetParams;
   }
 }

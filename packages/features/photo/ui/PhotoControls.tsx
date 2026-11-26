@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useEngine, useProjects, useSnapshot } from '@pcbk/client';
 import { Button, pickPhotoFile, useSessionStore, useViewStore } from '@pcbk/ui';
 import { mirrorHorizontal, rotateClockwise } from '../transform';
+import { calibrationPhotoSize, formatCalibrationDimension } from './calibration-preview';
 import { photoEt as text } from './i18n/et';
 import { readPhotoView } from './photo-view';
 import type { PhotoView } from './photo-view';
@@ -18,6 +19,10 @@ export function PhotoControls() {
   const view = readPhotoView(rawView);
   const [error, setError] = useState<{ sessionId: string; message: string }>();
   const photo = doc.photos.find(({ id }) => id === doc.activePhotoId);
+  const photoMm =
+    photo && doc.scale.calibrated !== false
+      ? calibrationPhotoSize(photo, doc.scale.pxPerMm)
+      : undefined;
   const input = useRef<HTMLInputElement>(null);
   const feedback = usePhotoImportStore();
   const importing = feedback.sessionId === sessionId && feedback.busy;
@@ -86,6 +91,14 @@ export function PhotoControls() {
         variant="ghost"
         className="pcbk-photo-scale"
         aria-label={text.calibration.shortcut}
+        title={
+          photoMm
+            ? text.calibration.photoSize(
+                formatCalibrationDimension(photoMm.width),
+                formatCalibrationDimension(photoMm.height),
+              )
+            : undefined
+        }
         onClick={() => useSessionStore.getState().setToolId(CALIBRATE_TOOL_ID)}
       >
         {doc.scale.calibrated === false ? text.uncalibrated : text.scale(doc.scale.pxPerMm)}

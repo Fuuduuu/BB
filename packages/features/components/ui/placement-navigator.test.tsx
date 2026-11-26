@@ -36,7 +36,7 @@ test('expanded_library_keeps_original_entries_and_unknown_subtitle', () => {
   const rows = screen.getAllByRole('listitem');
   const names = [
     'Takisti SMD',
-    'Kondensaator SMD',
+    'Keraamiline kondensaator SMD',
     'SOT-23',
     'SOIC',
     'TO-220',

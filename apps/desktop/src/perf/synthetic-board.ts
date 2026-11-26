@@ -34,7 +34,7 @@ export function generateSyntheticBoard(opts: {
   // Each group has 50 pins; 60 groups give exactly 300 components and 3000 pins.
   const mix: { id: string; params: FootprintParams }[] = [
     { id: 'r_smd', params: {} },
-    { id: 'c_smd', params: {} },
+    { id: 'c_el', params: { D: 6.3, pitch: 2.5 } },
     { id: 'sot23', params: {} },
     { id: 'soic', params: { pins: 28 } },
     { id: 'hdr1', params: { pins: 15, pitch: 1.27 } },

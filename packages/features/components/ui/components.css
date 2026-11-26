@@ -116,8 +116,20 @@
   font-size: 12px;
   font-weight: 600;
 }
+.pcbk-library__group {
+  container: library-group / inline-size;
+}
 .pcbk-library__group + .pcbk-library__group {
   border-top: 1px solid var(--line);
+}
+@container library-group (max-width: 250px) {
+  .pcbk-library__group > .pcbk-components__list {
+    padding-inline: 0;
+  }
+  .pcbk-library__row {
+    gap: 4px;
+    padding-inline: 3px;
+  }
 }
 .pcbk-library__silhouette-slot {
   display: flex;
@@ -290,4 +302,31 @@
   min-height: 28px;
   padding: 2px 6px;
   font-size: 17px;
+}
+
+.pcbk-align-question {
+  display: grid;
+  gap: 6px;
+  box-sizing: border-box;
+  max-width: 17rem;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+  font-size: 13px;
+  cursor: default;
+}
+
+.pcbk-align-question > h3,
+.pcbk-align-question > p {
+  margin: 0;
+  font-size: inherit;
+}
+
+.pcbk-align-question__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }

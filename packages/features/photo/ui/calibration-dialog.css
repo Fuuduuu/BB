@@ -7,6 +7,31 @@
   margin: 0;
 }
 
+.pcbk-calibration-input {
+  display: grid;
+  gap: 8px;
+}
+
+.pcbk-calibration-input .bb-input {
+  font-size: 20px;
+}
+
+.pcbk-calibration-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pcbk-calibration-quick .bb-button {
+  min-height: 28px;
+  padding: 3px 8px;
+}
+
+.pcbk-calibration-preview {
+  display: grid;
+  gap: 4px;
+}
+
 .pcbk-calibration-actions {
   display: flex;
   justify-content: flex-end;

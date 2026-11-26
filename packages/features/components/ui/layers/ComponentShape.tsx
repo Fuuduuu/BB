@@ -2,8 +2,9 @@ import { memo } from 'react';
 import type { Snapshot } from '@pcbk/contracts';
 import type { BoardPlacement } from '@pcbk/domain';
 import { footprintGeometry } from '@pcbk/domain/footprints';
-import { boardPads, bodyOutline, padToBoard } from '@pcbk/domain/geometry';
+import { boardPads, bodyMarks, bodyOutline, padToBoard } from '@pcbk/domain/geometry';
 import { SceneText } from '@pcbk/ui';
+import { markPath } from '../mark-path';
 import { isComponentLabelVisible, type ComponentLabelBox } from './label-placement';
 import { PinLabels, PinMarker } from './PinMarker';
 
@@ -43,20 +44,51 @@ function Body({
   if (outline.length === 0) return null;
   const pin1 = footprintGeometry(board.footprint, board.params)?.body.pin1;
   const pin1At = pin1 && padToBoard(board, pin1, pxPerMm);
+  const color = selected ? 'var(--sel)' : 'var(--body)';
   const geometry = {
     points: outline.map(({ x, y }) => `${x},${y}`).join(' '),
     strokeDasharray: board.side === 'bottom' ? '4 3' : undefined,
     vectorEffect: 'non-scaling-stroke',
   };
+  const marks = bodyMarks(board, pxPerMm).map((mark, index) => ({
+    key: `${mark.kind}:${index}`,
+    kind: mark.kind,
+    filled: mark.filled,
+    d: markPath(mark),
+  }));
   return (
     <>
       <polygon {...geometry} fill="var(--body-fill)" stroke="var(--halo)" strokeWidth={3.6} />
-      <polygon
-        {...geometry}
-        fill="none"
-        stroke={selected ? 'var(--sel)' : 'var(--body)'}
-        strokeWidth={1.4}
-      />
+      {marks
+        .filter(({ kind }) => kind === 'plus' || kind === 'band')
+        .map(({ key, kind, d }) => (
+          <path
+            key={key}
+            data-mark-halo={kind}
+            d={d}
+            vectorEffect={geometry.vectorEffect}
+            strokeDasharray={geometry.strokeDasharray}
+            fill="none"
+            stroke="var(--halo)"
+            strokeWidth={3.6}
+            strokeLinecap="round"
+          />
+        ))}
+      <polygon {...geometry} fill="none" stroke={color} strokeWidth={1.4} />
+      {marks.map(({ key, kind, d, filled }) => (
+        <path
+          key={key}
+          data-mark={kind}
+          d={d}
+          vectorEffect={geometry.vectorEffect}
+          stroke={color}
+          strokeDasharray={geometry.strokeDasharray}
+          fill={filled ? color : 'none'}
+          fillOpacity={filled ? 0.35 : undefined}
+          strokeWidth={filled ? 1 : 1.4}
+          strokeLinecap={filled ? undefined : 'round'}
+        />
+      ))}
       {pin1At && (
         <circle
           cx={pin1At.x}

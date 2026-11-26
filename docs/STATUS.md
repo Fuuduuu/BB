@@ -24,9 +24,8 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 ## Järgmine: M2.3 skeemi sümbolid ja paigutus
 
 - M2.2b on liidetud `main`-i `02ac941` (2026-11-26), versioon 0.7.0 `419ab44`, silt `v0.7.0`. Kaardid [M2-2b-1](tasks/M2-2b-1.md)–[M2-2b-7](tasks/M2-2b-7.md), jõudlus, näidisfailid ja kasutaja katse on [M2.2b üleandmises](plans/M2-2b-uleandmine.md). Astra auditi P1 leiud 01–05 ja leiud 06–07 on parandatud ([ülevaatus ja triaaž](review/2026-11-25-m2-2b-ulevaatus-2eb1a1c.md)). `main`-is läbisid `pnpm check` 1752/1752 ja E2E 46/46; Rusti kood on sama mis harus (108/110).
-- M2.3 plaan on kirjutamata. Sinna lähevad [teekaardi M2.3](07-teekaart.md#m23--skeemi-sümbolid-ja-paigutus) sisu, Astra M2.2b leiud 08–12 ja 14 ning tuletiste jõudlus (allpool).
+- [M2.3 plaan](plans/M2-3-skeemi-sumbolid-ja-paigutus.md) on kinnitatud (2026-11-26, O1–O6): ettevalmistav ülesanne, IEC sümbolid, A3 leht ja 2,54 mm ruudustik, jalgade vastavus nimede järgi, plaadipunktid skeemil, väljalase `v0.8.0`. Plaanis on kuus ülesannet; Astra M2.2b leiud 08–12 ja 14 ning tuletiste jõudlus on nende sees. Esimene kaart [M2-3-1](tasks/M2-3-1.md), moodulite piirid ja tuletised (rada B), on kirjutatud ja ootab commit'i; haru `codex/m2-3` tehakse `main`-ist.
 - Leid 13 (algfaili taastamine) läheb järgmisele salvestuse kaardile. Kasutaja suitsukatse vastus „korras“ (2026-11-25) on M2.2b üleandmises; 50 jala aega ei raporteeritud.
-- M2.3 plaani läheb jõudlus: `connectionLevels`-i ja `nets`-i tuletise sisend kitseneb jalgade topoloogiale ([M2.2 plaani järgmised tööd](plans/M2-2-piiksumisreziim.md#mis-jääb-järgmistesse-plaanidesse)).
 - Lahtine: salvestuse leiud 04–06 ning lühinimega tee normaliseerimine (`absolute()`, M2-1-12 CI järelparandus) järgmisele salvestuse kaardile, hiljemalt M4.3.
 - Astra tööriistad: leid 25 (kaardikontroll ei tohi nõutud testi vaikselt välja jätta), seejärel 26–30.
 - 02 § 16 ja § 6.2 kasutavad pööramiseks `R`/`Shift+R`-i (O2). 03 § 7.3 kirjeldab M1-4-10 sildi külje valikut.

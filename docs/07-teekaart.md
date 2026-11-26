@@ -186,6 +186,8 @@ M2 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse jär
 - [x] Kasutaja tunneb oma plaadi fotol komponendid ära ja suurused vastavad fotole. _(Kasutaja vastas suitsukatse järel „korras“, 2026-11-25; samme eraldi ei raporteeritud.)_
 
 ### M2.3 · Skeemi sümbolid ja paigutus
+**Olek:** plaan kinnitatud 2026-11-26 ([M2.3 plaan](plans/M2-3-skeemi-sumbolid-ja-paigutus.md), O1–O6), väljalase `v0.8.0`.
+
 **Sisu:** moodul `schematic`, esimene pool.
 - **algab lõuendi taaskasutuse prooviga:** sama lõuend teise koordinaadistikuga (skeemi ruudustik) ilma lõuendi koodi kopeerimata;
 - komponendi lisamine kummaski vaates ja „Plaadile/Skeemile paigutamata“ loendid;

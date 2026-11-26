@@ -205,3 +205,58 @@ test('scale_from_footprint_end_to_end', async ({ page }) => {
     await expectPhotoPoint(page, pin1, initialPin);
   });
 });
+
+test('align_enter_on_other_button_keeps_scale', async ({ page }) => {
+  await page.goto('/');
+  await dropPhoto(
+    page,
+    page.getByText('Lohista plaadi foto siia või kleebi Ctrl+V', { exact: true }),
+    await boardPhoto(page),
+  );
+  await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
+  const scaleChip = page.getByRole('button', { name: 'Kalibreeri mõõtkava (K)', exact: true });
+  await canvas(page).focus();
+  await page.keyboard.press('k');
+  await clickPhoto(page, { x: 20, y: 100 });
+  await clickPhoto(page, { x: 780, y: 100 });
+  const calibration = page.getByRole('dialog', { name: 'Kui pikk see lõik on?', exact: true });
+  await calibration.getByRole('button', { name: '25,4 mm', exact: true }).click();
+  await page.keyboard.press('Enter');
+  await expect(scaleChip).toHaveText(wrongScale);
+
+  const dip = await placeFromLibrary(page, 'DIP', dipCenter);
+  const pin = (number: string) =>
+    page.locator(`[data-layer="components.pins"] [data-component="${dip}"] [data-pin="${number}"]`);
+  await canvas(page).focus();
+  await page.keyboard.press('a');
+  await expect(page.getByText(/Joonda: vali jalg 1/)).toBeVisible();
+  await clickMarker(page, pin('1'));
+  await clickPhoto(page, targetA);
+  await clickMarker(page, pin('8'));
+  await clickPhoto(page, targetB);
+  const question = page.getByRole('dialog', {
+    name: 'Kas kasutada seda korpust mõõtkava aluseks?',
+    exact: true,
+  });
+  await expect(question).toBeVisible();
+
+  const components = page.getByRole('tab', { name: 'Komponendid', exact: true });
+  await expect(components).toHaveAttribute('aria-selected', 'false');
+  await components.focus();
+  await expect(components).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(components).toHaveAttribute('aria-selected', 'true');
+  await expect(scaleChip).toHaveText(wrongScale);
+  await expect(question).toBeVisible();
+
+  const separator = page.getByRole('separator', { name: 'Navigaatori laius', exact: true });
+  await separator.focus();
+  await expect(separator).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(scaleChip).toHaveText(wrongScale);
+  await expect(question).toBeVisible();
+
+  await question.getByRole('button', { name: 'Jäta nii', exact: true }).click();
+  await expect(question).not.toBeVisible();
+  await expect(scaleChip).toHaveText(wrongScale);
+});

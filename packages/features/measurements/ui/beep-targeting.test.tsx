@@ -168,3 +168,59 @@ test('beep_probe_shows_at_clicked_pad', () => {
     beep: true,
   });
 });
+
+test('beep_oval_corner_records_neighbour_pin', () => {
+  const neighbour = { c: 'cmp_p1', p: '1', uid: 'pin_p1_1' };
+  const oval = { c: 'cmp_q1', p: '3', uid: 'pin_q1_3' };
+  const { engine, svg, clickPin } = mountMeasurements({
+    seed(doc) {
+      doc.scale.pxPerMm = 20;
+      const source = doc.components[0]!;
+      const board = source.board!;
+      doc.components.push(
+        {
+          ...source,
+          id: oval.c,
+          ref: 'Q1',
+          kind: 'npn',
+          pins: ['1', '2', '3'].map((id) => ({ id, uid: `pin_q1_${id}`, nc: false })),
+          board: { ...board, footprint: 'to92', params: {}, center: { x: 150, y: 200 } },
+        },
+        {
+          ...source,
+          id: neighbour.c,
+          ref: 'P1',
+          kind: 'testpoint',
+          pins: [{ id: neighbour.p, uid: neighbour.uid, nc: false }],
+          board: {
+            ...board,
+            footprint: 'point',
+            params: { type: 'pad', size: 2 },
+            center: { x: 204, y: 214.7 },
+          },
+        },
+      );
+    },
+  });
+
+  fireEvent.keyDown(svg, { key: 'b' });
+  clickPin('1');
+  click(svg, 185.6, 214.7);
+  fireEvent.keyDown(svg, { key: 'Enter' });
+  expect(counts(engine)).toEqual([1, 1]);
+  const first = engine.snapshot().doc;
+  expect(first.measurements[0]).toMatchObject({ at: neighbour, ref: pinRef('1'), beep: true });
+  expect(first.connections[0]).toMatchObject({
+    a: { pin: { c: 'cmp_u1', p: '1' } },
+    b: { pin: { c: neighbour.c, p: neighbour.p } },
+  });
+
+  click(svg, 175.4, 210);
+  fireEvent.keyDown(svg, { key: 'Enter' });
+  expect(counts(engine)).toEqual([2, 2]);
+  expect(engine.snapshot().doc.measurements[1]).toMatchObject({
+    at: oval,
+    ref: pinRef('1'),
+    beep: true,
+  });
+});

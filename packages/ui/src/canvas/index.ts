@@ -1,8 +1,9 @@
 export { Canvas } from './Canvas';
 export type { CanvasProps } from './Canvas';
 export { CanvasHudAnchor } from './CanvasHud';
-export { createHitIndex } from './hit-index';
+export { createHitIndex, pickHit } from './hit-index';
 export type { HitDrag, HitIndex, HitItem, HitMatch, HitShape } from './hit-index';
+export { isToolKeyOrigin } from './tool-key-origin';
 export {
   LabelObstaclesContext,
   MONO_ADVANCE_EM,

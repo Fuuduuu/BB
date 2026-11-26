@@ -5,7 +5,15 @@ import type { BoardPlacement, MeasuredPin, Vec2 } from '@pcbk/domain';
 import { footprintPinIds } from '@pcbk/domain/footprints';
 import { boardPads } from '@pcbk/domain/geometry';
 import { pinKey } from '@pcbk/domain/rules';
-import { Button, CanvasHudAnchor, SceneText, useSessionStore, useViewStore } from '@pcbk/ui';
+import {
+  Button,
+  CanvasHudAnchor,
+  isToolKeyOrigin,
+  pickHit,
+  SceneText,
+  useSessionStore,
+  useViewStore,
+} from '@pcbk/ui';
 import type { CanvasTool, HitItem, ToolApi, ToolSpec } from '@pcbk/ui';
 import {
   beepGuardSchema,
@@ -125,14 +133,6 @@ function record(api: ToolApi, ids: IdGen, beep: boolean, connect: boolean) {
   updateBeep({ target: null });
 }
 
-function isBeepKeyOrigin(origin: EventTarget | null): boolean {
-  return (
-    origin === document.body ||
-    (origin instanceof SVGSVGElement && origin.querySelector('[data-scene]') !== null) ||
-    (origin instanceof Element && origin.closest('[data-beep-hud]') !== null)
-  );
-}
-
 function recordNoBeepKey(event: KeyboardEvent, api: ToolApi, ids: IdGen): boolean {
   const { target, guard } = getBeep();
   if (
@@ -237,7 +237,9 @@ function BeepHud({ api, ids }: { api: ToolApi; ids: IdGen }) {
     if (!target || guard) return;
     function onKeyDown(event: KeyboardEvent) {
       if (event.defaultPrevented || event.isComposing) return;
-      if (isBeepKeyOrigin(event.target) && recordNoBeepKey(event, api, ids)) event.preventDefault();
+      if (isToolKeyOrigin(event.target, '[data-beep-hud]') && recordNoBeepKey(event, api, ids)) {
+        event.preventDefault();
+      }
     }
     // Only this HUD's N takes precedence over the shell's Navigator shortcut.
     window.addEventListener('keydown', onKeyDown, true);
@@ -303,8 +305,7 @@ function createBeepTool(ids: IdGen): CanvasTool {
     cursor: 'crosshair',
     onPointerDown({ world, screen, shift }, api) {
       const zoom = useViewStore.getState().boardView.zoom;
-      const pins = api.hitIndex.queryAll(world, zoom).filter(({ item }) => item.kind === 'pin');
-      const hit = (pins.find(({ exact }) => exact) ?? pins[0])?.item;
+      const hit = pickHit(api.hitIndex, world, zoom, 'pin');
       const snapshot = api.snapshot();
       const contact = contactFromItem(snapshot, hit);
       gesture =
@@ -340,7 +341,7 @@ function createBeepTool(ids: IdGen): CanvasTool {
         resetBeepTool();
         return false;
       }
-      if ((!target && !guard) || !isBeepKeyOrigin(event.target)) return false;
+      if ((!target && !guard) || !isToolKeyOrigin(event.target, '[data-beep-hud]')) return false;
       if (event.key === 'Enter') {
         if (event.repeat) return true;
         // Let Enter activate the particular HUD button reached by Tab.

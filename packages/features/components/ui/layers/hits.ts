@@ -34,7 +34,14 @@ export function componentPinHits({ doc }: Snapshot): HitItem[] {
       shape:
         shape === 'circle' && halfPx.x === halfPx.y
           ? { type: 'point', at, r: halfPx.x }
-          : { type: 'rect', at, half: halfPx, angleDeg },
+          : {
+              type: 'rect',
+              at,
+              half: halfPx,
+              angleDeg,
+              ...(shape === 'oval' && { corner: 'round' as const }),
+              ...(shape === 'circle' && { corner: 'ellipse' as const }),
+            },
       priority: 2,
     }));
   });

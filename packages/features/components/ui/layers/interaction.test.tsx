@@ -188,6 +188,53 @@ test('align_uses_the_physical_pad_clicked_on_a_multi_pad_pin', () => {
 
 const scaleQuestion = 'Kas kasutada seda korpust mõõtkava aluseks?';
 
+test('align_scale_uses_clicked_pad_on_dense_board', () => {
+  const zoom = 0.25;
+  const { svg, container, engine, execute, getByRole } = mount({}, zoom, 'none', false);
+  const qfnId = 'cmp_qfn';
+  act(() => {
+    expect(
+      engine.execute('components.add', {
+        id: qfnId,
+        kind: 'ic',
+        pins: Array.from({ length: 33 }, (_, index) => ({
+          id: String(index + 1),
+          uid: `pin_qfn_${index + 1}`,
+        })),
+        board: {
+          footprint: 'qfn',
+          params: { pins: 32, pitch: 0.5, ep: 'jah', body: 0 },
+          center: { x: 400, y: 300 },
+        },
+      }).ok,
+    ).toBe(true);
+  });
+  fireEvent.keyDown(window, { key: 'a' });
+  click(svg, 387 * zoom, 302.5 * zoom);
+  click(svg, 100 * zoom, 100 * zoom);
+  click(svg, 422.5 * zoom, 317.5 * zoom);
+  click(svg, 157.01 * zoom, 100 * zoom);
+  expect(getByRole('dialog', { name: scaleQuestion })).toBeTruthy();
+
+  const outsideButton = document.createElement('button');
+  container.append(outsideButton);
+  outsideButton.focus();
+  expect.soft(fireEvent.keyDown(outsideButton, { key: 'Enter', cancelable: true })).toBe(true);
+  expect.soft(engine.snapshot().doc.scale.pxPerMm).toBe(10);
+
+  fireEvent.keyDown(svg, { key: 'Enter' });
+  expect(execute.mock.lastCall).toMatchObject([
+    'components.scaleFromPins',
+    { id: qfnId, pinA: { id: '33' }, pinB: { id: '17' } },
+  ]);
+  const { scale, components } = engine.snapshot().doc;
+  expect(Math.abs(scale.pxPerMm - 20)).toBeLessThanOrEqual(0.01);
+  expect(Math.abs(scale.calib!.mm - 2.85)).toBeLessThanOrEqual(0.005);
+  const board = components.find((item) => item.id === qfnId)!.board!;
+  const [ep] = boardPads(board, ['33'], scale.pxPerMm);
+  expect(Math.hypot(ep!.at.x - 100, ep!.at.y - 100)).toBeLessThanOrEqual(0.01);
+});
+
 test('align_question_after_applied_alignment', () => {
   const { svg, engine, execute, getByRole, queryByRole } = mount();
   const before = engine.snapshot().doc;
@@ -260,7 +307,7 @@ test('align_question_replaces_out_of_range_error', () => {
   click(svg, 110, 80);
   click(svg, 330, 120);
   getByRole('dialog', { name: scaleQuestion });
-  fireEvent.keyDown(window, { key: 'Enter' });
+  fireEvent.keyDown(svg, { key: 'Enter' });
   expect(execute.mock.calls.map(([command]) => command)).toEqual(['components.scaleFromPins']);
   const scaled = engine.snapshot().doc;
   expect(scaled.scale.pxPerMm).toBe(75);

@@ -4,7 +4,7 @@ import type { ToolApi } from './tools';
 
 export type HitShape =
   | { type: 'point'; at: Vec2; r: number }
-  | { type: 'rect'; at: Vec2; half: Vec2; angleDeg: number }
+  | { type: 'rect'; at: Vec2; half: Vec2; angleDeg: number; corner?: 'round' | 'ellipse' }
   | { type: 'segment'; a: Vec2; b: Vec2; width: number; widthUnit?: 'screen' }
   | { type: 'area'; polygon: Vec2[] };
 
@@ -29,6 +29,16 @@ export type HitMatch = { item: HitItem; distance: number; exact: boolean };
 export interface HitIndex {
   query(world: Vec2, zoom: number): HitItem | undefined;
   queryAll(world: Vec2, zoom: number): HitMatch[];
+}
+
+export function pickHit(
+  index: HitIndex,
+  world: Vec2,
+  zoom: number,
+  kind: string,
+): HitItem | undefined {
+  const matches = index.queryAll(world, zoom).filter(({ item }) => item.kind === kind);
+  return (matches.find(({ exact }) => exact) ?? matches[0])?.item;
 }
 
 type CellRange = { left: number; top: number; right: number; bottom: number };
@@ -127,8 +137,8 @@ function shapeDistance(world: Vec2, shape: HitShape, rectMinHalf: number): numbe
       const angle = (shape.angleDeg * Math.PI) / 180;
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
-      const x = dx * cos + dy * sin;
-      const y = -dx * sin + dy * cos;
+      const x = Math.abs(dx * cos + dy * sin);
+      const y = Math.abs(-dx * sin + dy * cos);
       const hx = Math.max(shape.half.x, rectMinHalf);
       const hy = Math.max(shape.half.y, rectMinHalf);
       // Keep boundary points eligible despite floating-point rotation error.
@@ -144,9 +154,17 @@ function shapeDistance(world: Vec2, shape: HitShape, rectMinHalf: number): numbe
           hx,
           hy,
         );
-      return Math.abs(x) <= hx + epsilon && Math.abs(y) <= hy + epsilon
-        ? Math.hypot(dx, dy)
-        : Infinity;
+      if (!(x <= hx + epsilon && y <= hy + epsilon)) return Infinity;
+      if (shape.corner === 'round') {
+        const radius = Math.min(hx, hy);
+        const cornerX = Math.max(0, x - (hx - radius));
+        const cornerY = Math.max(0, y - (hy - radius));
+        if (Math.hypot(cornerX, cornerY) > radius + epsilon) return Infinity;
+      }
+      if (shape.corner === 'ellipse' && Math.hypot(x / (hx + epsilon), y / (hy + epsilon)) > 1) {
+        return Infinity;
+      }
+      return Math.hypot(dx, dy);
     }
     case 'segment':
       return segmentDistance(world, shape.a, shape.b);

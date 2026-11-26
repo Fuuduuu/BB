@@ -129,6 +129,7 @@ export type HitShape = {
     at: Vec2;
     half: Vec2;
     angleDeg: number;
+    corner?: 'round' | 'ellipse';
 } | {
     type: 'segment';
     a: Vec2;
@@ -139,6 +140,11 @@ export type HitShape = {
     type: 'area';
     polygon: Vec2[];
 };
+```
+
+### `isToolKeyOrigin`
+```ts
+export function isToolKeyOrigin(origin: EventTarget | null, hudSelector: string): boolean;
 ```
 
 ### `LabelObstacle`
@@ -194,6 +200,11 @@ Conservative mono-font bounds including halo and one screen pixel of safety on e
 
 ```ts
 export function monoLabelHalf(text: string, fontSize: number, zoom: number, haloPx?: number): Vec2;
+```
+
+### `pickHit`
+```ts
+export function pickHit(index: HitIndex, world: Vec2, zoom: number, kind: string): HitItem | undefined;
 ```
 
 ### `SceneText`

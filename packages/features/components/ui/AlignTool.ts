@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import type { Vec2 } from '@pcbk/domain';
 import { pinSpacingMm } from '@pcbk/domain/rules';
-import { useViewStore } from '@pcbk/ui';
+import { isToolKeyOrigin, pickHit, useViewStore } from '@pcbk/ui';
 import type { CanvasTool, ToolApi, ToolSpec } from '@pcbk/ui';
 import { selectComponent } from '../contract';
 import { useAlignStore } from './align-store';
@@ -39,9 +39,13 @@ function alignClick(world: Vec2, api: ToolApi) {
   const { pxPerMm, calibrated } = snapshot.doc.scale;
   const { zoom } = useViewStore.getState().boardView;
   if (stage.step === 1 || stage.step === 3) {
-    const hit = api.hitIndex.query(world, zoom);
-    if (hit?.kind !== 'pin' || !hit.componentId || !('at' in hit.shape)) {
+    const hit = pickHit(api.hitIndex, world, zoom, 'pin');
+    if (!hit?.componentId) {
       setError(alignEt.pickPin);
+      return;
+    }
+    if (!('at' in hit.shape)) {
+      setError(alignEt.pinPosition);
       return;
     }
     const { id: logicalPin, componentId: id } = hit;
@@ -126,6 +130,7 @@ function createAlignTool(): CanvasTool {
     onKey(event, api) {
       if (useAlignStore.getState().stage.step !== 5 || event.key !== 'Enter') return false;
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;
+      if (!isToolKeyOrigin(event.target, '[data-align-question]')) return false;
       if (event.repeat) return true;
       if (event.target instanceof Element && event.target.closest('[data-align-question] button')) {
         return false;

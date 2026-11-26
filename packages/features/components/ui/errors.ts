@@ -23,6 +23,10 @@ export function commandError(error: EngineError): string {
             return alignEt.errors.pins_coincide;
           case 'scale_from_pins_out_of_range':
             return alignEt.scaleOutOfRange;
+          case 'scale_basis_changed':
+            return alignEt.scaleBasisChanged;
+          case 'scale_needs_library_pads':
+            return alignEt.scaleNeedsLibraryPads;
         }
       }
       return componentEt.invalid;

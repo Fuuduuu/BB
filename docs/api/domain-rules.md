@@ -258,12 +258,13 @@ export class RuleTargetNotFound extends Error {
 
 ### `scaleFromPins`
 ```ts
-export function scaleFromPins(doc: BoardDoc, { componentId, pinA, pinB, targetA, targetB, }: {
+export function scaleFromPins(doc: BoardDoc, { componentId, pinA, pinB, targetA, targetB, mm, }: {
     componentId: string;
     pinA: PhysicalPin;
     pinB: PhysicalPin;
     targetA: Vec2;
     targetB: Vec2;
+    mm: number;
 }): void;
 ```
 

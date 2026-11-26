@@ -67,7 +67,7 @@ export interface CanvasTool {
     onPointerUp(event: CanvasPointer, api: ToolApi): void;
     onKey?(event: KeyboardEvent, api: ToolApi): boolean;
     overlay?(api: ToolApi): JSX.Element | null;
-    hud?(api: ToolApi): JSX.Element | null;
+    hud?(api: ToolApi, snapshot: Snapshot): JSX.Element | null;
     onCancel?(api: ToolApi): void;
 }
 ```

@@ -6,7 +6,7 @@ import type { CanvasTool, ToolApi, ToolSpec } from '@pcbk/ui';
 import { selectComponent } from '../contract';
 import { useAlignStore } from './align-store';
 import { AlignScaleQuestion } from './AlignScaleQuestion';
-import { alignByTwoPins, hitAlignPin } from './align';
+import { alignByTwoPins, hitAlignPin, scaleBasisKey } from './align';
 import { commandError } from './errors';
 import { alignEt } from './i18n/et';
 
@@ -19,8 +19,13 @@ function selectForAlignment(api: ToolApi, id: string) {
 function applyComponentScale(api: ToolApi) {
   const { stage, reset, setError } = useAlignStore.getState();
   if (stage.step !== 5) return;
-  const { id, pinA, pinB, targetA, targetB } = stage;
-  const result = api.execute('components.scaleFromPins', { id, pinA, pinB, targetA, targetB });
+  const { id, pinA, pinB, targetA, targetB, mm, basis } = stage;
+  const board = selectComponent(api.snapshot(), id)?.board;
+  if (!board || scaleBasisKey(board) !== basis) {
+    reset();
+    return;
+  }
+  const result = api.execute('components.scaleFromPins', { id, pinA, pinB, targetA, targetB, mm });
   reset();
   if (result.ok) selectForAlignment(api, id);
   else setError(commandError(result.error));
@@ -80,18 +85,22 @@ function alignClick(world: Vec2, api: ToolApi) {
     setError(alignEt.pinPosition);
     return;
   }
-  const mm = pinSpacingMm(board, pinA, pinB) ?? 0;
+  const mm = pinSpacingMm(board, pinA, pinB);
   const distance = Math.hypot(world.x - targetA.x, world.y - targetA.y);
-  const ratio = distance / (mm * pxPerMm);
-  const proposed = distance / mm;
-  const canUseScale = mm > 0 && distance >= 5 && proposed >= 0.1 && proposed <= 1000;
-  const question = {
-    ...stage,
-    step: 5,
-    targetB: world,
-    ratio,
-    uncalibrated: calibrated === false,
-  } as const;
+  const question =
+    mm !== undefined && mm > 0 && distance >= 5
+      ? ({
+          ...stage,
+          step: 5,
+          targetB: world,
+          ratio: distance / (mm * pxPerMm),
+          uncalibrated: calibrated === false,
+          mm,
+          basis: scaleBasisKey(board),
+        } as const)
+      : undefined;
+  const proposed = question && distance / question.mm;
+  const canUseScale = proposed !== undefined && proposed >= 0.1 && proposed <= 1000;
   const pose = alignByTwoPins({
     board,
     pxPerMm,
@@ -102,19 +111,26 @@ function alignClick(world: Vec2, api: ToolApi) {
     minTargetDistance: 5 / zoom,
   });
   if (!pose.ok) {
-    if (pose.reason === 'scale_out_of_range' && canUseScale) advance(question);
+    if (pose.reason === 'scale_out_of_range' && question && canUseScale) advance(question);
     else setError(alignEt.errors[pose.reason]);
     return;
   }
   const { center, rotationDeg, scaleX, scaleY } = pose;
   const result = api.execute(ALIGN_TOOL_ID, { id, center, rotationDeg, scaleX, scaleY });
-  if (result.ok) {
-    selectForAlignment(api, id);
-    if (canUseScale && (question.uncalibrated || ratio < 0.8 || ratio > 1.25)) advance(question);
-    else reset();
-  } else {
+  if (!result.ok) {
     setError(commandError(result.error));
+    return;
   }
+  selectForAlignment(api, id);
+  const shouldOffer =
+    question !== undefined &&
+    (question.uncalibrated || question.ratio < 0.8 || question.ratio > 1.25);
+  if (shouldOffer && canUseScale) {
+    advance(question);
+    return;
+  }
+  reset();
+  if (shouldOffer) setError(alignEt.scaleOutOfRange);
 }
 
 function moved(start: Vec2, end: Vec2): boolean {
@@ -126,7 +142,8 @@ function createAlignTool(): CanvasTool {
   return {
     id: ALIGN_TOOL_ID,
     cursor: 'crosshair',
-    hud: (api) => createElement(AlignScaleQuestion, { api, onUse: () => applyComponentScale(api) }),
+    hud: (api, snapshot) =>
+      createElement(AlignScaleQuestion, { snapshot, onUse: () => applyComponentScale(api) }),
     onKey(event, api) {
       if (useAlignStore.getState().stage.step !== 5 || event.key !== 'Enter') return false;
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;

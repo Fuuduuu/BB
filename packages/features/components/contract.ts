@@ -105,6 +105,7 @@ export const ScaleFromPinsSchema = ComponentTargetSchema.extend({
   pinB: PhysicalPinSchema,
   targetA: Vec2Schema,
   targetB: Vec2Schema,
+  mm: z.number().positive(),
 });
 export const SetLabelOffsetSchema = ComponentTargetSchema.extend({ offset: Vec2Schema.nullable() });
 

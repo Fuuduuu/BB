@@ -300,6 +300,8 @@ export const alignEt = {
   useAsScale: 'Kasuta mõõtkavaks',
   keepAsIs: 'Jäta nii',
   scaleOutOfRange: 'Selle korpuse järgi jääks mõõtkava lubatud vahemikust (0,1–1000 px/mm) välja.',
+  scaleBasisChanged: 'Korpus või jalad muutusid. Joonda uuesti.',
+  scaleNeedsLibraryPads: 'Mõõtkava saab võtta ainult korpuse teegi jalgadest.',
   errors: {
     same_pin: 'Vali teine jalg.',
     pins_coincide: 'Jalad on samas kohas või nende asukoht on ebaselge.',

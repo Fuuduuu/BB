@@ -49,6 +49,7 @@ test('scale_from_pins_sets_scale_and_places_component', () => {
     pinB: { id: '2', padIndex: 0 },
     targetA: { x: 200, y: 200 },
     targetB: { x: 200, y: 240 },
+    mm: 2,
   };
 
   expect(pinSpacingMm(board, input.pinA, input.pinB)).toBe(2);
@@ -110,4 +111,63 @@ test('scale_from_pins_sets_scale_and_places_component', () => {
     RuleTargetNotFound,
   );
   expect(initial).toEqual(beforeRejected);
+});
+
+test('scale_from_pins_rejects_changed_basis_and_own_pads', () => {
+  const board: BoardPlacement = {
+    footprint: 'chip',
+    params: { size: '0805' },
+    center: { x: 100, y: 80 },
+    rotationDeg: 0,
+    side: 'top',
+    scaleX: 0.3,
+    scaleY: 0.4,
+    customPads: {},
+  };
+  const component: Component = {
+    id: 'cmp_r1',
+    ref: 'R1',
+    kind: 'resistor',
+    marking: '',
+    value: '',
+    identified: true,
+    dnp: false,
+    note: '',
+    pins: [
+      { id: '1', uid: 'pin_a', nc: false },
+      { id: '2', uid: 'pin_b', nc: false },
+    ],
+    board,
+  };
+  const doc = newBoardDoc('Sünteetiline mõõtkava alus');
+  doc.components.push(component);
+  const input = {
+    componentId: component.id,
+    pinA: { id: '1', padIndex: 0 },
+    pinB: { id: '2', padIndex: 0 },
+    targetA: { x: 200, y: 200 },
+    targetB: { x: 200, y: 240 },
+    mm: 2,
+  };
+
+  board.params = { size: '1206' };
+  const changedBasis = structuredClone(doc);
+  expect.soft(() => scaleFromPins(doc, input)).toThrow('scale_basis_changed');
+  expect.soft(doc).toEqual(changedBasis);
+
+  const ownPadsDoc = structuredClone(changedBasis);
+  const ownPadsBoard = ownPadsDoc.components[0]?.board;
+  assert(ownPadsBoard);
+  ownPadsBoard.footprint = 'area';
+  ownPadsBoard.params = {};
+  ownPadsBoard.customPads = {
+    '1': { local: { x: -2, y: 0 }, sizeMm: 1, shape: 'circle', through: false },
+    '2': { local: { x: 2, y: 0 }, sizeMm: 1, shape: 'circle', through: false },
+  };
+  const ownPads = structuredClone(ownPadsDoc);
+  expect.soft(pinSpacingMm(ownPadsBoard, input.pinA, input.pinB)).toBeUndefined();
+  expect
+    .soft(() => scaleFromPins(ownPadsDoc, { ...input, mm: 4 }))
+    .toThrow('scale_needs_library_pads');
+  expect.soft(ownPadsDoc).toEqual(ownPads);
 });

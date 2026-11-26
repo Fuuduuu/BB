@@ -1,0 +1,268 @@
+{
+  "format_version": 1,
+  "rev": 9,
+  "name": "M2-2b-7-v060-synteetiline",
+  "status": "mapping",
+  "scale": {
+    "pxPerMm": 10.000000299776298,
+    "calibrated": true,
+    "calib": {
+      "a": {
+        "x": 58.39998939037338,
+        "y": 109.60000177323815
+      },
+      "b": {
+        "x": 738.4000097751616,
+        "y": 109.60000177323815
+      },
+      "mm": 68
+    }
+  },
+  "photos": [
+    {
+      "id": "pho_sDhpBYNh-W",
+      "side": "top",
+      "name": "M2-2b-7-v060-synteetiline.png",
+      "widthPx": 800,
+      "heightPx": 600,
+      "transform": "none"
+    }
+  ],
+  "components": [
+    {
+      "id": "cmp_E2aXXtmpfM",
+      "kind": "resistor",
+      "ref": "R1",
+      "marking": "",
+      "value": "",
+      "identified": false,
+      "dnp": false,
+      "note": "",
+      "pins": [
+        {
+          "id": "1",
+          "uid": "pin_NJbv-wU9oW",
+          "nc": false
+        },
+        {
+          "id": "2",
+          "uid": "pin_vCtgxf6Kek",
+          "nc": false
+        }
+      ],
+      "board": {
+        "footprint": "chip",
+        "params": {
+          "size": "0805"
+        },
+        "center": {
+          "x": 239.9999927878381,
+          "y": 359.2000041574239
+        },
+        "rotationDeg": 0,
+        "side": "top",
+        "scaleX": 1,
+        "scaleY": 1,
+        "customPads": {}
+      }
+    },
+    {
+      "id": "cmp_OgwOSDbSst",
+      "kind": "ic",
+      "ref": "U1",
+      "marking": "",
+      "value": "",
+      "identified": false,
+      "dnp": false,
+      "note": "",
+      "pins": [
+        {
+          "id": "1",
+          "uid": "pin_YgiyvVXi02",
+          "nc": false
+        },
+        {
+          "id": "2",
+          "uid": "pin_089rzU4exo",
+          "nc": false
+        },
+        {
+          "id": "3",
+          "uid": "pin_FnOH_xHwIl",
+          "nc": false,
+          "name": "FB"
+        },
+        {
+          "id": "4",
+          "uid": "pin_Kv4nSfZzVF",
+          "nc": false
+        },
+        {
+          "id": "5",
+          "uid": "pin_qa48vmjTk6",
+          "nc": false
+        },
+        {
+          "id": "6",
+          "uid": "pin_7I1DWZ7TC4",
+          "nc": false
+        },
+        {
+          "id": "7",
+          "uid": "pin_vaPbCe8BJz",
+          "nc": false
+        },
+        {
+          "id": "8",
+          "uid": "pin_iRTzJnjvx1",
+          "nc": true
+        }
+      ],
+      "board": {
+        "footprint": "soic",
+        "params": {
+          "pins": 8,
+          "body": 3.9
+        },
+        "center": {
+          "x": 470.4000137686728,
+          "y": 279.2000053495168
+        },
+        "rotationDeg": 0,
+        "side": "top",
+        "scaleX": 1,
+        "scaleY": 1,
+        "customPads": {}
+      }
+    }
+  ],
+  "junctions": [],
+  "connections": [
+    {
+      "id": "con_oUMNK8DyCW",
+      "a": {
+        "pin": {
+          "c": "cmp_OgwOSDbSst",
+          "p": "1"
+        }
+      },
+      "b": {
+        "pin": {
+          "c": "cmp_E2aXXtmpfM",
+          "p": "1"
+        }
+      },
+      "basis": "assumed"
+    }
+  ],
+  "netLabels": [
+    {
+      "id": "lbl_WxgWbrSwdF",
+      "anchor": {
+        "pin": {
+          "c": "cmp_E2aXXtmpfM",
+          "p": "1"
+        }
+      },
+      "source": "user",
+      "roleId": "rol_gnd"
+    }
+  ],
+  "roles": [
+    {
+      "id": "rol_gnd",
+      "label": "GND",
+      "kind": "ground",
+      "nominalV": 0,
+      "color": "#1f2523"
+    },
+    {
+      "id": "rol_3v3",
+      "label": "3V3",
+      "kind": "power",
+      "nominalV": 3.3,
+      "color": "#e8891c"
+    },
+    {
+      "id": "rol_5v",
+      "label": "5V",
+      "kind": "power",
+      "nominalV": 5,
+      "color": "#d9342b"
+    },
+    {
+      "id": "rol_12v",
+      "label": "12V",
+      "kind": "power",
+      "nominalV": 12,
+      "color": "#2a64d6"
+    },
+    {
+      "id": "rol_sig",
+      "label": "Signaal",
+      "kind": "signal",
+      "color": "#8a4fd3"
+    },
+    {
+      "id": "rol_unk",
+      "label": "Teadmata",
+      "kind": "unknown",
+      "color": "#8c9692"
+    }
+  ],
+  "measurements": [
+    {
+      "id": "msr_qFvTTVlsWt",
+      "mode": "continuity",
+      "at": {
+        "c": "cmp_E2aXXtmpfM",
+        "p": "1",
+        "uid": "pin_NJbv-wU9oW"
+      },
+      "ref": {
+        "c": "cmp_OgwOSDbSst",
+        "p": "1",
+        "uid": "pin_YgiyvVXi02"
+      },
+      "beep": true,
+      "power": "unknown",
+      "takenAt": "2026-11-26T18:44:37.070Z",
+      "atLabel": "R1.1",
+      "refLabel": "U1.1",
+      "source": "beep_mode"
+    },
+    {
+      "id": "msr_nAT8A93nu4",
+      "mode": "continuity",
+      "at": {
+        "c": "cmp_E2aXXtmpfM",
+        "p": "2",
+        "uid": "pin_vCtgxf6Kek"
+      },
+      "ref": {
+        "c": "cmp_OgwOSDbSst",
+        "p": "1",
+        "uid": "pin_YgiyvVXi02"
+      },
+      "beep": false,
+      "power": "unknown",
+      "takenAt": "2026-11-26T18:44:42.120Z",
+      "atLabel": "R1.2",
+      "refLabel": "U1.1",
+      "source": "beep_mode"
+    }
+  ],
+  "measureSettings": {
+    "voltageTolerancePct": 10,
+    "voltageToleranceMinV": 0.1
+  },
+  "repairs": [],
+  "areas": [],
+  "dimensions": [],
+  "textNotes": [],
+  "importChecks": [],
+  "guide": {
+    "skipped": []
+  },
+  "activePhotoId": "pho_sDhpBYNh-W"
+}

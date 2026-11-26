@@ -50,22 +50,43 @@ function Body({
     strokeDasharray: board.side === 'bottom' ? '4 3' : undefined,
     vectorEffect: 'non-scaling-stroke',
   };
+  const marks = bodyMarks(board, pxPerMm).map((mark, index) => ({
+    key: `${mark.kind}:${index}`,
+    kind: mark.kind,
+    filled: mark.filled,
+    d: markPath(mark),
+  }));
   return (
     <>
       <polygon {...geometry} fill="var(--body-fill)" stroke="var(--halo)" strokeWidth={3.6} />
+      {marks
+        .filter(({ kind }) => kind === 'plus' || kind === 'band')
+        .map(({ key, kind, d }) => (
+          <path
+            key={key}
+            data-mark-halo={kind}
+            d={d}
+            vectorEffect={geometry.vectorEffect}
+            strokeDasharray={geometry.strokeDasharray}
+            fill="none"
+            stroke="var(--halo)"
+            strokeWidth={3.6}
+            strokeLinecap="round"
+          />
+        ))}
       <polygon {...geometry} fill="none" stroke={color} strokeWidth={1.4} />
-      {bodyMarks(board, pxPerMm).map((mark, index) => (
+      {marks.map(({ key, kind, d, filled }) => (
         <path
-          key={`${mark.kind}:${index}`}
-          data-mark={mark.kind}
-          d={markPath(mark)}
+          key={key}
+          data-mark={kind}
+          d={d}
           vectorEffect={geometry.vectorEffect}
           stroke={color}
           strokeDasharray={geometry.strokeDasharray}
-          fill={mark.filled ? color : 'none'}
-          fillOpacity={mark.filled ? 0.35 : undefined}
-          strokeWidth={mark.filled ? 1 : 1.4}
-          strokeLinecap={mark.filled ? undefined : 'round'}
+          fill={filled ? color : 'none'}
+          fillOpacity={filled ? 0.35 : undefined}
+          strokeWidth={filled ? 1 : 1.4}
+          strokeLinecap={filled ? undefined : 'round'}
         />
       ))}
       {pin1At && (

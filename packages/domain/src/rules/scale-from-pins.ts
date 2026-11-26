@@ -1,3 +1,4 @@
+import { footprintGeometry } from '../footprints';
 import { boardPads } from '../geometry/board';
 import type { BoardDoc } from '../model/board';
 import type { BoardPlacement } from '../model/component';
@@ -15,10 +16,22 @@ function pinPairInMm(board: BoardPlacement, pinA: PhysicalPin, pinB: PhysicalPin
     scaleX: 1,
     scaleY: 1,
   };
-  const a = boardPads(unitPlacement, [pinA.id], 1)[pinA.padIndex]?.at;
-  const b = boardPads(unitPlacement, [pinB.id], 1)[pinB.padIndex]?.at;
+  const pads = boardPads(unitPlacement, [pinA.id, pinB.id], 1);
+  const pinPosition = ({ id, padIndex }: PhysicalPin) =>
+    pads.filter(({ pinId }) => pinId === id)[padIndex]?.at;
+  const a = pinPosition(pinA);
+  const b = pinPosition(pinB);
   if (!a || !b) return undefined;
-  return { a, b, mm: Math.hypot(b.x - a.x, b.y - a.y) };
+
+  const libraryPads = footprintGeometry(board.footprint, board.params)?.pads ?? [];
+  const isLibraryPad = ({ id, padIndex }: PhysicalPin) =>
+    padIndex < libraryPads.filter((pad) => (board.padMap?.[pad.id] ?? pad.id) === id).length;
+  return {
+    a,
+    b,
+    mm: Math.hypot(b.x - a.x, b.y - a.y),
+    hasLibraryPads: isLibraryPad(pinA) && isLibraryPad(pinB),
+  };
 }
 
 export function pinSpacingMm(
@@ -26,7 +39,8 @@ export function pinSpacingMm(
   pinA: PhysicalPin,
   pinB: PhysicalPin,
 ): number | undefined {
-  return pinPairInMm(board, pinA, pinB)?.mm;
+  const pair = pinPairInMm(board, pinA, pinB);
+  return pair?.hasLibraryPads ? pair.mm : undefined;
 }
 
 export function scaleFromPins(
@@ -37,7 +51,15 @@ export function scaleFromPins(
     pinB,
     targetA,
     targetB,
-  }: { componentId: string; pinA: PhysicalPin; pinB: PhysicalPin; targetA: Vec2; targetB: Vec2 },
+    mm,
+  }: {
+    componentId: string;
+    pinA: PhysicalPin;
+    pinB: PhysicalPin;
+    targetA: Vec2;
+    targetB: Vec2;
+    mm: number;
+  },
 ): void {
   const component = doc.components.find(({ id }) => id === componentId);
   if (!component) throw new RuleTargetNotFound(componentId);
@@ -45,9 +67,12 @@ export function scaleFromPins(
   if (!board) throw new RuleRejected('not_placed');
   if (pinA.id === pinB.id) throw new RuleRejected('pins_coincide');
   const pair = pinPairInMm(board, pinA, pinB);
-  if (!pair || pair.mm === 0) throw new RuleRejected('pins_coincide');
+  if (!pair) throw new RuleRejected('pins_coincide');
+  if (!pair.hasLibraryPads) throw new RuleRejected('scale_needs_library_pads');
+  if (pair.mm === 0) throw new RuleRejected('pins_coincide');
+  if (Math.abs(pair.mm - mm) > 1e-6) throw new RuleRejected('scale_basis_changed');
 
-  const { a, b, mm } = pair;
+  const { a, b } = pair;
   const targetX = targetB.x - targetA.x;
   const targetY = targetB.y - targetA.y;
   const distance = Math.hypot(targetX, targetY);

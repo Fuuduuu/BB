@@ -1,13 +1,13 @@
 import { useId, useLayoutEffect, useRef } from 'react';
-import { pinSpacingMm } from '@pcbk/domain/rules';
+import type { Snapshot } from '@pcbk/contracts';
 import { Button, CanvasHudAnchor } from '@pcbk/ui';
-import type { ToolApi } from '@pcbk/ui';
 import { selectComponent } from '../contract';
+import { scaleBasisKey } from './align';
 import { useAlignStore } from './align-store';
 import type { AlignScaleStage } from './align-store';
 import { alignEt } from './i18n/et';
 
-type QuestionProps = { api: ToolApi; onUse: () => void };
+type QuestionProps = { snapshot: Snapshot; onUse: () => void };
 
 function decimal(value: number, places: number): string {
   return value.toFixed(places).replace('.', ',');
@@ -19,15 +19,13 @@ function scaleExplanation({ ratio, uncalibrated }: AlignScaleStage) {
   if (ratio > 1) return alignEt.scaleLarger(decimal(ratio, 1));
 }
 
-function QuestionPanel({ api, onUse, stage }: QuestionProps & { stage: AlignScaleStage }) {
+function QuestionPanel({ onUse, stage }: { onUse: () => void; stage: AlignScaleStage }) {
   const heading = useId();
   const primary = useRef<HTMLButtonElement>(null);
   useLayoutEffect(() => primary.current?.focus({ preventScroll: true }), []);
 
-  const { id, pinA, pinB, targetA, targetB } = stage;
-  const board = selectComponent(api.snapshot(), id)?.board;
-  const mm = board && pinSpacingMm(board, pinA, pinB);
-  const proposed = mm ? Math.hypot(targetB.x - targetA.x, targetB.y - targetA.y) / mm : undefined;
+  const { mm, targetA, targetB } = stage;
+  const proposed = Math.hypot(targetB.x - targetA.x, targetB.y - targetA.y) / mm;
   const explanation = scaleExplanation(stage);
   return (
     <CanvasHudAnchor at={targetB}>
@@ -39,7 +37,7 @@ function QuestionPanel({ api, onUse, stage }: QuestionProps & { stage: AlignScal
       >
         <h3 id={heading}>{alignEt.scaleQuestion}</h3>
         {explanation && <p>{explanation}</p>}
-        {proposed !== undefined && <p>{alignEt.scaleResult(decimal(proposed, 2))}</p>}
+        <p>{alignEt.scaleResult(decimal(proposed, 2))}</p>
         <div className="pcbk-align-question__actions">
           <Button ref={primary} variant="primary" onClick={onUse}>
             {alignEt.useAsScale}
@@ -51,7 +49,12 @@ function QuestionPanel({ api, onUse, stage }: QuestionProps & { stage: AlignScal
   );
 }
 
-export function AlignScaleQuestion(props: QuestionProps) {
+export function AlignScaleQuestion({ snapshot, onUse }: QuestionProps) {
   const stage = useAlignStore((store) => store.stage);
-  return stage.step === 5 ? <QuestionPanel {...props} stage={stage} /> : null;
+  const board = stage.step === 5 ? selectComponent(snapshot, stage.id)?.board : undefined;
+  const basisChanged = stage.step === 5 && (!board || scaleBasisKey(board) !== stage.basis);
+  useLayoutEffect(() => {
+    if (basisChanged) useAlignStore.getState().reset();
+  }, [basisChanged]);
+  return stage.step === 5 && !basisChanged ? <QuestionPanel onUse={onUse} stage={stage} /> : null;
 }

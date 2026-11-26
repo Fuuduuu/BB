@@ -364,6 +364,7 @@ test('scale_from_pins_command_is_one_undo_step', () => {
     pinB: { id: '2', padIndex: 0 },
     targetA: { x: 200, y: 200 },
     targetB: { x: 200, y: 240 },
+    mm: 2,
   };
 
   expect(engine.execute('components.scaleFromPins', params)).toEqual({

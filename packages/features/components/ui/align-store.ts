@@ -10,6 +10,8 @@ export type AlignScaleStage = SecondPin & {
   targetB: Vec2;
   ratio: number;
   uncalibrated: boolean;
+  mm: number;
+  basis: string;
 };
 export type AlignStage =
   | { step: 1 }

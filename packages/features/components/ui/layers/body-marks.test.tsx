@@ -154,3 +154,99 @@ test('body_marks_draw_on_canvas', () => {
   expect(pin1Dot.previousElementSibling).toBe(notch);
   expect(body('cmp_r1').querySelector('[data-mark]')).toBeNull();
 });
+
+test('component_marks_have_halo_underlay', () => {
+  const doc = newBoardDoc('Polaarsusmärkide alusjoon');
+  doc.scale.pxPerMm = 10;
+  const placement = { side: 'top', rotationDeg: 0, scaleX: 1, scaleY: 1, customPads: {} } as const;
+  doc.components.push(
+    component(
+      'cmp_c1',
+      'C1',
+      'capacitor_polarized',
+      {
+        ...placement,
+        footprint: 'radial',
+        params: { D: 6.3, pitch: 2.5 },
+        side: 'bottom',
+        rotationDeg: 90,
+        center: { x: 100, y: 100 },
+      },
+      2,
+    ),
+    component(
+      'cmp_u1',
+      'U1',
+      'ic',
+      {
+        ...placement,
+        footprint: 'soic',
+        params: { pins: 8, body: 3.9 },
+        center: { x: 220, y: 100 },
+      },
+      8,
+    ),
+    component(
+      'cmp_r1',
+      'R1',
+      'resistor',
+      {
+        ...placement,
+        footprint: 'chip',
+        params: { size: '0805' },
+        center: { x: 340, y: 100 },
+      },
+      2,
+    ),
+  );
+  const { engine } = setup(doc);
+  useSessionStore.getState().reset(engine.snapshot().sessionId);
+  const { container } = render(
+    <Canvas
+      layers={COMPONENTS_LAYERS}
+      tools={[]}
+      snapshot={engine.snapshot()}
+      execute={engine.execute}
+      sceneTransform="none"
+      view={{ zoom: 1, pan: { x: 0, y: 0 } }}
+      onViewChange={() => {}}
+    />,
+  );
+  const bodies = container.querySelector('[data-layer="components.bodies"]');
+  const radial = bodies?.querySelector('[data-component="cmp_c1"]');
+  const soic = bodies?.querySelector('[data-component="cmp_u1"]');
+  assert(radial && soic);
+  expect(radial.querySelectorAll('[data-mark-halo]')).toHaveLength(2);
+
+  for (const kind of ['plus', 'band']) {
+    const halos = radial.querySelectorAll(`path[data-mark-halo="${kind}"]`);
+    expect(halos).toHaveLength(1);
+    const [halo] = halos;
+    const mark = radial.querySelector(`path[data-mark="${kind}"]`);
+    assert(halo && mark);
+    expect(halo.getAttribute('d')).toBe(mark.getAttribute('d'));
+    expect(halo.getAttribute('stroke')).toBe('var(--halo)');
+    expect(halo.getAttribute('stroke-width')).toBe('3.6');
+    expect(halo.getAttribute('stroke-linecap')).toBe('round');
+    expect(halo.getAttribute('fill')).toBe('none');
+    expect(halo.getAttribute('vector-effect')).toBe(mark.getAttribute('vector-effect'));
+    expect(halo.getAttribute('stroke-dasharray')).toBe(mark.getAttribute('stroke-dasharray'));
+  }
+
+  expect(
+    Array.from(radial.children, (element) => [
+      element.localName,
+      element.getAttribute('stroke'),
+      element.getAttribute('data-mark-halo'),
+      element.getAttribute('data-mark'),
+    ]),
+  ).toEqual([
+    ['polygon', 'var(--halo)', null, null],
+    ['path', 'var(--halo)', 'plus', null],
+    ['path', 'var(--halo)', 'band', null],
+    ['polygon', 'var(--body)', null, null],
+    ['path', 'var(--body)', null, 'plus'],
+    ['path', 'var(--body)', null, 'band'],
+  ]);
+  expect(soic.querySelectorAll('[data-mark-halo]')).toHaveLength(0);
+});

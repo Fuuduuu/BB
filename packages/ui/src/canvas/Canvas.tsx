@@ -380,7 +380,7 @@ export function Canvas({
         </g>
       </svg>
       {active.hud && (
-        <CanvasHud value={{ viewport, scene, fitInsets }}>{active.hud(api)}</CanvasHud>
+        <CanvasHud value={{ viewport, scene, fitInsets }}>{active.hud(api, snapshot)}</CanvasHud>
       )}
       {menu.open && (
         <ContextMenu

@@ -1,122 +1,16 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render } from '@testing-library/react';
-import { afterEach, expect, test, vi } from 'vitest';
-import { Fragment, useMemo, useSyncExternalStore } from 'react';
-import { newBoardDoc } from '@pcbk/domain';
-import type { BoardPlacement } from '@pcbk/domain';
+import { act, cleanup, fireEvent } from '@testing-library/react';
+import { afterEach, expect, test } from 'vitest';
 import { boardPads } from '@pcbk/domain/geometry';
-import { bindHistoryKeys, Canvas, UiRegistry, useSessionStore, useViewStore } from '@pcbk/ui';
-import type { SceneTransform, ToolApi } from '@pcbk/ui';
-import { idGenerator, setup } from '../../../__tests__/helpers';
-import { createComponentsUi } from '..';
+import { bindHistoryKeys, useSessionStore } from '@pcbk/ui';
+import type { SceneTransform } from '@pcbk/ui';
+import { beginAlignment, click, id, mount, pointer, reset } from '../__tests__/interaction-fixture';
 
-const id = 'cmp_r1';
 const component = { kind: 'component', id };
-const center = { x: 100, y: 80 };
 const labelOffset = { x: 60, y: -40 };
 const labelAt = { x: 160, y: 40 };
 
-afterEach(() => {
-  cleanup();
-  useSessionStore.getState().reset('');
-  useViewStore.getState().setBoardView({ zoom: 1, pan: { x: 0, y: 0 } });
-});
-
-function mount(
-  placement: Partial<BoardPlacement> = {},
-  zoom = 1,
-  sceneTransform: SceneTransform = 'none',
-  calibrated = true,
-) {
-  const doc = newBoardDoc('Plaadi proov');
-  doc.scale.pxPerMm = 10;
-  doc.scale.calibrated = calibrated;
-  doc.components.push({
-    id,
-    ref: 'R1',
-    kind: 'resistor',
-    marking: '',
-    value: '100R',
-    identified: true,
-    dnp: false,
-    note: '',
-    pins: [
-      { id: '1', uid: 'pin_r1_1', nc: false },
-      { id: '2', uid: 'pin_r1_2', nc: false },
-    ],
-    board: {
-      center,
-      footprint: 'chip',
-      params: { size: '0805' },
-      rotationDeg: 0,
-      side: 'top',
-      scaleX: 1,
-      scaleY: 1,
-      customPads: {},
-      ...placement,
-    },
-  });
-  const { engine } = setup(doc);
-  const registry = new UiRegistry([createComponentsUi(idGenerator())]);
-  const layers = registry.canvasLayers();
-  const tools = registry.tools();
-  const bottomBar = registry.bottomBar();
-  const execute = vi.fn<ToolApi['execute']>((...args) => engine.execute(...args));
-  const view = { zoom, pan: { x: 0, y: 0 } };
-  useSessionStore.getState().reset(engine.snapshot().sessionId);
-  useViewStore.getState().setBoardView(view);
-  function Board() {
-    const snapshot = useSyncExternalStore(engine.subscribe, engine.snapshot, engine.snapshot);
-    const selection = useSessionStore((state) => state.selection);
-    const currentLayers = useMemo(() => registry.canvasLayers(), [selection]);
-    return (
-      <>
-        <Canvas
-          layers={currentLayers}
-          tools={tools}
-          sceneTransform={sceneTransform}
-          view={view}
-          onViewChange={() => {}}
-          snapshot={snapshot}
-          execute={execute}
-        />
-        {bottomBar.map(({ id, render }) => (
-          <Fragment key={id}>{render()}</Fragment>
-        ))}
-      </>
-    );
-  }
-  const rendered = render(<Board />);
-  const svg = rendered.container.querySelector('svg')!;
-  const scene = svg.querySelector('[data-scene]')!;
-  Object.defineProperties(svg, {
-    setPointerCapture: { value: vi.fn() },
-    hasPointerCapture: { value: () => true },
-    releasePointerCapture: { value: vi.fn() },
-  });
-  Object.defineProperty(scene, 'getScreenCTM', {
-    value: () => ({ inverse: () => ({ a: 1 / zoom, b: 0, c: 0, d: 1 / zoom, e: 0, f: 0 }) }),
-  });
-  return { ...rendered, svg, engine, execute, layers, registry };
-}
-
-function pointer(svg: SVGSVGElement, type: string, x: number, y: number) {
-  const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y, button: 0 });
-  Object.defineProperty(event, 'pointerId', { value: 1 });
-  fireEvent(svg, event);
-}
-
-function click(svg: SVGSVGElement, x: number, y: number) {
-  pointer(svg, 'pointerdown', x, y);
-  pointer(svg, 'pointerup', x, y);
-}
-
-function beginAlignment(svg: SVGSVGElement, zoom = 1) {
-  fireEvent.keyDown(window, { key: 'a' });
-  expect(useSessionStore.getState().toolId).toBe('components.align');
-  click(svg, 90 * zoom, 80 * zoom);
-  click(svg, 180 * zoom, 120 * zoom);
-}
+afterEach(reset);
 
 test('align_is_one_undo_step', () => {
   const { svg, engine, execute, getByRole } = mount();
@@ -187,6 +81,112 @@ test('align_uses_the_physical_pad_clicked_on_a_multi_pad_pin', () => {
 });
 
 const scaleQuestion = 'Kas kasutada seda korpust mõõtkava aluseks?';
+
+test('scale_question_closes_when_basis_changes', () => {
+  const proposed = 'Uus mõõtkava: 20,00 px/mm';
+  function mountQuestion() {
+    const board = mount();
+    beginAlignment(board.svg);
+    click(board.svg, 110, 80);
+    click(board.svg, 180, 160);
+    expect(board.execute.mock.lastCall?.[0]).toBe('components.align');
+    expect(board.getByRole('dialog', { name: scaleQuestion }).textContent).toContain(proposed);
+    return board;
+  }
+
+  const rotated = mountQuestion();
+  act(() => {
+    expect(rotated.engine.execute('components.rotate', { ids: [id], deltaDeg: 90 }).ok).toBe(true);
+  });
+  expect(rotated.getByRole('dialog', { name: scaleQuestion }).textContent).toContain(proposed);
+  fireEvent.click(rotated.getByRole('button', { name: 'Kasuta mõõtkavaks' }));
+  expect.soft(rotated.execute.mock.lastCall).toMatchObject(['components.scaleFromPins', { mm: 2 }]);
+  expect(rotated.engine.snapshot().doc.scale.pxPerMm).toBe(20);
+  rotated.unmount();
+
+  const changed = mountQuestion();
+  act(() => {
+    expect(
+      changed.engine.execute('components.changeFootprint', {
+        id,
+        footprint: 'chip',
+        params: { size: '1206' },
+        newPinUids: {},
+      }).ok,
+    ).toBe(true);
+  });
+  expect.soft(Boolean(changed.queryByRole('dialog', { name: scaleQuestion }))).toBe(false);
+  fireEvent.keyDown(changed.svg, { key: 'Enter' });
+  expect.soft(changed.execute.mock.calls.map(([command]) => command)).toEqual(['components.align']);
+  expect.soft(changed.engine.snapshot().doc.scale.pxPerMm).toBe(10);
+  changed.unmount();
+
+  const removed = mountQuestion();
+  act(() => {
+    expect(removed.engine.execute('items.delete', { ids: [id] }).ok).toBe(true);
+  });
+  expect.soft(Boolean(removed.queryByRole('dialog', { name: scaleQuestion }))).toBe(false);
+  expect(removed.getByRole('status').textContent).toContain('vali jalg 1');
+});
+
+test('align_own_pins_offer_no_scale_question', () => {
+  const { svg, engine, execute, queryByRole, getByRole } = mount(
+    {
+      footprint: 'area',
+      params: {},
+      center: { x: 170, y: 100 },
+      customPads: {
+        '1': { local: { x: -2, y: 0 }, sizeMm: 1, shape: 'circle', through: false },
+        '2': { local: { x: 2, y: 0 }, sizeMm: 1, shape: 'circle', through: false },
+      },
+    },
+    1,
+    'none',
+    false,
+  );
+  fireEvent.keyDown(window, { key: 'a' });
+  click(svg, 150, 100);
+  click(svg, 300, 300);
+  click(svg, 190, 100);
+  click(svg, 380, 300);
+  expect(execute.mock.calls.map(([command]) => command)).toEqual(['components.align']);
+  expect(engine.snapshot().doc.scale).toMatchObject({ pxPerMm: 10, calibrated: false });
+  expect.soft(Boolean(queryByRole('dialog', { name: scaleQuestion }))).toBe(false);
+  expect(getByRole('status').textContent).toContain('vali jalg 1');
+});
+
+test('align_out_of_range_proposal_explains_and_keeps_alignment', () => {
+  const center = { x: 1000, y: 1000 };
+  const { svg, engine, execute, queryByRole, getByRole } = mount(
+    { center },
+    0.1,
+    'none',
+    true,
+    800,
+  );
+  const before = engine.snapshot().doc;
+  fireEvent.keyDown(window, { key: 'a' });
+  click(svg, 20, 100);
+  click(svg, 50, 300);
+  click(svg, 180, 100);
+  click(svg, 290, 300);
+  const aligned = engine.snapshot().doc;
+  expect(execute.mock.calls.map(([command]) => command)).toEqual(['components.align']);
+  expect(aligned.rev).toBe(before.rev + 1);
+  expect(aligned.components[0]!.board!.scaleX).toBeCloseTo(1.5);
+  expect(aligned.scale.pxPerMm).toBe(800);
+  expect(queryByRole('dialog', { name: scaleQuestion })).toBeNull();
+  const status = getByRole('status');
+  expect(status.getAttribute('data-align-step')).toBe('1');
+  expect
+    .soft(status.textContent)
+    .toBe('Selle korpuse järgi jääks mõõtkava lubatud vahemikust (0,1–1000 px/mm) välja.');
+
+  act(() => {
+    expect(engine.undo().ok).toBe(true);
+  });
+  expect(engine.snapshot().doc.components[0]!.board).toMatchObject({ center, scaleX: 1 });
+});
 
 test('align_scale_uses_clicked_pad_on_dense_board', () => {
   const zoom = 0.25;

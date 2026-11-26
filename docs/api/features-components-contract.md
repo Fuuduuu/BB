@@ -272,6 +272,7 @@ export type ScaleFromPinsParams = {
     pinB: { id: string; padIndex: number; };
     targetA: { x: number; y: number; };
     targetB: { x: number; y: number; };
+    mm: number;
 };
 ```
 

@@ -2,7 +2,9 @@
 
 Kaart [M2-2b-5](../tasks/M2-2b-5.md), haru `codex/m2-2b`, alus `ff45a26`, vastu võetud `2eb1a1c`. Tööpuu `C:/Users/TRUMPIT/.codex/worktrees/bb-m2-2b/BB`. Ehitaja kasutas sünteetilisi fotosid ja projekte.
 
-Väljalaske siht on `v0.7.0`. Kasutaja vastas pärast suitsukatset „korras“ (2026-11-25). Enne liitmist teeb Astra sõltumatu auditi ja arhitektuuri ülevaatuse tipul `2eb1a1c`.
+Kasutaja vastas pärast suitsukatset „korras“ (2026-11-25). Astra audit tipul `2eb1a1c` ([ülevaatus ja triaaž](../review/2026-11-25-m2-2b-ulevaatus-2eb1a1c.md)) leidis 15 viga ja peatas liitmise. Parandused tulid kaartidega [M2-2b-6](../tasks/M2-2b-6.md) (`2a083fa`) ja [M2-2b-7](../tasks/M2-2b-7.md) (`5e27a2b`). Näidisfailid `v0.6.0` ja `v0.7.0` koos SHA-256-ga on kaardil M2-2b-7.
+
+**Avaldatud `v0.7.0`** (2026-11-26): liidetud `main`-i `02ac941`, versioon `419ab44`, silt `v0.7.0`. `main`-is läbisid `pnpm check` 1752/1752, vormindus, API-kontroll ja E2E 46/46. Rusti kood on sama mis harus, kus `cargo test` läbis 108/110 (2 vahele jäetud).
 
 ## Vastuvõtt
 

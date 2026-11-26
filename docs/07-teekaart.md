@@ -175,15 +175,15 @@ M2 jaguneb neljaks osaks. Iga osa võetakse eraldi vastu ja neid ehitatakse jär
 - [ ] 50 jala kaardistamine piiksumisrežiimis võtab alla 2 minuti **kasutuskatses**. _(Kasutuskatset ei tehtud; kasutaja otsustas avaldada `v0.6.0` ilma selleta, 2026-11-24.)_
 
 ### M2.2b · Korpuste kuju ja mõõtkava
-**Olek:** plaan kinnitatud 2026-11-25 ([M2.2b plaan](plans/M2-2b-korpused-ja-mootkava.md)), väljalase `v0.7.0`. Vahevoor tuleb kasutaja `v0.6.0` katsest: suurused polnud reaalsed ja korpuste graafika oli segane.
+**Olek: valmis ja avaldatud** versioonina `v0.7.0` (2026-11-26), liidetud `02ac941`. Vahevoor tuli kasutaja `v0.6.0` katsest: suurused polnud reaalsed ja korpuste graafika oli segane. Tõendid, jõudlus, näidisfailid ja kasutaja vastus on [M2.2b üleandmises](plans/M2-2b-uleandmine.md). Astra auditi parandused on kaartidel [M2-2b-6](tasks/M2-2b-6.md) ja [M2-2b-7](tasks/M2-2b-7.md).
 
 **Sisu:** kalibreerimisaken [02 § 5](02-kasutaja-teekond.md#5-mõõtkava) järgi koos foto suurusega millimeetrites; mõõtkava teadaoleva korpuse joondusest; korpuste kuju (ümar, ovaalne, lameda küljega) ja polaarsuse märgid lõuendil ning teegi eelvaates.
 
 **Valmis kui:**
-- [ ] Kalibreerimisaken näitab enne kinnitamist px/mm-i, µm/px-i ja foto suurust millimeetrites.
-- [ ] Vale mõõtkava avastab kahe jalaga joondus ja korpus parandab selle ühe tagasivõetava sammuna.
-- [ ] Elektrolüüt on ümar, dioodil on triip, mikroskeemil sälk ja polaarsel osal „+“; teegi eelvaade näitab sama kuju.
-- [ ] Kasutaja tunneb oma plaadi fotol komponendid ära ja suurused vastavad fotole.
+- [x] Kalibreerimisaken näitab enne kinnitamist px/mm-i, µm/px-i ja foto suurust millimeetrites. _(E2E `scale_from_footprint_end_to_end`.)_
+- [x] Vale mõõtkava avastab kahe jalaga joondus ja korpus parandab selle ühe tagasivõetava sammuna. _(Sama E2E; kehtivus ja oma jalad: M2-2b-7.)_
+- [x] Elektrolüüt on ümar, dioodil on triip, mikroskeemil sälk ja polaarsel osal „+“; teegi eelvaade näitab sama kuju. _(M2-2b-3 ja M2-2b-4; märkide kontrast M2-2b-7.)_
+- [x] Kasutaja tunneb oma plaadi fotol komponendid ära ja suurused vastavad fotole. _(Kasutaja vastas suitsukatse järel „korras“, 2026-11-25; samme eraldi ei raporteeritud.)_
 
 ### M2.3 · Skeemi sümbolid ja paigutus
 **Sisu:** moodul `schematic`, esimene pool.

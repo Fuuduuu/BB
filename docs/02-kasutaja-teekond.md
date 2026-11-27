@@ -297,7 +297,7 @@ Põhiteekond on **Koht → Väärtus → Ühik → Salvesta**, kus ühik tuleb r
 
 **Kasutaja teeb skeemil:**
 - **komponendid:** lisab (sama teek, tüüp määrab sümboli), liigutab, pöörab (`R`), peegeldab ja nimetab. Skeemil lisatud komponent ilmub loendisse „Plaadile paigutamata“ ja saab fotole paigutada „Paiguta plaadile“ tegevusega: sama objekt, samad jalad, ühendused ja mõõtmised;
-- **paigutamine skeemile:** fotol lisatud komponendid on loendis „Skeemile paigutamata“ ja need saab skeemile lohistada;
+- **paigutamine skeemile:** fotol lisatud komponendid on skeemivaates loendis „Paigutamata“. Nupp „Paiguta skeemile“ ja klõps skeemil paigutavad komponendi, nagu plaadil (M2-3-5);
 - **juhtmed** (`W`): joonistab ühendusi jala ja jala või liitepunkti vahele (täisnurga all käänudega). See on sama ühendus nagu plaadil; fotol on see õhujoon, kuni joonistad raja;
 - **sildid ja märkused:** lisab võrgusilte (`L`), toite- ja maandussümboleid (rolli järgi) ning tekstimärkusi;
 - **mõõtmine:** valib jalgu ja mõõdab otse skeemilt;

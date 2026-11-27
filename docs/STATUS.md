@@ -1,6 +1,6 @@
 # BB: jooksev seis ja üleandmine
 
-Uuendatud: **2026-11-26**. See fail on lühike hetkeseis, kuni 80 rida. Ajalugu on Git-is, kaartidel ja verstapostide üleandmistes ([docs/README](README.md)). Kontrolli väiteid Git-i vastu.
+Uuendatud: **2026-11-27**. See fail on lühike hetkeseis, kuni 80 rida. Ajalugu on Git-is, kaartidel ja verstapostide üleandmistes ([docs/README](README.md)). Kontrolli väiteid Git-i vastu.
 
 ## Rollid
 
@@ -24,7 +24,7 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 ## Järgmine: M2.3 skeemi sümbolid ja paigutus
 
 - M2.2b on liidetud `main`-i `02ac941` (2026-11-26), versioon 0.7.0 `419ab44`, silt `v0.7.0`. Kaardid [M2-2b-1](tasks/M2-2b-1.md)–[M2-2b-7](tasks/M2-2b-7.md), jõudlus, näidisfailid ja kasutaja katse on [M2.2b üleandmises](plans/M2-2b-uleandmine.md). Astra auditi P1 leiud 01–05 ja leiud 06–07 on parandatud ([ülevaatus ja triaaž](review/2026-11-25-m2-2b-ulevaatus-2eb1a1c.md)). `main`-is läbisid `pnpm check` 1752/1752 ja E2E 46/46; Rusti kood on sama mis harus (108/110).
-- [M2.3 plaan](plans/M2-3-skeemi-sumbolid-ja-paigutus.md) on kinnitatud (2026-11-26, O1–O6): ettevalmistav ülesanne, IEC sümbolid, A3 leht ja 2,54 mm ruudustik, jalgade vastavus nimede järgi, plaadipunktid skeemil, väljalase `v0.8.0`. Plaanis on kuus ülesannet; Astra M2.2b leiud 08–12 ja 14 ning tuletiste jõudlus on nende sees. [M2-3-1](tasks/M2-3-1.md), moodulite piirid ja tuletised (leiud 09–12), on vastu võetud `e1a8ac5` (2026-11-27); raja B täisring läbis. `items.translate` mediaan langes sünteetilisel plaadil 27,01 ms-lt 12,47 ms-ni. Kaart [M2-3-2](tasks/M2-3-2.md), skeemivaade ühe lõuendiga (rada A), on kirjutatud ja ootab commit'i.
+- [M2.3 plaan](plans/M2-3-skeemi-sumbolid-ja-paigutus.md) on kinnitatud (2026-11-26, O1–O6): ettevalmistav ülesanne, IEC sümbolid, A3 leht ja 2,54 mm ruudustik, jalgade vastavus nimede järgi, plaadipunktid skeemil, väljalase `v0.8.0`. Plaanis on kuus ülesannet; Astra M2.2b leiud 08–12 ja 14 ning tuletiste jõudlus on nende sees. [M2-3-1](tasks/M2-3-1.md), moodulite piirid ja tuletised (leiud 09–12), on vastu võetud `e1a8ac5` (2026-11-27); raja B täisring läbis. `items.translate` mediaan langes sünteetilisel plaadil 27,01 ms-lt 12,47 ms-ni. Kaart [M2-3-2](tasks/M2-3-2.md), skeemivaade ühe lõuendiga (rada A), on `main`-is `a158a6d` ja ehitamisel; ehitaja küsimuse vastus (neli tüübimärgendit) on kaardil.
 - Leid 13 (algfaili taastamine) läheb järgmisele salvestuse kaardile. Kasutaja suitsukatse vastus „korras“ (2026-11-25) on M2.2b üleandmises; 50 jala aega ei raporteeritud.
 - Lahtine: salvestuse leiud 04–06 ning lühinimega tee normaliseerimine (`absolute()`, M2-1-12 CI järelparandus) järgmisele salvestuse kaardile, hiljemalt M4.3.
 - Astra tööriistad: leid 25 (kaardikontroll ei tohi nõutud testi vaikselt välja jätta), seejärel 26–30.
@@ -37,7 +37,8 @@ Iga verstaposti tõendid on teekaardi olekureal ([07](07-teekaart.md)) ja plaani
 - PNG-eksport (M4) komponeeritakse veebivaates; fotoprotokoll saab tootmises oma päritolu CORS-päise.
 - Windowsi eelkontroll jääb kasutaja suitsuloendiks; uut automaatikat ei lisata.
 - `Tab` liigub vormis; järgmine jalg on `Alt+↓` (kasutaja 2026-11-15).
-- Commit, silt ja liitmine vajavad kasutaja luba sammu kaupa; push käib commit'iga kaasas ([ARHITEKT §6](ARHITEKT.md)).
+- Koodi commit, silt ja liitmine vajavad kasutaja luba sammu kaupa; dokumentide commit'id `main`-i on alalise loaga; push käib commit'iga kaasas ([ARHITEKT §6](ARHITEKT.md)).
+- Ehitaja kohandab olemasolevat testi mehaaniliselt küsimata ning teeb otsuste kaardi, commit'i sõnumi mustandi ja versiooni tõstmise ise ([kaartide reeglid 9–10](tasks/README.md#reeglid), kasutaja 2026-11-27).
 - Lahtised tööd järgmistele verstapostidele on M1.4 plaani jaotises „Mis jääb järgmistesse plaanidesse“.
 
 ## Kasutaja otsustada

@@ -4,7 +4,7 @@
 
 Kehtiv tööjaotus on [teekaardil](07-teekaart.md#rollid). Arhitekti teostusplaan kirjeldab ülesanded, failid, liidesed, invariandid, kontrollid ja vastuvõtu.
 
-Ehitaja annab arhitektile üle muudetud failid, plaani täitmise seisu, tegelikud kontrollitulemused ja piirangud. Arhitekti otsus on „sobib“ või „vajab parandust“; vajalikud parandused tehakse enne kasutaja loal commitimist. Arhitektuuri, andmemudeli või lepingu kõrvalekalle esitatakse ettepanekuna. Ülevaatus ei asenda kasutaja visuaalset vastuvõttu ega commit'i/push'i luba.
+Ehitaja annab arhitektile üle muudetud failid, plaani täitmise seisu, tegelikud kontrollitulemused ja piirangud. Arhitekti otsus on „sobib“ või „vajab parandust“; vajalikud parandused tehakse enne kasutaja loal commitimist. Arhitektuuri, andmemudeli või lepingu kõrvalekalle esitatakse ettepanekuna. Ülevaatus ei asenda kasutaja visuaalset vastuvõttu ega koodi commit'i luba.
 
 ## Ühe töö käik
 

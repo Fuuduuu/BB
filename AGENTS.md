@@ -4,7 +4,7 @@ BB on kohalik PCB kaardistamise ja remondi töölaud. Kasutaja mugavus, lihtsus 
 
 ## Rollid
 
-Claude on arhitekt. Ta hoiab arhitektuuri, andmemudelit ja ADR-e, kirjutab verstapostide teostusplaanid ning vaatab ehitaja muudatused enne commiti üle. Codex on ehitaja. Ta teeb kasutaja ülesandel plaani järgi koodi ja testid, jooksutab kontrollid ning annab tulemuse üle. Kasutaja kinnitab ADR-id ja verstapostid, teeb visuaalse vastuvõtu ning annab loa commitiks ja pushiks. Täpne tööjaotus on [teekaardil](docs/07-teekaart.md#rollid).
+Claude on arhitekt. Ta hoiab arhitektuuri, andmemudelit ja ADR-e, kirjutab verstapostide teostusplaanid ning vaatab ehitaja muudatused enne commiti üle. Codex on ehitaja. Ta teeb kasutaja ülesandel plaani järgi koodi ja testid, jooksutab kontrollid ning annab tulemuse üle. Kasutaja kinnitab ADR-id ja verstapostid, teeb visuaalse vastuvõtu ning annab loa koodi commit'iks, liitmiseks ja sildiks; dokumentide commit'id `main`-i on alalise loaga ([ARHITEKT §6](docs/ARHITEKT.md#6-commit-liitmine-väljalase)). Mehaanilise töö (otsuste kaart, commit'i sõnumi mustand, versiooni tõstmine) teeb ehitaja ([kaartide reeglid 9–10](docs/tasks/README.md#reeglid)). Täpne tööjaotus on [teekaardil](docs/07-teekaart.md#rollid).
 
 Ehitaja esitab arhitektuuri, andmemudeli või lepingu vajaliku muudatuse arhitektile ettepanekuna. Verstaposti ehitus algab arhitekti teostusplaani (`docs/plans/Mx-*.md`) ja kasutaja ülesande alusel.
 

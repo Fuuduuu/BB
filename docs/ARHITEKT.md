@@ -26,12 +26,12 @@ STATUS-e ja vestluse kokkuvõtte väited kontrolli Git-i vastu. Ära kanna commi
 2. Kontrolli **tegelikku** koodi: olemasolevad nimed, failid, ekspordid (`grep -n`). Kaardi vead tulid varem eeldustest (`doc.board.scale` vs `doc.scale`, puuduv alamtee).
 3. Kirjuta kaart [malli](tasks/README.md#mall) järgi; päisesse **Rada: A/B**. Otsused, signatuurid, tekstid ja testinimed välja kirjutatud; rajal A kuni 5 nimega testi, rohkem ainult rajal B või leitud vea korral; „Loe“ ≤ 5 viidet, iga viide eraldi real (`bb_task` loeb rea esimese viite).
 4. `bb_task <id>` (kas „Loe“ laheneb?) ja `bb_check_docs`.
-5. **Commit kaart `main`-i enne, kui Codex tööpuu loob** (kasutaja loal), siis anna kasutajale Codexi ülesande tekst ühes koodiplokis. Ehitaja küsimuse vastus läheb kaardile („Arhitekti vastus ehitajale“).
+5. **Commit kaart `main`-i enne, kui Codex tööpuu loob** (alalise loaga, §6), siis anna kasutajale Codexi ülesande tekst ühes koodiplokis. Ehitaja küsimuse vastus läheb kaardile („Arhitekti vastus ehitajale“).
 
 ## 4. Ülevaatus
 
 1. Loe kaardi üleanne **põhikaustas** ja `git status` tööpuus. Kui ehitaja kirjutas kaardi/STATUS-e tööpuusse, kanna sisu põhikausta ja eemalda tööpuu koopia enne commit'i.
-2. `git diff` ainult põhifailidele (mitte genereeritud `docs/api`, mitte testid tervikuna); testidest kontrolli, et kaardi testinimed on olemas (`grep -c`).
+2. `git diff` ainult põhifailidele (mitte genereeritud `docs/api`, mitte testid tervikuna); testidest kontrolli, et kaardi testinimed on olemas (`grep -c`). Ehitaja otsuste kaardi (`otsus → fail:rida`) järgi kontrolli iga otsust nimetatud kohas; failid väljaspool „Muuda“-loendit ja mehaaniliselt kohandatud testid vaata kõik üle ([kaartide reeglid 9–10](tasks/README.md#reeglid)).
 3. Kontrolli kaardi otsuseid koodis, eriti: andmete säilimine, ajalugu üks samm, katkestus jäljetult, tekstid, sõltuvuse suund.
 4. Käsud: kui ehitaja `bb-review-card` kokkuvõte (`output/review-card/<ID>-*/summary.json`) on uuem kui tööpuu viimati muudetud fail, loe kokkuvõtet ja ära käivita uuesti. Ise käivita ainult kahtlane või UI-s nähtav osa (nt `pnpm proof` lõuendi muutuse järel). Rada B ja enne liitmist: täisring (allolevad lühiväljundiga käsud).
 5. Kui UI muutus ja ekraanipilti pole, kontrolli brauseris (veebiäpp tööpuust) või DOM-i mõõtudega; nimeta, kumba tegid.
@@ -49,10 +49,11 @@ cargo test --locked --offline 2>&1 | Select-String "^test result" | ForEach-Obje
 
 ## 6. Commit, liitmine, väljalase
 
-- Iga commit, silt ja liitmine vajab kasutaja luba sellele sammule. **Push käib commit'iga kaasas** (kasutaja otsus 2026-11-12): pärast kokkulepitud commit'i push'i kohe sama haru (`main` või `codex/*`). Silt ja `main`-i liitmine vajavad endiselt eraldi luba. Autor: `git -c user.name="Fuuduuu" -c user.email="elarvaltri@gmail.com" commit …` (Giti identiteeti pole seadistatud).
+- Koodi commit, silt ja liitmine vajavad kasutaja luba sellele sammule. **Dokumentide commit'id `main`-i on alalise loaga** (kasutaja otsus 2026-11-27): kaart, vastus ehitajale, ülevaatus, STATUS ja plaan lähevad `main`-i kohe, kui `bb_check_docs` ja prettier on puhtad; vastuses on hash. Plaani otsused kinnitab kasutaja endiselt. **Push käib commit'iga kaasas** (kasutaja otsus 2026-11-12): pärast commit'i push'i kohe sama haru (`main` või `codex/*`). Autor: `git -c user.name="Fuuduuu" -c user.email="elarvaltri@gmail.com" commit …` (Giti identiteeti pole seadistatud).
 - Kood: Codexi harus (`git add -A` ainult siis, kui tööpuus pole võõraid faile — vaata enne `git status --untracked-files=all`). Dokumendid: otse `main`-i, nimeliselt lisatud failid.
+- Koodi commit'i sõnum on ehitaja mustand `output/commit-msg/<ID>.txt`; arhitekt parandab seda vajadusel ja lisab `Co-Authored-By` rea.
 - Pärast commit'i: kaardi päisesse `vastu võetud <hash>`, STATUS-esse sama.
-- Liitmine: `git merge-tree --write-tree main <haru>` (konfliktide eelkontroll) → `merge --no-ff` → kontrollid `main`-is → versioon failis `apps/desktop/src-tauri/Cargo.toml` ja sama väärtus `Cargo.lock`-is (ainus allikas alates M1-4-11; kontroll `cargo metadata --locked`) → push `main` → annoteeritud silt → push silt. CI tulemust `gh` puudumisel ei näe; ütle seda.
+- Liitmine: väljalaskekaardil on ehitaja harus juba tõstnud versiooni failis `apps/desktop/src-tauri/Cargo.toml` ja sama väärtuse `Cargo.lock`-is (ainus allikas alates M1-4-11); arhitekt kontrollib `cargo metadata --locked --offline` → `git merge-tree --write-tree main <haru>` (konfliktide eelkontroll) → `merge --no-ff` → kontrollid `main`-is → push `main` → annoteeritud silt → push silt. CI tulemust `gh` puudumisel ei näe; ütle seda.
 
 ## 7. Keskkonna lõksud
 

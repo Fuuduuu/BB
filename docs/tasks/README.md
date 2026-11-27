@@ -57,6 +57,14 @@ Mõlema teema J29 põhimõõt on `autoRefPinOverlapPx2`. See liidab automaatselt
 6. **Olemasolevaid liideseid ei loeta lähtekoodist.** Allikas on kaardi plokk „Otsused ja liidesed“ või genereeritud liideste kokkuvõte `docs/api/` (kaart [TOOL-1](TOOL-1.md)). Kokkuvõte tehakse koodist automaatselt ja kontroll kukub, kui see on aegunud. Seepärast ei ole see käsitsi peetav koodikaart, mis võiks vananeda.
 7. **Üleandmine on kaardi lõpus jaotises „Üleandmine“, kuni 25 rida.** Pikk tõend (logid, ekraanipildid) jääb faili ja sellele viidatakse.
 8. **Olek kaardi päises:** `kavand` → `ehitamiseks` → `ülevaatusel` → `parandamisel` → `vastu võetud <commit>`. Päises on ka **Rada: A/B** ([WORKFLOW › Kaks rada](../WORKFLOW.md#kaks-rada-tavaline-ja-kaitstud-töö)); see määrab kontrolli ja ülevaatuse mahu.
+9. **Olemasoleva testi mehaaniline kohandus ei vaja küsimist.** Kui kaardi muudatus nõuab olemasolevas testis tüübimärgendi, impordi või sümboli nime muutmist (mitte testi nime) ning katseandmed ja ootused jäävad samaks, teeb ehitaja selle ise. Fail ja põhjus lähevad üleandmisse. Ootuse või katseandmete muutmine ning testi kustutamine või vahelejätmine vajavad endiselt arhitekti vastust (kasutaja otsus 2026-11-27).
+10. **Mehaaniline töö on ehitaja oma** (kasutaja otsus 2026-11-27). Enne üleandmist ehitaja:
+    - võrdleb `git diff --stat`-i kaardi „Muuda“- ja „Ära puutu“-loendiga ning nimetab iga muudetud faili väljaspool „Muuda“-loendit koos põhjusega;
+    - kirjutab üleandmisse otsuste kaardi: iga kaardi otsus → `fail:rida`, kus see on tehtud;
+    - kirjutab commit'i sõnumi mustandi faili `output/commit-msg/<ID>.txt` (inglise keeles, pealkiri kuni 72 märki, keha ütleb, mis muutus ja miks);
+    - tõstab väljalaskekaardil versiooni failides `apps/desktop/src-tauri/Cargo.toml` ja `Cargo.lock` ning kontrollib seda käsuga `cargo metadata --locked --offline`.
+
+    Arhitekt kontrollib need väited diffist ega otsi neid ise üles. Ülevaatuse otsus jääb arhitektile.
 
 ## Mall
 
@@ -92,5 +100,5 @@ Mõlema teema J29 põhimõõt on `autoRefPinOverlapPx2`. See liidab automaatselt
 - [ ] …
 
 ## Üleandmine
-<ehitaja täidab: muudetud failid; käsk → tegelik tulemus; kõrvalekalle ja põhjus; küsimus arhitektile>
+<ehitaja täidab: muudetud failid ja failid väljaspool „Muuda“-loendit koos põhjusega; otsus → fail:rida; mehaaniliselt kohandatud olemasolevad testid; käsk → tegelik tulemus; kõrvalekalle ja põhjus; küsimus arhitektile>
 ```

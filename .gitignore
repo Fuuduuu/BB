@@ -6,6 +6,7 @@ playwright-report/
 test-results/
 output/playwright/
 output/review-card/
+output/commit-msg/
 .playwright-cli/
 src-tauri/target/
 src-tauri/gen/

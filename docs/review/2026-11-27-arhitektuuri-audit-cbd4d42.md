@@ -209,7 +209,7 @@ Kontrollisin koodis tipul `cbd4d42` leiud 01, 02 ja 13. Kõik kolm on õiged:
 
 **Leid 01 parandatakse indeksis, mitte tööriistades.** Sama prioriteedi korral eelistavad `query` ja `queryAll`-i järjestus täpset tabamust varule. Siis kehtib üks reegel kõigile tööriistadele, ka tulevastele skeemitööriistadele, ja `pickHit` jääb ainult liigi filtriks. Raja kihireegel ning raja ja liitepunkti prioriteedid jäävad samaks.
 
-**Ettepanek kasutajale (muudab plaani):** enne paigutust tuleb plaani uus ülesanne 4. Praegused ülesanded 4–6 saavad numbrid 5–7.
+**Plaani muudatus (kasutaja kinnitas 2026-11-27, „Jah, lisa“):** enne paigutust tuleb [plaani](../plans/M2-3-skeemi-sumbolid-ja-paigutus.md#ülesanded) uus ülesanne 4. Endised ülesanded 4–6 said numbrid 5–7.
 
 | Kaart | Leiud | Rada | Sisu |
 |---|---|---|---|

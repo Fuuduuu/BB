@@ -1,6 +1,6 @@
 # M2.3 · Skeemi sümbolid ja paigutus: teostusplaan
 
-**Olek:** kinnitatud 2026-11-26. Kasutaja kinnitas soovitused O1–O6: ettevalmistav ülesanne, IEC sümbolid, A3 leht ja 2,54 mm ruudustik, jalgade vastavus nimede järgi, plaadipunktid skeemil ja väljalase `v0.8.0`. Kaardid kirjutatakse vahetult enne iga ülesannet ([snaipriülesanded](../tasks/README.md)). Hetkeseis on [STATUS-es](../STATUS.md).
+**Olek:** kinnitatud 2026-11-26. Kasutaja kinnitas soovitused O1–O6: ettevalmistav ülesanne, IEC sümbolid, A3 leht ja 2,54 mm ruudustik, jalgade vastavus nimede järgi, plaadipunktid skeemil ja väljalase `v0.8.0`. 2026-11-27 lisas kasutaja Astra arhitektuuriauditi põhjal ülesande 4 (leiud 01, 02 ja 17); endised ülesanded 4–6 on nüüd 5–7. Kaartidel M2-3-1 ja M2-3-2 on vanad numbrid. Kaardid kirjutatakse vahetult enne iga ülesannet ([snaipriülesanded](../tasks/README.md)). Hetkeseis on [STATUS-es](../STATUS.md).
 
 **Eesmärk:** tehnik avab skeemi ühe klahviga ja näeb plaadi komponente sümbolitena: takisti, kondensaator, diood, transistor ja IC kastina. Komponendi saab lisada skeemil ja hiljem fotole paigutada või vastupidi. See on sama komponent samade jalgade, ühenduste ja mõõtmistega. Valik on mõlemas vaates sama.
 
@@ -12,6 +12,7 @@
 - [03 § 8 Skeemivaade](../03-arhitektuur.md#8-skeemivaade) ja [ADR-004](../adr/ADR-004-kaks-vaadet-ja-uhendused.md) (üks komponent, kaks paigutust);
 - [05 › schematic](../05-moodulid.md);
 - [Astra M2.2b audit](../review/2026-11-25-m2-2b-ulevaatus-2eb1a1c.md#arhitekti-triaaž-2026-11-26), leiud 08–12 ja 14;
+- [Astra arhitektuuriaudit](../review/2026-11-27-arhitektuuri-audit-cbd4d42.md#arhitekti-triaaž-2026-11-27), leiud 01, 02, 06 ja 17;
 - [M2.2 plaani järgmised tööd](M2-2-piiksumisreziim.md#mis-jääb-järgmistesse-plaanidesse) (tuletiste sisend).
 
 **Failivorming ei muutu.** Skeemi väljad on vormingus v1 juba olemas:
@@ -117,45 +118,58 @@ Nimega testid on kaardi loendi järgi ja lisateste ei tehta. Rajad: ülesanded 1
    - Korpuse kontuur ja sümbol on kirjutuskaitstud ka tüübis. Test kasutab kahte sõltumatut tarbijat (leid 14).
    - Ekraanipildid kõigist tüüpidest mõlemas teemas.
 
-**Osa C · Töö skeemil**
+**Osa C · Auditi parandused**
 
-4. **Komponendid skeemil** (rada B, otsus 4, O5).
+4. **Täpne jalavalik ja kahe vaate parandused** (rada B, arhitektuuriauditi leiud 01, 02 ja 17).
+   - Tabamisindeks eelistab sama prioriteedi korral täpset tabamust tabamisvarule nii `query`-s kui ka `queryAll`-i järjestuses. Must sond, raja mõlemad otsad, Piiks ja Joonda salvestavad samal padjal sama jala. Raja kihireegel ning raja ja liitepunkti prioriteedid jäävad samaks (01).
+   - Salvestuskoordinaator kopeerib skeemikaamera samamoodi nagu plaadi kaamera ja üks test katab mõlemad vaated (02).
+   - Vaatevahetusel näitab jalus sama tööriista, mida lõuend tegelikult kasutab (Plaat → `T` → Skeem) (17).
+   - M2-3-3 märkused: tähise vaikekoht on sümbolist 2,54 mm kõrgemal ja kasti laius tuleb pikimast jalanimest.
+
+**Osa D · Töö skeemil**
+
+5. **Komponendid skeemil** (rada B, otsus 4, O5).
    - Lisamine skeemivaates teegist: `components.add` skeemipaigutusega. Komponent ilmub loendisse „Plaadile paigutamata“ ja „Paiguta plaadile“ toimib nagu praegu.
    - Loend „Skeemile paigutamata“; lohistamine skeemile käivitab `schematic.place`-i.
    - Liigutamine (`items.translate` vaatega `schematic`), pööramine `R`/`Shift+R`, peegeldus ja „Eemalda skeemilt“ (`schematic.remove`). Kustutamine eemaldab komponendi mõlemast vaatest nagu praegu.
    - Iga tegevus võetakse tagasi ühe `Ctrl+Z`-ga.
-5. **Jalgade funktsioon, ühine valik ja „Näita teises vaates“** (rada B, otsused 3 ja 6).
+6. **Jalgade funktsioon, ühine valik ja „Näita teises vaates“** (rada B, otsused 3 ja 6).
    - Kontekstipaneelis saab määrata jalgade funktsiooni (näiteks transistor: 1 → B, 2 → C, 3 → E). Seda teeb `schematic.setSymbol` ja nummerdatud kast muutub sümboliks.
    - Valik on mõlemas vaates sama; „Näita plaadil“ ja „Näita skeemil“.
    - Tähistus 02 § 13.1 järgi: tuvastamata komponent on küsimärgiga, DNP hallina.
 
-**Osa D · Vastuvõtt**
+**Osa E · Vastuvõtt**
 
-6. **Vastuvõtt, jõudlus ja `v0.8.0`** (rada B, O6, leid 08).
+7. **Vastuvõtt, jõudlus ja `v0.8.0`** (rada B, O6, M2.2b leid 08, arhitektuuriauditi leid 06).
    - E2E:
      - skeemil lisatud takisti paigutatakse hiljem fotole sama id-ga;
      - tähise ümbernimetamine ei muuda ühendusi ega mõõtmisi;
      - valik on mõlemas vaates sama.
    - Tauri jõudlus: 300 sümboliga skeem püsib [03 § 7.3](../03-arhitektuur.md#73-kihid-ja-jõudlus) eelarves (pan ja suum 60 fps, lohistus ≥ 45 fps). Plaadi mõõdikud ei lange alla `v0.7.0` omade.
    - Jõudlusproov on repos ja kontrollib enne ajastamist andmete arvu. Tulemus salvestab sisendi ja kooste tunnuse koos kolme jooksuga (leid 08).
+   - Pingenäitude tuletis kasutab `inputs.select`-i komponentide id-de ja jalgade jaoks, nii et komponendi liigutus seda uuesti ei arvuta. Tulemust võrreldakse täisarvutusega asendi muutuse, jala asenduse ja `Ctrl+Z` järel (arhitektuuriauditi leid 06).
    - Näidisfail `v0.8.0` skeemipaigutusega (03 § 9), katse-EXE ja kasutaja suitsukatse.
 
 ## M2.3 vastuvõtt: tingimus → tõend
 
 | Tingimus | Tõend |
 |---|---|
-| Skeemil lisatud takisti paigutatakse hiljem fotole sama id-ga; tähise ümbernimetamine ei muuda ühendusi ega mõõtmisi | ülesanded 4 ja 6, E2E |
+| Skeemil lisatud takisti paigutatakse hiljem fotole sama id-ga; tähise ümbernimetamine ei muuda ühendusi ega mõõtmisi | ülesanded 5 ja 7, E2E |
 | Skeem kasutab sama lõuendi baasi ja tabamust nagu plaat (ühiskood, mitte koopia) | ülesanne 2, test |
 | Kõigil 23 tüübil on sümbol; tundmatu vastavusega komponent on nummerdatud kast | ülesanne 3, domeenitestid ja ekraanipildid |
-| Jalgade funktsiooni saab määrata ja see on üks tagasivõetav samm | ülesanne 5 |
-| Valik on ühine ja „Näita teises vaates“ viib sama objekti juurde | ülesanded 5 ja 6, E2E |
-| 300 sümboliga skeem püsib eelarves | ülesanne 6, Tauri mõõtmine |
-| Auditi leiud 08–12 ja 14 on parandatud | ülesanded 1, 3 ja 6 |
+| Jalgade funktsiooni saab määrata ja see on üks tagasivõetav samm | ülesanne 6 |
+| Valik on ühine ja „Näita teises vaates“ viib sama objekti juurde | ülesanded 6 ja 7, E2E |
+| 300 sümboliga skeem püsib eelarves | ülesanne 7, Tauri mõõtmine |
+| M2.2b auditi leiud 08–12 ja 14 on parandatud | ülesanded 1, 3 ja 7 |
+| Arhitektuuriauditi leiud 01, 02, 06 ja 17 on parandatud; kõik tööriistad salvestavad samal padjal sama jala | ülesanded 4 ja 7 |
 | Kasutaja tunneb oma plaadi skeemil ära | kasutaja suitsukatse |
 
 ## Mis jääb järgmistesse plaanidesse
 
-- **M2.4:** juhtmed, liitepunktid ja võrgusildid skeemil, toite- ja maandussümbolid rolli järgi ning mõõtmine skeemilt. Sinna läheb ka Astra M2.2 leid 16 (juhtme kaar haru järel).
-- **M4:** automaatpaigutus abilisena (ELK).
-- **Salvestuse kaart, hiljemalt M4.3:** salvestuse leiud 04–06, lühinimega tee normaliseerimine ja Astra M2.2b leid 13 (algfaili kaardilt taastamine valib teise töökoopia varukoopia).
-- **Astra tööriistad:** leid 25, seejärel 26–30.
+- **M2.4:** juhtmed, liitepunktid ja võrgusildid skeemil, toite- ja maandussümbolid rolli järgi ning mõõtmine skeemilt. Sinna läheb ka Astra M2.2 leid 16 (juhtme kaar haru järel). Arhitektuuriauditist: plaani esimene otsus on, kuidas plaadil loodud haru säilitab teise vaate tee (03); ettevalmistav ülesanne parandab kihireegli vahefaili ja testikäskude tüübid (04, 10); juhtmesiltide kaart saab ühe võrguinfo otsingu (09).
+- **M3:** arhitektuuriauditist tabamisindeksi ehitus ainult geomeetria muutusel, enne mõõdetakse Tauris (05), ja üks ajavõrdleja mõõtmistele (07).
+- **M4:** automaatpaigutus abilisena (ELK). Foto ja lõuendi ühine teisendustabel ekspordi juures (arhitektuuriauditi leid 18).
+- **Salvestuse kaart, hiljemalt M4.3:** salvestuse leiud 04–06, lühinimega tee normaliseerimine ja Astra M2.2b leid 13 (algfaili kaardilt taastamine valib teise töökoopia varukoopia). Arhitektuuriauditist: üks parsimine avamisel (08), TS-test kõigi väljalaske SQLite-failidega (16) ja salvestustestide ühine seadistus (21).
+- **M4.3 ja v1.0 vastuvõtt:** väljalaskekandidaadil sünteetiline voog loo, salvesta, sulge ja ava Tauris (arhitektuuriauditi leid 15).
+- **Astra tööriistad:** leid 25, seejärel 26–30. Arhitektuuriauditist 11–14, 20 ja 22; suurima kokkuhoiu annavad 13 ja 14.
+- **Arhitekt:** 05 moodulikaart registri tegelike `dependsOn`-servade järgi (arhitektuuriauditi leid 19).

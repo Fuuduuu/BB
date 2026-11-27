@@ -18,6 +18,7 @@ export type ViewState = {
   contextWidth: number;
   contextOpen: boolean;
   boardView?: BoardView;
+  schematicView?: BoardView;
   modules?: Record<string, unknown>;
 };
 

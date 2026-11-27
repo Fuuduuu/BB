@@ -6,7 +6,11 @@ import type { Theme } from './theme-storage';
 
 export type { Theme } from './theme-storage';
 
-interface ViewStore extends Required<ViewState> {
+type ActiveView = 'board' | 'schematic';
+
+interface ViewStore extends Required<Omit<ViewState, 'schematicView'>> {
+  activeView: ActiveView;
+  schematicView: BoardView | null;
   theme: Theme;
   contextShown: boolean;
   fitRequest: number;
@@ -21,9 +25,12 @@ interface ViewStore extends Required<ViewState> {
   setContextOpen(open: boolean): void;
   setContextShown(shown: boolean): void;
   setBoardView(view: BoardView): void;
+  setActiveView(view: ActiveView): void;
+  toggleView(): void;
+  setSchematicView(view: BoardView): void;
   setTheme(theme: Theme): void;
   restore(view: ViewState | null): void;
-  getView(): Required<ViewState>;
+  getView(): ViewState & Required<Pick<ViewState, 'boardView' | 'modules'>>;
   reset(): void;
 }
 
@@ -34,6 +41,8 @@ function clamp(width: number, min: number, max: number, fallback: number) {
 export const useViewStore = create<ViewStore>((set, get) => ({
   ...DEFAULT_VIEW_STATE,
   boardView: normalizeBoardView(undefined),
+  schematicView: null,
+  activeView: 'board',
   modules: {},
   contextShown: false,
   fitRequest: 0,
@@ -53,6 +62,10 @@ export const useViewStore = create<ViewStore>((set, get) => ({
   setContextOpen: (contextOpen) => set({ contextOpen }),
   setContextShown: (contextShown) => set({ contextShown }),
   setBoardView: (boardView) => set({ boardView: normalizeBoardView(boardView) }),
+  setActiveView: (activeView) => set({ activeView }),
+  toggleView: () =>
+    set((state) => ({ activeView: state.activeView === 'board' ? 'schematic' : 'board' })),
+  setSchematicView: (schematicView) => set({ schematicView: normalizeBoardView(schematicView) }),
   setModuleView: (id, value) =>
     set((state) => ({ modules: { ...state.modules, [id]: structuredClone(value) } })),
   setTheme: (theme) => {
@@ -80,20 +93,28 @@ export const useViewStore = create<ViewStore>((set, get) => ({
       ),
       contextOpen: view?.contextOpen ?? DEFAULT_VIEW_STATE.contextOpen,
       boardView: normalizeBoardView(view?.boardView),
+      schematicView: view?.schematicView ? normalizeBoardView(view.schematicView) : null,
+      activeView: 'board',
       modules: structuredClone(view?.modules ?? {}),
     }),
-  getView: () => ({
-    navigatorWidth: get().navigatorWidth,
-    navigatorOpen: get().navigatorOpen,
-    navigatorTab: get().navigatorTab,
-    contextWidth: get().contextWidth,
-    contextOpen: get().contextOpen,
-    boardView: normalizeBoardView(get().boardView),
-    modules: structuredClone(get().modules),
-  }),
+  getView: () => {
+    const state = get();
+    return {
+      navigatorWidth: state.navigatorWidth,
+      navigatorOpen: state.navigatorOpen,
+      navigatorTab: state.navigatorTab,
+      contextWidth: state.contextWidth,
+      contextOpen: state.contextOpen,
+      boardView: normalizeBoardView(state.boardView),
+      ...(state.schematicView && { schematicView: normalizeBoardView(state.schematicView) }),
+      modules: structuredClone(state.modules),
+    };
+  },
   reset: () =>
     set({
       ...DEFAULT_VIEW_STATE,
+      schematicView: null,
+      activeView: 'board',
       modules: {},
       contextShown: false,
       fitRequest: 0,

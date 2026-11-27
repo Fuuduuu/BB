@@ -73,6 +73,7 @@ export interface UiModule {
   topBar?: SlotSpec[];
   bottomBar?: SlotSpec[];
   canvasLayers?: LayerSpec[];
+  schematicLayers?: LayerSpec[];
   tools?: ToolSpec[];
   keys?: KeySpec[];
   contextMenu?: ContextMenuItemSpec[];
@@ -92,6 +93,7 @@ function copyModule(module: UiModule): UiModule {
     topBar: module.topBar?.map((item) => ({ ...item })),
     bottomBar: module.bottomBar?.map((item) => ({ ...item })),
     canvasLayers: module.canvasLayers?.map((item) => ({ ...item })),
+    schematicLayers: module.schematicLayers?.map((item) => ({ ...item })),
     tools: module.tools?.map((item) => ({ ...item })),
     keys: module.keys?.map((item) => ({ ...item })),
     contextMenu: module.contextMenu?.map((item) => ({
@@ -134,6 +136,7 @@ export class UiRegistry {
       'topBar',
       'bottomBar',
       'canvasLayers',
+      'schematicLayers',
       'contextMenu',
     ] as const) {
       uniqueIds(
@@ -260,6 +263,11 @@ export class UiRegistry {
   canvasLayers(): LayerSpec[] {
     return this.modules()
       .flatMap((module) => module.canvasLayers ?? [])
+      .sort((a, b) => a.z - b.z);
+  }
+  schematicLayers(): LayerSpec[] {
+    return this.modules()
+      .flatMap((module) => module.schematicLayers ?? [])
       .sort((a, b) => a.z - b.z);
   }
   tools(): ToolSpec[] {

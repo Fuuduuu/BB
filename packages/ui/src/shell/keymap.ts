@@ -1,3 +1,5 @@
+import { useViewStore } from './view-store';
+
 export interface HistoryActions {
   undo(): void;
   redo(): void;
@@ -14,6 +16,7 @@ export const SHELL_KEYS = {
   cancel: { key: 'Escape', shift: 'any', alt: 'any' },
   navigator: { key: 'N' },
   context: { key: 'O' },
+  view: { key: 'Tab', primary: true, shift: 'any' },
   undo: { key: 'Z', primary: true },
   redo: { key: 'Y', primary: true },
   redoShift: { key: 'Z', primary: true, shift: true },
@@ -88,6 +91,11 @@ export function bindPanelKeys(
 ): () => void {
   const listener = (event: KeyboardEvent) => {
     if (event.defaultPrevented || event.isComposing || event.repeat || isEditing(event)) return;
+    if (matchesShellKey(event, SHELL_KEYS.view)) {
+      event.preventDefault();
+      useViewStore.getState().toggleView();
+      return;
+    }
     const navigator = matchesShellKey(event, SHELL_KEYS.navigator);
     if (!navigator && !matchesShellKey(event, SHELL_KEYS.context)) return;
     event.preventDefault();

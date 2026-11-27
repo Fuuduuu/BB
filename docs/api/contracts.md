@@ -108,7 +108,7 @@ export type DeepReadonly<T> = T extends (...args: never[]) => unknown ? T : T ex
 
 ### `DEFAULT_VIEW_STATE`
 ```ts
-export const DEFAULT_VIEW_STATE: Readonly<Required<ViewState>>;
+export const DEFAULT_VIEW_STATE: Readonly<Required<Omit<ViewState, 'schematicView'>>>;
 ```
 
 ### `Derived`
@@ -218,7 +218,7 @@ export type ParamsOf<C extends CommandId> = CommandMap[C];
 Optional view metadata must never make an otherwise valid project unreadable.
 
 ```ts
-export function parseViewState(input: unknown): Required<ViewState> | null;
+export function parseViewState(input: unknown): (ViewState & Required<Pick<ViewState, 'boardView' | 'modules'>>) | null;
 ```
 
 ### `ProjectInfo`
@@ -356,6 +356,7 @@ export type ViewState = {
     contextWidth: number;
     contextOpen: boolean;
     boardView?: BoardView;
+    schematicView?: BoardView;
     modules?: Record<string, unknown>;
 };
 ```

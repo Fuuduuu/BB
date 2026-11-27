@@ -4,7 +4,9 @@ import * as views from './view-state';
 
 test('same_view_state_covers_every_field', () => {
   expect(views.sameViewState).toBeTypeOf('function');
-  const base: Required<ViewState> = structuredClone(views.DEFAULT_VIEW_STATE);
+  const base: Required<Omit<ViewState, 'schematicView'>> = structuredClone(
+    views.DEFAULT_VIEW_STATE,
+  );
   const changes = {
     navigatorWidth: 410,
     navigatorOpen: false,
@@ -13,7 +15,7 @@ test('same_view_state_covers_every_field', () => {
     contextOpen: false,
     boardView: { zoom: 2, pan: { x: 12, y: -18 } },
     modules: { photo: { visible: false, opacity: 0.4 } },
-  } satisfies Required<ViewState>;
+  } satisfies Required<Omit<ViewState, 'schematicView'>>;
   expect(Object.keys(changes).sort()).toEqual(Object.keys(base).sort());
   expect(views.sameViewState(base, structuredClone(base))).toBe(true);
   for (const [key, value] of Object.entries(changes)) {

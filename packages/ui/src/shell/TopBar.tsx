@@ -46,6 +46,8 @@ export function TopBar({
   const setContextOpen = useViewStore((s) => s.setContextOpen);
   const navigatorOpen = useViewStore((s) => s.navigatorOpen);
   const setNavigatorOpen = useViewStore((s) => s.setNavigatorOpen);
+  const activeView = useViewStore((s) => s.activeView);
+  const setActiveView = useViewStore((s) => s.setActiveView);
   const navigatorLabel = navigatorOpen ? et.shell.hideNavigator : et.shell.showNavigator;
   const contextLabel = contextShown ? et.shell.hideContext : et.shell.showContext;
   return (
@@ -67,6 +69,27 @@ export function TopBar({
         <SaveStatus status={status} />
       </div>
       <div className="pcbk-topbar-actions">
+        <div
+          className="pcbk-view-switch"
+          role="group"
+          aria-label={et.shell.view}
+          title={`${et.shell.viewBoard} | ${et.shell.viewSchematic} · Ctrl+Tab`}
+        >
+          <Button
+            variant={activeView === 'board' ? 'primary' : 'ghost'}
+            aria-pressed={activeView === 'board'}
+            onClick={() => setActiveView('board')}
+          >
+            {et.shell.viewBoard}
+          </Button>
+          <Button
+            variant={activeView === 'schematic' ? 'primary' : 'ghost'}
+            aria-pressed={activeView === 'schematic'}
+            onClick={() => setActiveView('schematic')}
+          >
+            {et.shell.viewSchematic}
+          </Button>
+        </div>
         {children}
         <Button
           variant="ghost"

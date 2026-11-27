@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { parseViewState } from './view-state';
+import { parseViewState, sameViewState } from './view-state';
 
 test('old_view_without_navigator_open_defaults_to_open', () => {
   expect(
@@ -176,4 +176,19 @@ test('normalization returns a detached value without modifying the caller or sha
   const defaults = parseViewState({})!;
   defaults.contextWidth = 900;
   expect(parseViewState({})!.contextWidth).toBe(340);
+});
+
+test('view_state_keeps_schematic_view', () => {
+  const boardView = { zoom: 2, pan: { x: 10, y: -30 } };
+  const schematicView = { zoom: 3.2, pan: { x: -40, y: 12 } };
+  const view = { navigatorTab: 'log', boardView };
+  const withSchematic = parseViewState({ ...view, schematicView })!;
+  const withoutSchematic = parseViewState(view)!;
+  const invalidSchematic = parseViewState({ ...view, schematicView: { zoom: 0 } })!;
+
+  expect(withSchematic).toMatchObject({ ...view, schematicView });
+  expect(withoutSchematic).toMatchObject(view);
+  expect(withoutSchematic).not.toHaveProperty('schematicView');
+  expect(invalidSchematic).toEqual(withoutSchematic);
+  expect(sameViewState(withSchematic, withoutSchematic)).toBe(false);
 });

@@ -61,6 +61,18 @@
   gap: 8px;
   flex: none;
 }
+.pcbk-view-switch {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.pcbk-view-switch .bb-button {
+  min-height: 26px;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
 .pcbk-toolbar-divider {
   height: 20px;
   width: 1px;
@@ -210,6 +222,20 @@
   overflow: auto;
   position: relative;
   background: var(--canvas);
+}
+.pcbk-schematic-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.pcbk-canvas-hint {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  pointer-events: none;
 }
 .pcbk-canvas-empty {
   position: absolute;

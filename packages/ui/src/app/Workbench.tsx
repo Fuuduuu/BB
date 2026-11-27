@@ -17,6 +17,7 @@ import { useTheme } from '../shell/use-theme';
 import { useViewStore } from '../shell/view-store';
 import { useWorkbench } from './use-workbench';
 import { HomeFeedback, HomeFeedbackContext } from './HomeFeedback';
+import { SchematicCanvas } from './SchematicCanvas';
 import './workbench.css';
 
 function BoardCanvas({ registry }: { registry: UiRegistry }) {
@@ -72,6 +73,7 @@ export function Workbench({
   validateModules?: (modules: readonly UiModule[]) => void;
 }) {
   useTheme();
+  const activeView = useViewStore((state) => state.activeView);
   const workbench = useWorkbench(host, addPhoto);
   const { goHome } = workbench;
   const registry = useMemo(() => {
@@ -126,7 +128,13 @@ export function Workbench({
               <AppShell
                 manageTheme={false}
                 registry={registry}
-                canvas={<BoardCanvas registry={registry} />}
+                canvas={
+                  activeView === 'schematic' ? (
+                    <SchematicCanvas registry={registry} />
+                  ) : (
+                    <BoardCanvas registry={registry} />
+                  )
+                }
                 copyAvailable={copyAvailable}
                 onRetrySave={workbench.retrySave}
                 onSaveElsewhere={() => workbench.copy('stay')}

@@ -83,6 +83,10 @@ export const et: {
         readonly hideContext: "Peida omadused";
         readonly resizeNavigator: "Navigaatori laius";
         readonly resizeContext: "Omaduste paneeli laius";
+        readonly view: "Vaade";
+        readonly viewBoard: "Plaat";
+        readonly viewSchematic: "Skeem";
+        readonly schematicEmpty: "Skeemil pole veel komponente.";
         readonly canvas: "Plaat";
         readonly contextMenu: "Toimingud";
         readonly selectTool: "Vali";
@@ -258,6 +262,11 @@ export const SHELL_KEYS: {
     readonly context: {
         readonly key: "O";
     };
+    readonly view: {
+        readonly key: "Tab";
+        readonly primary: true;
+        readonly shift: "any";
+    };
     readonly undo: {
         readonly key: "Z";
         readonly primary: true;
@@ -336,6 +345,7 @@ export interface UiModule {
     topBar?: SlotSpec[];
     bottomBar?: SlotSpec[];
     canvasLayers?: LayerSpec[];
+    schematicLayers?: LayerSpec[];
     tools?: ToolSpec[];
     keys?: KeySpec[];
     contextMenu?: ContextMenuItemSpec[];
@@ -361,6 +371,7 @@ export class UiRegistry {
     topBar(): SlotSpec[];
     bottomBar(): SlotSpec[];
     canvasLayers(): LayerSpec[];
+    schematicLayers(): LayerSpec[];
     tools(): ToolSpec[];
     keys(): KeySpec[];
     resetSession(): void;

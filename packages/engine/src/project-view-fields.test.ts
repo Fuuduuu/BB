@@ -9,7 +9,7 @@ afterEach(() => {
 });
 
 test('every_view_field_change_is_saved_and_reopened', async () => {
-  const base: Required<ViewState> = structuredClone(DEFAULT_VIEW_STATE);
+  const base: Required<Omit<ViewState, 'schematicView'>> = structuredClone(DEFAULT_VIEW_STATE);
   const changes = {
     navigatorWidth: 410,
     navigatorOpen: false,
@@ -18,7 +18,7 @@ test('every_view_field_change_is_saved_and_reopened', async () => {
     contextOpen: false,
     boardView: { zoom: 1.75, pan: { x: -12, y: 28 } },
     modules: { photo: { visible: false, opacity: 0.35 }, components: { filter: 'unplaced' } },
-  } satisfies Required<ViewState>;
+  } satisfies Required<Omit<ViewState, 'schematicView'>>;
   expect(Object.keys(changes).sort()).toEqual(Object.keys(base).sort());
   for (const [key, value] of Object.entries(changes)) {
     const { projects, engine, memory, path } = await projectSetup();

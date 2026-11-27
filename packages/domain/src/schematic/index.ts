@@ -1,4 +1,4 @@
-import type { Component, Pin, SymbolPlacement } from '../model/component';
+import type { Component, ComponentKind, Pin, SymbolPlacement } from '../model/component';
 import type { Vec2 } from '../model/primitives';
 import { rectangle, shapes } from './geometry';
 import type { SymbolContact } from './geometry';
@@ -170,13 +170,24 @@ function box(pins: readonly Readonly<Pin>[], connector: boolean): SchematicSymbo
   });
 }
 
+export function snapToSchematicGrid({ x, y }: Vec2): Vec2 {
+  return {
+    x: Math.round(x / grid) * grid || 0,
+    y: Math.round(y / grid) * grid || 0,
+  };
+}
+
+export function schematicSymbolId(kind: ComponentKind): SymbolId | null {
+  return symbolOf[kind];
+}
+
 export function schematicSymbol(
   component: Readonly<Pick<Component, 'kind'>> & {
     readonly pins: readonly Readonly<Pin>[];
     readonly schematic?: Readonly<Pick<SymbolPlacement, 'pinMap'>>;
   },
 ): SchematicSymbol | null {
-  const id = symbolOf[component.kind];
+  const id = schematicSymbolId(component.kind);
   if (id === null) return null;
   if (id === 'box') return box(component.pins, component.kind === 'connector');
   const { contacts, prims } = shapes[id];

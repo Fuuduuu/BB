@@ -68,6 +68,7 @@ export interface CommandMap {
         }[];
         dx: number;
         dy: number;
+        view?: 'board' | 'schematic';
     };
 }
 ```

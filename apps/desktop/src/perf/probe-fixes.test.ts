@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { FOOTPRINTS, newBoardDoc } from '@pcbk/domain';
 import { createEngine } from '@pcbk/engine';
 import { engineFeatures, RESERVED_FIELDS } from '@pcbk/features/engine';
+import type { AddComponentParams } from '@pcbk/features/components/contract';
 import { createComponentsUi } from '@pcbk/features/components/ui';
 import * as probe from './probe';
 import { generateSyntheticBoard } from './synthetic-board';
@@ -150,7 +151,8 @@ test('probe base zoom keeps every actual pad number visible throughout the zoom 
   const ids = { newId: (prefix: string) => `${prefix}_${++sequence}` };
   const at = '2026-01-01T00:00:00.000Z';
   const synthetic = generateSyntheticBoard({ seed: 127, ids, at });
-  const components = synthetic.components.map(({ ref, board, ...component }) => {
+  const boardComponents: Omit<AddComponentParams, 'schematic'>[] = synthetic.components;
+  const components = boardComponents.map(({ ref, board, ...component }) => {
     if (!ref || !board) throw new Error('Expected a placed synthetic component with a reference');
     const defaults = FOOTPRINTS.find((footprint) => footprint.key === board.footprint)?.defaults;
     return {

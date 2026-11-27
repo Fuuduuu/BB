@@ -1,9 +1,14 @@
 import type { Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
-import { schematicSymbol, symbolToSchematic, SCHEMATIC_GRID_MM } from '@pcbk/domain/schematic';
+import {
+  schematicSymbol,
+  symbolToSchematic,
+  SCHEMATIC_GRID_MM,
+  snapToSchematicGrid,
+} from '@pcbk/domain/schematic';
 import type { SymbolId, SymbolPin, SymbolPrim } from '@pcbk/domain/schematic';
 import { monoLabelHalf, useSessionStore } from '@pcbk/ui';
-import type { HitItem, LayerSpec } from '@pcbk/ui';
+import type { HitItem, LayerSpec, TranslatePreviewData } from '@pcbk/ui';
 
 type Component = Snapshot['doc']['components'][number];
 type DrawnSymbol = {
@@ -92,7 +97,14 @@ function SymbolPrimitive({ shape, textRotation }: { shape: SymbolPrim; textRotat
   }
 }
 
-function SchematicSymbols({ snapshot }: { snapshot: Snapshot }) {
+function SchematicSymbols({
+  snapshot,
+  preview,
+}: Pick<Parameters<LayerSpec['render']>[0], 'snapshot' | 'preview'>) {
+  const translation = preview?.owner === 'select' ? (preview.data as TranslatePreviewData) : null;
+  const moved = new Set(
+    translation?.items.filter(({ kind }) => kind === 'component').map(({ id }) => id),
+  );
   const selection = useSessionStore((state) => state.selection);
   const selected = new Set(
     selection.items.filter(({ kind }) => kind === 'component').map(({ id }) => id),
@@ -104,12 +116,20 @@ function SchematicSymbols({ snapshot }: { snapshot: Snapshot }) {
         const symbol = drawnSymbol(component);
         if (!symbol) return null;
         const isSelected = selected.has(component.id);
+        const at = component.schematic?.at;
+        const previewAt =
+          at && translation && moved.has(component.id)
+            ? snapToSchematicGrid({ x: at.x + translation.dx, y: at.y + translation.dy })
+            : undefined;
+        const transform =
+          at && previewAt ? `translate(${previewAt.x - at.x} ${previewAt.y - at.y})` : undefined;
         return (
           <g
             key={component.id}
             data-component={component.id}
             data-symbol={symbol.id}
             data-selected={isSelected ? 'true' : undefined}
+            transform={transform}
             color={isSelected ? 'var(--accent)' : 'var(--ink)'}
           >
             {symbol.prims.map((shape, index) => (
@@ -146,7 +166,8 @@ function SchematicSymbols({ snapshot }: { snapshot: Snapshot }) {
 export const symbolLayer: LayerSpec = {
   id: 'schematic.symbols',
   z: 10,
-  render: ({ snapshot }) => <SchematicSymbols snapshot={snapshot} />,
+  previewOwners: ['select'],
+  render: ({ snapshot, preview }) => <SchematicSymbols snapshot={snapshot} preview={preview} />,
   hits: (snapshot, zoom) => {
     const hits: HitItem[] = [];
     for (const component of snapshot.doc.components) {

@@ -27,10 +27,11 @@ const translate: CommandSpec<ParamsOf<'items.translate'>> = {
     items: z.array(ItemRefSchema),
     dx: z.number(),
     dy: z.number(),
+    view: z.enum(['board', 'schematic']).optional(),
   }),
   alsoWrites: [...ITEM_FIELDS],
-  run(doc, { items, dx, dy }) {
-    translateItems(doc, items, { x: dx, y: dy });
+  run(doc, { items, dx, dy, view }) {
+    translateItems(doc, items, { x: dx, y: dy }, view);
   },
 };
 

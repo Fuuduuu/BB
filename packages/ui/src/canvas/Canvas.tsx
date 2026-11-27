@@ -21,9 +21,7 @@ import { SceneTransformContext } from './scene-text';
 import { pointerWorld, sceneMatrix, screenToScenePoint, zoomAt } from './stage';
 import type { SceneTransform } from './stage';
 import type { CanvasPointer, CanvasTool, LayerSpec, ToolApi, ToolSpec } from './tools';
-
 type CanvasView = { zoom: number; pan: Vec2 };
-
 export interface CanvasProps {
   layers: readonly LayerSpec[];
   tools: readonly ToolSpec[];
@@ -32,6 +30,7 @@ export interface CanvasProps {
   moveRefs?: UiRegistry['moveRefs'];
   itemsInFrame?: UiRegistry['itemsInFrame'];
   deleteIds?: UiRegistry['deleteIds'];
+  space?: 'board' | 'schematic';
   sceneTransform: SceneTransform;
   view: CanvasView;
   onViewChange(view: CanvasView): void;
@@ -71,7 +70,6 @@ const Layers = memo(
 
 const getSession = useSessionStore.getState;
 const emptyMoveRefs: UiRegistry['moveRefs'] = () => [];
-
 export function Canvas({
   layers,
   tools,
@@ -80,6 +78,7 @@ export function Canvas({
   moveRefs = emptyMoveRefs,
   itemsInFrame,
   deleteIds,
+  space: coordinateSpace = 'board',
   sceneTransform,
   view,
   onViewChange,
@@ -160,6 +159,7 @@ export function Canvas({
       moveRefs,
       itemsInFrame,
       deleteIds,
+      coordinateSpace,
     );
     const pan = createPanToolSpec(panByScreen);
     return {
@@ -168,7 +168,7 @@ export function Canvas({
       custom: new Map(tools.map((spec) => [spec.id, spec.create()])),
       specs: [select, pan, ...tools],
     };
-  }, [deleteIds, itemsInFrame, moveRefs, panByScreen, tools]);
+  }, [coordinateSpace, deleteIds, itemsInFrame, moveRefs, panByScreen, tools]);
   const active = toolId === 'pan' ? toolset.pan : (toolset.custom.get(toolId) ?? toolset.select);
   const emptyHits = useMemo(() => createHitIndex([]), []);
   const api = useMemo<ToolApi>(

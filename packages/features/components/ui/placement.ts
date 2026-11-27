@@ -1,4 +1,6 @@
+import type { Snapshot } from '@pcbk/contracts';
 import type { Pin } from '@pcbk/domain';
+import { schematicSymbolId } from '@pcbk/domain/schematic';
 import { footprintPinIds, type FootprintParams } from '@pcbk/domain/footprints';
 import { COMPONENT_LIBRARY, type LibraryEntry, type ParamSpec } from '../contract';
 import { placementEt } from './i18n/et';
@@ -25,6 +27,12 @@ export function parameterChoiceLabel(key: string, choice: string | number): stri
     return nameFor(placementEt.params.layouts, choice);
   }
   return choice;
+}
+
+export function isPlacedOnSchematic(
+  component: Pick<Snapshot['doc']['components'][number], 'kind' | 'schematic'>,
+): boolean {
+  return component.schematic !== undefined && schematicSymbolId(component.kind) !== null;
 }
 
 export function searchLibrary(query: string): readonly LibraryEntry[] {

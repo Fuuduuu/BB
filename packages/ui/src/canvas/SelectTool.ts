@@ -1,4 +1,5 @@
 import type { Vec2 } from '@pcbk/domain';
+import { SCHEMATIC_GRID_MM } from '@pcbk/domain/schematic';
 import { et } from '../shell/i18n/et';
 import { matchesShellKey, SHELL_KEYS } from '../shell/keymap';
 import type { Selection, SelectionItem } from '../shell/session-store';
@@ -87,8 +88,11 @@ function createSelectTool(
   moveRefs: UiRegistry['moveRefs'],
   itemsInFrame: UiRegistry['itemsInFrame'],
   deleteIds: UiRegistry['deleteIds'],
+  space: 'board' | 'schematic',
 ): CanvasTool {
   let gesture: Gesture | undefined;
+  const view = space === 'schematic' ? { view: space } : {};
+  const unit = space === 'schematic' ? SCHEMATIC_GRID_MM : 1;
 
   return {
     id: SELECT_ID,
@@ -155,7 +159,7 @@ function createSelectTool(
       api.setPreview(null);
       const { dx, dy } = translationOffset(world, event.world);
       if (hit.drag) hit.drag.commit({ x: dx, y: dy }, api);
-      else api.execute('items.translate', { items: finished.items, dx, dy });
+      else api.execute('items.translate', { items: finished.items, dx, dy, ...view });
     },
     onKey(event, api) {
       if (matchesShellKey(event, SHELL_KEYS.delete)) {
@@ -170,9 +174,9 @@ function createSelectTool(
       const items = moveRefs(api.snapshot(), getSelection().items);
       if (items.length === 0) return false;
       if (!event.repeat && !gesture) {
-        const step = event.shiftKey ? 10 : 1;
+        const step = unit * (event.shiftKey ? 10 : 1);
         const world = screenToSceneVector(api.sceneTransform(), direction);
-        api.execute('items.translate', { items, dx: world.x * step, dy: world.y * step });
+        api.execute('items.translate', { items, dx: world.x * step, dy: world.y * step, ...view });
       }
       return true;
     },
@@ -188,6 +192,7 @@ export function createSelectToolSpec(
   moveRefs: UiRegistry['moveRefs'],
   itemsInFrame = noItemsInFrame,
   deleteIds = noDeleteIds,
+  space: 'board' | 'schematic' = 'board',
 ): ToolSpec {
   return {
     id: SELECT_ID,
@@ -195,6 +200,6 @@ export function createSelectToolSpec(
     icon: SELECT_ID,
     key: SHELL_KEYS.select.key,
     group: 'select',
-    create: () => createSelectTool(getSelection, moveRefs, itemsInFrame, deleteIds),
+    create: () => createSelectTool(getSelection, moveRefs, itemsInFrame, deleteIds, space),
   };
 }

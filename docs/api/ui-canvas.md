@@ -6,7 +6,7 @@ Sisenemispunkt: `packages/ui/src/canvas/index.ts`
 
 ### `Canvas`
 ```ts
-export function Canvas({ layers, tools, keys, contextMenu, moveRefs, itemsInFrame, deleteIds, sceneTransform, view, onViewChange, snapshot, execute, surface, fitInsets, }: CanvasProps): import("react").JSX.Element;
+export function Canvas({ layers, tools, keys, contextMenu, moveRefs, itemsInFrame, deleteIds, space: coordinateSpace, sceneTransform, view, onViewChange, snapshot, execute, surface, fitInsets, }: CanvasProps): import("react").JSX.Element;
 ```
 
 ### `CanvasHudAnchor`
@@ -39,6 +39,7 @@ export interface CanvasProps {
     moveRefs?: UiRegistry['moveRefs'];
     itemsInFrame?: UiRegistry['itemsInFrame'];
     deleteIds?: UiRegistry['deleteIds'];
+    space?: 'board' | 'schematic';
     sceneTransform: SceneTransform;
     view: CanvasView;
     onViewChange(view: CanvasView): void;

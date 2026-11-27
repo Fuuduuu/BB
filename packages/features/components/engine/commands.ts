@@ -7,6 +7,7 @@ import {
 } from '@pcbk/domain';
 import type { BoardDoc, BoardPlacement, Component, Pin } from '@pcbk/domain';
 import { flipComponentSides, isEmptyReport, removePins } from '@pcbk/domain/rules';
+import { schematicSymbolId, snapToSchematicGrid } from '@pcbk/domain/schematic';
 import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec } from '@pcbk/engine';
 import {
@@ -121,6 +122,9 @@ const add: CommandSpec<AddComponentParams> = {
   title: 'components.add',
   params: AddComponentSchema,
   run(doc, params) {
+    const { schematic } = params;
+    const symbol = schematic && schematicSymbolId(params.kind);
+    if (symbol === null) reject('no_symbol');
     const board = params.board ? makeBoardPlacement(params.board, params.pins) : undefined;
     doc.components.push({
       id: params.id,
@@ -133,6 +137,9 @@ const add: CommandSpec<AddComponentParams> = {
       note: '',
       pins: params.pins.map((item) => ({ ...item, nc: false })),
       ...(board ? { board } : {}),
+      ...(schematic && symbol
+        ? { schematic: { ...schematic, symbol, at: snapToSchematicGrid(schematic.at) } }
+        : {}),
     });
   },
 };

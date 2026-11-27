@@ -5,6 +5,7 @@ import { useViewStore } from '@pcbk/ui';
 import { readComponentsView } from './components-view';
 import { placementEt } from './i18n/et';
 import { PlacedList } from './PlacedList';
+import { isPlacedOnSchematic } from './placement';
 import { UnplacedList } from './UnplacedList';
 
 const filters = ['placed', 'unplaced'] as const;
@@ -12,11 +13,15 @@ const filters = ['placed', 'unplaced'] as const;
 export function ComponentsPanel({ ids }: { ids: IdGen }) {
   const snapshot = useSnapshot((current) => current);
   const rawView = useViewStore((store) => store.modules.components);
+  const schematic = useViewStore((store) => store.activeView === 'schematic');
   const { filter } = readComponentsView(rawView);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   const counts = {
-    placed: snapshot.doc.components.filter((component) => component.board).length,
-    unplaced: snapshot.derived.unplacedBoard.length,
+    placed: snapshot.doc.components.filter((component) =>
+      schematic ? isPlacedOnSchematic(component) : component.board,
+    ).length,
+    unplaced: (schematic ? snapshot.derived.unplacedSchematic : snapshot.derived.unplacedBoard)
+      .length,
   };
 
   function changeFilter(next: (typeof filters)[number]) {
@@ -56,14 +61,19 @@ export function ComponentsPanel({ ids }: { ids: IdGen }) {
               buttons.current[next]?.focus();
             }}
           >
-            {placementEt.filter[option]} ({counts[option]})
+            {placementEt.filter[schematic && option === 'placed' ? 'schematic' : option]} (
+            {counts[option]})
             {option === 'unplaced' && filter === 'placed' && counts.unplaced > 0 && (
               <span className="pcbk-component-filters__dot" aria-hidden="true" />
             )}
           </button>
         ))}
       </div>
-      {filter === 'placed' ? <PlacedList /> : <UnplacedList ids={ids} />}
+      {filter === 'placed' ? (
+        <PlacedList schematic={schematic} />
+      ) : (
+        <UnplacedList ids={ids} schematic={schematic} />
+      )}
     </>
   );
 }

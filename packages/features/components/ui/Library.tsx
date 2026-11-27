@@ -1,7 +1,8 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { useEngine } from '@pcbk/client';
 import type { IdGen } from '@pcbk/contracts';
-import { Button, Field, useSessionStore } from '@pcbk/ui';
+import { Button, Field, useSessionStore, useViewStore } from '@pcbk/ui';
+import { schematicSymbolId } from '@pcbk/domain/schematic';
 import { footprintGeometry, type FootprintParams } from '@pcbk/domain/footprints';
 import type { LibraryEntry } from '../contract';
 import { placementEt } from './i18n/et';
@@ -110,7 +111,11 @@ export function Library({ ids }: { ids?: IdGen }) {
   const [entryId, setEntryId] = useState<string>();
   const subtitleId = useId();
   const search = useRef<HTMLInputElement>(null);
-  const matches = searchLibrary(query);
+  const schematic = useViewStore((state) => state.activeView === 'schematic');
+  const entries = searchLibrary(query);
+  const matches = schematic
+    ? entries.filter(({ kind }) => schematicSymbolId(kind) !== null)
+    : entries;
   const anchor = usePlaceStore((state) => state.anchor);
   const error = usePlaceStore((state) =>
     state.request?.mode === 'new' || state.anchor ? state.error : null,
@@ -140,13 +145,13 @@ export function Library({ ids }: { ids?: IdGen }) {
       {matches.length ? (
         <div className="pcbk-library__groups">
           {Object.entries(placementEt.library.categories).map(([category, title]) => {
-            const entries = matches.filter((entry) => entry.category === category);
-            if (!entries.length) return null;
+            const categoryEntries = matches.filter((entry) => entry.category === category);
+            if (!categoryEntries.length) return null;
             return (
               <section key={category} className="pcbk-library__group">
                 <h3 className="pcbk-library__category">{title}</h3>
                 <ul className="pcbk-components__list">
-                  {entries.map((entry) => (
+                  {categoryEntries.map((entry) => (
                     <li key={entry.id}>
                       <button
                         type="button"

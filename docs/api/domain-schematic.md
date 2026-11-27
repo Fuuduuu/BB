@@ -39,6 +39,16 @@ export type SchematicSymbol = Readonly<{
 }>;
 ```
 
+### `schematicSymbolId`
+```ts
+export function schematicSymbolId(kind: ComponentKind): SymbolId | null;
+```
+
+### `snapToSchematicGrid`
+```ts
+export function snapToSchematicGrid({ x, y }: Vec2): Vec2;
+```
+
 ### `SymbolId`
 ```ts
 export type SymbolId = 'resistor' | 'capacitor' | 'capacitor_polarized' | 'inductor' | 'diode' | 'led' | 'zener' | 'npn' | 'pnp' | 'nmos' | 'pmos' | 'crystal' | 'switch' | 'fuse' | 'terminal' | 'box';

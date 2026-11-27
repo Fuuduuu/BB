@@ -14,6 +14,7 @@ export type AddComponentParams = {
     marking?: string | undefined;
     value?: string | undefined;
     board?: BoardInput | undefined;
+    schematic?: { at: { x: number; y: number; }; rot: 0 | 90 | 180 | 270; mirror: boolean; } | undefined;
 };
 ```
 

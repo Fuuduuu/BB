@@ -1,6 +1,7 @@
 import type { IdGen, Snapshot } from '@pcbk/contracts';
 import type { Vec2 } from '@pcbk/domain';
 import { bodyOutline } from '@pcbk/domain/geometry';
+import { schematicSymbol, symbolToSchematic } from '@pcbk/domain/schematic';
 import { useSessionStore, useViewStore } from '@pcbk/ui';
 import type { ContextMenuItemSpec, Selection, UiModule } from '@pcbk/ui';
 import { selectComponent } from '../contract';
@@ -14,7 +15,7 @@ import { PinCard, usePinNameFocus } from './PinCard';
 import { Library } from './Library';
 import { OwnPinHint } from './OwnPinHint';
 import { OWN_PIN_TOOL_ID, ownPinToolSpec, useOwnPinError } from './OwnPinTool';
-import { createPlaceToolSpec, openPlacementAt } from './PlaceTool';
+import { createPlaceSchematicToolSpec, createPlaceToolSpec, openPlacementAt } from './PlaceTool';
 import {
   flipSide,
   PlacementSection,
@@ -28,6 +29,7 @@ import { COMPONENTS_LAYERS } from './layers';
 import { ALIGN_LAYER, AlignHint } from './layers/AlignLayer';
 import { HOVER_LAYER } from './layers/HoverLayer';
 import { usePlaceStore } from './place-store';
+import { isPlacedOnSchematic } from './placement';
 import './components.css';
 
 function firstSelectedPin(snapshot: Snapshot, selection: Selection) {
@@ -118,6 +120,7 @@ export function createComponentsUi(ids: IdGen): UiModule {
     title: componentEt.title,
     canvasLayers: [...COMPONENTS_LAYERS, HOVER_LAYER, ALIGN_LAYER],
     tools: [createPlaceToolSpec(ids), alignToolSpec(), ownPinToolSpec(ids)],
+    schematicTools: [createPlaceSchematicToolSpec(ids)],
     keys: [
       ...placementKeys,
       { id: 'components.duplicate', key: 'D', primary: true, run: duplicate },
@@ -155,11 +158,17 @@ export function createComponentsUi(ids: IdGen): UiModule {
         id: 'components',
         title: placementEt.tabs.components,
         order: 1,
-        summary: (snapshot) =>
-          placementEt.summary(
-            snapshot.doc.components.filter((component) => component.board).length,
-            snapshot.derived.unplacedBoard.length,
-          ),
+        summary: (snapshot) => {
+          const schematic = useViewStore.getState().activeView === 'schematic';
+          return placementEt.summary(
+            snapshot.doc.components.filter((component) =>
+              schematic ? isPlacedOnSchematic(component) : component.board,
+            ).length,
+            (schematic ? snapshot.derived.unplacedSchematic : snapshot.derived.unplacedBoard)
+              .length,
+            schematic,
+          );
+        },
         render: () => <ComponentsPanel ids={ids} />,
       },
     ],
@@ -179,6 +188,21 @@ export function createComponentsUi(ids: IdGen): UiModule {
             return fits ? [{ kind: 'component', id }] : [];
           });
         },
+        schematicMoveRef: (snapshot, item) =>
+          selectComponent(snapshot, item.id)?.schematic ? { kind: 'component', id: item.id } : null,
+        schematicInFrame: ({ doc }, { min, max }) =>
+          doc.components.flatMap((component) => {
+            const placement = component.schematic;
+            const symbol = placement && schematicSymbol(component);
+            if (!placement || !symbol) return [];
+            const { min: a, max: b } = symbol.bounds;
+            const corners = [a, { x: a.x, y: b.y }, b, { x: b.x, y: a.y }];
+            const fits = corners.every((corner) => {
+              const { x, y } = symbolToSchematic(placement, corner);
+              return min.x <= x && x <= max.x && min.y <= y && y <= max.y;
+            });
+            return fits ? [{ kind: 'component', id: component.id }] : [];
+          }),
         deleteId: (snapshot, item) => selectComponent(snapshot, item.id)?.id ?? null,
       },
       {

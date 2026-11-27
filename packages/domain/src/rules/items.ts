@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { boardPads } from '../geometry/board';
 import type { BoardDoc, DocKey } from '../model/board';
 import type { EndRef, Layer, Vec2 } from '../model/primitives';
+import { snapToSchematicGrid } from '../schematic';
 import { detachPins, newJunction, otherLayer, removeConnectionItems } from './connections';
 import type { RuleReport } from './connections';
 import { RuleRejected, RuleTargetNotFound } from './errors';
@@ -54,12 +55,25 @@ export function deleteItems(doc: BoardDoc, ids: readonly string[]): RuleReport {
   return { removedLabels };
 }
 
-export function translateItems(doc: BoardDoc, items: readonly ItemRef[], delta: Vec2): void {
+export function translateItems(
+  doc: BoardDoc,
+  items: readonly ItemRef[],
+  delta: Vec2,
+  view: 'board' | 'schematic' = 'board',
+): void {
   const ids = new Set(items.map(({ id }) => id));
   const components = new Map(doc.components.map((component) => [component.id, component]));
   for (const id of ids) {
     const component = components.get(id);
     if (!component) throw new RuleTargetNotFound(id);
+    if (view === 'schematic') {
+      const { schematic } = component;
+      if (!schematic) throw new RuleRejected('component_not_on_schematic');
+      const { at } = schematic;
+      const next = snapToSchematicGrid({ x: at.x + delta.x, y: at.y + delta.y });
+      if (next.x !== at.x || next.y !== at.y) schematic.at = next;
+      continue;
+    }
     const { board } = component;
     if (!board) throw new RuleRejected('component_not_placed');
     if (delta.x !== 0) board.center.x += delta.x;

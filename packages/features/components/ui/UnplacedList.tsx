@@ -52,21 +52,27 @@ function FootprintChoices({
   );
 }
 
-export function UnplacedList({ ids }: { ids: IdGen }) {
+export function UnplacedList({ ids, schematic = false }: { ids: IdGen; schematic?: boolean }) {
   const unplaced = useSnapshot((snapshot) => {
-    const unplacedIds = new Set(snapshot.derived.unplacedBoard);
+    const unplacedIds = new Set(
+      schematic ? snapshot.derived.unplacedSchematic : snapshot.derived.unplacedBoard,
+    );
     return selectComponents(snapshot).filter((component) => unplacedIds.has(component.id));
   });
   const [adding, setAdding] = useState(false);
   const [choosingId, setChoosingId] = useState<string>();
-  const error = usePlaceStore((state) => (state.request?.mode === 'existing' ? state.error : null));
+  const error = usePlaceStore((state) =>
+    state.request?.mode === (schematic ? 'schematic' : 'existing') ? state.error : null,
+  );
   return (
     <div className="pcbk-components">
-      <div className="pcbk-components__toolbar">
-        <Button variant="primary" onClick={() => setAdding(true)}>
-          {componentEt.add}
-        </Button>
-      </div>
+      {!schematic && (
+        <div className="pcbk-components__toolbar">
+          <Button variant="primary" onClick={() => setAdding(true)}>
+            {componentEt.add}
+          </Button>
+        </div>
+      )}
       {error && (
         <p className="pcbk-components__error bb-field__error" role="alert">
           {error}
@@ -75,28 +81,41 @@ export function UnplacedList({ ids }: { ids: IdGen }) {
       {unplaced.length ? (
         <ComponentList
           components={unplaced}
-          renderActions={(component) => (
-            <div className="pcbk-unplaced__actions">
-              <Button
-                aria-expanded={choosingId === component.id}
-                onClick={() =>
-                  setChoosingId((previous) =>
-                    previous === component.id ? undefined : component.id,
-                  )
-                }
-              >
-                {placementEt.unplaced.place}
-              </Button>
-              {choosingId === component.id && (
-                <FootprintChoices component={component} onPlace={() => setChoosingId(undefined)} />
-              )}
-            </div>
-          )}
+          renderActions={(component) =>
+            schematic ? (
+              <div className="pcbk-unplaced__actions">
+                <Button
+                  onClick={() => beginPlacement({ mode: 'schematic', componentId: component.id })}
+                >
+                  {placementEt.unplaced.placeSchematic}
+                </Button>
+              </div>
+            ) : (
+              <div className="pcbk-unplaced__actions">
+                <Button
+                  aria-expanded={choosingId === component.id}
+                  onClick={() =>
+                    setChoosingId((previous) =>
+                      previous === component.id ? undefined : component.id,
+                    )
+                  }
+                >
+                  {placementEt.unplaced.place}
+                </Button>
+                {choosingId === component.id && (
+                  <FootprintChoices
+                    component={component}
+                    onPlace={() => setChoosingId(undefined)}
+                  />
+                )}
+              </div>
+            )
+          }
         />
-      ) : (
+      ) : schematic ? null : (
         <p className="pcbk-components__empty">{placementEt.unplaced.empty}</p>
       )}
-      {adding && <AddComponentDialog ids={ids} onClose={() => setAdding(false)} />}
+      {!schematic && adding && <AddComponentDialog ids={ids} onClose={() => setAdding(false)} />}
     </div>
   );
 }

@@ -244,6 +244,8 @@ export interface SelectionKindSpec {
     exists(snapshot: Snapshot, item: SelectionItem): boolean;
     moveRef?(snapshot: Snapshot, item: SelectionItem): MoveRef | null;
     inFrame?(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[];
+    schematicMoveRef?(snapshot: Snapshot, item: SelectionItem): MoveRef | null;
+    schematicInFrame?(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[];
     deleteId?(snapshot: Snapshot, item: SelectionItem): string | null;
 }
 ```
@@ -349,6 +351,9 @@ export interface UiModule {
     tools?: ToolSpec[];
     keys?: KeySpec[];
     contextMenu?: ContextMenuItemSpec[];
+    schematicTools?: ToolSpec[];
+    schematicKeys?: KeySpec[];
+    schematicContextMenu?: ContextMenuItemSpec[];
     onSessionReset?(): void;
 }
 ```
@@ -363,10 +368,13 @@ export class UiRegistry {
     contextSections(selection: Selection): ContextSectionSpec[];
     contextPinned(): PinnedSpec[];
     contextMenu(kind: string): ContextMenuItemSpec[];
+    schematicContextMenu(kind: string): ContextMenuItemSpec[];
     selectionLabel(snapshot: Snapshot, selection: Selection): string | null;
     validSelection(snapshot: Snapshot, selection: Selection): Selection;
     moveRefs(snapshot: Snapshot, items: readonly SelectionItem[]): MoveRef[];
+    schematicMoveRefs(snapshot: Snapshot, items: readonly SelectionItem[]): MoveRef[];
     itemsInFrame(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[];
+    schematicItemsInFrame(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[];
     deleteIds(snapshot: Snapshot, items: readonly SelectionItem[]): string[];
     topBar(): SlotSpec[];
     bottomBar(): SlotSpec[];
@@ -374,6 +382,8 @@ export class UiRegistry {
     schematicLayers(): LayerSpec[];
     tools(): ToolSpec[];
     keys(): KeySpec[];
+    schematicTools(): ToolSpec[];
+    schematicKeys(): KeySpec[];
     resetSession(): void;
 }
 ```

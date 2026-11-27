@@ -1,5 +1,6 @@
 import type { IdGen } from '@pcbk/contracts';
 import type { FootprintParams, Vec2 } from '@pcbk/domain';
+import { snapToSchematicGrid } from '@pcbk/domain/schematic';
 import { useSessionStore, useViewStore } from '@pcbk/ui';
 import type { CanvasTool, Selection, ToolApi, ToolSpec } from '@pcbk/ui';
 import { makePlacedComponent } from '../contract';
@@ -9,6 +10,7 @@ import { componentEt, placementEt } from './i18n/et';
 import { placementRotation } from './placement-rotation';
 import {
   currentPlacementPreview,
+  PLACE_SCHEMATIC_TOOL_ID,
   PLACE_TOOL_ID,
   placementAngle,
   placementEntries,
@@ -17,6 +19,7 @@ import {
 import type { PlacementAnchor, PlacementRequest } from './place-store';
 
 const DRAG_THRESHOLD = 3;
+type PlacementGesture = { screen: Vec2; request: PlacementRequest; dragged: boolean };
 
 function isDrag(start: Vec2, current: Vec2): boolean {
   return Math.hypot(current.x - start.x, current.y - start.y) >= DRAG_THRESHOLD;
@@ -50,15 +53,19 @@ export function addPlacedComponent(
   return result.ok ? component.id : null;
 }
 
+function finishPlacement(api: ToolApi, toolId: string) {
+  usePlaceStore.getState().reset();
+  api.setPreview(null);
+  const session = useSessionStore.getState();
+  if (session.toolId === toolId) session.setToolId('select');
+}
+
 function createPlaceTool(ids: IdGen): CanvasTool {
-  let gesture: { screen: Vec2; request: PlacementRequest; dragged: boolean } | undefined;
+  let gesture: PlacementGesture | undefined;
 
   function endPlacement(api: ToolApi): void {
     gesture = undefined;
-    usePlaceStore.getState().reset();
-    api.setPreview(null);
-    const session = useSessionStore.getState();
-    if (session.toolId === PLACE_TOOL_ID) session.setToolId('select');
+    finishPlacement(api, PLACE_TOOL_ID);
   }
 
   return {
@@ -66,7 +73,9 @@ function createPlaceTool(ids: IdGen): CanvasTool {
     cursor: 'crosshair',
     onPointerDown({ screen }) {
       const { request } = usePlaceStore.getState();
-      if (request?.params) gesture = { screen, request, dragged: false };
+      if (request?.mode !== 'schematic' && request?.params) {
+        gesture = { screen, request, dragged: false };
+      }
     },
     onPointerMove({ world: center, screen }, api) {
       if (gesture) gesture.dragged ||= isDrag(gesture.screen, screen);
@@ -99,6 +108,7 @@ function createPlaceTool(ids: IdGen): CanvasTool {
       const finished = gesture;
       gesture = undefined;
       if (
+        request?.mode === 'schematic' ||
         !request?.params ||
         finished?.request !== request ||
         finished.dragged ||
@@ -136,6 +146,71 @@ function createPlaceTool(ids: IdGen): CanvasTool {
       endPlacement(api);
     },
     onCancel: endPlacement,
+  };
+}
+
+function createPlaceSchematicTool(ids: IdGen): CanvasTool {
+  let gesture: PlacementGesture | undefined;
+
+  return {
+    id: PLACE_SCHEMATIC_TOOL_ID,
+    cursor: 'crosshair',
+    onPointerDown({ screen }) {
+      const { request } = usePlaceStore.getState();
+      if (request?.mode === 'schematic' || (request?.mode === 'new' && request.params)) {
+        gesture = { screen, request, dragged: false };
+      }
+    },
+    onPointerMove({ screen }) {
+      if (gesture) gesture.dragged ||= isDrag(gesture.screen, screen);
+    },
+    onPointerUp({ world, screen }, api) {
+      const { request } = usePlaceStore.getState();
+      const finished = gesture;
+      gesture = undefined;
+      if (
+        !request ||
+        finished?.request !== request ||
+        finished.dragged ||
+        isDrag(finished.screen, screen)
+      ) {
+        return;
+      }
+
+      const at = snapToSchematicGrid(world);
+      const placement = { at, rot: 0, mirror: false } as const;
+      if (request.mode === 'new' && request.params) {
+        const entry = placementEntries.get(request.entryId);
+        if (!entry) return;
+        const { id, kind, pins } = makePlacedComponent(ids, entry, request.params, at);
+        const result = api.execute('components.add', { id, kind, pins, schematic: placement });
+        usePlaceStore.setState({ error: result.ok ? null : commandError(result.error) });
+        if (result.ok) api.select({ items: [{ kind: 'component', id }] });
+      } else if (request.mode === 'schematic') {
+        const id = request.componentId;
+        const result = api.execute('schematic.place', { items: [{ id, ...placement }] });
+        if (!result.ok) {
+          usePlaceStore.setState({ error: commandError(result.error) });
+          return;
+        }
+        api.select({ items: [{ kind: 'component', id }] });
+        finishPlacement(api, PLACE_SCHEMATIC_TOOL_ID);
+      }
+    },
+    onCancel: (api) => {
+      gesture = undefined;
+      finishPlacement(api, PLACE_SCHEMATIC_TOOL_ID);
+    },
+  };
+}
+
+export function createPlaceSchematicToolSpec(ids: IdGen): ToolSpec {
+  return {
+    id: PLACE_SCHEMATIC_TOOL_ID,
+    label: placementEt.unplaced.placeSchematic,
+    icon: 'place',
+    group: 'draw',
+    create: () => createPlaceSchematicTool(ids),
   };
 }
 

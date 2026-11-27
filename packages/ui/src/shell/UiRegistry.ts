@@ -60,6 +60,8 @@ export interface SelectionKindSpec {
   /** Viide, mida `items.translate` liigutab. `null` tähistab liikumatut objekti. */
   moveRef?(snapshot: Snapshot, item: SelectionItem): MoveRef | null;
   inFrame?(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[];
+  schematicMoveRef?(snapshot: Snapshot, item: SelectionItem): MoveRef | null;
+  schematicInFrame?(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[];
   deleteId?(snapshot: Snapshot, item: SelectionItem): string | null;
 }
 
@@ -77,6 +79,9 @@ export interface UiModule {
   tools?: ToolSpec[];
   keys?: KeySpec[];
   contextMenu?: ContextMenuItemSpec[];
+  schematicTools?: ToolSpec[];
+  schematicKeys?: KeySpec[];
+  schematicContextMenu?: ContextMenuItemSpec[];
   onSessionReset?(): void;
 }
 
@@ -96,12 +101,19 @@ function copyModule(module: UiModule): UiModule {
     schematicLayers: module.schematicLayers?.map((item) => ({ ...item })),
     tools: module.tools?.map((item) => ({ ...item })),
     keys: module.keys?.map((item) => ({ ...item })),
-    contextMenu: module.contextMenu?.map((item) => ({
-      ...item,
-      appliesTo: [...item.appliesTo],
-      shortcut: item.shortcut && { ...item.shortcut },
-    })),
+    contextMenu: copyMenu(module.contextMenu),
+    schematicTools: module.schematicTools?.map((item) => ({ ...item })),
+    schematicKeys: module.schematicKeys?.map((item) => ({ ...item })),
+    schematicContextMenu: copyMenu(module.schematicContextMenu),
   };
+}
+
+function copyMenu(menu: ContextMenuItemSpec[] | undefined): ContextMenuItemSpec[] | undefined {
+  return menu?.map((item) => ({
+    ...item,
+    appliesTo: [...item.appliesTo],
+    shortcut: item.shortcut && { ...item.shortcut },
+  }));
 }
 
 function ordered<T extends { order?: number }>(items: T[]): T[] {
@@ -115,6 +127,41 @@ function uniqueIds(items: { id: string }[], kind: string): void {
     if (seen.has(id)) throw new Error(`Duplicate ${kind} id: ${id}`);
     seen.add(id);
   }
+}
+
+function validateBindings(
+  modules: UiModule[],
+  toolSlot: 'tools' | 'schematicTools',
+  keySlot: 'keys' | 'schematicKeys',
+): void {
+  const moduleTools = modules.flatMap((module) => module[toolSlot] ?? []);
+  const keys = modules.flatMap((module) => module[keySlot] ?? []);
+  const tools = [{ id: 'select', key: undefined }, { id: 'pan', key: undefined }, ...moduleTools];
+  uniqueIds(tools, toolSlot);
+  uniqueIds(keys, keySlot);
+  for (const shortcut of modules.flatMap((module) => [
+    ...(module[toolSlot] ?? []),
+    ...(module[keySlot] ?? []),
+  ])) {
+    if (
+      shortcut.key !== undefined &&
+      isShellShortcut(
+        'primary' in shortcut && shortcut.primary ? 'Ctrl+' + shortcut.key : shortcut.key,
+        'shift' in shortcut && shortcut.shift === true,
+      )
+    ) {
+      throw new Error(`Reserved shell keyboard shortcut: ${shortcut.key}`);
+    }
+  }
+  uniqueIds(
+    [
+      ...tools.flatMap(({ key }) => (key === undefined ? [] : [{ id: key.toLowerCase() }])),
+      ...keys.map(({ key, primary, shift }) => ({
+        id: `${primary ? 'Ctrl+' : ''}${shift ? 'Shift+' : ''}${key.toLowerCase()}`,
+      })),
+    ],
+    'keyboard shortcut',
+  );
 }
 
 export class UiRegistry {
@@ -138,6 +185,7 @@ export class UiRegistry {
       'canvasLayers',
       'schematicLayers',
       'contextMenu',
+      'schematicContextMenu',
     ] as const) {
       uniqueIds(
         candidate.flatMap<{ id: string }>((item) => item[slot] ?? []),
@@ -150,37 +198,8 @@ export class UiRegistry {
       ),
       'selectionKinds',
     );
-    const tools = [
-      { id: 'select', key: undefined },
-      { id: 'pan', key: undefined },
-      ...candidate.flatMap((item) => item.tools ?? []),
-    ];
-    uniqueIds(tools, 'tools');
-    const keys = candidate.flatMap((item) => item.keys ?? []);
-    uniqueIds(keys, 'keys');
-    for (const shortcut of candidate.flatMap((item) => [
-      ...(item.tools ?? []),
-      ...(item.keys ?? []),
-    ])) {
-      if (
-        shortcut.key !== undefined &&
-        isShellShortcut(
-          'primary' in shortcut && shortcut.primary ? 'Ctrl+' + shortcut.key : shortcut.key,
-          'shift' in shortcut && shortcut.shift === true,
-        )
-      ) {
-        throw new Error(`Reserved shell keyboard shortcut: ${shortcut.key}`);
-      }
-    }
-    uniqueIds(
-      [
-        ...tools.flatMap(({ key }) => (key === undefined ? [] : [{ id: key.toLowerCase() }])),
-        ...keys.map(({ key, primary, shift }) => ({
-          id: `${primary ? 'Ctrl+' : ''}${shift ? 'Shift+' : ''}${key.toLowerCase()}`,
-        })),
-      ],
-      'keyboard shortcut',
-    );
+    validateBindings(candidate, 'tools', 'keys');
+    validateBindings(candidate, 'schematicTools', 'schematicKeys');
     this.registered.push(added);
     for (const kind of added.selectionKinds ?? []) this.selectionKinds.set(kind.kind, kind);
   }
@@ -203,9 +222,18 @@ export class UiRegistry {
     return ordered(this.modules().flatMap((module) => module.contextPinned ?? []));
   }
   contextMenu(kind: string): ContextMenuItemSpec[] {
+    return this.menuItems(kind, 'contextMenu');
+  }
+  schematicContextMenu(kind: string): ContextMenuItemSpec[] {
+    return this.menuItems(kind, 'schematicContextMenu');
+  }
+  private menuItems(
+    kind: string,
+    slot: 'contextMenu' | 'schematicContextMenu',
+  ): ContextMenuItemSpec[] {
     return ordered(
       this.modules()
-        .flatMap((module) => module.contextMenu ?? [])
+        .flatMap((module) => module[slot] ?? [])
         .filter((item) => item.appliesTo.includes(kind)),
     );
   }
@@ -221,10 +249,20 @@ export class UiRegistry {
     return items.length === selection.items.length ? selection : { items };
   }
   moveRefs(snapshot: Snapshot, items: readonly SelectionItem[]): MoveRef[] {
+    return this.collectMoveRefs(snapshot, items, 'moveRef');
+  }
+  schematicMoveRefs(snapshot: Snapshot, items: readonly SelectionItem[]): MoveRef[] {
+    return this.collectMoveRefs(snapshot, items, 'schematicMoveRef');
+  }
+  private collectMoveRefs(
+    snapshot: Snapshot,
+    items: readonly SelectionItem[],
+    method: 'moveRef' | 'schematicMoveRef',
+  ): MoveRef[] {
     const seen = new Set<string>();
     const refs: MoveRef[] = [];
     for (const item of items) {
-      const ref = this.selectionKinds.get(item.kind)?.moveRef?.(snapshot, item);
+      const ref = this.selectionKinds.get(item.kind)?.[method]?.(snapshot, item);
       if (!ref) continue;
       const key = `${ref.kind}:${ref.id}`;
       if (seen.has(key)) continue;
@@ -234,10 +272,20 @@ export class UiRegistry {
     return refs;
   }
   itemsInFrame(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[] {
+    return this.collectItemsInFrame(snapshot, frame, 'inFrame');
+  }
+  schematicItemsInFrame(snapshot: Snapshot, frame: SelectionFrame): SelectionItem[] {
+    return this.collectItemsInFrame(snapshot, frame, 'schematicInFrame');
+  }
+  private collectItemsInFrame(
+    snapshot: Snapshot,
+    frame: SelectionFrame,
+    method: 'inFrame' | 'schematicInFrame',
+  ): SelectionItem[] {
     const seen = new Set<string>();
     const items: SelectionItem[] = [];
     for (const kind of this.selectionKinds.values()) {
-      for (const item of kind.inFrame?.(snapshot, frame) ?? []) {
+      for (const item of kind[method]?.(snapshot, frame) ?? []) {
         const key = JSON.stringify([item.kind, item.id, item.componentId]);
         if (seen.has(key)) continue;
         seen.add(key);
@@ -275,6 +323,12 @@ export class UiRegistry {
   }
   keys(): KeySpec[] {
     return this.modules().flatMap((module) => module.keys ?? []);
+  }
+  schematicTools(): ToolSpec[] {
+    return this.modules().flatMap((module) => module.schematicTools ?? []);
+  }
+  schematicKeys(): KeySpec[] {
+    return this.modules().flatMap((module) => module.schematicKeys ?? []);
   }
   resetSession(): void {
     for (const module of this.registered) module.onSessionReset?.();

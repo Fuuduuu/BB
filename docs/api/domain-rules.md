@@ -275,7 +275,7 @@ export function scaleFromPins(doc: BoardDoc, { componentId, pinA, pinB, targetA,
 
 ### `translateItems`
 ```ts
-export function translateItems(doc: BoardDoc, items: readonly ItemRef[], delta: Vec2): void;
+export function translateItems(doc: BoardDoc, items: readonly ItemRef[], delta: Vec2, view?: 'board' | 'schematic'): void;
 ```
 
 ### `validateJunctionAttachment`

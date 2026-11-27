@@ -1,14 +1,16 @@
 import { create } from 'zustand';
-import { useSessionStore } from '@pcbk/ui';
+import { useSessionStore, useViewStore } from '@pcbk/ui';
 import type { FootprintParams, Vec2 } from '@pcbk/domain';
 import { COMPONENT_LIBRARY } from '../contract';
 
 export const PLACE_TOOL_ID = 'components.place';
+export const PLACE_SCHEMATIC_TOOL_ID = 'components.placeSchematic';
 export const placementEntries = new Map(COMPONENT_LIBRARY.map((entry) => [entry.id, entry]));
 
 export type PlacementRequest =
   | { mode: 'new'; entryId: string; params: FootprintParams | null }
-  | { mode: 'existing'; componentId: string; footprint: string; params: FootprintParams };
+  | { mode: 'existing'; componentId: string; footprint: string; params: FootprintParams }
+  | { mode: 'schematic'; componentId: string };
 
 export type PlacementAnchor = { center: Vec2; rotationDeg: number };
 export type PlacePreviewData = PlacementAnchor & { footprint: string; params: FootprintParams };
@@ -38,11 +40,16 @@ export const usePlaceStore = create<PlaceStore>((set) => ({
 export function beginPlacement(request: PlacementRequest): void {
   usePlaceStore.setState({
     ...initialPlacement,
-    request: request.params === null ? request : { ...request, params: { ...request.params } },
+    request:
+      request.mode === 'schematic' || request.params === null
+        ? request
+        : { ...request, params: { ...request.params } },
   });
   const session = useSessionStore.getState();
   session.setPreview(null);
-  session.setToolId(PLACE_TOOL_ID);
+  session.setToolId(
+    useViewStore.getState().activeView === 'schematic' ? PLACE_SCHEMATIC_TOOL_ID : PLACE_TOOL_ID,
+  );
 }
 
 export function placementAngle(baseRotationDeg: number): number {
@@ -51,7 +58,7 @@ export function placementAngle(baseRotationDeg: number): number {
 
 export function currentPlacementPreview() {
   const { request, cursor } = usePlaceStore.getState();
-  if (!cursor || !request?.params) return null;
+  if (!cursor || request?.mode === 'schematic' || !request?.params) return null;
   const entry = request.mode === 'new' ? placementEntries.get(request.entryId) : request;
   if (!entry) return null;
   const data: PlacePreviewData = {
@@ -66,7 +73,11 @@ export function currentPlacementPreview() {
 export function updatePlacementParams(params: FootprintParams | null): void {
   const { request } = usePlaceStore.getState();
   const session = useSessionStore.getState();
-  if (session.toolId !== PLACE_TOOL_ID || request?.mode !== 'new') return;
+  if (
+    request?.mode !== 'new' ||
+    (session.toolId !== PLACE_TOOL_ID && session.toolId !== PLACE_SCHEMATIC_TOOL_ID)
+  )
+    return;
   usePlaceStore.setState({ request: { ...request, params: params && { ...params } } });
-  session.setPreview(currentPlacementPreview());
+  if (session.toolId === PLACE_TOOL_ID) session.setPreview(currentPlacementPreview());
 }

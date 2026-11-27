@@ -6,6 +6,7 @@ import {
   IdSchema,
   PinSchema,
   SideSchema,
+  SymbolPlacementSchema,
   Vec2Schema,
 } from '@pcbk/domain';
 import type { ComponentKind, FootprintParams, Vec2 } from '@pcbk/domain';
@@ -48,6 +49,7 @@ export const AddComponentSchema = z.strictObject({
   marking: z.string().optional(),
   value: z.string().optional(),
   board: BoardInputSchema.optional(),
+  schematic: SymbolPlacementSchema.pick({ at: true, rot: true, mirror: true }).optional(),
 });
 export const UpdateComponentSchema = z.strictObject({
   id: IdSchema,

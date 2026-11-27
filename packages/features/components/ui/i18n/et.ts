@@ -77,10 +77,14 @@ export const placementEt = {
   filter: {
     label: 'Filter',
     placed: 'Plaadil',
+    schematic: 'Skeemil',
     unplaced: 'Paigutamata',
   },
-  summary: (placed: number, unplaced: number): string | null =>
-    [placed > 0 ? `${placed} plaadil` : '', unplaced > 0 ? `${unplaced} paigutamata` : '']
+  summary: (placed: number, unplaced: number, schematic = false): string | null =>
+    [
+      placed > 0 ? `${placed} ${schematic ? 'skeemil' : 'plaadil'}` : '',
+      unplaced > 0 ? `${unplaced} paigutamata` : '',
+    ]
       .filter(Boolean)
       .join(' · ') || null,
   library: {
@@ -218,6 +222,7 @@ export const placementEt = {
   unplaced: {
     empty: 'Kõik komponendid on plaadil.',
     place: 'Paiguta plaadile',
+    placeSchematic: 'Paiguta skeemile',
     choose: 'Vali korpus',
     pinNames: 'Jalgade nimed ei sobi',
     pinCount: (componentCount: number, footprintCount: number) =>

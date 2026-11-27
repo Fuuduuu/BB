@@ -8,6 +8,12 @@ import { FakeEngine, FakeProjects, snapshot } from '../../../client/src/__tests_
 import { useViewStore } from '../shell/view-store';
 import type { UiModule } from '../shell/UiRegistry';
 import { Workbench } from './Workbench';
+import { idGenerator, setupWithAllFeatures } from '../../../features/__tests__/helpers';
+import { measurementDoc, pointer } from '../../../features/measurements/__tests__/workspace';
+import { uiFeatures } from '../../../features/ui';
+import { useSessionStore } from '../shell/session-store';
+import { UiRegistry } from '../shell/UiRegistry';
+import { SchematicCanvas } from './SchematicCanvas';
 
 afterEach(() => {
   cleanup();
@@ -151,4 +157,94 @@ test('schematic_canvas_reuses_canvas_with_own_view', async () => {
   await waitFor(() => {
     expect(svg.querySelector('pattern[width="2.54"][height="2.54"]')).not.toBeNull();
   });
+});
+
+test('schematic_canvas_moves_frames_and_deletes', () => {
+  const doc = measurementDoc();
+  const original = doc.components[0]!;
+  const placed = (id: string, ref: string, x: number, y: number) => ({
+    ...original,
+    id,
+    ref,
+    pins: original.pins.map((pin) => ({ ...pin, uid: `pin_${id}_${pin.id}` })),
+    schematic: { symbol: 'box', at: { x, y }, rot: 0 as const, mirror: false },
+  });
+  doc.components = [
+    placed('cmp_u1', 'U1', 50.8, 50.8),
+    placed('cmp_u2', 'U2', 76.2, 101.6),
+    placed('cmp_u3', 'U3', 91.44, 101.6),
+  ];
+  const { engine, host } = setupWithAllFeatures(doc);
+  const execute = vi.spyOn(engine, 'execute');
+  useSessionStore.getState().reset(engine.snapshot().sessionId);
+  useViewStore.getState().setActiveView('schematic');
+  useViewStore.getState().setSchematicView({ zoom: 1, pan: { x: 0, y: 0 } });
+  const registry = new UiRegistry(uiFeatures(idGenerator(), () => {}));
+  const { container } = render(
+    <EngineProvider engine={engine} projects={new FakeProjects()}>
+      <SchematicCanvas registry={registry} />
+    </EngineProvider>,
+  );
+  const scene = container.querySelector('[data-scene]')!;
+  const svg = scene.closest('svg')!;
+  Object.defineProperty(scene, 'getScreenCTM', {
+    value: () => ({ inverse: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) }),
+  });
+  Object.defineProperties(svg, {
+    setPointerCapture: { value() {} },
+    hasPointerCapture: { value: () => false },
+  });
+  const component = () => engine.snapshot().doc.components[0]!;
+  const label = () =>
+    [...svg.querySelectorAll('[data-component="cmp_u1"] text')].find(
+      (text) => text.textContent === 'U1',
+    )!;
+  const originalLabelY = Number(label().getAttribute('y'));
+
+  pointer(svg, 'pointerdown', 50.8, 50.8);
+  pointer(svg, 'pointermove', 57, 57.8);
+  const translation = label().parentElement?.getAttribute('transform');
+  const [, dx, dy] = translation?.match(/^translate\(([^ ]+) ([^ ]+)\)$/) ?? [];
+  expect(Number(label().getAttribute('x')) + Number(dx)).toBeCloseTo(55.88);
+  expect(Number(label().getAttribute('y')) + Number(dy)).toBeCloseTo(originalLabelY + 7.62);
+  expect(component().schematic?.at).toEqual({ x: 50.8, y: 50.8 });
+  expect(host.drainJournal()).toEqual([]);
+  pointer(svg, 'pointerup', 57, 57.8);
+  expect(execute).toHaveBeenCalledExactlyOnceWith(
+    'items.translate',
+    expect.objectContaining({
+      items: [{ kind: 'component', id: 'cmp_u1' }],
+      view: 'schematic',
+    }),
+  );
+  expect(component().schematic?.at.x).toBeCloseTo(55.88);
+  expect(component().schematic?.at.y).toBeCloseTo(58.42);
+  expect(component().board).toEqual(original.board);
+
+  fireEvent.keyDown(svg, { key: 'ArrowRight' });
+  expect(component().schematic?.at.x).toBeCloseTo(58.42);
+  fireEvent.keyDown(svg, { key: 'ArrowDown', shiftKey: true });
+  expect(component().schematic?.at.y).toBeCloseTo(83.82);
+  expect(host.drainJournal().map(({ commandId }) => commandId)).toEqual([
+    'items.translate',
+    'items.translate',
+    'items.translate',
+  ]);
+
+  pointer(svg, 'pointerdown', 35, 65);
+  pointer(svg, 'pointermove', 92.5, 113);
+  pointer(svg, 'pointerup', 92.5, 113);
+  expect(useSessionStore.getState().selection.items).toEqual([
+    { kind: 'component', id: 'cmp_u1' },
+    { kind: 'component', id: 'cmp_u2' },
+  ]);
+  fireEvent.keyDown(svg, { key: 'Delete' });
+  expect(host.drainJournal().map(({ commandId }) => commandId)).toEqual(['items.delete']);
+  expect(engine.snapshot().doc.components.map(({ id }) => id)).toEqual(['cmp_u3']);
+  act(() => {
+    expect(engine.undo().ok).toBe(true);
+  });
+  expect(component().board).toEqual(original.board);
+  expect(component().schematic?.at.x).toBeCloseTo(58.42);
+  expect(component().schematic?.at.y).toBeCloseTo(83.82);
 });

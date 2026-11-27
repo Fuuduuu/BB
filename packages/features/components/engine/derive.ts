@@ -1,3 +1,4 @@
+import { schematicSymbolId } from '@pcbk/domain/schematic';
 import type { DeriveSpec } from '@pcbk/engine';
 import { z } from 'zod';
 
@@ -16,6 +17,9 @@ export const componentPlacementDerivations: DeriveSpec[] = [
     inputs: ['components'],
     schema: componentIds,
     initial: [],
-    run: (doc) => doc.components.filter((item) => !item.schematic).map((item) => item.id),
+    run: (doc) =>
+      doc.components
+        .filter((item) => !item.schematic && schematicSymbolId(item.kind) !== null)
+        .map((item) => item.id),
   },
 ];

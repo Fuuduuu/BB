@@ -16,10 +16,10 @@ export function bodyLocalMarks(geometry: FootprintGeom, shape: BodyShapeSpec, sp
 
 ### `bodyLocalOutline`
 
-Jagatud kontuur millimeetrites.
+Jagatud kirjutuskaitstud kontuur millimeetrites.
 
 ```ts
-export function bodyLocalOutline({ w, h }: FootprintGeom['body'], spec: BodyShapeSpec): Vec2[];
+export function bodyLocalOutline({ w, h }: FootprintGeom['body'], spec: BodyShapeSpec): readonly Readonly<Vec2>[];
 ```
 
 ### `BodyMark`

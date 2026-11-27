@@ -5,6 +5,7 @@ import { measurementsEngine } from './measurements/engine';
 import { netsEngine } from './nets/engine';
 import { projectEngine } from './project/engine';
 import { photoEngine } from './photo/engine';
+import { schematicEngine } from './schematic/engine';
 
 export const engineFeatures = [
   projectEngine,
@@ -13,6 +14,7 @@ export const engineFeatures = [
   photoEngine,
   connectionsEngine,
   netsEngine,
+  schematicEngine,
 ];
 
 // Veel ehitamata moodulite väljad.

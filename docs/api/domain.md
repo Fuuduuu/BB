@@ -58,3 +58,7 @@ Avalik liides alamteede kaupa:
 ### `./rules`
 
 - [rules](domain-rules.md)
+
+### `./schematic`
+
+- [schematic](domain-schematic.md)

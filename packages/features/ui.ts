@@ -6,6 +6,7 @@ import { netRoleColor } from './nets/contract';
 import { createNetsUi } from './nets/ui';
 import { createProjectUi } from './project/ui';
 import { createPhotoUi } from './photo/ui';
+import { createSchematicUi } from './schematic/ui';
 
 const netNames = new WeakMap<
   NonNullable<Snapshot['derived']['nets']>['list'],
@@ -34,4 +35,5 @@ export const uiFeatures = (
   createConnectionsUi(ids, { roleColor: netRoleColor, netName }),
   createNetsUi(ids, connectionPoints, saveTextFile),
   createMeasurementsUi(ids),
+  createSchematicUi(),
 ];

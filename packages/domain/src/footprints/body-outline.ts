@@ -3,7 +3,8 @@ import type { BodyFlat, BodyShapeSpec, FootprintGeom } from './types';
 
 const arcSegments = 48;
 const fullTurn = 2 * Math.PI;
-const outlines = new Map<string, Vec2[]>();
+const emptyOutline: readonly Readonly<Vec2>[] = Object.freeze([]);
+const outlines = new Map<string, readonly Readonly<Vec2>[]>();
 
 function ellipse(halfW: number, halfH: number): Vec2[] {
   return Array.from({ length: arcSegments }, (_, index) => {
@@ -64,13 +65,16 @@ function outline(halfW: number, halfH: number, { shape, flat }: BodyShapeSpec): 
   }
 }
 
-/** Jagatud kontuur millimeetrites. Käsitle tagastatud punkte kirjutuskaitstuna. */
-export function bodyLocalOutline({ w, h }: FootprintGeom['body'], spec: BodyShapeSpec): Vec2[] {
-  if (w <= 0 || h <= 0) return [];
+/** Jagatud kirjutuskaitstud kontuur millimeetrites. */
+export function bodyLocalOutline(
+  { w, h }: FootprintGeom['body'],
+  spec: BodyShapeSpec,
+): readonly Readonly<Vec2>[] {
+  if (w <= 0 || h <= 0) return emptyOutline;
   const key = `${spec.shape}|${spec.flat ?? ''}|${w}|${h}`;
   const cached = outlines.get(key);
   if (cached) return cached;
-  const points = outline(w / 2, h / 2, spec);
+  const points = Object.freeze(outline(w / 2, h / 2, spec).map((point) => Object.freeze(point)));
   outlines.set(key, points);
   return points;
 }

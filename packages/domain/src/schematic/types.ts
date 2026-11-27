@@ -2,6 +2,9 @@ import type { Vec2 } from '../model/primitives';
 
 export const SCHEMATIC_GRID_MM = 2.54;
 
+/** Calibrated against the application's Martian Mono font in Chromium. */
+export const MONO_ADVANCE_EM = 0.72;
+
 export type SymbolId =
   | 'resistor'
   | 'capacitor'

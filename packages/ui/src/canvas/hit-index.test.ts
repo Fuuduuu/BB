@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createHitIndex, type HitItem } from './hit-index';
+import { createHitIndex, pickHit, type HitItem } from './hit-index';
 
 function pin(id: string, x: number, y: number, r = 1): HitItem {
   return { kind: 'pin', id, shape: { type: 'point', at: { x, y }, r } };
@@ -83,12 +83,45 @@ it('rotated_rect_corners_are_indexed_across_grid_cells', () => {
 });
 
 describe('hit index', () => {
-  it('nearest_pin_wins_inside_hit_radius', () => {
-    const farther = pin('farther', -38, 5, 16);
-    const nearer = pin('nearer', -30, 5);
-    const hits = createHitIndex([farther, nearer]);
+  it('exact_hit_beats_margin_at_equal_priority', () => {
+    const large = pin('U1.1', 120, 100, 10);
+    const small = pin('U1.2', 135, 100, 2.5);
+    const cursor = { x: 129.5, y: 100 };
+    const hits = createHitIndex([large, small]);
 
-    expect(hits.query({ x: -32, y: 5 }, 1)).toBe(nearer);
+    expect(hits.query(cursor, 1)).toBe(large);
+    expect(hits.queryAll(cursor, 1).map(({ item, exact }) => [item, exact])).toEqual([
+      [large, true],
+      [small, false],
+    ]);
+    expect(pickHit(hits, cursor, 1, 'pin')).toBe(large);
+
+    const farther = pin('farther', 0, 0, 2);
+    const nearer = pin('nearer', 5, 0, 1);
+    const between = { x: 3, y: 0 };
+    const margins = createHitIndex([farther, nearer]);
+    expect(margins.query(between, 1)).toBe(nearer);
+    expect(margins.queryAll(between, 1).map(({ item, exact }) => [item, exact])).toEqual([
+      [nearer, false],
+      [farther, false],
+    ]);
+
+    const fartherExact = pin('farther-exact', 0, 0, 4);
+    const nearerExact = pin('nearer-exact', 5, 0, 3);
+    const overlaps = createHitIndex([fartherExact, nearerExact]);
+    expect(overlaps.query(between, 1)).toBe(nearerExact);
+    expect(overlaps.queryAll(between, 1).map(({ item, exact }) => [item, exact])).toEqual([
+      [nearerExact, true],
+      [fartherExact, true],
+    ]);
+
+    const preferred = { ...small, priority: 1 };
+    const priorities = createHitIndex([large, preferred]);
+    expect(priorities.query(cursor, 1)).toBe(preferred);
+    expect(priorities.queryAll(cursor, 1).map(({ item, exact }) => [item, exact])).toEqual([
+      [preferred, false],
+      [large, true],
+    ]);
   });
 
   it('applies the 6 screen-pixel minimum on both sides of a grid boundary', () => {

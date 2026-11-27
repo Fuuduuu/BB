@@ -1,4 +1,5 @@
 import type { Vec2 } from '@pcbk/domain';
+import { MONO_ADVANCE_EM } from '@pcbk/domain/schematic';
 import { createContext, useContext } from 'react';
 import { sceneToScreenVector } from './stage';
 import type { SceneTransform } from './stage';
@@ -11,8 +12,7 @@ export interface LabelObstacle {
   half: Vec2;
 }
 
-/** Calibrated against the application's Martian Mono font in Chromium. */
-export const MONO_ADVANCE_EM = 0.72;
+export { MONO_ADVANCE_EM };
 export const MONO_LINE_EM = 1.25;
 
 /** Conservative mono-font bounds including halo and one screen pixel of safety on each side. */

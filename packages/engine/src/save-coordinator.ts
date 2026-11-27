@@ -1,6 +1,13 @@
 import { SAVE_DEBOUNCE_MS, SAVE_MAX_WAIT_MS } from '@pcbk/domain';
 import { err, ok, sameViewState } from '@pcbk/contracts';
-import type { DocumentEngine, EngineError, Result, SaveStatus, ViewState } from '@pcbk/contracts';
+import type {
+  BoardView,
+  DocumentEngine,
+  EngineError,
+  Result,
+  SaveStatus,
+  ViewState,
+} from '@pcbk/contracts';
 import { StorageError } from './ports';
 import type { ProjectRepository } from './ports';
 import type { Clock, EngineHost } from './types';
@@ -17,11 +24,16 @@ export function storageFailure(error: unknown, expected?: number): EngineError {
 }
 type Outcome = Result<void, EngineError>;
 
+function copyCamera({ zoom, pan }: BoardView): BoardView {
+  return { zoom, pan: { ...pan } };
+}
+
 function copyView(view: ViewState): ViewState {
-  const { boardView } = view;
+  const { boardView, schematicView } = view;
   return {
     ...view,
-    ...(boardView && { boardView: { zoom: boardView.zoom, pan: { ...boardView.pan } } }),
+    ...(boardView && { boardView: copyCamera(boardView) }),
+    ...(schematicView && { schematicView: copyCamera(schematicView) }),
     ...(view.modules && {
       modules: JSON.parse(JSON.stringify(view.modules)) as Record<string, unknown>,
     }),

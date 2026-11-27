@@ -3,7 +3,7 @@ import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, expect, test } from 'vitest';
 import { Canvas, useSessionStore, type SceneTransform } from '@pcbk/ui';
 import { photoUiFixture } from '../__tests__/ui-fixture';
-import { CALIBRATE_TOOL_ID } from './CalibrateTool';
+import { CALIBRATE_TOOL_ID, calibrateToolSpec } from './CalibrateTool';
 import { PHOTO_CALIBRATION_LAYER } from './CalibrationLayer';
 import { useCalibrateStore } from './calibrate-store';
 import { photoEt } from './i18n/et';
@@ -21,7 +21,7 @@ function mount(zoom = 1, sceneTransform: SceneTransform = 'none') {
       snapshot={engine.snapshot()}
       execute={engine.execute}
       layers={[PHOTO_CALIBRATION_LAYER]}
-      tools={[]}
+      tools={[calibrateToolSpec()]}
       sceneTransform={sceneTransform}
       view={{ zoom, pan: { x: 0, y: 0 } }}
       onViewChange={() => undefined}

@@ -214,13 +214,13 @@ export function Canvas({
     cache.current = layerData;
   }, [active, cancel, snapshot, execute, onViewChange, layerData]);
   useLayoutEffect(() => applyView(view), [applyView, view]);
-  useLayoutEffect(
-    () => () => {
+  useLayoutEffect(() => {
+    if (active === toolset.select && toolId !== 'select') getSession().setToolId('select');
+    return () => {
       space.current = false;
       cancel(active);
-    },
-    [active, cancel, snapshot.sessionId, toolId],
-  );
+    };
+  }, [active, cancel, snapshot.sessionId, toolId, toolset.select]);
 
   useLayoutEffect(() => {
     const element = viewport.current;

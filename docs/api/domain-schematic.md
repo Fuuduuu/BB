@@ -4,6 +4,14 @@
 
 Sisenemispunkt: `packages/domain/src/schematic/index.ts`
 
+### `MONO_ADVANCE_EM`
+
+Calibrated against the application's Martian Mono font in Chromium.
+
+```ts
+export const MONO_ADVANCE_EM: 0.72;
+```
+
 ### `SCHEMATIC_GRID_MM`
 ```ts
 export const SCHEMATIC_GRID_MM: 2.54;

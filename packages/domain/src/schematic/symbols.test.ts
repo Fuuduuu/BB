@@ -135,3 +135,42 @@ test('symbol_contacts_from_pin_map_or_names', async () => {
   expect(schematicSymbol({ ...npn, pins: testPins(['E', 'B', 'C', 'B']) })?.id).toBe('box');
   expect(schematicSymbol({ kind: 'switch', pins: testPins(['1', '2', '3']) })?.id).toBe('box');
 });
+
+test('symbol_label_clears_body_and_box_fits_names', async () => {
+  const { SCHEMATIC_GRID_MM, schematicSymbol }: typeof import('./index') = await import(
+    schematicModule
+  );
+  const symbols = ComponentKindSchema.options.flatMap((kind) => {
+    const symbol = schematicSymbol({ kind, pins: testPins(kinds[kind].names) });
+    return symbol ? [symbol] : [];
+  });
+  expect(new Set(symbols.map(({ id }) => id)).size).toBe(16);
+  const minClearance = Math.min(...symbols.map(({ label, bounds }) => bounds.min.y - label.y));
+  expect.soft(minClearance).toBeCloseTo(2.54, 10);
+
+  const wide = schematicSymbol({ kind: 'ic', pins: testPins(['RESET', 'VCC_IO']) })!;
+  expect(wide.id).toBe('box');
+  expect.soft(wide.bounds.min.x).toBeCloseTo(-10.16);
+  expect.soft(wide.bounds.max.x).toBeCloseTo(10.16);
+  expect.soft(wide.pins.map(({ end }) => end.x)).toEqual([-12.7, 12.7]);
+
+  const texts = wide.prims.filter((prim) => prim.kind === 'text');
+  const left = texts.find(({ text }) => text === 'RESET')!;
+  const right = texts.find(({ text }) => text === 'VCC_IO')!;
+  expect(left.anchor).toBe('start');
+  expect(right.anchor).toBe('end');
+  const width = (text: string, size: number) => Array.from(text).length * size * 0.72;
+  const gap =
+    right.at.x - width(right.text, right.size) - (left.at.x + width(left.text, left.size));
+  expect.soft(gap).toBeGreaterThanOrEqual(1.27);
+
+  const standard = schematicSymbol({ kind: 'ic', pins: testPins(['VCC', 'GND']) })!;
+  expect(standard.bounds.min.x).toBeCloseTo(-5.08);
+  expect(standard.bounds.max.x).toBeCloseTo(5.08);
+  for (const { end } of [...wide.pins, ...standard.pins]) {
+    for (const mm of [end.x, end.y]) {
+      const steps = mm / SCHEMATIC_GRID_MM;
+      expect(steps).toBeCloseTo(Math.round(steps));
+    }
+  }
+});

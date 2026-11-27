@@ -1,6 +1,8 @@
+import { DEFAULT_VIEW_STATE } from '@pcbk/contracts';
 import { newBoardDoc } from '@pcbk/domain';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { deferred, projectSetup, seed } from './__tests__/project-helpers';
+import * as savers from './save-coordinator';
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -320,3 +322,40 @@ test('copy activation cannot overwrite a newer view supplied by a status observe
     modules: {},
   });
 });
+
+test.each(['boardView', 'schematicView'] as const)(
+  'returned_views_cannot_alter_saved_cameras (%s)',
+  async (camera) => {
+    const createSaver = vi.spyOn(savers, 'createSaveCoordinator');
+    try {
+      const { projects, memory, store, path } = await projectSetup();
+      const saver = createSaver.mock.results[0]!.value;
+      projects.saveView({
+        ...DEFAULT_VIEW_STATE,
+        [camera]: { zoom: 2, pan: { x: -10, y: 11 } },
+      });
+      expect((await projects.flush()).ok).toBe(true);
+      const expected = { zoom: 2, pan: { x: -10, y: 11 } };
+      const viewWrites = memory.viewWrites;
+      const documentWrites = memory.documentWrites;
+
+      const opened = await projects.open({ path });
+      if (!opened.ok || !opened.value.view?.[camera]) throw new Error('Expected saved camera');
+      opened.value.view[camera].pan.x = 500;
+      expect.soft(saver.currentView()?.[camera]).toEqual(expected);
+
+      const current = saver.currentView()?.[camera];
+      if (!current) throw new Error('Expected current camera');
+      current.pan.x = 750;
+      expect
+        .soft(await projects.open({ path }))
+        .toMatchObject({ ok: true, value: { view: { [camera]: expected } } });
+      expect((await projects.flush()).ok).toBe(true);
+      expect.soft(store.files.get(path)!.view?.[camera]).toEqual(expected);
+      expect(memory.viewWrites).toBe(viewWrites);
+      expect(memory.documentWrites).toBe(documentWrites);
+    } finally {
+      createSaver.mockRestore();
+    }
+  },
+);

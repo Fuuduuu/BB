@@ -2,10 +2,10 @@ import type { Component, Pin, SymbolPlacement } from '../model/component';
 import type { Vec2 } from '../model/primitives';
 import { rectangle, shapes } from './geometry';
 import type { SymbolContact } from './geometry';
-import { SCHEMATIC_GRID_MM as grid } from './types';
+import { MONO_ADVANCE_EM, SCHEMATIC_GRID_MM as grid } from './types';
 import type { SchematicSymbol, SymbolId, SymbolPin, SymbolPrim } from './types';
 
-export { SCHEMATIC_GRID_MM } from './types';
+export { MONO_ADVANCE_EM, SCHEMATIC_GRID_MM } from './types';
 export type { SchematicSymbol, SymbolId, SymbolPin, SymbolPrim } from './types';
 
 const symbolOf = {
@@ -93,7 +93,7 @@ function makeSymbol(
   pins: readonly SymbolPin[],
   bounds: SchematicSymbol['bounds'],
 ): SchematicSymbol {
-  return freezeGeometry({ id, prims, pins, bounds, label: { x: 0, y: bounds.min.y - grid / 2 } });
+  return freezeGeometry({ id, prims, pins, bounds, label: { x: 0, y: bounds.min.y - grid } });
 }
 
 function primitiveBounds(prims: readonly SymbolPrim[]): SchematicSymbol['bounds'] {
@@ -118,6 +118,17 @@ function primitiveBounds(prims: readonly SymbolPrim[]): SchematicSymbol['bounds'
 
 function box(pins: readonly Readonly<Pin>[], connector: boolean): SchematicSymbol {
   const leftCount = connector ? pins.length : Math.ceil(pins.length / 2);
+  const leftPins = pins.slice(0, leftCount);
+  const rightPins = pins.slice(leftCount);
+  const nameFontSize = 1.8;
+  const nameInset = 0.55;
+  const longestName = (sidePins: readonly Readonly<Pin>[]) =>
+    sidePins.reduce((length, pin) => Math.max(length, Array.from(pin.name ?? '').length), 0);
+  const requiredWidth =
+    (longestName(leftPins) + longestName(rightPins)) * MONO_ADVANCE_EM * nameFontSize +
+    2 * nameInset +
+    grid / 2;
+  const halfWidth = Math.max(2 * grid, Math.ceil(requiredWidth / (2 * grid)) * grid);
   const symbolPins: SymbolPin[] = [];
   const texts: SymbolPrim[] = [];
   let minY = 0;
@@ -126,8 +137,8 @@ function box(pins: readonly Readonly<Pin>[], connector: boolean): SchematicSymbo
     const centerIndex = Math.floor((sidePins.length - 1) / 2);
     sidePins.forEach((pin, index) => {
       const y = (index - centerIndex) * grid;
-      const inner = { x: side * 2 * grid, y };
-      const end = { x: side * 3 * grid, y };
+      const inner = { x: side * halfWidth, y };
+      const end = { x: side * (halfWidth + grid), y };
       symbolPins.push({ contact: pin.id, pinId: pin.id, inner, end });
       minY = Math.min(minY, y);
       maxY = Math.max(maxY, y);
@@ -141,18 +152,18 @@ function box(pins: readonly Readonly<Pin>[], connector: boolean): SchematicSymbo
       if (pin.name) {
         texts.push({
           kind: 'text',
-          at: { x: inner.x - side * 0.55, y: y + 0.6 },
+          at: { x: inner.x - side * nameInset, y: y + 0.6 },
           text: pin.name,
-          size: 1.8,
+          size: nameFontSize,
           anchor: side === -1 ? 'start' : 'end',
         });
       }
     });
   }
-  placeSide(-1, pins.slice(0, leftCount));
-  placeSide(1, pins.slice(leftCount));
-  const min = { x: -2 * grid, y: minY - grid };
-  const max = { x: 2 * grid, y: maxY + grid };
+  placeSide(-1, leftPins);
+  placeSide(1, rightPins);
+  const min = { x: -halfWidth, y: minY - grid };
+  const max = { x: halfWidth, y: maxY + grid };
   return makeSymbol('box', [rectangle(min.x, min.y, max.x, max.y), ...texts], symbolPins, {
     min,
     max,

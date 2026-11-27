@@ -179,6 +179,33 @@ function hitRadius(shape: HitShape, zoom: number, minRadius: number): number {
     : Math.max(minRadius, nativeRadius(shape));
 }
 
+function matchHit(
+  item: HitItem,
+  world: Vec2,
+  zoom: number,
+  minRadius: number,
+  rectMinHalf: number,
+): HitMatch | undefined {
+  if (item.enabled?.() === false) return;
+  const { shape } = item;
+  const distance = shapeDistance(world, shape, rectMinHalf);
+  if (!Number.isFinite(distance)) return;
+  if (shape.type !== 'rect' && distance > hitRadius(shape, zoom, minRadius)) return;
+  const exact =
+    shape.type === 'rect'
+      ? Number.isFinite(shapeDistance(world, shape, 0))
+      : distance <= hitRadius(shape, zoom, 0);
+  return { item, distance, exact };
+}
+
+function compareHits(a: HitMatch, b: HitMatch): number {
+  return (
+    (b.item.priority ?? 0) - (a.item.priority ?? 0) ||
+    Number(b.exact) - Number(a.exact) ||
+    a.distance - b.distance
+  );
+}
+
 export function createHitIndex(items: HitItem[], cellPx = 32): HitIndex {
   const cells = new Map<string, HitItem[]>();
   const oversized: HitItem[] = [];
@@ -216,43 +243,23 @@ export function createHitIndex(items: HitItem[], cellPx = 32): HitIndex {
     query(world, zoom) {
       const minRadius = minScreenRadius / zoom;
       const rectMinHalf = 2.5 / zoom;
-      let best: HitItem | undefined;
-      let bestPriority = -Infinity;
-      let bestDistance = Infinity;
+      let best: HitMatch | undefined;
       for (const item of candidatesAt(world, zoom)) {
-        const priority = item.priority ?? 0;
-        if (priority < bestPriority || item.enabled?.() === false) continue;
-        const { shape } = item;
-        const distance = shapeDistance(world, shape, rectMinHalf);
-        if (!Number.isFinite(distance)) continue;
-        if (shape.type !== 'rect' && distance > hitRadius(shape, zoom, minRadius)) continue;
-        if (priority > bestPriority || distance < bestDistance) {
-          best = item;
-          bestPriority = priority;
-          bestDistance = distance;
-        }
+        if (best && (item.priority ?? 0) < (best.item.priority ?? 0)) continue;
+        const match = matchHit(item, world, zoom, minRadius, rectMinHalf);
+        if (match && (!best || compareHits(match, best) < 0)) best = match;
       }
-      return best;
+      return best?.item;
     },
     queryAll(world, zoom) {
       const minRadius = minScreenRadius / zoom;
       const rectMinHalf = 2.5 / zoom;
       const matches: HitMatch[] = [];
       for (const item of candidatesAt(world, zoom)) {
-        if (item.enabled?.() === false) continue;
-        const { shape } = item;
-        const distance = shapeDistance(world, shape, rectMinHalf);
-        if (!Number.isFinite(distance)) continue;
-        if (shape.type !== 'rect' && distance > hitRadius(shape, zoom, minRadius)) continue;
-        const exact =
-          shape.type === 'rect'
-            ? Number.isFinite(shapeDistance(world, shape, 0))
-            : distance <= hitRadius(shape, zoom, 0);
-        matches.push({ item, distance, exact });
+        const match = matchHit(item, world, zoom, minRadius, rectMinHalf);
+        if (match) matches.push(match);
       }
-      return matches.sort(
-        (a, b) => (b.item.priority ?? 0) - (a.item.priority ?? 0) || a.distance - b.distance,
-      );
+      return matches.sort(compareHits);
     },
   };
 }

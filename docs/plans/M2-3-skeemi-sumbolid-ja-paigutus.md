@@ -93,7 +93,7 @@ Kehtivad M2.2b piirangud:
 - uusi sõltuvusi ei lisata ilma kasutaja loata;
 - Codex kasutab ainult sünteetilisi projekte ja fotosid.
 
-Nimega testid on kaardi loendi järgi ja lisateste ei tehta. Rajad: ülesanded 1, 4, 5 ja 6 on **rada B** (mootori leping, uued käsud, vastuvõtt). Ülesanded 2 ja 3 on **rada A**.
+Nimega testid on kaardi loendi järgi ja lisateste ei tehta. Rajad: ülesanded 1, 4, 5, 6 ja 7 on **rada B** (mootori leping, auditi parandused, uued käsud, vastuvõtt). Ülesanded 2 ja 3 on **rada A**.
 
 ## Ülesanded
 
@@ -130,7 +130,7 @@ Nimega testid on kaardi loendi järgi ja lisateste ei tehta. Rajad: ülesanded 1
 
 5. **Komponendid skeemil** (rada B, otsus 4, O5).
    - Lisamine skeemivaates teegist: `components.add` skeemipaigutusega. Komponent ilmub loendisse „Plaadile paigutamata“ ja „Paiguta plaadile“ toimib nagu praegu.
-   - Loend „Skeemile paigutamata“; lohistamine skeemile käivitab `schematic.place`-i.
+   - Skeemivaates on komponentide paneelis loend „Paigutamata“. „Paiguta skeemile“ ja klõps skeemil käivitavad `schematic.place`-i nagu plaadil (kaart M2-3-5; lohistamise asemel, sest plaadil ja KiCadis paigutatakse klõpsuga).
    - Liigutamine (`items.translate` vaatega `schematic`), pööramine `R`/`Shift+R`, peegeldus ja „Eemalda skeemilt“ (`schematic.remove`). Kustutamine eemaldab komponendi mõlemast vaatest nagu praegu.
    - Iga tegevus võetakse tagasi ühe `Ctrl+Z`-ga.
 6. **Jalgade funktsioon, ühine valik ja „Näita teises vaates“** (rada B, otsused 3 ja 6).

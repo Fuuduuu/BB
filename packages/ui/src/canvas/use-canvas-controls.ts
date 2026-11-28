@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef } from 'react';
 import type { RefObject, MutableRefObject } from 'react';
 import type { BoardView } from '@pcbk/contracts';
 import { useViewStore } from '../shell/view-store';
@@ -15,6 +15,7 @@ interface Controls {
   surface?: { width: number; height: number };
   fitInsets?: { left?: number; right?: number; top?: number; bottom?: number };
   sceneTransform: SceneTransform;
+  space: 'board' | 'schematic';
   sessionId: string;
   isGesturing(): boolean;
   onResize(size: { width: number; height: number }): void;
@@ -29,15 +30,58 @@ interface ViewportGeometry {
   scaleX: number;
   scaleY: number;
 }
+function controlArea(bounds: ViewportGeometry, fitInsets?: Controls['fitInsets']) {
+  const available = {
+    left: bounds.left + (fitInsets?.left ?? 0),
+    right: bounds.right - (fitInsets?.right ?? 0),
+    top: bounds.top + (fitInsets?.top ?? 0),
+    bottom: bounds.bottom - (fitInsets?.bottom ?? 0),
+  };
+  // Insets and the 200px fallback are CSS pixels, before root CTM conversion.
+  const area = available.right - available.left >= 200 ? available : bounds;
+  const start = {
+    x: (area.left - bounds.left) * bounds.scaleX,
+    y: (area.top - bounds.top) * bounds.scaleY,
+  };
+  const end = {
+    x: (area.right - bounds.left) * bounds.scaleX,
+    y: (area.bottom - bounds.top) * bounds.scaleY,
+  };
+  return {
+    width: Math.abs(end.x - start.x),
+    height: Math.abs(end.y - start.y),
+    center: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
+  };
+}
+
 export function useCanvasControls(props: Controls) {
   const current = useRef(props);
   const geometry = useRef<ViewportGeometry | null>(null);
+  const applyReveal = useCallback(() => {
+    const { revealRequest } = useViewStore.getState();
+    const { space, surface, sceneTransform, fitInsets, viewRef, changeView } = current.current;
+    const bounds = geometry.current;
+    if (!bounds || !revealRequest || revealRequest.view !== space) return;
+    const { center } = controlArea(bounds, fitInsets);
+    const { zoom } = viewRef.current;
+    const { at } = revealRequest;
+    // Use the translated scene origin as well as the linear rotation or reflection.
+    const origin = screenToScenePoint(sceneTransform, { x: 0, y: 0 }, surface);
+    const point = sceneToScreenVector(sceneTransform, {
+      x: at.x - origin.x,
+      y: at.y - origin.y,
+    });
+    useViewStore.setState({ revealRequest: null });
+    changeView({ zoom, pan: { x: center.x - point.x * zoom, y: center.y - point.y * zoom } });
+  }, []);
   useLayoutEffect(() => {
     current.current = props;
+    applyReveal();
   });
   useLayoutEffect(
     () =>
       useViewStore.subscribe((next, previous) => {
+        if (next.revealRequest && next.revealRequest !== previous.revealRequest) applyReveal();
         const { surface, fitInsets, sceneTransform, viewRef, changeView, isGesturing } =
           current.current;
         const fit = next.fitRequest !== previous.fitRequest && next.fitRequest > 0;
@@ -46,25 +90,7 @@ export function useCanvasControls(props: Controls) {
           next.zoomRequest.sequence > 0;
         const bounds = geometry.current;
         if (!bounds || (!fit && !zoom) || isGesturing()) return;
-        const available = {
-          left: bounds.left + (fitInsets?.left ?? 0),
-          right: bounds.right - (fitInsets?.right ?? 0),
-          top: bounds.top + (fitInsets?.top ?? 0),
-          bottom: bounds.bottom - (fitInsets?.bottom ?? 0),
-        };
-        // Insets and the 200px fallback are CSS pixels, before root CTM conversion.
-        const area = fit && available.right - available.left >= 200 ? available : bounds;
-        const start = {
-          x: (area.left - bounds.left) * bounds.scaleX,
-          y: (area.top - bounds.top) * bounds.scaleY,
-        };
-        const end = {
-          x: (area.right - bounds.left) * bounds.scaleX,
-          y: (area.bottom - bounds.top) * bounds.scaleY,
-        };
-        const width = Math.abs(end.x - start.x);
-        const height = Math.abs(end.y - start.y);
-        const center = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+        const { width, height, center } = controlArea(bounds, fit ? fitInsets : undefined);
         if (fit) {
           if (!surface || surface.width <= 0 || surface.height <= 0) return;
           const extent = sceneToScreenVector(sceneTransform, {
@@ -87,7 +113,7 @@ export function useCanvasControls(props: Controls) {
           changeView(zoomAt(before, center, scale));
         }
       }),
-    [],
+    [applyReveal],
   );
   useLayoutEffect(() => {
     const element = props.viewport.current;
@@ -164,6 +190,7 @@ export function useCanvasControls(props: Controls) {
         scaleY: height / bounds.height,
       };
       current.current.onResize({ width, height });
+      applyReveal();
       refresh();
     }
     // Observe only the groups/root inputs that affect the pointer's screen CTM.
@@ -204,6 +231,6 @@ export function useCanvasControls(props: Controls) {
       element?.removeEventListener('pointercancel', clear);
       window.removeEventListener('blur', clear);
     };
-  }, [props.viewport, props.svg, props.sessionId]);
+  }, [applyReveal, props.viewport, props.svg, props.sessionId]);
   return geometry;
 }

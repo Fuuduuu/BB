@@ -75,6 +75,7 @@ test('schematic_keys_and_menu_rotate_mirror_remove', () => {
     ['Pööra −90°Shift+R', 'Shift+R'],
     ['PeegeldaF', 'F'],
     ['Eemalda skeemilt', null],
+    ['Näita plaadil', null],
   ]);
   fireEvent.click(entries[3]!);
   expect(commands()).toEqual(['schematic.remove']);

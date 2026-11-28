@@ -116,7 +116,6 @@ export function Canvas({
   const space = useRef(false);
   const preview = useSessionStore((store) => store.preview);
   const toolId = useSessionStore((store) => store.toolId);
-
   const changeView = useCallback(
     (next: CanvasView) => {
       const before = viewRef.current;
@@ -137,6 +136,7 @@ export function Canvas({
     surface,
     fitInsets,
     sceneTransform,
+    space: coordinateSpace,
     sessionId: snapshot.sessionId,
     isGesturing,
     onResize: configureBuffer,

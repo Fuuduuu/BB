@@ -17,6 +17,11 @@ export const MONO_ADVANCE_EM: 0.72;
 export const SCHEMATIC_GRID_MM: 2.54;
 ```
 
+### `schematicContacts`
+```ts
+export function schematicContacts(kind: ComponentKind): readonly string[];
+```
+
 ### `schematicSymbol`
 ```ts
 export function schematicSymbol(component: Readonly<Pick<Component, 'kind'>> & {

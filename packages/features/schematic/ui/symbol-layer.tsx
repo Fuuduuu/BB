@@ -7,8 +7,9 @@ import {
   snapToSchematicGrid,
 } from '@pcbk/domain/schematic';
 import type { SymbolId, SymbolPin, SymbolPrim } from '@pcbk/domain/schematic';
-import { monoLabelHalf, useSessionStore } from '@pcbk/ui';
+import { MONO_ADVANCE_EM, monoLabelHalf, useSessionStore } from '@pcbk/ui';
 import type { HitItem, LayerSpec, TranslatePreviewData } from '@pcbk/ui';
+import { schematicEt } from './i18n/et';
 
 type Component = Snapshot['doc']['components'][number];
 type DrawnSymbol = {
@@ -21,6 +22,9 @@ type DrawnSymbol = {
 };
 
 const symbolCache = new WeakMap<Component, DrawnSymbol | null>();
+const markFontSize = SCHEMATIC_GRID_MM * 0.75;
+const markHalfWidth =
+  (Array.from(schematicEt.unidentifiedMark).length * MONO_ADVANCE_EM * markFontSize) / 2;
 const stroke = { stroke: 'currentColor', strokeWidth: 1.5, vectorEffect: 'non-scaling-stroke' };
 
 function drawnSymbol(component: Component): DrawnSymbol | null {
@@ -130,6 +134,7 @@ function SchematicSymbols({
             data-symbol={symbol.id}
             data-selected={isSelected ? 'true' : undefined}
             transform={transform}
+            opacity={component.dnp ? 0.4 : undefined}
             color={isSelected ? 'var(--accent)' : 'var(--ink)'}
           >
             {symbol.prims.map((shape, index) => (
@@ -154,7 +159,14 @@ function SchematicSymbols({
               fontSize={SCHEMATIC_GRID_MM}
               fill="currentColor"
             >
-              {component.ref}
+              {component.dnp ? (
+                <tspan textDecoration="line-through">{component.ref}</tspan>
+              ) : (
+                component.ref
+              )}
+              {!component.identified && (
+                <tspan fontSize={markFontSize}>{schematicEt.unidentifiedMark}</tspan>
+              )}
             </text>
           </g>
         );
@@ -173,6 +185,8 @@ export const symbolLayer: LayerSpec = {
     for (const component of snapshot.doc.components) {
       const geometry = drawnSymbol(component);
       if (!geometry) continue;
+      const half = monoLabelHalf(component.ref, SCHEMATIC_GRID_MM, zoom, 0);
+      if (!component.identified) half.x += markHalfWidth;
       hits.push(
         {
           kind: 'component',
@@ -187,7 +201,7 @@ export const symbolLayer: LayerSpec = {
           shape: {
             type: 'rect',
             at: geometry.label,
-            half: monoLabelHalf(component.ref, SCHEMATIC_GRID_MM, zoom, 0),
+            half,
             angleDeg: 0,
           },
         },

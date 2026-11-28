@@ -1,4 +1,5 @@
 import { newBoardDoc, type Component } from '@pcbk/domain';
+import { schematicSymbol } from '@pcbk/domain/schematic';
 import { createEngine } from '@pcbk/engine';
 import { expect, test } from 'vitest';
 import { engineFeatures, RESERVED_FIELDS } from '../../engine';
@@ -115,4 +116,75 @@ test('schematic_commands_place_rotate_mirror_remove_in_one_step', () => {
     error: { code: 'not_found', id: 'cmp_missing' },
   });
   expect(engine.snapshot()).toBe(withoutPlacement);
+});
+
+test('set_symbol_maps_contacts_in_one_step', () => {
+  const transistor = component('cmp_transistor', 'Q1', 'npn');
+  transistor.pins.push({ id: '3', uid: 'pin_cmp_transistor_3', nc: false });
+  transistor.schematic = {
+    symbol: 'box',
+    at: { x: 10.16, y: 7.62 },
+    rot: 90,
+    mirror: true,
+    labelOffset: { x: 3, y: -2 },
+  };
+  const resistor = component('cmp_resistor', 'R1');
+  resistor.schematic = { symbol: 'resistor', at: { x: 0, y: 0 }, rot: 0, mirror: false };
+  const unplaced = component('cmp_unplaced_transistor', 'Q2', 'npn');
+  unplaced.pins.push({ id: '3', uid: 'pin_cmp_unplaced_transistor_3', nc: false });
+
+  const doc = newBoardDoc('Sünteetiline jalgade vastavus');
+  doc.components.push(transistor, resistor, unplaced);
+  const { engine, host } = createEngine({
+    modules: engineFeatures,
+    reserved: RESERVED_FIELDS,
+    clock: { now: () => '2026-11-28T10:00:00Z' },
+  });
+  host.load('schematic-pin-map-test', doc, false);
+  const current = () => engine.snapshot().doc.components[0]!;
+  const pinMap = { B: '2', C: '1', E: '3' };
+
+  expect(schematicSymbol(current())?.id).toBe('box');
+  host.drainJournal();
+  const setResult = engine.execute('schematic.setSymbol', { id: transistor.id, pinMap });
+  expect(setResult.ok, JSON.stringify(setResult)).toBe(true);
+  expect(current().schematic).toEqual({ ...transistor.schematic, pinMap });
+  expect(schematicSymbol(current())).toMatchObject({
+    id: 'npn',
+    pins: expect.arrayContaining([expect.objectContaining({ contact: 'B', pinId: '2' })]),
+  });
+  expect(host.drainJournal()).toMatchObject([{ commandId: 'schematic.setSymbol' }]);
+  expect(engine.undo().ok).toBe(true);
+  expect(current().schematic).toEqual(transistor.schematic);
+  expect(schematicSymbol(current())?.id).toBe('box');
+  expect(engine.redo().ok).toBe(true);
+  expect(current().schematic?.pinMap).toEqual(pinMap);
+  expect(engine.execute('schematic.setSymbol', { id: transistor.id, pinMap: null }).ok).toBe(true);
+  expect(current().schematic).toEqual(transistor.schematic);
+  expect(schematicSymbol(current())?.id).toBe('box');
+
+  const beforeRejectedCommands = engine.snapshot();
+  host.drainJournal();
+  const invalidMaps: Record<string, string>[] = [
+    { B: '2', C: '1' },
+    { B: '2', C: '2', E: '3' },
+    { B: '2', C: '1', E: '99' },
+    { ...pinMap, spare: '3' },
+  ];
+  for (const invalidMap of invalidMaps) {
+    expect(
+      engine.execute('schematic.setSymbol', { id: transistor.id, pinMap: invalidMap }),
+    ).toMatchObject({ ok: false, error: { issues: [{ message: 'invalid_pin_map' }] } });
+    expect(engine.snapshot()).toBe(beforeRejectedCommands);
+  }
+  expect(
+    engine.execute('schematic.setSymbol', { id: resistor.id, pinMap: { '1': '2', '2': '1' } }),
+  ).toMatchObject({ ok: false, error: { issues: [{ message: 'invalid_pin_map' }] } });
+  expect(engine.snapshot()).toBe(beforeRejectedCommands);
+  expect(engine.execute('schematic.setSymbol', { id: unplaced.id, pinMap })).toMatchObject({
+    ok: false,
+    error: { issues: [{ message: 'component_not_on_schematic' }] },
+  });
+  expect(engine.snapshot()).toBe(beforeRejectedCommands);
+  expect(host.drainJournal()).toEqual([]);
 });

@@ -1,0 +1,16 @@
+.pcbk-pin-function {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.pcbk-pin-function h3,
+.pcbk-pin-function p {
+  margin: 0;
+}
+
+.pcbk-pin-function__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

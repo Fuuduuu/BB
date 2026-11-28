@@ -1,5 +1,6 @@
 import { DEFAULT_VIEW_STATE, normalizeBoardView } from '@pcbk/contracts';
 import type { BoardView, ViewState } from '@pcbk/contracts';
+import type { Vec2 } from '@pcbk/domain';
 import { create } from 'zustand';
 import { readStoredTheme, saveStoredTheme } from './theme-storage';
 import type { Theme } from './theme-storage';
@@ -7,6 +8,7 @@ import type { Theme } from './theme-storage';
 export type { Theme } from './theme-storage';
 
 type ActiveView = 'board' | 'schematic';
+type RevealRequest = { view: ActiveView; at: Vec2 };
 
 interface ViewStore extends Required<Omit<ViewState, 'schematicView'>> {
   activeView: ActiveView;
@@ -14,8 +16,10 @@ interface ViewStore extends Required<Omit<ViewState, 'schematicView'>> {
   theme: Theme;
   contextShown: boolean;
   fitRequest: number;
+  revealRequest: RevealRequest | null;
   zoomRequest: { sequence: number; factor: number };
   requestFit(): void;
+  requestReveal(view: ActiveView, at: Vec2): void;
   requestZoom(factor: number): void;
   setModuleView(id: string, value: unknown): void;
   setNavigatorWidth(width: number): void;
@@ -46,8 +50,10 @@ export const useViewStore = create<ViewStore>((set, get) => ({
   modules: {},
   contextShown: false,
   fitRequest: 0,
+  revealRequest: null,
   zoomRequest: { sequence: 0, factor: 1 },
   requestFit: () => set((state) => ({ fitRequest: state.fitRequest + 1 })),
+  requestReveal: (view, at) => set({ revealRequest: { view, at: { ...at } } }),
   requestZoom: (factor) => {
     if (Number.isFinite(factor) && factor > 0)
       set((state) => ({ zoomRequest: { sequence: state.zoomRequest.sequence + 1, factor } }));
@@ -75,6 +81,7 @@ export const useViewStore = create<ViewStore>((set, get) => ({
   restore: (view) =>
     set({
       fitRequest: 0,
+      revealRequest: null,
       zoomRequest: { sequence: 0, factor: 1 },
       contextShown: false,
       navigatorWidth: clamp(
@@ -118,6 +125,7 @@ export const useViewStore = create<ViewStore>((set, get) => ({
       modules: {},
       contextShown: false,
       fitRequest: 0,
+      revealRequest: null,
       zoomRequest: { sequence: 0, factor: 1 },
       boardView: normalizeBoardView(undefined),
       theme: readStoredTheme(),

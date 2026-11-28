@@ -103,3 +103,49 @@ test('symbol_layer_draws_and_hits_from_one_geometry', () => {
     );
   expect(hit?.shape).toEqual({ type: 'point', at: endpoint, r: 1 });
 });
+
+test('schematic_marks_unidentified_and_dnp', () => {
+  const doc = newBoardDoc('Sünteetilised tähised');
+  const r1 = part('cmp_r1', 'R1', 'resistor', [undefined, undefined], placement);
+  const r2 = {
+    ...part('cmp_r2', 'R2', 'resistor', [undefined, undefined], {
+      ...placement,
+      at: { x: 25.4, y: 25.4 },
+    }),
+    identified: true,
+    dnp: true,
+  };
+  doc.components.push(r1, r2);
+  const { engine } = setup(doc);
+  const snapshot = engine.snapshot();
+  const layer = new UiRegistry(uiFeatures(idGenerator(), () => {}))
+    .schematicLayers()
+    .find(({ id }) => id === 'schematic.symbols')!;
+  const { container } = render(<svg>{layer.render({ snapshot, zoom: 6, preview: null })}</svg>);
+  const unknownLabel = container.querySelector('[data-component="cmp_r1"] text')!;
+  const dnpSymbol = container.querySelector('[data-component="cmp_r2"]')!;
+  expect.soft(unknownLabel.textContent).toBe('R1 ?');
+  expect
+    .soft(Number(unknownLabel.querySelector('tspan')?.getAttribute('font-size')))
+    .toBeCloseTo(0.75 * Number(unknownLabel.getAttribute('font-size')));
+  expect.soft(dnpSymbol.querySelector('[text-decoration="line-through"]')?.textContent).toBe('R2');
+  expect.soft(dnpSymbol.getAttribute('opacity')).toBe('0.4');
+
+  const identified = {
+    ...snapshot,
+    doc: {
+      ...snapshot.doc,
+      components: snapshot.doc.components.map((part) =>
+        part.id === r1.id ? { ...part, identified: true } : part,
+      ),
+    },
+  };
+  function labelHalfWidth(current: typeof snapshot) {
+    const hit = layer
+      .hits?.(current, 6, 'none')
+      .find(({ id, shape }) => id === r1.id && shape.type === 'rect');
+    if (hit?.shape.type !== 'rect') throw new Error('Expected a reference label hit');
+    return hit.shape.half.x;
+  }
+  expect.soft(labelHalfWidth(snapshot)).toBeGreaterThan(labelHalfWidth(identified));
+});

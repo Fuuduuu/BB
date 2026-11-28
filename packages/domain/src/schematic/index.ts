@@ -45,6 +45,11 @@ const namesByContact: Readonly<Partial<Record<SymbolId, Record<string, string[]>
   pmos: { G: ['G'], D: ['D'], S: ['S'] },
 };
 
+const contactsBySymbol = new Map(
+  Object.entries(namesByContact).map(([id, names]) => [id, Object.freeze(Object.keys(names))]),
+);
+const noContacts: readonly string[] = Object.freeze([]);
+
 function resolveContacts(
   id: keyof typeof shapes,
   contacts: readonly SymbolContact[],
@@ -179,6 +184,11 @@ export function snapToSchematicGrid({ x, y }: Vec2): Vec2 {
 
 export function schematicSymbolId(kind: ComponentKind): SymbolId | null {
   return symbolOf[kind];
+}
+
+export function schematicContacts(kind: ComponentKind): readonly string[] {
+  const id = schematicSymbolId(kind);
+  return id === null ? noContacts : (contactsBySymbol.get(id) ?? noContacts);
 }
 
 export function schematicSymbol(

@@ -1,9 +1,13 @@
 import type { BoardDoc } from '@pcbk/domain';
-import { schematicSymbolId, snapToSchematicGrid } from '@pcbk/domain/schematic';
+import { schematicContacts, schematicSymbolId, snapToSchematicGrid } from '@pcbk/domain/schematic';
 import { CommandTargetNotFound, reject } from '@pcbk/engine';
 import type { CommandSpec, EngineModule } from '@pcbk/engine';
-import { SchematicPlaceSchema, SchematicRemoveSchema } from '../contract';
-import type { SchematicPlaceParams, SchematicRemoveParams } from '../contract';
+import { SchematicPlaceSchema, SchematicRemoveSchema, SchematicSetSymbolSchema } from '../contract';
+import type {
+  SchematicPlaceParams,
+  SchematicRemoveParams,
+  SchematicSetSymbolParams,
+} from '../contract';
 
 function component(doc: BoardDoc, id: string) {
   const target = doc.components.find((item) => item.id === id);
@@ -42,8 +46,38 @@ const remove: CommandSpec<SchematicRemoveParams> = {
   },
 };
 
+const setSymbol: CommandSpec<SchematicSetSymbolParams> = {
+  id: 'schematic.setSymbol',
+  title: 'schematic.setSymbol',
+  params: SchematicSetSymbolSchema,
+  alsoWrites: ['components'],
+  run(doc, { id, pinMap }) {
+    const target = component(doc, id);
+    const placement = target.schematic;
+    if (!placement) reject('component_not_on_schematic');
+    if (pinMap === null) {
+      delete placement.pinMap;
+      return;
+    }
+
+    const contacts = schematicContacts(target.kind);
+    const pinIds = new Set(target.pins.map((pin) => pin.id));
+    const mappedPins = Object.values(pinMap);
+    if (
+      contacts.length === 0 ||
+      contacts.length !== mappedPins.length ||
+      contacts.some((contact) => !Object.hasOwn(pinMap, contact)) ||
+      new Set(mappedPins).size !== mappedPins.length ||
+      mappedPins.some((pinId) => !pinIds.has(pinId))
+    ) {
+      reject('invalid_pin_map');
+    }
+    placement.pinMap = pinMap;
+  },
+};
+
 export const schematicEngine: EngineModule = {
   id: 'schematic',
   dependsOn: ['components'],
-  commands: [place, remove],
+  commands: [place, remove, setSymbol],
 };

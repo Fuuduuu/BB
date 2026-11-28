@@ -27,3 +27,16 @@ export type SchematicRemoveParams = {
 ```ts
 export const SchematicRemoveSchema: ZodType<SchematicRemoveParams>;
 ```
+
+### `SchematicSetSymbolParams`
+```ts
+export type SchematicSetSymbolParams = {
+    id: string;
+    pinMap: Record<string, string> | null;
+};
+```
+
+### `SchematicSetSymbolSchema`
+```ts
+export const SchematicSetSymbolSchema: ZodType<SchematicSetSymbolParams>;
+```

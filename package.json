@@ -10,6 +10,7 @@
   "scripts": {
     "bb-review-card": "node tooling/review-card/run.mjs",
     "proof": "node tooling/proof/run.mjs",
+    "perf:native": "powershell.exe -NoProfile -File tooling/perf-native/run-native-probe.ps1",
     "check": "pnpm run typecheck && pnpm run lint && pnpm run depcruise && pnpm run filelength && pnpm run test && pnpm run api:check",
     "api": "node tooling/api-digest.mjs",
     "api:check": "node tooling/api-digest.mjs --check",

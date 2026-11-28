@@ -121,3 +121,55 @@ test('incremental_derived_equals_full_rebuild', () => {
   expectFullRebuild(engine.undo());
   expectFullRebuild(engine.redo());
 });
+
+test('pin_readings_skip_moves_and_match_full_rebuild', () => {
+  const doc = board();
+  const resistor = doc.components[0]!;
+  resistor.board = { ...resistor.board!, footprint: 'area', params: { w: 6, h: 4 } };
+  doc.measurements.push({
+    id: 'msr_r1_voltage',
+    mode: 'voltage',
+    power: 'on',
+    at: resistorProbe,
+    atLabel: 'R1.2',
+    source: 'manual',
+    value: 3.3,
+    takenAt,
+  });
+  const engine = setup(doc);
+  const reading = {
+    measurementId: 'msr_r1_voltage',
+    mode: 'voltage',
+    value: 3.3,
+    takenAt,
+  };
+  const starting = engine.snapshot().derived.pinReadings;
+  expect(starting[resistorProbe.uid]).toEqual(reading);
+
+  function compareFullRebuild() {
+    const { doc, derived } = engine.snapshot();
+    expect(derived.pinReadings).toEqual(
+      setup(structuredClone(doc) as BoardDoc).snapshot().derived.pinReadings,
+    );
+    return derived.pinReadings;
+  }
+
+  expect(engine.execute('items.translate', moveResistor).ok).toBe(true);
+  expect.soft(compareFullRebuild()).toBe(starting);
+  expect(engine.execute('components.update', renameResistor).ok).toBe(true);
+  expect.soft(compareFullRebuild()).toBe(starting);
+
+  expect(engine.execute('components.removePin', { id: r1, pinId: '2' }).ok).toBe(true);
+  const newUid = 'pin_cmp_r1_replacement';
+  expect(engine.execute('components.addPin', { id: r1, pin: { id: '2', uid: newUid } }).ok).toBe(
+    true,
+  );
+  const afterReplacement = compareFullRebuild();
+  expect(afterReplacement[resistorProbe.uid]).toBeUndefined();
+  expect(afterReplacement[newUid]).toBeUndefined();
+
+  expect(engine.undo().ok).toBe(true);
+  expect(compareFullRebuild()[resistorProbe.uid]).toBeUndefined();
+  expect(engine.undo().ok).toBe(true);
+  expect(compareFullRebuild()[resistorProbe.uid]).toEqual(reading);
+});

@@ -3,6 +3,7 @@ import { expect, test } from 'vitest';
 import { validateDocument } from '../../engine/src/invariants';
 import { migrateDoc } from './migrations';
 import { BoardDocSchema } from './model/board';
+import { SCHEMATIC_GRID_MM, schematicSymbol } from './schematic';
 
 test('every_release_document_migrates_and_validates', () => {
   const directory = new URL('./__fixtures__/releases/', import.meta.url);
@@ -54,4 +55,28 @@ test('release_documents_v060_v070_keep_their_content', () => {
   expect(Math.abs((v070.scale.calib?.mm ?? Infinity) - 3.81)).toBeLessThanOrEqual(0.001);
   expect(v070.components.find(({ ref }) => ref === 'C1')?.board?.footprint).toBe('radial');
   expect(v070.components.find(({ ref }) => ref === 'U1')?.board?.footprint).toBe('soic');
+});
+
+test('release_document_v080_keeps_schematic', () => {
+  const file = new URL('./__fixtures__/releases/v0.8.0.document.json', import.meta.url);
+  const raw = JSON.parse(readFileSync(file, 'utf8')) as { format_version: number };
+  const migrated = migrateDoc(raw, raw.format_version);
+  const doc = validateDocument(BoardDocSchema.parse(migrated));
+
+  const r1 = doc.components.find(({ ref }) => ref === 'R1');
+  expect(r1?.board).toBeDefined();
+  expect(r1?.schematic?.rot).toBe(90);
+  for (const coordinate of [r1!.schematic!.at.x, r1!.schematic!.at.y]) {
+    const steps = coordinate / SCHEMATIC_GRID_MM;
+    expect(steps).toBeCloseTo(Math.round(steps));
+  }
+
+  const q1 = doc.components.find(({ ref }) => ref === 'Q1');
+  expect(q1?.board).toBeDefined();
+  expect(q1?.schematic?.pinMap).toEqual({ B: '2', C: '1', E: '3' });
+  expect(schematicSymbol(q1!)?.id).toBe('npn');
+
+  const c2 = doc.components.find(({ ref }) => ref === 'C2');
+  expect(c2?.schematic).toBeDefined();
+  expect(c2?.board).toBeUndefined();
 });

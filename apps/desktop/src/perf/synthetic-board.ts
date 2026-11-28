@@ -9,9 +9,11 @@ import {
 import { TRACE_WIDTH_MM, type AddConnectionsParams } from '@pcbk/features/connections/contract';
 import type { AddMeasurementParams } from '@pcbk/features/measurements/contract';
 import type { AssignNetParams } from '@pcbk/features/nets/contract';
+import { placeSyntheticSymbols } from './synthetic-schematic';
 
 export type SyntheticBoard = {
   components: AddComponentParams[];
+  schematic: ReturnType<typeof placeSyntheticSymbols>;
   measurements: AddMeasurementParams[];
   continuity: ContinuityMeasurement[];
   connections: AddConnectionsParams;
@@ -84,6 +86,7 @@ export function generateSyntheticBoard(opts: {
   const traces = syntheticTraces(components, opts.ids, random);
   return {
     components,
+    schematic: placeSyntheticSymbols(components),
     measurements,
     ...traces,
     continuity: syntheticContinuity(components, traces.connections.items, opts.ids, opts.at),

@@ -9,6 +9,7 @@ import {
 import type { SymbolId, SymbolPin, SymbolPrim } from '@pcbk/domain/schematic';
 import { MONO_ADVANCE_EM, monoLabelHalf, useSessionStore } from '@pcbk/ui';
 import type { HitItem, LayerSpec, TranslatePreviewData } from '@pcbk/ui';
+import { memo } from 'react';
 import { schematicEt } from './i18n/et';
 
 type Component = Snapshot['doc']['components'][number];
@@ -101,6 +102,63 @@ function SymbolPrimitive({ shape, textRotation }: { shape: SymbolPrim; textRotat
   }
 }
 
+const SchematicSymbol = memo(function SchematicSymbol({
+  component,
+  selected,
+  dx,
+  dy,
+}: {
+  component: Component;
+  selected: boolean;
+  dx: number;
+  dy: number;
+}) {
+  const symbol = drawnSymbol(component);
+  if (!symbol) return null;
+  return (
+    <g
+      data-component={component.id}
+      data-symbol={symbol.id}
+      data-selected={selected ? 'true' : undefined}
+      transform={dx || dy ? `translate(${dx} ${dy})` : undefined}
+      opacity={component.dnp ? 0.4 : undefined}
+      color={selected ? 'var(--accent)' : 'var(--ink)'}
+    >
+      {symbol.prims.map((shape, index) => (
+        <SymbolPrimitive key={index} shape={shape} textRotation={symbol.textRotation} />
+      ))}
+      {symbol.pins.map(({ pinId, end, inner }) => (
+        <line
+          key={pinId}
+          data-pin={pinId}
+          x1={end.x}
+          y1={end.y}
+          x2={inner.x}
+          y2={inner.y}
+          {...stroke}
+        />
+      ))}
+      <text
+        x={symbol.label.x}
+        y={symbol.label.y}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={SCHEMATIC_GRID_MM}
+        fill="currentColor"
+      >
+        {component.dnp ? (
+          <tspan textDecoration="line-through">{component.ref}</tspan>
+        ) : (
+          component.ref
+        )}
+        {!component.identified && (
+          <tspan fontSize={markFontSize}>{schematicEt.unidentifiedMark}</tspan>
+        )}
+      </text>
+    </g>
+  );
+});
+
 function SchematicSymbols({
   snapshot,
   preview,
@@ -117,58 +175,20 @@ function SchematicSymbols({
   return (
     <g data-layer="schematic.symbols" pointerEvents="none" fontFamily="var(--f-mono)">
       {snapshot.doc.components.map((component) => {
-        const symbol = drawnSymbol(component);
-        if (!symbol) return null;
-        const isSelected = selected.has(component.id);
         const at = component.schematic?.at;
+        if (!at) return null;
         const previewAt =
-          at && translation && moved.has(component.id)
+          translation && moved.has(component.id)
             ? snapToSchematicGrid({ x: at.x + translation.dx, y: at.y + translation.dy })
-            : undefined;
-        const transform =
-          at && previewAt ? `translate(${previewAt.x - at.x} ${previewAt.y - at.y})` : undefined;
+            : at;
         return (
-          <g
+          <SchematicSymbol
             key={component.id}
-            data-component={component.id}
-            data-symbol={symbol.id}
-            data-selected={isSelected ? 'true' : undefined}
-            transform={transform}
-            opacity={component.dnp ? 0.4 : undefined}
-            color={isSelected ? 'var(--accent)' : 'var(--ink)'}
-          >
-            {symbol.prims.map((shape, index) => (
-              <SymbolPrimitive key={index} shape={shape} textRotation={symbol.textRotation} />
-            ))}
-            {symbol.pins.map(({ pinId, end, inner }) => (
-              <line
-                key={pinId}
-                data-pin={pinId}
-                x1={end.x}
-                y1={end.y}
-                x2={inner.x}
-                y2={inner.y}
-                {...stroke}
-              />
-            ))}
-            <text
-              x={symbol.label.x}
-              y={symbol.label.y}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontSize={SCHEMATIC_GRID_MM}
-              fill="currentColor"
-            >
-              {component.dnp ? (
-                <tspan textDecoration="line-through">{component.ref}</tspan>
-              ) : (
-                component.ref
-              )}
-              {!component.identified && (
-                <tspan fontSize={markFontSize}>{schematicEt.unidentifiedMark}</tspan>
-              )}
-            </text>
-          </g>
+            component={component}
+            selected={selected.has(component.id)}
+            dx={previewAt.x - at.x}
+            dy={previewAt.y - at.y}
+          />
         );
       })}
     </g>

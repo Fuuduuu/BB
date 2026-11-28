@@ -1,0 +1,281 @@
+{
+  "format_version": 1,
+  "rev": 13,
+  "name": "M2-3-7-v080-synteetiline",
+  "status": "mapping",
+  "scale": {
+    "pxPerMm": 10,
+    "calibrated": false
+  },
+  "photos": [
+    {
+      "id": "pho_IOGfhgxczs",
+      "side": "top",
+      "name": "m23-v080-synteetiline.png",
+      "widthPx": 800,
+      "heightPx": 600,
+      "transform": "none"
+    }
+  ],
+  "components": [
+    {
+      "id": "cmp_D8F456Cmu4",
+      "kind": "resistor",
+      "ref": "R1",
+      "marking": "",
+      "value": "",
+      "identified": false,
+      "dnp": false,
+      "note": "",
+      "pins": [
+        {
+          "id": "1",
+          "uid": "pin_Hni10VQDwi",
+          "nc": false
+        },
+        {
+          "id": "2",
+          "uid": "pin__W7ndKegye",
+          "nc": false
+        }
+      ],
+      "board": {
+        "footprint": "chip",
+        "params": {
+          "size": "0805"
+        },
+        "center": {
+          "x": 215.99999314546596,
+          "y": 185.99999453127393
+        },
+        "rotationDeg": 90,
+        "side": "top",
+        "scaleX": 1,
+        "scaleY": 1,
+        "customPads": {}
+      },
+      "schematic": {
+        "symbol": "resistor",
+        "at": {
+          "x": 142.24,
+          "y": 88.9
+        },
+        "rot": 90,
+        "mirror": false
+      }
+    },
+    {
+      "id": "cmp_8v2LjdBsZl",
+      "kind": "ic",
+      "ref": "U1",
+      "marking": "",
+      "value": "",
+      "identified": false,
+      "dnp": false,
+      "note": "",
+      "pins": [
+        {
+          "id": "1",
+          "uid": "pin_TDMxLZo98U",
+          "nc": false
+        },
+        {
+          "id": "2",
+          "uid": "pin_WTxClx1UtU",
+          "nc": false
+        },
+        {
+          "id": "3",
+          "uid": "pin_50tMWQ4TK1",
+          "nc": false,
+          "name": "FB"
+        },
+        {
+          "id": "4",
+          "uid": "pin_UX0411Egxq",
+          "nc": false
+        },
+        {
+          "id": "5",
+          "uid": "pin_Eb7FAsd3EG",
+          "nc": false
+        },
+        {
+          "id": "6",
+          "uid": "pin_iW-kGz3Gf8",
+          "nc": false
+        },
+        {
+          "id": "7",
+          "uid": "pin_nzsiGkNHrv",
+          "nc": false
+        },
+        {
+          "id": "8",
+          "uid": "pin_lexPhLUx5P",
+          "nc": true
+        }
+      ],
+      "board": {
+        "footprint": "soic",
+        "params": {
+          "pins": 8,
+          "body": 3.9
+        },
+        "center": {
+          "x": 439.99998980760586,
+          "y": 281.9999931007625
+        },
+        "rotationDeg": 0,
+        "side": "top",
+        "scaleX": 1,
+        "scaleY": 1,
+        "customPads": {}
+      }
+    },
+    {
+      "id": "cmp_iDFjtfcW0O",
+      "kind": "npn",
+      "ref": "Q1",
+      "marking": "",
+      "value": "",
+      "identified": false,
+      "dnp": false,
+      "note": "",
+      "pins": [
+        {
+          "id": "1",
+          "uid": "pin_RDgDORA8Bt",
+          "nc": false
+        },
+        {
+          "id": "2",
+          "uid": "pin_iHW-3mKyek",
+          "nc": false
+        },
+        {
+          "id": "3",
+          "uid": "pin_the3cq_c0J",
+          "nc": false
+        }
+      ],
+      "board": {
+        "footprint": "to92",
+        "params": {},
+        "center": {
+          "x": 239.9999927878381,
+          "y": 377.999991670251
+        },
+        "rotationDeg": 0,
+        "side": "top",
+        "scaleX": 1,
+        "scaleY": 1,
+        "customPads": {}
+      },
+      "schematic": {
+        "symbol": "npn",
+        "at": {
+          "x": 210.82,
+          "y": 137.16
+        },
+        "rot": 0,
+        "mirror": false,
+        "pinMap": {
+          "B": "2",
+          "C": "1",
+          "E": "3"
+        }
+      }
+    },
+    {
+      "id": "cmp_8FT6JlSBMf",
+      "kind": "capacitor",
+      "ref": "C2",
+      "marking": "",
+      "value": "",
+      "identified": false,
+      "dnp": false,
+      "note": "",
+      "pins": [
+        {
+          "id": "1",
+          "uid": "pin_LV2COu9kXS",
+          "nc": false
+        },
+        {
+          "id": "2",
+          "uid": "pin_zu5Ipsquqz",
+          "nc": false
+        }
+      ],
+      "schematic": {
+        "at": {
+          "x": 276.86,
+          "y": 172.72
+        },
+        "rot": 0,
+        "mirror": false,
+        "symbol": "capacitor"
+      }
+    }
+  ],
+  "junctions": [],
+  "connections": [],
+  "netLabels": [],
+  "roles": [
+    {
+      "id": "rol_gnd",
+      "label": "GND",
+      "kind": "ground",
+      "nominalV": 0,
+      "color": "#1f2523"
+    },
+    {
+      "id": "rol_3v3",
+      "label": "3V3",
+      "kind": "power",
+      "nominalV": 3.3,
+      "color": "#e8891c"
+    },
+    {
+      "id": "rol_5v",
+      "label": "5V",
+      "kind": "power",
+      "nominalV": 5,
+      "color": "#d9342b"
+    },
+    {
+      "id": "rol_12v",
+      "label": "12V",
+      "kind": "power",
+      "nominalV": 12,
+      "color": "#2a64d6"
+    },
+    {
+      "id": "rol_sig",
+      "label": "Signaal",
+      "kind": "signal",
+      "color": "#8a4fd3"
+    },
+    {
+      "id": "rol_unk",
+      "label": "Teadmata",
+      "kind": "unknown",
+      "color": "#8c9692"
+    }
+  ],
+  "measurements": [],
+  "measureSettings": {
+    "voltageTolerancePct": 10,
+    "voltageToleranceMinV": 0.1
+  },
+  "repairs": [],
+  "areas": [],
+  "dimensions": [],
+  "textNotes": [],
+  "importChecks": [],
+  "guide": {
+    "skipped": []
+  },
+  "activePhotoId": "pho_IOGfhgxczs"
+}

@@ -2,6 +2,7 @@
   display: grid;
   gap: 10px;
   margin-top: 16px;
+  padding: 16px;
 }
 
 .pcbk-pin-function h3,

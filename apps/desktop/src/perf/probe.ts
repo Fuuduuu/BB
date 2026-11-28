@@ -1,136 +1,144 @@
 import { info } from '@tauri-apps/plugin-log';
 import { invoke } from '@tauri-apps/api/core';
-import { boardPads } from '@pcbk/domain';
+import type { Snapshot } from '@pcbk/contracts';
+import { et } from '@pcbk/ui';
 import { addPhoto } from '@pcbk/features/photo/ui';
-import { et, useSessionStore, useViewStore } from '@pcbk/ui';
-import type { Result, SaveStatus, Snapshot } from '@pcbk/contracts';
 import type { createRuntime } from '../runtime';
-import { frameStats } from './frame-stats';
 import { measureProjectIpc } from './ipc-timing';
+import { addProbeBranches, anchorPinCount } from './probe-branches';
 import { measureCommands } from './probe-commands';
+import { canvasCounts, formatResult, showResult, trackForeground } from './probe-dom';
+import { measureGestures } from './probe-gestures';
+import { observeSchematicDrag } from './probe-input';
+import { checkProbeInputs } from './probe-inputs';
+import type { ProbeInputCounts } from './probe-inputs';
+import { awaitProbeReady, environment, failureResult, selectDenseTarget } from './probe-setup';
+import {
+  button,
+  closeWorkbench,
+  openSchematic,
+  openWorkbench,
+  saveQuiet,
+  unwrap,
+} from './probe-workbench';
 import { generateSyntheticBoard } from './synthetic-board';
 import { createSyntheticPhoto } from './synthetic-photo';
-import {
-  canvasCounts,
-  formatResult,
-  nextFrame,
-  observeSvgPhoto,
-  sampleFrames,
-  showResult,
-  trackForeground,
-  waitFor,
-} from './probe-dom';
-import { dragComponent } from './probe-input';
-import { awaitProbeReady, environment, failureResult, selectDenseTarget } from './probe-setup';
+
+export { measureZoomSettle, probeBaseZoom, probeViewportCenter } from './probe-gestures';
 
 type Runtime = ReturnType<typeof createRuntime>;
+type SyntheticBoard = ReturnType<typeof generateSyntheticBoard>;
 
-export function probeViewportCenter(canvas: SVGSVGElement) {
-  const viewport = canvas.parentElement ?? canvas;
-  return { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 };
-}
+const seed = 127;
+const takenAt = '2026-01-01T00:00:00.000Z';
 
-export function probeBaseZoom(doc: Snapshot['doc']): number {
-  const minimumShortHalf = Math.min(
-    ...doc.components.flatMap((component) =>
-      component.board
-        ? boardPads(
-            component.board,
-            component.pins.map((pin) => pin.id),
-            doc.scale.pxPerMm,
-          ).map((pad) => Math.min(pad.halfPx.x, pad.halfPx.y))
-        : [],
-    ),
+async function populate(runtime: Runtime) {
+  const photo = await createSyntheticPhoto();
+  unwrap(
+    await addPhoto(new File([photo.bytes], photo.name, { type: 'image/jpeg' }), runtime),
+    'addPhoto',
   );
-  return Math.max(8 / (1.6 * doc.scale.pxPerMm), 7 / minimumShortHalf) * 1.2;
-}
-
-// Observe the same post-zoom window before and after the rendering change.
-// Starting immediately preserves the first frame gap; an initial rAF would drop it.
-export async function measureZoomSettle() {
-  const windowMs = 1000;
-  const started = performance.now();
-  let previous = started;
-  let worstMs = 0;
-  let frames = 0;
-  do {
-    const now = await nextFrame();
-    worstMs = Math.max(worstMs, now - previous);
-    frames++;
-    previous = now;
-  } while (previous - started < windowMs);
-  return { windowMs, elapsedMs: previous - started, frames, worstMs };
-}
-
-function unwrap<T>(result: Result<T, unknown>, label: string): T {
-  if (!result.ok) throw new Error(`${label}: ${JSON.stringify(result.error)}`);
-  return result.value;
-}
-
-function button(label: string) {
-  return (
-    [...document.querySelectorAll<HTMLButtonElement>('button')].find(
-      (item) =>
-        (item.getAttribute('aria-label') === label || item.textContent?.trim() === label) &&
-        !item.disabled &&
-        !item.closest('fieldset[disabled]'),
-    ) ?? null
-  );
-}
-
-async function saveQuiet(runtime: Runtime) {
-  let status: SaveStatus | undefined;
-  const unsubscribe = runtime.projects.status((next) => {
-    status = next;
-  });
-  try {
-    unwrap(await runtime.projects.flush(), 'flush');
-    await waitFor(() => status?.state === 'saved', 'quiet project save');
-  } finally {
-    unsubscribe();
-  }
-}
-
-async function openWorkbench(runtime: Runtime, path: string) {
-  const originalOpen = runtime.projects.open;
-  let started = 0;
-  let opening: ReturnType<Runtime['projects']['open']> | undefined;
-  const photo = observeSvgPhoto();
-  runtime.projects.open = (request) => {
-    started = performance.now();
-    opening = originalOpen.call(runtime.projects, request);
-    return opening;
-  };
-  try {
-    const open = await waitFor(() => button(et.project.open), 'home Open button');
-    open.click();
-    await waitFor(() => opening ?? false, 'projects.open invocation');
-    const opened = unwrap(await opening!, 'open');
-    if (opened.path !== path) throw new Error('Workbench opened the wrong project');
-    const canvas = await waitFor(() => {
-      const svg = document.querySelector<SVGSVGElement>(`svg[aria-label="${et.shell.canvas}"]`);
-      return svg &&
-        svg.querySelectorAll('[data-layer="components.bodies"] [data-component]').length === 300 &&
-        photo.ready(svg)
-        ? svg
-        : null;
-    }, 'all 300 component bodies and actual SVG photo load');
-    await nextFrame();
-    await nextFrame();
-    const elapsed = performance.now() - started;
-    await saveQuiet(runtime);
-    return { elapsed, canvas };
-  } finally {
-    runtime.projects.open = originalOpen;
-    photo.stop();
-  }
-}
-
-async function closeWorkbench(runtime: Runtime) {
   await saveQuiet(runtime);
-  (await waitFor(() => button(et.project.returnHome), 'Back Home button')).click();
-  await waitFor(() => button(et.project.open), 'home after close');
-  await nextFrame();
+  const synthetic = generateSyntheticBoard({ seed, ids: runtime.ids, at: takenAt });
+  synthetic.components.forEach((component, index) => {
+    unwrap(
+      runtime.engine.execute('components.add', {
+        ...component,
+        schematic: synthetic.schematic[index]!,
+      }),
+      'components.add',
+    );
+  });
+  await saveQuiet(runtime);
+  for (const measurement of synthetic.measurements)
+    unwrap(runtime.engine.execute('measurements.add', measurement), 'measurements.add');
+  unwrap(runtime.engine.execute('connections.add', synthetic.connections), 'connections.add');
+  for (const measurement of synthetic.continuity)
+    unwrap(runtime.engine.execute('measurements.add', measurement), 'continuity measurements.add');
+  for (const label of synthetic.netLabels)
+    unwrap(runtime.engine.execute('nets.assign', label), 'nets.assign');
+  await saveQuiet(runtime);
+  return synthetic;
+}
+
+function boardCounts(snapshot: Snapshot) {
+  const { components, connections, measurements } = snapshot.doc;
+  const continuity = measurements.filter(({ mode }) => mode === 'continuity');
+  const traces = connections.filter(({ board }) => board?.kind === 'trace');
+  const levels = Object.values(snapshot.derived.connectionLevels ?? {});
+  const radial = components.filter(({ board }) => board?.footprint === 'radial');
+  const soic = components.filter(({ board }) => board?.footprint === 'soic');
+  return {
+    radial: radial.length,
+    soic: soic.length,
+    bottomRadial: radial.filter(({ board }) => board?.side === 'bottom').length,
+    bottomSoic: soic.filter(({ board }) => board?.side === 'bottom').length,
+    traces: traces.length,
+    topTraces: traces.filter(({ board }) => board?.layer === 'top').length,
+    bottomTraces: traces.filter(({ board }) => board?.layer === 'bottom').length,
+    measurements: measurements.length,
+    voltage: measurements.filter(({ mode }) => mode === 'voltage').length,
+    continuity: continuity.length,
+    beeps: continuity.filter(({ beep }) => beep === true).length,
+    noBeeps: continuity.filter(({ beep }) => beep === false).length,
+    measuredTraces: levels.filter(({ level }) => level === 'measured').length,
+    negativeTraces: levels.filter(({ noContinuity }) => noContinuity).length,
+    namedNets: snapshot.derived.nets?.list.filter((net) => net.named).length ?? 0,
+  };
+}
+
+function readInput(
+  snapshot: Snapshot,
+  synthetic: SyntheticBoard,
+  symbols: number,
+  board: ReturnType<typeof boardCounts>,
+) {
+  return {
+    components: snapshot.doc.components.length,
+    pins: snapshot.doc.components.reduce((total, component) => total + component.pins.length, 0),
+    traces: board.traces,
+    schematicSymbols: symbols,
+    measurements: board.measurements,
+    namedNets: board.namedNets,
+    expected: {
+      measurements: synthetic.measurements.length + synthetic.continuity.length,
+      namedNets: synthetic.netLabels.length,
+    },
+    seed,
+    window: environment().window,
+  } satisfies ProbeInputCounts & { seed: number; window: ReturnType<typeof environment>['window'] };
+}
+
+function inputFailure(
+  input: ProbeInputCounts,
+  mismatched: string[],
+  projectPath: string,
+  reasons: string[],
+) {
+  return {
+    valid: false,
+    reason: 'input_count',
+    invalidReasons: [...reasons, 'input_count'],
+    mismatched,
+    input,
+    projectPath,
+    ...environment(),
+  };
+}
+
+function verifyBoardEvidence(board: ReturnType<typeof boardCounts>, canvas: SVGSVGElement) {
+  const dom = canvasCounts(canvas);
+  if (
+    dom.bodies !== 300 ||
+    dom.pins !== 3000 ||
+    board.beeps !== 450 ||
+    board.noBeeps !== 50 ||
+    board.measuredTraces !== 450 ||
+    board.negativeTraces !== 50
+  )
+    throw new Error(
+      `Reopened board evidence differs from the probe workload: ${JSON.stringify({ board, dom })}`,
+    );
 }
 
 async function measure(runtime: Runtime) {
@@ -152,84 +160,88 @@ async function measure(runtime: Runtime) {
     );
     projectPath = created.path;
     await saveQuiet(runtime);
-    const photo = await createSyntheticPhoto();
-    unwrap(
-      await addPhoto(new File([photo.bytes], photo.name, { type: 'image/jpeg' }), runtime),
-      'addPhoto',
-    );
-    await saveQuiet(runtime);
-    const synthetic = generateSyntheticBoard({
-      seed: 127,
-      ids: runtime.ids,
-      at: '2026-01-01T00:00:00.000Z',
-    });
-    for (const component of synthetic.components)
-      unwrap(runtime.engine.execute('components.add', component), 'components.add');
-    await saveQuiet(runtime);
-    for (const measurement of synthetic.measurements)
-      unwrap(runtime.engine.execute('measurements.add', measurement), 'measurements.add');
-    unwrap(runtime.engine.execute('connections.add', synthetic.connections), 'connections.add');
-    for (const label of synthetic.netLabels)
-      unwrap(runtime.engine.execute('nets.assign', label), 'nets.assign');
-    await saveQuiet(runtime);
+    const synthetic = await populate(runtime);
     const creationMs = performance.now() - creationStart;
     unwrap(await runtime.projects.close(), 'close created project');
     runtime.appHost.pickProjectFile = async () => created.path;
-    const openMs: number[] = [];
-    let canvas: SVGSVGElement | undefined;
-    for (let run = 0; run < 3; run++) {
-      const opened = await openWorkbench(runtime, created.path);
-      openMs.push(opened.elapsed);
-      canvas = opened.canvas;
-      if (run < 2) await closeWorkbench(runtime);
-    }
-    if (!canvas) throw new Error('Canvas missing after open');
+
+    const first = await openWorkbench(runtime, created.path);
+    const schematicCanvas = await openSchematic();
+    const symbols = schematicCanvas.querySelectorAll('[data-symbol]').length;
+    await closeWorkbench(runtime);
+    const second = await openWorkbench(runtime, created.path);
+    await closeWorkbench(runtime);
+    const third = await openWorkbench(runtime, created.path);
+    const canvas = third.canvas;
+    const openMs = [first.elapsed, second.elapsed, third.elapsed];
     const snapshot = runtime.engine.snapshot();
-    const connections = snapshot.doc.connections.filter(({ board }) => board?.kind === 'trace');
-    if (connections.length !== 1000) throw new Error('Probe board did not reopen with 1000 traces');
+    const board = boardCounts(snapshot);
+    const input = readInput(snapshot, synthetic, symbols, board);
+    const validation = checkProbeInputs(input);
+    if (!validation.ok)
+      return inputFailure(input, validation.mismatched, created.path, foreground.reasons());
+    verifyBoardEvidence(board, canvas);
+
     const target = selectDenseTarget(snapshot.doc.components, synthetic.surface);
-    if (!target?.board) throw new Error('No placed drag target');
-    const baseZoom = probeBaseZoom(snapshot.doc);
-    const center = probeViewportCenter(canvas);
-    const boardCenter = target.board.center;
-    const view = (zoom: number, dx = 0, dy = 0) => ({
-      zoom,
-      pan: {
-        x: center.x - boardCenter.x * zoom + dx,
-        y: center.y - boardCenter.y * zoom + dy,
-      },
-    });
-    const setView = useViewStore.getState().setBoardView;
-    useSessionStore.getState().setSelection({ items: [{ kind: 'component', id: target.id }] });
-    setView(view(baseZoom));
-    await waitFor(
-      () => canvasCounts(canvas!).labels >= 3300,
-      'component references and all 3000 pin numbers',
+    if (!target?.board || !target.schematic) throw new Error('No placed drag target');
+    const boardFrames = await measureGestures(runtime, canvas, target, 'board');
+    const marks = (kind: string) =>
+      canvas.querySelectorAll(`[data-layer="components.bodies"] [data-mark="${kind}"]`).length;
+    const dom = {
+      ...canvasCounts(canvas),
+      plusMarks: marks('plus'),
+      bandMarks: marks('band'),
+      notchMarks: marks('notch'),
+    };
+
+    const observeDrag = observeSchematicDrag(runtime);
+    const schematic = await (async () => {
+      try {
+        const opened = await openSchematic();
+        const frames = await measureGestures(
+          runtime,
+          opened,
+          target,
+          'schematic',
+          observeDrag.begin,
+        );
+        return {
+          ...frames,
+          drag: { ...frames.drag, ...observeDrag.commit(target.id) },
+          target: { id: target.id, at: target.schematic!.at },
+        };
+      } finally {
+        observeDrag.stop();
+      }
+    })();
+
+    const branches = addProbeBranches(
+      runtime.engine,
+      runtime.ids,
+      takenAt,
+      synthetic.sampleConnection,
     );
-    await nextFrame();
-    await nextFrame();
+    const anchored = runtime.engine.snapshot();
+    const timedInput = {
+      ...input,
+      anchorPins: anchorPinCount(anchored, branches.anchor),
+      measurementsAfterAnchoring: anchored.doc.measurements.length,
+    };
+    const anchorValidation = checkProbeInputs(timedInput);
+    if (!anchorValidation.ok)
+      return inputFailure(
+        timedInput,
+        anchorValidation.mismatched,
+        created.path,
+        foreground.reasons(),
+      );
     await saveQuiet(runtime);
-    const pan = frameStats(
-      await sampleFrames(180, (frame) =>
-        setView(view(baseZoom, Math.sin(frame / 30) * 80, Math.cos(frame / 30) * 50)),
-      ),
+    const commands = await measureCommands(
+      runtime.engine,
+      target.id,
+      synthetic.sampleConnection,
+      branches.nextBeep,
     );
-    await saveQuiet(runtime);
-    const zoom = frameStats(
-      await sampleFrames(180, (frame) =>
-        setView(view(baseZoom * (1 + 0.15 * Math.sin((frame / 180) * Math.PI * 2)))),
-      ),
-    );
-    const zoomSettle = await measureZoomSettle();
-    await saveQuiet(runtime);
-    setView(view(baseZoom));
-    await nextFrame();
-    await nextFrame();
-    await saveQuiet(runtime);
-    const drag = await dragComponent(runtime, canvas, target.id);
-    await saveQuiet(runtime);
-    const dom = canvasCounts(canvas);
-    const commands = await measureCommands(runtime.engine, target.id, synthetic.sampleConnection);
     await closeWorkbench(runtime);
     const ipc = { stage: 'after_gestures', samples: await measureProjectIpc(created.path) };
     const reasons = foreground.reasons();
@@ -237,33 +249,17 @@ async function measure(runtime: Runtime) {
       valid: reasons.length === 0,
       invalidReasons: reasons,
       projectPath,
-      seed: 127,
+      seed,
       creationMs,
       open: { runsMs: openMs, medianMs: [...openMs].sort((a, b) => a - b)[1]!, budgetMs: 1500 },
-      pan: { ...pan, budgetFps: 57 },
-      zoom: { ...zoom, budgetFps: 57 },
-      zoomSettle,
-      drag: {
-        ...frameStats(drag.intervals),
-        budgetFps: 45,
-        captureShim: drag.captureShim,
-        bodyHitAttempts: drag.bodyHitAttempts,
-        committed: drag.committed,
-        revDelta: drag.revDelta,
-        previewFrames: drag.previewFrames,
-      },
+      ...boardFrames,
       ...environment(),
       dom,
-      board: {
-        traces: connections.length,
-        topTraces: connections.filter(({ board }) => board?.layer === 'top').length,
-        bottomTraces: connections.filter(({ board }) => board?.layer === 'bottom').length,
-        measurements: snapshot.doc.measurements.length,
-        namedNets: snapshot.derived.nets?.list.filter((net) => net.named).length,
-      },
+      board,
+      input: timedInput,
+      schematic,
       ipc,
-      commands: { budgetMs: 16, samples: commands },
-      baseZoom,
+      commands: { samples: commands },
       target: { id: target.id, footprint: target.board.footprint, center: target.board.center },
     };
   } catch (error) {
@@ -281,7 +277,7 @@ export async function runPerfProbe(runtime: Runtime) {
     console.info(`[perf] ${json}`);
     await info(`[perf] ${json}`);
     const settle =
-      'zoomSettle' in result
+      'zoomSettle' in result && result.zoomSettle
         ? `\n\nRahunemise pikim kaader: ${result.zoomSettle.worstMs.toFixed(1)} ms (${result.zoomSettle.windowMs} ms vaatlus, fps-ist eraldi)`
         : '';
     showResult(`${formatResult(result)}${settle}`);

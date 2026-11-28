@@ -1,0 +1,19 @@
+{
+  "identifier": "ee.pcbkaardistaja.perf.m23",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "PCB Kaardistaja M2.3 - performance probe",
+        "dragDropEnabled": false,
+        "width": 1280,
+        "height": 800,
+        "minWidth": 1100,
+        "minHeight": 700,
+        "resizable": false,
+        "maximizable": false,
+        "maximized": false
+      }
+    ]
+  }
+}
